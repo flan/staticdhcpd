@@ -22,7 +22,7 @@ import dhcp_packet
 import IN
 
 class DhcpNetwork:
-    def __init__(self, listen_address="0.0.0.0", listen_port=67, emit_port=68):
+    def __init__(self, listen_address, listen_port, emit_port):
 
         self.listen_port = int(listen_port)
         self.emit_port = int(emit_port)
@@ -30,17 +30,19 @@ class DhcpNetwork:
         self.so_reuseaddr = False
         self.so_broadcast = True
         self.dhcp_socket = None
+        self.response_socket = None
         
     # Networking stuff
     def CreateSocket(self) :
         try :
+            self.response_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             self.dhcp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         except socket.error, msg :
             sys.stderr.write('pydhcplib.DhcpNetwork socket creation error : '+str(msg))
 
         try :
             if self.so_broadcast :
-                self.dhcp_socket.setsockopt(socket.SOL_SOCKET,socket.SO_BROADCAST,1)
+                self.response_socket.setsockopt(socket.SOL_SOCKET,socket.SO_BROADCAST,1)
         except socket.error, msg :
             sys.stderr.write('pydhcplib.DhcpNetwork socket error in setsockopt SO_BROADCAST : '+str(msg))
 
@@ -61,21 +63,11 @@ class DhcpNetwork:
 
     def DisableBroadcast(self) :
         self.so_broadcast = False
-
-    def BindToDevice(self) :
-        try :
-            self.dhcp_socket.setsockopt(socket.SOL_SOCKET,IN.SO_BINDTODEVICE,self.listen_address+'\0')
-        except socket.error, msg :
-            sys.stderr.write ('pydhcplib.DhcpNetwork.BindToDevice error in setsockopt SO_BINDTODEVICE : '+str(msg))
-
-        try :
-            self.dhcp_socket.bind(('', self.listen_port))
-        except socket.error, msg :
-            sys.stderr.write( 'pydhcplib.DhcpNetwork.BindToDevice error : '+str(msg))
-
+        
     def BindToAddress(self) :
         try :
-            self.dhcp_socket.bind((self.listen_address, self.listen_port))
+            self.response_socket.bind((self.listen_address, self.emit_port))
+            self.dhcp_socket.bind(('<broadcast>', self.listen_port))
         except socket.error,msg :
             sys.stderr.write( 'pydhcplib.DhcpNetwork.BindToAddress error : '+str(msg))
 
@@ -118,15 +110,18 @@ class DhcpNetwork:
 
                 return packet
 
-    def SendDhcpPacket(self, packet):
-        giaddr = packet.GetGiaddr()
-        if giaddr == [0, 0, 0, 0]:
-            return self.SendDhcpPacketTo(packet, '255.255.255.255')
+    def SendDhcpPacket(self, packet, _ip=None):
+        if _ip:
+            return self.SendDhcpPacketTo(packet, _ip)
         else:
-            return self.SendDhcpPacketTo(packet, '.'.join(map(str, giaddr)))
-            
+            giaddr = packet.GetGiaddr()
+            if giaddr == [0, 0, 0, 0]:
+                return self.SendDhcpPacketTo(packet, '255.255.255.255')
+            else:
+                return self.SendDhcpPacketTo(packet, '.'.join(map(str, giaddr)))
+                
     def SendDhcpPacketTo(self, packet, _ip, _port=None):
-        return self.dhcp_socket.sendto(packet.EncodePacket(), (_ip, _port or self.emit_port))
+        return self.response_socket.sendto(packet.EncodePacket(), (_ip, _port or self.emit_port))
 
     # Server side Handle methods
     def HandleDhcpDiscover(self, packet):
