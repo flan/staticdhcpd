@@ -90,6 +90,7 @@ class DhcpNetwork:
 
             if( data_input != [] ) : (data,source_address) = self.dhcp_socket.recvfrom(2048)
             else : return None
+            print source_address
 
             if data != "" :
                 packet = dhcp_packet.DhcpPacket()
