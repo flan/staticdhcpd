@@ -45,7 +45,6 @@ class DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 	def HandleDhcpRequest(self, packet):
 		print 2, packet, dir(packet)
 		
-		
 def lookupMAC(mac):
 	try:
 		mysql_db = MySQLdb.connect(host="localhost", user="aurica", passwd="misha", db="hymmnoserver")
@@ -65,3 +64,6 @@ def lookupMAC(mac):
 		except:
 			pass
 			
+server = DHCPServer()
+while True:
+	server.GetNextDHCPPacket()
