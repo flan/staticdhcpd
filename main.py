@@ -18,10 +18,14 @@ import MySQLdb
 import pydhcplib.dhcp_network
 import pydhcplib.dhcp_packet
 import pydhcplib.type_hw_addr
+import pydhcplib.type_strlist
 
 _SERVER_ADDRESS = '0.0.0.0'
 _SERVER_PORT = 67
 _CLIENT_PORT = 68
+
+_IGNORE_TIMEOUT = 180
+_ignored_addresses = []
 
 class DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 	def __init__(self):
@@ -40,23 +44,36 @@ class DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 		self.BindToAddress()
 		
 	def HandleDhcpDiscover(self, packet):
-		print 1, packet, dir(packet)
-		
+		mac = packet.GetHardwareAddress()
+		if not [None for (ignored_mac, timeout) in _ignored_addresses if mac == ignored_mac]:
+			ip = lookupMAC(pydhcplib.type_hw_addr.hwmac(mac))
+			if ip:
+				offer = pydhcplib.dhcp_packet.DhcpPacket()
+				offer.CreateDhcpOfferPacketFrom(packet)
+				
+				offer.SetOption('yiaddr', [int(i) for i in ip.split('.')])
+				offer.SetOption('ip_address_lease_time', 1209600)
+				
+				self.SendPacket(offer)
+			else:
+				_ignored_addresses.append([mac, _IGNORE_TIMEOUT])
+				
 	def HandleDhcpRequest(self, packet):
-		print 2, packet, dir(packet)
+		packet.TransformToDhcpNackPacket()
+		self.SendPacket(packet)
 		
 def lookupMAC(mac):
 	try:
-		mysql_db = MySQLdb.connect(host="localhost", user="aurica", passwd="misha", db="hymmnoserver")
+		mysql_db = MySQLdb.connect(host="localhost", user="testuser", passwd="testpass", db="dhcpd")
 		mysql_cur = mysql_db.cursor()
 		
-		mysql_cur.execute("SELECT ip_address FROM maps WHERE mac = %s LIMIT 1", (mac,))
+		mysql_cur.execute("SELECT ip FROM maps WHERE mac = %s LIMIT 1", (mac,))
 		result = mysql_cur.fetchone()
 		if result:
 			return result[0]
 		return None
-	except:
-		print "Something went horribly wrong!"
+	except Exception, e:
+		print e
 	finally:
 		try:
 			mysql_cur.close()
