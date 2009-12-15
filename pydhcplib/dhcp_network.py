@@ -120,11 +120,13 @@ class DhcpNetwork:
 
     def SendDhcpPacket(self, packet):
         giaddr = packet.GetGiaddr()
-        print giaddr
-        print self.emit_port
-        
-    def SendDhcpPacketTo(self, packet, _ip,_port):
-        return self.dhcp_socket.sendto(packet.EncodePacket(),(_ip,_port))
+        if giaddr == [0, 0, 0, 0]:
+            self.SendDhcpPacketTo(self, packet, '<broadcast>')
+        else:
+            self.SendDhcpPacketTo(self, packet, '.'.join(giaddr))
+            
+    def SendDhcpPacketTo(self, packet, _ip, _port=None):
+        return self.dhcp_socket.sendto(packet.EncodePacket(), (_ip, _port or self.emit_port))
 
     # Server side Handle methods
     def HandleDhcpDiscover(self, packet):
