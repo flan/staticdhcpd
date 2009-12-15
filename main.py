@@ -66,4 +66,5 @@ def lookupMAC(mac):
 			
 server = DHCPServer()
 while True:
-	server.GetNextDHCPPacket()
+	server.GetNextDhcpPacket()
+	
