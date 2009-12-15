@@ -121,9 +121,9 @@ class DhcpNetwork:
     def SendDhcpPacket(self, packet):
         giaddr = packet.GetGiaddr()
         if giaddr == [0, 0, 0, 0]:
-            self.SendDhcpPacketTo(packet, '<broadcast>')
+            return self.SendDhcpPacketTo(packet, '<broadcast>')
         else:
-            self.SendDhcpPacketTo(packet, '.'.join(giaddr))
+            return self.SendDhcpPacketTo(packet, '.'.join(giaddr))
             
     def SendDhcpPacketTo(self, packet, _ip, _port=None):
         return self.dhcp_socket.sendto(packet.EncodePacket(), (_ip, _port or self.emit_port))
