@@ -109,16 +109,6 @@ class DhcpNetwork:
                 else: self.HandleDhcpUnknown(packet)
 
                 return packet
-
-    def SendDhcpPacket(self, packet, _ip=None):
-        if _ip:
-            return self.SendDhcpPacketTo(packet, _ip)
-        else:
-            giaddr = packet.GetGiaddr()
-            if giaddr == [0, 0, 0, 0]:
-                return self.SendDhcpPacketTo(packet, '255.255.255.255')
-            else:
-                return self.SendDhcpPacketTo(packet, '.'.join(map(str, giaddr)))
                 
     def SendDhcpPacketTo(self, packet, _ip, _port=None):
         return self.response_socket.sendto(packet.EncodePacket(), (_ip, _port or self.emit_port))

@@ -259,8 +259,8 @@ class DhcpPacket(DhcpBasicPacket):
         return result
 
     def SetMultipleOptions(self,options={}):
-        for each in options.keys():
-            self.SetOption(each,options[each])
+        for (each, value) in options.iteritems():
+            self.SetOption(each, value)
 
 
 
