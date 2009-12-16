@@ -86,7 +86,9 @@ class WebService(threading.Thread):
 		threading.Thread.__init__(self)
 		self.daemon = True
 		
-		self._web_server = BaseHTTPServer.HTTPServer((constants.WEB_IP, constants.WEB_PORT), WebServer)
+		self._web_server = BaseHTTPServer.HTTPServer(
+		 (conf.WEB_IP, conf.WEB_PORT), WebServer
+		)
 		
 		constants.writeLog('Configured Web server')
 		
