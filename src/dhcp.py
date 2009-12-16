@@ -11,6 +11,16 @@ import pydhcplib.dhcp_packet
 import pydhcplib.type_hw_addr
 import pydhcplib.type_strlist
 
+def longToQuad(l):
+	q = [l % 256]
+	l /= 256
+	q.insert(0, l % 256)
+	l /= 256
+	q.insert(0, l % 256)
+	l /= 256
+	q.insert(0, l % 256)
+	return q
+	
 class DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 	_server_address = None
 	_server_port = None
@@ -43,7 +53,23 @@ class DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 		
 		self._sql_broker = sql.SQL_BROKER()
 		
+	def evaluateRelay(self, packet):
+		#If this is a relayed request, decide whether to handle it or not.
+		giaddr = packet.GetGiaddr()
+		if not giaddr == [0, 0, 0, 0]: #Relayed request.
+			if not conf.ALLOW_DHCP_RELAYS: #Ignore it.
+				return False
+			elif conf.ALLOWED_DHCP_RELAYS and not '.'.join(map(str, giaddr)) in conf.ALLOWED_DHCP_RELAYS:
+				src.logging.writeLog('Relayed request from unauthorized relay %(ip)s ignored' % {
+				 'ip': '.'.join(map(str, giaddr)),
+				})
+				return False
+		return True
+		
 	def HandleDhcpDiscover(self, packet):
+		if not self.evaluateRelay(packet):
+			return
+			
 		start_time = time.time()
 		mac = pydhcplib.type_hw_addr.hwmac(packet.GetHardwareAddress())
 		if not [None for (ignored_mac, timeout) in self._ignored_addresses if mac == ignored_mac]:
@@ -53,15 +79,14 @@ class DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 			 'mac': mac,
 			})
 			
-			ip = self._sql_broker.lookupMAC(mac)
-			if ip:
+			result = self._sql_broker.lookupMAC(mac)
+			if result:
 				offer = pydhcplib.dhcp_packet.DhcpPacket()
 				offer.CreateDhcpOfferPacketFrom(packet)
 				
-				associated_ip = [int(i) for i in ip.split('.')]
-				offer.SetOption('yiaddr', associated_ip)
 				offer.SetOption('server_identifier', [int(i) for i in self._server_address.split('.')])
-				conf.loadDHCPPacket(offer, associated_ip)
+				self._loadDHCPPacket(offer, result)
+				conf.loadDHCPPacket(offer, [int(i) for i in result[0].split('.')])
 				
 				self.SendDhcpPacket(offer)
 				src.logging.writeLog('DHCPOFFER sent to %(mac)s' % {
@@ -75,9 +100,14 @@ class DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 				self._stats_lock.acquire()
 				self._ignored_addresses.append([mac, conf.UNAUTHORIZED_CLIENT_TIMEOUT])
 				self._stats_lock.release()
+		else:
+			self._logDiscardedPacket()
 		self._logTimeTaken(time.time() - start_time)
 		
 	def HandleDhcpRequest(self, packet):
+		if not self.evaluateRelay(packet):
+			return
+			
 		start_time = time.time()
 		mac = pydhcplib.type_hw_addr.hwmac(packet.GetHardwareAddress())
 		if not [None for (ignored_mac, timeout) in self._ignored_addresses if mac == ignored_mac]:
@@ -96,13 +126,11 @@ class DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 				 'mac': mac,
 				})
 				if s_sid == self._server_address: #Chosen!
-					client_ip = s_ip
-					if not conf.SKIP_REQUEST_VALIDATION:
-						client_ip = self._sql_broker.lookupMAC(mac)
-					if client_ip == s_ip:
+					result = self._sql_broker.lookupMAC(mac)
+					if not ip or (result and result[0] == s_ip):
 						packet.TransformToDhcpAckPacket()
-						packet.SetOption('yiaddr', ip)
-						conf.loadDHCPPacket(packet, ip)
+						self._loadDHCPPacket(packet, result)
+						conf.loadDHCPPacket(packet, result[0])
 						
 						src.logging.writeLog('DHCPACK sent to %(mac)s' % {
 						 'mac': mac,
@@ -118,12 +146,10 @@ class DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 				src.logging.writeLog('DHCPREQUEST:INIT-REBOOT received from %(mac)s' % {
 				 'mac': mac,
 				})
-				client_ip = s_ip
-				if not conf.SKIP_REQUEST_VALIDATION:
-					client_ip = self._sql_broker.lookupMAC(mac)
-				if client_ip == s_ip:
+				result = self._sql_broker.lookupMAC(mac)
+				if result and result[0] == s_ip:
 					packet.TransformToDhcpAckPacket()
-					packet.SetOption('yiaddr', ip)
+					self._loadDHCPPacket(packet, result)
 					conf.loadDHCPPacket(packet, ip)
 					
 					src.logging.writeLog('DHCPACK sent to %(mac)s' % {
@@ -136,39 +162,47 @@ class DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 					})
 				self.SendDhcpPacket(packet)
 			elif sid == [0,0,0,0] and ciaddr != [0,0,0,0] and not ip:
-				if packet.GetOption("ciaddr") == [255,255,255,255]:
-					#REBINDING
-					src.logging.writeLog('DHCPREQUEST:REBIND received from %(mac)s' % {
+				if conf.NAK_RENEWALS:
+					packet.TransformToDhcpNackPacket()
+					src.logging.writeLog('DHCPNAK sent to %(mac)s per NAK_RENEWALS setting' % {
 					 'mac': mac,
 					})
-					src.logging.writeLog('Requiring %(mac)s to initiate DISCOVER' % {
-					 'mac': mac,
-					})
+					self.SendDhcpPacket(packet, s_ciaddr)
 				else:
-					#RENEWING
-					src.logging.writeLog('DHCPREQUEST:RENEW received from %(mac)s' % {
-					 'mac': mac,
-					})
-					if conf.ALLOW_DHCP_RENEW:
-						client_ip = self._sql_broker.lookupMAC(mac)
-						if client_ip == s_ciaddr:
-							packet.TransformToDhcpAckPacket()
-							packet.SetOption('yiaddr', ciaddr)
-							conf.loadDHCPPacket(packet, ciaddr)
-							
-							src.logging.writeLog('DHCPACK sent to %(mac)s' % {
-							 'mac': mac,
-							})
-						else:
-							packet.TransformToDhcpNackPacket()
-							src.logging.writeLog('DHCPNAK sent to %(mac)s' % {
-							 'mac': mac,
-							})
-						self.SendDhcpPacket(packet, s_ciaddr)
-					else:
+					if packet.GetOption("ciaddr") == [255,255,255,255]:
+						#REBINDING
+						src.logging.writeLog('DHCPREQUEST:REBIND received from %(mac)s' % {
+						 'mac': mac,
+						})
 						src.logging.writeLog('Requiring %(mac)s to initiate DISCOVER' % {
 						 'mac': mac,
 						})
+					else:
+						#RENEWING
+						src.logging.writeLog('DHCPREQUEST:RENEW received from %(mac)s' % {
+						 'mac': mac,
+						})
+						if conf.ALLOW_DHCP_RENEW:
+							result = self._sql_broker.lookupMAC(mac)
+							if result and result[0] == s_ciaddr:
+								packet.TransformToDhcpAckPacket()
+								packet.SetOption('yiaddr', ciaddr)
+								self._loadDHCPPacket(packet, result)
+								conf.loadDHCPPacket(packet, ciaddr)
+								
+								src.logging.writeLog('DHCPACK sent to %(mac)s' % {
+								 'mac': mac,
+								})
+							else:
+								packet.TransformToDhcpNackPacket()
+								src.logging.writeLog('DHCPNAK sent to %(mac)s' % {
+								 'mac': mac,
+								})
+							self.SendDhcpPacket(packet, s_ciaddr)
+						else:
+							src.logging.writeLog('Requiring %(mac)s to initiate DISCOVER' % {
+							 'mac': mac,
+							})
 			else:
 				src.logging.writeLog('DHCPREQUEST:UNKNOWN received from %(mac)s' % {
 				 'mac': mac,
@@ -180,7 +214,26 @@ class DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 				 'mac': mac,
 				 'time': conf.UNAUTHORIZED_CLIENT_TIMEOUT,
 				})
+		else:
+			self._logDiscardedPacket()
 		self._logTimeTaken(time.time() - start_time)
+		
+	def _loadDHCPPacket(self, packet, result):
+		(ip, gateway, subnet_mask, broadcast_address, domain_name, domain_name_servers, lease_time) = result
+		packet.SetOption('yiaddr', [int(i) for i in ip.split('.')])
+		packet.SetOption('ip_address_lease_time', longToQuad(lease_time))
+		
+		#Default gateway, subnet mask, and broadcast address.
+		packet.SetOption('router', [int(i) for i in gateway.split('.')])
+		packet.SetOption('subnet_mask', [int(i) for i in subnet_mask.split('.')])
+		packet.SetOption('broadcast_address', [int(i) for i in broadcast_address.split('.')])
+		
+		#Search domain/nameservers.
+		dns_list = []
+		for dns in domain_name_servers.split(','):
+			dns_list += [int(i) for i in dns.strip().split('.')]
+		packet.SetOption('domain_name', pydhcplib.type_strlist.strlist(domain_name).list())
+		packet.SetOption('domain_name_server', dns_list)
 		
 	def SendDhcpPacket(self, packet, _ip=None):
 		if _ip:

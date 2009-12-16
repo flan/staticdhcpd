@@ -48,10 +48,16 @@ class _MySQL(_SQLBroker):
 				)
 			mysql_cur = mysql_db.cursor()
 			
-			mysql_cur.execute("SELECT ip FROM maps WHERE mac = %s LIMIT 1", (mac,))
+			mysql_cur.execute(' '.join((
+			 "SELECT m.ip,",
+			 "s.gateway, s.subnet_mask, s.broadcast_address, s.domain_name, s.domain_name_servers,",
+			 "s.lease_time FROM maps m, subnets s",
+			 "WHERE m.mac = %s AND m.subnet = s.subnet AND m.subnet_serial = s.subnet_serial",
+			 "LIMIT 1"
+			)), (mac,))
 			result = mysql_cur.fetchone()
 			if result:
-				return result[0]
+				return result
 			return None
 		finally:
 			try:
@@ -76,10 +82,16 @@ class _SQLite(_SQLBroker):
 			sqlite_db = sqlite3.connect(self._file)
 			sqlite_cur = sqlite_db.cursor()
 			
-			sqlite_cur.execute("SELECT ip FROM maps WHERE mac = ? LIMIT 1", (mac,))
+			sqlite_cur.execute(' '.join((
+			 "SELECT m.ip,",
+			 "s.gateway, s.subnet_mask, s.broadcast_address, s.domain_name, s.domain_name_servers,",
+			 "s.lease_time FROM maps m, subnets s",
+			 "WHERE m.mac = ? AND m.subnet = s.subnet AND m.subnet_serial = s.subnet_serial",
+			 "LIMIT 1"
+			)), (mac,))
 			result = sqlite_cur.fetchone()
 			if result:
-				return result[0]
+				return result
 			return None
 		finally:
 			try:

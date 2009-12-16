@@ -1,5 +1,7 @@
 import BaseHTTPServer
 import cgi
+import hashlib
+import os
 import threading
 import time
 
@@ -38,7 +40,7 @@ class WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
 				})
 			self.wfile.write("</div></div><br/>")
 			
-			self.wfile.write('<div>Event log:<div style="text-size: 0.9em; margin-left: 20px;">')
+			self.wfile.write('<div>Events:<div style="text-size: 0.9em; margin-left: 20px;">')
 			for (timestamp, line) in src.logging.readLog():
 				self.wfile.write("%(time)s : %(line)s<br/>" % {
 				 'time': time.ctime(timestamp),
@@ -49,7 +51,12 @@ class WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
 			self.wfile.write('<div style="text-align: center;"><small>Summary generated %(time)s</small>' % {
 			 'time': time.asctime(),
 			})
-			self.wfile.write('<br/><form action="/" method="post"><div><input type="submit" value="Reload configuration"/></div></form></div>')
+			self.wfile.write('<br/><small>PID: %(pid)i</small>' % {
+			 'pid': os.getpid(),
+			})
+			self.wfile.write('<br/><form action="/" method="post"><div>')
+			self.wfile.write('<label for="key">Key: </label><input type="text" name="key" id="key"/><input type="submit" value="Reload configuration"/>')
+			self.wfile.write('</div></form></div>')
 			
 			self.wfile.write("</div></body></html>")
 			
@@ -62,12 +69,22 @@ class WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
 		
 	def do_POST(self):
 		try:
-			reload(conf)
-			src.logging.writeLog("Reloaded configuration")
-		except Exception, e:
-			src.logging.writeLog("Error while reloading configuration: %(error)s" % {
-			 'error': str(e),
-			})
+			(ctype, pdict) = cgi.parse_header(self.headers.getheader('content-type'))
+			if ctype == 'multipart/form-data':
+				query = cgi.parse_multipart(self.rfile, pdict)
+				key = query.get('key')
+				if key and hashlib.md5(key).hexdigest() == conf.WEB_RELOAD_KEY:
+					try:
+						reload(conf)
+						src.logging.writeLog("Reloaded configuration")
+					except Exception, e:
+						src.logging.writeLog("Error while reloading configuration: %(error)s" % {
+						 'error': str(e),
+						})
+				else:
+					src.logging.writeLog("Invalid reload key provided")
+		except:
+			pass
 		self.doResponse()
 		
 	def do_HEAD(self):
