@@ -4,6 +4,7 @@ import hashlib
 import os
 import threading
 import time
+import urlparse
 
 import conf
 
@@ -14,10 +15,6 @@ class WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
 	
 	def doResponse(self):
 		try:
-			if not self.path in self._allowed_pages:
-				self.send_response(404)
-				return
-				
 			self.send_response(200)
 			self.send_header('Content-type', 'text/html')
 			self.send_header('Last-modified', time.strftime('%a, %d %b %Y %H:%M:%S %Z'))
@@ -51,11 +48,13 @@ class WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
 			self.wfile.write('<div style="text-align: center;"><small>Summary generated %(time)s</small>' % {
 			 'time': time.asctime(),
 			})
-			self.wfile.write('<br/><small>PID: %(pid)i</small>' % {
+			self.wfile.write('<br/><small>PID: %(pid)i | Server: %(server)s:%(port)i</small>' % {
 			 'pid': os.getpid(),
+			 'server': conf.DHCP_SERVER_IP,
+			 'port': conf.DHCP_SERVER_PORT,
 			})
 			self.wfile.write('<br/><form action="/" method="post"><div>')
-			self.wfile.write('<label for="key">Key: </label><input type="text" name="key" id="key"/><input type="submit" value="Reload configuration"/>')
+			self.wfile.write('<label for="key">Key: </label><input type="password" name="key" id="key"/><input type="submit" value="Reload configuration"/>')
 			self.wfile.write('</div></form></div>')
 			
 			self.wfile.write("</div></body></html>")
@@ -65,15 +64,19 @@ class WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
 			pass
 			
 	def do_GET(self):
+		if not self.path in self._allowed_pages:
+			self.send_response(404)
+			return
+			
 		self.doResponse()
 		
 	def do_POST(self):
 		try:
 			(ctype, pdict) = cgi.parse_header(self.headers.getheader('content-type'))
-			if ctype == 'multipart/form-data':
-				query = cgi.parse_multipart(self.rfile, pdict)
+			if ctype == 'application/x-www-form-urlencoded':
+				query = urlparse.parse_qs(self.rfile.read(int(self.headers.getheader('content-length'))))
 				key = query.get('key')
-				if key and hashlib.md5(key).hexdigest() == conf.WEB_RELOAD_KEY:
+				if key and hashlib.md5(key[0]).hexdigest() == conf.WEB_RELOAD_KEY:
 					try:
 						reload(conf)
 						src.logging.writeLog("Reloaded configuration")
@@ -83,8 +86,8 @@ class WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
 						})
 				else:
 					src.logging.writeLog("Invalid reload key provided")
-		except:
-			pass
+		except Exception, e: 
+			print e
 		self.doResponse()
 		
 	def do_HEAD(self):

@@ -52,7 +52,7 @@ class _MySQL(_SQLBroker):
 			 "SELECT m.ip,",
 			 "s.gateway, s.subnet_mask, s.broadcast_address, s.domain_name, s.domain_name_servers,",
 			 "s.lease_time FROM maps m, subnets s",
-			 "WHERE m.mac = %s AND m.subnet = s.subnet AND m.subnet_serial = s.subnet_serial",
+			 "WHERE m.mac = %s AND m.subnet = s.subnet AND m.serial = s.serial",
 			 "LIMIT 1"
 			)), (mac,))
 			result = mysql_cur.fetchone()
@@ -86,7 +86,7 @@ class _SQLite(_SQLBroker):
 			 "SELECT m.ip,",
 			 "s.gateway, s.subnet_mask, s.broadcast_address, s.domain_name, s.domain_name_servers,",
 			 "s.lease_time FROM maps m, subnets s",
-			 "WHERE m.mac = ? AND m.subnet = s.subnet AND m.subnet_serial = s.subnet_serial",
+			 "WHERE m.mac = ? AND m.subnet = s.subnet AND m.serial = s.serial",
 			 "LIMIT 1"
 			)), (mac,))
 			result = sqlite_cur.fetchone()

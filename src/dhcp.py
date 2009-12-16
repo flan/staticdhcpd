@@ -86,7 +86,7 @@ class DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 				
 				offer.SetOption('server_identifier', [int(i) for i in self._server_address.split('.')])
 				self._loadDHCPPacket(offer, result)
-				conf.loadDHCPPacket(offer, [int(i) for i in result[0].split('.')])
+				conf.loadDHCPPacket(offer, [int(i) for i in result[0].split('.')], packet.GetGiaddr())
 				
 				self.SendDhcpPacket(offer)
 				src.logging.writeLog('DHCPOFFER sent to %(mac)s' % {
@@ -122,7 +122,8 @@ class DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 			
 			if sid != [0,0,0,0] and ciaddr == [0,0,0,0]:
 				#SELECTING
-				src.logging.writeLog('DHCPREQUEST:SELECTING received from %(mac)s' % {
+				src.logging.writeLog('DHCPREQUEST:SELECTING(%(ip)s) received from %(mac)s' % {
+				 'ip': s_ip,
 				 'mac': mac,
 				})
 				if s_sid == self._server_address: #Chosen!
@@ -130,7 +131,7 @@ class DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 					if not ip or (result and result[0] == s_ip):
 						packet.TransformToDhcpAckPacket()
 						self._loadDHCPPacket(packet, result)
-						conf.loadDHCPPacket(packet, result[0])
+						conf.loadDHCPPacket(packet, result[0], packet.GetGiaddr())
 						
 						src.logging.writeLog('DHCPACK sent to %(mac)s' % {
 						 'mac': mac,
@@ -150,7 +151,7 @@ class DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 				if result and result[0] == s_ip:
 					packet.TransformToDhcpAckPacket()
 					self._loadDHCPPacket(packet, result)
-					conf.loadDHCPPacket(packet, ip)
+					conf.loadDHCPPacket(packet, ip, packet.GetGiaddr())
 					
 					src.logging.writeLog('DHCPACK sent to %(mac)s' % {
 					 'mac': mac,
@@ -188,7 +189,7 @@ class DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 								packet.TransformToDhcpAckPacket()
 								packet.SetOption('yiaddr', ciaddr)
 								self._loadDHCPPacket(packet, result)
-								conf.loadDHCPPacket(packet, ciaddr)
+								conf.loadDHCPPacket(packet, ciaddr, packet.GetGiaddr())
 								
 								src.logging.writeLog('DHCPACK sent to %(mac)s' % {
 								 'mac': mac,
@@ -224,17 +225,22 @@ class DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 		packet.SetOption('ip_address_lease_time', longToQuad(lease_time))
 		
 		#Default gateway, subnet mask, and broadcast address.
-		packet.SetOption('router', [int(i) for i in gateway.split('.')])
-		packet.SetOption('subnet_mask', [int(i) for i in subnet_mask.split('.')])
-		packet.SetOption('broadcast_address', [int(i) for i in broadcast_address.split('.')])
-		
+		if gateway:
+			packet.SetOption('router', [int(i) for i in gateway.split('.')])
+		if subnet_mask:
+			packet.SetOption('subnet_mask', [int(i) for i in subnet_mask.split('.')])
+		if broadcast_address:
+			packet.SetOption('broadcast_address', [int(i) for i in broadcast_address.split('.')])
+			
 		#Search domain/nameservers.
-		dns_list = []
-		for dns in domain_name_servers.split(','):
-			dns_list += [int(i) for i in dns.strip().split('.')]
-		packet.SetOption('domain_name', pydhcplib.type_strlist.strlist(domain_name).list())
-		packet.SetOption('domain_name_server', dns_list)
-		
+		if domain_name:
+			packet.SetOption('domain_name', pydhcplib.type_strlist.strlist(domain_name).list())
+		if domain_name_servers:
+			dns_list = []
+			for dns in domain_name_servers.split(','):
+				dns_list += [int(i) for i in dns.strip().split('.')]
+			packet.SetOption('domain_name_server', dns_list)
+			
 	def SendDhcpPacket(self, packet, _ip=None):
 		if _ip:
 			bytes = self.SendDhcpPacketTo(packet, _ip)
