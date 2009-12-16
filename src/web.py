@@ -3,26 +3,44 @@ import cgi
 import threading
 import time
 
-import constants
+import conf
+
+import src.logging
 
 class WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
+	_allowed_pages = ('/', '/index.html')
+	
 	def doResponse(self):
 		try:
+			if self.path not in self._allowed_pages:
+				self.send_response(404)
+				return
+				
 			self.send_response(200)
 			self.send_header('Content-type', 'text/html')
+			self.send_header('Last-modified', time.strftime('%a, %d %b %Y %H:%M:%S %Z'))
 			self.end_headers()
 			
-			self.wfile.write("<html><head><title>staticDHCPd log</title></head><body><div>")
+			self.wfile.write('<html><head><title>staticDHCPd log</title></head><body><div style="width: 800px; border: 1px solid black;">')
+			
+			self.wfile.write('<div>Statistics:<div style="text-size: 0.9em; margin-left: 20px;">')
+			self.wfile.write("Nothing to display yet")
+			self.wfile.write("</div></div><br/>")
+			
+			self.wfile.write('<div>Event log:<div style="text-size: 0.9em; margin-left: 20px;">')
 			for (timestamp, line) in constants.readLog():
 				self.wfile.write("%(time)s : %(line)s<br/>" % {
 				 'time': time.ctime(timestamp),
-				 'line': line,
+				 'line': cgi.escape(line),
 				})
-			self.wfile.write("</div>")
-			self.wfile.write("<div>Timestamp: %(time)s</div>" % {
+			self.wfile.write("</div></div><br/>")
+			
+			self.wfile.write('<div style="text-align: center;"><small>Summary generated at %(time)s</small>' % {
 			 'time': time.asctime(),
 			})
-			self.wfile.write("</body></html>")
+			self.wfile.write('<br/><form action="/" method="post"><div><input type="submit" value="Reload configuration"/></div></form></div>')
+			
+			self.wfile.write("</div></body></html>")
 			
 			return
 		except:
@@ -32,8 +50,28 @@ class WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
 		self.doResponse()
 		
 	def do_POST(self):
+		try:
+			reload(conf)
+			src.logging.writeLog("Reloaded configuration")
+		except Exception, e:
+			src.logging.writeLog("Error while reloading configuration: %(error)s" % {
+			 'error': str(e),
+			})
 		self.doResponse()
 		
+	def do_HEAD(self):
+		if self.path not in self._allowed_pages:
+				self.send_response(404)
+				return
+				
+		try:
+			self.send_response(200)
+			self.send_header('Content-type', 'text/html')
+			self.send_header('Last-modified', time.strftime('%a, %d %b %Y %H:%M:%S %Z'))
+			self.end_headers()
+		except:
+			pass
+			
 class WebService(threading.Thread):
 	_web_server = None
 	

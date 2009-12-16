@@ -66,7 +66,7 @@ class DhcpNetwork:
         
     def BindToAddress(self) :
         try :
-            self.response_socket.bind((self.listen_address, self.emit_port))
+            self.response_socket.bind((self.listen_address, 0))
             self.dhcp_socket.bind(('', self.listen_port))
         except socket.error,msg :
             sys.stderr.write( 'pydhcplib.DhcpNetwork.BindToAddress error : '+str(msg))
