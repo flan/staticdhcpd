@@ -26,7 +26,7 @@ class DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 	_ignored_addresses = None
 	
 	def __init__(self, server_address, server_port, client_port):
-		self._packets_processed_lock = threading.Lock()
+		self._stats_lock = threading.Lock()
 		self._dhcp_assignments = {}
 		self._ignored_addresses = []
 		

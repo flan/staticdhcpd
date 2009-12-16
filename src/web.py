@@ -12,7 +12,7 @@ class WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
 	
 	def doResponse(self):
 		try:
-			if self.path not in self._allowed_pages:
+			if not self.path in self._allowed_pages:
 				self.send_response(404)
 				return
 				
@@ -21,15 +21,19 @@ class WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
 			self.send_header('Last-modified', time.strftime('%a, %d %b %Y %H:%M:%S %Z'))
 			self.end_headers()
 			
-			self.wfile.write('<html><head><title>staticDHCPd log</title></head><body><div style="width: 800px; border: 1px solid black;">')
+			self.wfile.write('<html><head><title>staticDHCPd log</title></head><body><div style="width: 950px; margin-left: auto; margin-right: auto; border: 1px solid black;">')
 			
 			self.wfile.write('<div>Statistics:<div style="text-size: 0.9em; margin-left: 20px;">')
 			for (timestamp, packets, discarded, time_taken, ignored_macs) in src.logging.readPollRecords():
+				if packets:
+					turnaround = time_taken / packets
+				else:
+					turnaround = 0.0
 				self.wfile.write("%(time)s : processed: %(processed)i; discarded: %(discarded)i; turnaround: %(turnaround)fs/pkt; ignored MACs: %(ignored)i<br/>" % {
 				 'time': time.ctime(timestamp),
 				 'processed': packets,
 				 'discarded': discarded,
-				 'turnaround': time_taken / packets,
+				 'turnaround': turnaround,
 				 'ignored': ignored_macs,
 				})
 			self.wfile.write("</div></div><br/>")
@@ -42,7 +46,7 @@ class WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
 				})
 			self.wfile.write("</div></div><br/>")
 			
-			self.wfile.write('<div style="text-align: center;"><small>Summary generated at %(time)s</small>' % {
+			self.wfile.write('<div style="text-align: center;"><small>Summary generated %(time)s</small>' % {
 			 'time': time.asctime(),
 			})
 			self.wfile.write('<br/><form action="/" method="post"><div><input type="submit" value="Reload configuration"/></div></form></div>')
@@ -67,7 +71,7 @@ class WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
 		self.doResponse()
 		
 	def do_HEAD(self):
-		if self.path not in self._allowed_pages:
+		if not self.path in self._allowed_pages:
 				self.send_response(404)
 				return
 				
@@ -90,9 +94,9 @@ class WebService(threading.Thread):
 		 (conf.WEB_IP, conf.WEB_PORT), WebServer
 		)
 		
-		constants.writeLog('Configured Web server')
+		src.logging.writeLog('Configured Web server')
 		
 	def run(self):
-		constants.writeLog('Running Web server')
+		src.logging.writeLog('Running Web server')
 		self._web_server.serve_forever()
 		
