@@ -16,14 +16,12 @@ Legal
 import sys
 import time
 
-import src.constants
+import conf
+
 import src.dhcp
 import src.web
 
 if __name__ == '__main__':
-	src.constants.writeLog('Starting up')
-	src.constants.init()
-	
 	dhcp_thread = src.dhcp.DHCPService()
 	dhcp_thread.start()
 	
@@ -31,5 +29,6 @@ if __name__ == '__main__':
 	web_thread.start()
 	
 	while True:
-		time.sleep(1)
+		time.sleep(conf.POLLING_INTERVAL)
+		dhcp_thread.getStats()
 		

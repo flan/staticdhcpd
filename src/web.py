@@ -24,11 +24,18 @@ class WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
 			self.wfile.write('<html><head><title>staticDHCPd log</title></head><body><div style="width: 800px; border: 1px solid black;">')
 			
 			self.wfile.write('<div>Statistics:<div style="text-size: 0.9em; margin-left: 20px;">')
-			self.wfile.write("Nothing to display yet")
+			for (timestamp, packets, discarded, time_taken, ignored_macs) in src.logging.readPollRecords():
+				self.wfile.write("%(time)s : processed: %(processed)i; discarded: %(discarded)i; turnaround: %(turnaround)fs/pkt; ignored MACs: %(ignored)i<br/>" % {
+				 'time': time.ctime(timestamp),
+				 'processed': packets,
+				 'discarded': discarded,
+				 'turnaround': time_taken / packets,
+				 'ignored': ignored_macs,
+				})
 			self.wfile.write("</div></div><br/>")
 			
 			self.wfile.write('<div>Event log:<div style="text-size: 0.9em; margin-left: 20px;">')
-			for (timestamp, line) in constants.readLog():
+			for (timestamp, line) in src.logging.readLog():
 				self.wfile.write("%(time)s : %(line)s<br/>" % {
 				 'time': time.ctime(timestamp),
 				 'line': cgi.escape(line),

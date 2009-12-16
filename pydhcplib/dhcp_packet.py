@@ -34,8 +34,8 @@ class DhcpPacket(DhcpBasicPacket):
         printable_data += "op : " + DhcpFieldsName['op'][str(op[0])] + "\n"
 
         
-        for opt in  ['htype','hlen','hops','xid','secs','flags',
-                     'ciaddr','yiaddr','siaddr','giaddr','chaddr','sname','file'] :
+        for opt in  ('htype','hlen','hops','xid','secs','flags',
+                     'ciaddr','yiaddr','siaddr','giaddr','chaddr','sname','file') :
             begin = DhcpFields[opt][0]
             end = DhcpFields[opt][0]+DhcpFields[opt][1]
             data = self.packet_data[begin:end]
@@ -53,7 +53,7 @@ class DhcpPacket(DhcpBasicPacket):
                 result = []
                 hexsym = ['0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f']
                 for iterator in range(6) :
-                    result += [str(hexsym[data[iterator]/16]+hexsym[data[iterator]%16])]
+                    result.append(str(hexsym[data[iterator]/16]+hexsym[data[iterator]%16]))
 
                 result = ':'.join(result)
 
@@ -103,7 +103,7 @@ class DhcpPacket(DhcpBasicPacket):
 
         p = parameter.strip()
         # 1- Search for header informations or specific parameter
-        if p == 'op' or p == 'htype' :
+        if p in ('op', 'htype') :
             value = value.strip()
             if value.isdigit() : return [int(value)]
             try :
@@ -112,14 +112,14 @@ class DhcpPacket(DhcpBasicPacket):
             except KeyError :
                 return [0]
 
-        elif p == 'hlen' or p == 'hops' :
+        elif p in ('hlen', 'hops') :
             try :
                 value = int(value)
                 return [value]
             except ValueError :
                 return [0]
 
-        elif p == 'secs' or p == 'flags' :
+        elif p in ('secs', 'flags') :
             try :
                 value = ipv4(int(value)).list()
             except ValueError :
@@ -134,7 +134,7 @@ class DhcpPacket(DhcpBasicPacket):
                 value = [0,0,0,0]
             return value
 
-        elif p == 'ciaddr' or p == 'yiaddr' or p == 'siaddr' or p == 'giaddr' :
+        elif p in ('ciaddr', 'yiaddr', 'siaddr', 'giaddr') :
             try :
                 ip = ipv4(value).list()
             except ValueError :

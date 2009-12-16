@@ -18,17 +18,17 @@
 import sys
 import socket
 import select
+import threading
+
 import dhcp_packet
-import IN
 
 class DhcpNetwork:
     def __init__(self, listen_address, listen_port, emit_port):
 
-        self.listen_port = int(listen_port)
-        self.emit_port = int(emit_port)
+        self.listen_port = listen_port
+        self.emit_port = emit_port
         self.listen_address = listen_address
-        self.so_reuseaddr = False
-        self.so_broadcast = True
+        
         self.dhcp_socket = None
         self.response_socket = None
         
@@ -41,29 +41,15 @@ class DhcpNetwork:
             sys.stderr.write('pydhcplib.DhcpNetwork socket creation error : '+str(msg))
 
         try :
-            if self.so_broadcast :
-                self.response_socket.setsockopt(socket.SOL_SOCKET,socket.SO_BROADCAST,1)
+            self.response_socket.setsockopt(socket.SOL_SOCKET,socket.SO_BROADCAST,1)
         except socket.error, msg :
             sys.stderr.write('pydhcplib.DhcpNetwork socket error in setsockopt SO_BROADCAST : '+str(msg))
 
         try : 
-            if self.so_reuseaddr :
-                self.dhcp_socket.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
+            self.dhcp_socket.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
         except socket.error, msg :
             sys.stderr.write('pydhcplib.DhcpNetwork socket error in setsockopt SO_REUSEADDR : '+str(msg))
-        
-    def EnableReuseaddr(self) :
-        self.so_reuseaddr = True
-
-    def DisableReuseaddr(self) :
-        self.so_reuseaddr = False
-
-    def EnableBroadcast(self) :
-        self.so_broadcast = True
-
-    def DisableBroadcast(self) :
-        self.so_broadcast = False
-        
+            
     def BindToAddress(self) :
         try :
             self.response_socket.bind((self.listen_address, 0))
@@ -88,27 +74,18 @@ class DhcpNetwork:
                 packet = dhcp_packet.DhcpPacket()
                 packet.source_address = source_address
                 packet.DecodePacket(data)
-
-                self.HandleDhcpAll(packet)
                 
                 if packet.IsDhcpDiscoverPacket():
-                    self.HandleDhcpDiscover(packet)
+                    threading.Thread(target=self.HandleDhcpDiscover, args=(packet,)).start()
                 elif packet.IsDhcpRequestPacket():
-                    self.HandleDhcpRequest(packet)
-                elif packet.IsDhcpDeclinePacket():
-                    self.HandleDhcpDecline(packet)
-                elif packet.IsDhcpReleasePacket():
-                    self.HandleDhcpRelease(packet)
-                elif packet.IsDhcpInformPacket():
-                    self.HandleDhcpInform(packet)
-                elif packet.IsDhcpOfferPacket():
-                    self.HandleDhcpOffer(packet)
-                elif packet.IsDhcpAckPacket():
-                    self.HandleDhcpAck(packet)
-                elif packet.IsDhcpNackPacket():
-                    self.HandleDhcpNack(packet)
-                else: self.HandleDhcpUnknown(packet)
-
+                    threading.Thread(target=self.HandleDhcpRequest, args=(packet,)).start()
+                #elif packet.IsDhcpDeclinePacket():
+                #    self.HandleDhcpDecline(packet)
+                #elif packet.IsDhcpReleasePacket():
+                #    self.HandleDhcpRelease(packet)
+                #elif packet.IsDhcpInformPacket():
+                #    self.HandleDhcpInform(packet)
+                    
                 return packet
                 
     def SendDhcpPacketTo(self, packet, _ip, _port=None):
@@ -128,23 +105,5 @@ class DhcpNetwork:
         pass
 
     def HandleDhcpInform(self, packet):
-        pass
-
-
-    # client-side Handle methods
-    def HandleDhcpOffer(self, packet):
-        pass
-        
-    def HandleDhcpAck(self, packet):
-        pass
-
-    def HandleDhcpNack(self, packet):
-        pass
-
-    # Handle unknown options or all options
-    def HandleDhcpUnknown(self, packet):
-        pass
-
-    def HandleDhcpAll(self, packet):
         pass
         
