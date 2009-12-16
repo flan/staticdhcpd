@@ -74,7 +74,7 @@ def loadDHCPPacket(packet, client_ip):
 	
 	#Search domain/nameservers. Note that there are two IPs specified.
 	packet.SetOption('domain_name', pydhcplib.type_strlist.strlist("hamsterx.homelinux.org").list())
-	packet.SetOption('name_server', [192,168,168,100,127,0,0,1])
+	packet.SetOption('domain_name_server', [192,168,168,100,127,0,0,1])
 	
 	#NTP timeservers to be used. Note that there are two IPs specified here.
 	#This field is disabled by default since most every client just uses its own rules to pick a server.
