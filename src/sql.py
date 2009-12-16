@@ -12,7 +12,7 @@ class SQL(object):
 		self._password = password
 		self._database = database
 		
-	def lookupMAC(mac):
+	def lookupMAC(self, mac):
 		"""
 		May raise exception.
 		"""

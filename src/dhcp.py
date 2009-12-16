@@ -15,6 +15,7 @@ class DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 	_server_port = None
 	_client_port = None
 	_ignored_addresses = None
+	_sql_connection = None
 	
 	def __init__(self, server_address, server_port, client_port):
 		self._server_address = server_address
@@ -32,20 +33,22 @@ class DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 		self.CreateSocket()
 		self.BindToAddress()
 		
+		self._sql_connection = sql.SQL('localhost', 'testuser', 'testpass', 'dhcp')
+		
 	def HandleDhcpDiscover(self, packet):
-		mac = packet.GetHardwareAddress()
-		if not [None for (ignored_mac, timeout) in _ignored_addresses if mac == ignored_mac]:
+		mac = pydhcplib.type_hw_addr.hwmac(packet.GetHardwareAddress())
+		if not [None for (ignored_mac, timeout) in self._ignored_addresses if mac == ignored_mac]:
 			constants.writeLog('DHCPDISCOVER received from %(mac)s' % {
 			 'mac': mac,
 			})
 			
-			ip = lookupMAC(pydhcplib.type_hw_addr.hwmac(mac))
+			ip = self._sql_connection.lookupMAC(mac)
 			if ip:
 				offer = pydhcplib.dhcp_packet.DhcpPacket()
 				offer.CreateDhcpOfferPacketFrom(packet)
 				
 				offer.SetOption('yiaddr', [int(i) for i in ip.split('.')])
-				offer.SetOption('server_identifier', [int(i) for i in _SERVER_ADDRESS.split('.')])
+				offer.SetOption('server_identifier', [int(i) for i in self._server_address.split('.')])
 				self.LoadDhcpPacket(offer)
 				
 				self.SendDhcpPacket(offer)
@@ -56,11 +59,11 @@ class DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 				constants.writeLog('%(mac)s unknown; ignoring' % {
 				 'mac': mac,
 				})
-				_ignored_addresses.append([mac, _IGNORE_TIMEOUT])
+				self._ignored_addresses.append([mac, _IGNORE_TIMEOUT])
 				
 	def HandleDhcpRequest(self, packet):
-		mac = packet.GetHardwareAddress()
-		if not [None for (ignored_mac, timeout) in _ignored_addresses if mac == ignored_mac]:
+		mac = pydhcplib.type_hw_addr.hwmac(packet.GetHardwareAddress())
+		if not [None for (ignored_mac, timeout) in self._ignored_addresses if mac == ignored_mac]:
 			ip = packet.GetOption("request_ip_address")
 			sid = packet.GetOption("server_identifier")
 			ciaddr = packet.GetOption("ciaddr")
@@ -74,11 +77,11 @@ class DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 				 'mac': mac,
 				})
 				if s_sid == self._server_address: #Chosen!
-					client_ip = lookupMAC(pydhcplib.type_hw_addr.hwmac(mac))
+					client_ip = self._sql_connection.lookupMAC(mac)
 					if client_ip == s_ip:
 						packet.TransformToDhcpAckPacket()
 						packet.SetOption('yiaddr', ip)
-						self.LoadDhcpPacket(offer)
+						self.LoadDhcpPacket(packet)
 						
 						constants.writeLog('DHCPACK sent to %(mac)s' % {
 						 'mac': mac,
@@ -94,11 +97,11 @@ class DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 				constants.writeLog('DHCPREQUEST:INIT-REBOOT received from %(mac)s' % {
 				 'mac': mac,
 				})
-				client_ip = lookupMAC(pydhcplib.type_hw_addr.hwmac(mac))
+				client_ip = self._sql_connection.lookupMAC(mac)
 				if client_ip == s_ip:
 					packet.TransformToDhcpAckPacket()
 					packet.SetOption('yiaddr', ip)
-					self.LoadDhcpPacket(offer)
+					self.LoadDhcpPacket(packet)
 					
 					constants.writeLog('DHCPACK sent to %(mac)s' % {
 					 'mac': mac,
@@ -124,11 +127,11 @@ class DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 					 'mac': mac,
 					})
 					
-					client_ip = lookupMAC(pydhcplib.type_hw_addr.hwmac(mac))
+					client_ip = self._sql_connection.lookupMAC(mac)
 					if client_ip == s_ciaddr:
 						packet.TransformToDhcpAckPacket()
 						packet.SetOption('yiaddr', ciaddr)
-						self.LoadDhcpPacket(offer)
+						self.LoadDhcpPacket(packet)
 						
 						constants.writeLog('DHCPACK sent to %(mac)s' % {
 						 'mac': mac,
@@ -143,7 +146,7 @@ class DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 				constants.writeLog('DHCPREQUEST:UNKNOWN received from %(mac)s' % {
 				 'mac': mac,
 				})
-				_ignored_addresses.append([mac, _IGNORE_TIMEOUT])
+				self._ignored_addresses.append([mac, _IGNORE_TIMEOUT])
 				constants.writeLog('Ignoring %(mac)s' % {
 				 'mac': mac,
 				})
@@ -182,14 +185,12 @@ class DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 		packet.SetOption('subnet_mask', [255,255,255,0])
 		packet.SetOption('broadcast_address', [192,168,168,255])
 		
-		packet.SetOption('smtp_server', [66,38,149,131])
-		packet.SetOption('pop3_server', [66,38,149,131])
 		packet.SetOption('default_www_server', [66,38,149,130])
 		
 class DHCPService(threading.Thread):
 	_dhcp_server = None
 	
-	def __init__(self, server_address, server_port, client_port):
+	def __init__(self):
 		threading.Thread.__init__(self)
 		self.daemon = True
 		

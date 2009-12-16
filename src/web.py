@@ -31,21 +31,21 @@ class WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
 	def do_GET(self):
 		self.doResponse()
 		
-    def do_POST(self):
+	def do_POST(self):
 		self.doResponse()
 		
 class WebService(threading.Thread):
 	_web_server = None
 	
-	def __init__(self, server_address, server_port):
+	def __init__(self):
 		threading.Thread.__init__(self)
 		self.daemon = True
 		
-		self._web_server = BaseHTTPServer.HTTPServer((server_address, server_port), WebServer)
+		self._web_server = BaseHTTPServer.HTTPServer((constants.WEB_IP, constants.WEB_PORT), WebServer)
 		
 		constants.writeLog('Configured Web server')
 		
 	def run(self):
 		constants.writeLog('Running Web server')
-		server.serve_forever()
+		self._web_server.serve_forever()
 		

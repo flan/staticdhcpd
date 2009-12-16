@@ -17,6 +17,9 @@ SERVER_IP = None
 SERVER_PORT = 67
 CLIENT_PORT = 68
 
+WEB_IP = None
+WEB_PORT = 30880
+
 _LOG_LOCK = threading.Lock()
 _LOG = []
 
@@ -24,7 +27,9 @@ def init():
 	iface = 'en0'
 	try:
 		global SERVER_IP
+		global WEB_IP
 		SERVER_IP = netifaces.ifaddresses(iface)[2][0]['addr']
+		WEB_IP = netifaces.ifaddresses(iface)[2][0]['addr']
 	except Exception, e:
 		sys.stderr.write('Unable to determine address of interface %(iface)s\n' % {
 		 'iface': iface,
@@ -34,6 +39,8 @@ def init():
 	writeLog('Configuration loaded')
 	
 def writeLog(data):
+	global _LOG
+	
 	_LOG_LOCK.acquire()
 	try:
 		_LOG.insert(0, (time.time(), data))
