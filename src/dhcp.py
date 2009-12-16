@@ -225,7 +225,7 @@ class DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 		
 	def _logDHCPAccess(self, mac):
 		self._stats_lock.acquire()
-		assignments = self._dhcp_assignments.get(mac):
+		assignments = self._dhcp_assignments.get(mac)
 		if not assignments:
 			self._dhcp_assignments[mac] = 1
 		else:
@@ -264,7 +264,9 @@ class DHCPService(threading.Thread):
 		self.daemon = True
 		
 		self._dhcp_server = DHCPServer(
-		 constants.SERVER_IP, constants.SERVER_PORT, constants.CLIENT_PORT
+		 conf.DHCP_SERVER_IP,
+		 conf.DHCP_SERVER_PORT,
+		 conf.DHCP_CLIENT_PORT
 		)
 		
 		src.logging.writeLog('Configured DHCP server')
