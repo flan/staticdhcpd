@@ -25,46 +25,44 @@ Legal
  (C) Mathieu Ignacia, 2008 <mignacio@april.org>
 """
 class strlist(object):
-    def __init__(self, data=""):
-        str_type = type(data)
-        self._str = ""
-        self._list = []
-        
-        if str_type == str :
-            self._str = data
-            for each in range(len(self._str)) :
-                self._list.append(ord(self._str[each]))
-        elif str_type in (list, tuple):
-            self._list = data
-            self._str = "".join(map(chr, self._list))
-        else : raise TypeError , 'strlist init : Valid types are str and list of int'
-
-    # return string
-    def str(self) :
-        return self._str
-
-    # return list (useful for DhcpPacket class)
-    def list(self) :
-        return self._list
-
-    # return int
-    # FIXME
-    def int(self) :
-        return 0
-        
-    def __hash__(self) :
-        return self._str.__hash__()
-
-    def __repr__(self) :
-        return self._str
-
-    def __nonzero__(self) :
-        if self._str != "" : return 1
-        return 0
-
-    def __cmp__(self,other) :
-        if self._str == other : return 0
-        return 1
-		    
-
-
+	def __init__(self, data=""):
+		str_type = type(data)
+		if str_type == str:
+			self._str = data
+			#for each in range(len(self._str)):
+			#	self._list.append(ord(self._str[each]))
+			self._list = [ord(each) for each in self._str]
+		elif str_type in (list, tuple):
+			self._list = data
+			self._str = "".join(map(chr, self._list))
+		else:
+			raise TypeError('strlist init : expected str or [int]; got %(type)s' % {'type': str_type,})
+			
+	# return string
+	def str(self):
+		return self._str
+		
+	# return list (useful for DhcpPacket class)
+	def list(self):
+		return self._list
+		
+	# return int
+	def int(self):
+		return 0
+		
+	def __hash__(self):
+		return self._str.__hash__()
+		
+	def __repr__(self):
+		return self._str
+		
+	def __nonzero__(self) :
+		if self._str:
+			return 1
+		return 0
+		
+	def __cmp__(self, other):
+		if self._str == other:
+			return 0
+		return 1
+		

@@ -41,10 +41,11 @@ NAK_RENEWALS = True #If True, REBIND and RENEW requests are NAKed when received,
 UNAUTHORIZED_CLIENT_TIMEOUT = 60 #The number of seconds for which to ignore unknown MACs.
 MISBEHAVING_CLIENT_TIMEOUT = 150 #The number of seconds for which to ignore potentially malicious
 #MACs.
+ENABLE_SUSPEND = True #If True, MACs requesting too many addresses will be flagged as malicious.
 SUSPEND_THRESHOLD = 10 #The number of times a well-behaved MAC can search for or request an IP
 #within the polling interval.
 
-WEB_RELOAD_KEY = '5f4dcc3b5aa765d61d8327deb882cf99' #MD5 hash of the password needed to reload config.
+WEB_RELOAD_KEY = '5f4dcc3b5aa765d61d8327deb882cf99' #MD5 of the password needed to reload config.
 
 #Database settings
 #####
@@ -76,7 +77,6 @@ EMAIL_PASSWORD = 'password' #The password of the user who should authenticate to
 #Changes take effect on reload
 #######################################
 #IMPORT REQUIRED MODULES BELOW THIS LINE
-
 #IMPORT REQUIRED MODULES ABOVE THIS LINE
 
 def loadDHCPPacket(packet, mac, client_ip, relay_ip):
