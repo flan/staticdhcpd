@@ -35,39 +35,6 @@ import src.dhcp
 import src.logging
 import src.web
 
-def _logStatus():
-	try:
-		log_file = open(conf.LOG_FILE, 'w')
-		
-		log_file.write("Summary generated %(time)s\n" % {'time': time.asctime(),})
-		
-		log_file.write("\nStatistics:\n")
-		for (timestamp, packets, discarded, time_taken, ignored_macs) in src.logging.readPollRecords():
-			if packets:
-				turnaround = time_taken / packets
-			else:
-				turnaround = 0.0
-			log_file.write("%(time)s : processed: %(processed)i; discarded: %(discarded)i; turnaround: %(turnaround)fs/pkt; ignored MACs: %(ignored)i\n" % {
-			 'time': time.ctime(timestamp),
-			 'processed': packets,
-			 'discarded': discarded,
-			 'turnaround': turnaround,
-			 'ignored': ignored_macs,
-			})
-			
-		log_file.write("\nEvents:\n")
-		for (timestamp, line) in src.logging.readLog():
-			log_file.write("%(time)s : %(line)s\n" % {
-			 'time': time.ctime(timestamp),
-			 'line': line,
-			})
-			
-		log_file.close()
-		
-		return True
-	except:
-		return False
-		
 def _quitHandler(signum, frame):
 	"""
 	Cleanly shuts down this daemon upon receipt of a SIGTERM.
@@ -85,7 +52,7 @@ def _quitHandler(signum, frame):
 	except:
 		pass
 		
-	_logStatus()
+	src.logging.logToDisk()
 	
 	exit(0)
 	
@@ -108,7 +75,7 @@ def _reloadHandler(signum, frame):
 		 'error': str(e),
 		})
 		
-	if not _logStatus():
+	if not src.logging.logToDisk():
 		src.logging.writeLog("Unable to write logfile: %(file)s" % {'file': conf.LOG_FILE,})
 		
 if __name__ == '__main__':
@@ -118,7 +85,7 @@ if __name__ == '__main__':
 	if conf.WEB_ENABLED:
 		web_thread = src.web.WebService()
 		web_thread.start()
-		
+	
 	#Record PID.
 	try:
 		open(conf.PID_FILE, 'w').write(str(os.getpid()) + '\n')

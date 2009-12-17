@@ -31,6 +31,7 @@ import os
 import threading
 import time
 import urlparse
+import select
 
 import conf
 
@@ -85,6 +86,9 @@ class WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
 			self.wfile.write('<label for="key">Key: </label><input type="password" name="key" id="key"/>')
 			self.wfile.write('<input type="submit" value="Reload configuration"/>')
 			self.wfile.write('</div></form>')
+			self.wfile.write('<form action="/" method="post"><div>')
+			self.wfile.write('<input type="submit" value="Write log to disk"/>')
+			self.wfile.write('</div></form>')
 			self.wfile.write('</div>')
 			
 			self.wfile.write("</div></body></html>")
@@ -116,6 +120,11 @@ class WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
 						})
 				else:
 					src.logging.writeLog("Invalid reload key provided")
+				if query.get('log'):
+					if src.logging.logToDisk():
+						src.logging.writeLog("Wrote log to '%(log)s'" % {'log': conf.LOG_FILE,})
+					else:
+						src.logging.writeLog("Unable to write log to '%(log)s'" % {'log': conf.LOG_FILE,})
 		except Exception, e: 
 			print e
 		self.doResponse()
@@ -148,5 +157,11 @@ class WebService(threading.Thread):
 		
 	def run(self):
 		src.logging.writeLog('Running Web server')
-		self._web_server.serve_forever()
-		
+		while True:
+			try:
+				self._web_server.handle_request()
+			except select.error:
+				src.logging.writeLog('Suppressed non-fatal select() error in Web module')
+			except Exception, e:
+				src.logging.sendErrorReport('Unhandled exception', e)
+				

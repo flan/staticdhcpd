@@ -24,6 +24,9 @@ Legal
  
  (C) Neil Tallim, 2009
 """
+import email
+import smtplib
+import traceback
 import threading
 import time
 
@@ -66,4 +69,89 @@ def readPollRecords():
 		return tuple(_POLL_RECORDS)
 	finally:
 		_POLL_RECORDS_LOCK.release()
+		
+def logToDisk():
+	try:
+		log_file = open(conf.LOG_FILE, 'w')
+		
+		log_file.write("Summary generated %(time)s\n" % {'time': time.asctime(),})
+		
+		log_file.write("\nStatistics:\n")
+		for (timestamp, packets, discarded, time_taken, ignored_macs) in src.logging.readPollRecords():
+			if packets:
+				turnaround = time_taken / packets
+			else:
+				turnaround = 0.0
+			log_file.write("%(time)s : processed: %(processed)i; discarded: %(discarded)i; turnaround: %(turnaround)fs/pkt; ignored MACs: %(ignored)i\n" % {
+			 'time': time.ctime(timestamp),
+			 'processed': packets,
+			 'discarded': discarded,
+			 'turnaround': turnaround,
+			 'ignored': ignored_macs,
+			})
+			
+		log_file.write("\nEvents:\n")
+		for (timestamp, line) in src.logging.readLog():
+			log_file.write("%(time)s : %(line)s\n" % {
+			 'time': time.ctime(timestamp),
+			 'line': line,
+			})
+			
+		log_file.close()
+		
+		return True
+	except:
+		return False
+		
+def sendErrorReport(summary, exception):
+	print type(exception), exception
+	print traceback.format_exc()
+	message = email.MIMEMultipart.MIMEMultipart()
+	message['From'] = conf.EMAIL_SOURCE
+	message['To'] = conf.EMAIL_DESTINATION
+	message['Date'] = email.Utils.formatdate(localtime=True)
+	message['Subject'] = 'Problem with the DHCP server'
+	
+	message.attach(email.MIMEText.MIMEText(
+"""
+A problem occurred with the DHCP server running on %(server)s.
+
+Given description:
+	%(summary)s
+
+Exception type:
+	%(type)s
+
+Exception details:
+	%(details)s
+
+Exception traceback:
+%(traceback)s
+""" % {
+	 'server': conf.DHCP_SERVER_IP,
+	 'summary': summary,
+	 'type': str(type(exception)),
+	 'details': str(exception),
+	 'traceback': traceback.format_exc(),
+	}))
+	
+	try:
+		smtp_server = smtplib.SMTP(conf.EMAIL_SERVER)
+		smtp_server.login(conf.EMAIL_USER, conf.EMAIL_PASSWORD)
+		smtp_server.sendmail(
+		 conf.EMAIL_SOURCE,
+		 (conf.EMAIL_DESTINATION,),
+		 message.as_string()
+		)
+		smtp_server.close()
+		
+		writeLog("E-mail about '%(error)s' sent to %(destination)s" % {
+		 'error': exception,
+		 'destination': conf.EMAIL_DESTINATION,
+		})
+	except Exception, e:
+		writeLog("Unable to send e-mail about '%(e)s': %(error)s" % {
+		 'e': e,
+		 'error': exception,
+		})
 		
