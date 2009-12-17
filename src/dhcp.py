@@ -1,5 +1,35 @@
+# -*- encoding: utf-8 -*-
+"""
+staticDHCPd module: src.dhcp
+
+Purpose
+=======
+ Provides the DHCP side of a staticDHCPd server.
+ 
+Legal
+=====
+ This file is part of staticDHCPd.
+ staticDHCPd is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 3 of the License, or
+ (at your option) any later version.
+
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License
+ along with this program. If not, see <http://www.gnu.org/licenses/>.
+ 
+ (C) Neil Tallim, 2009
+"""
+import email
+import smtplib
+import sys
 import threading
 import time
+import traceback
 
 import conf
 
@@ -11,6 +41,48 @@ import pydhcplib.dhcp_packet
 import pydhcplib.type_hw_addr
 import pydhcplib.type_strlist
 
+def _sendErrorReport(summary, exception):
+	message = email.MIMEMultipart.MIMEMultipart()
+	message['From'] = conf.EMAIL_SOURCE
+	message['To'] = conf.EMAIL_DESTINATION
+	message['Date'] = email.Utils.formatdate(localtime=True)
+	message['Subject'] = 'Problem with the DHCP server'
+	
+	message.attach(email.MIMEText.MIMEText(
+"""
+A problem occurred with the DHCP server running on %(server)s.
+
+Given description:
+	%(summary)s
+
+Exception type:
+	%(type)s
+
+Exception details:
+	%(details)s
+
+Exception traceback:
+%(traceback)s
+""" % {
+	 'server': conf.DHCP_SERVER_IP,
+	 'summary': summary,
+	 'type': str(type(exception)),
+	 'details': str(exception),
+	 'traceback': traceback.format_exc(),
+	}))
+	
+	try:
+		smtp_server = smtplib.SMTP(conf.EMAIL_SERVER)
+		smtp_server.login(conf.EMAIL_USER, conf.EMAIL_PASSWORD)
+		smtp_server.sendmail(
+		 conf.EMAIL_SOURCE,
+		 (conf.EMAIL_DESTINATION,),
+		 message.as_string()
+		)
+		smtp_server.close()
+	except Exception, e:
+		sys.stderr.write(str(e))
+		
 def longToQuad(l):
 	q = [l % 256]
 	l /= 256
@@ -79,27 +151,30 @@ class DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 			 'mac': mac,
 			})
 			
-			result = self._sql_broker.lookupMAC(mac)
-			if result:
-				offer = pydhcplib.dhcp_packet.DhcpPacket()
-				offer.CreateDhcpOfferPacketFrom(packet)
-				
-				offer.SetOption('server_identifier', [int(i) for i in self._server_address.split('.')])
-				self._loadDHCPPacket(offer, result)
-				conf.loadDHCPPacket(offer, [int(i) for i in result[0].split('.')], packet.GetGiaddr())
-				
-				self.SendDhcpPacket(offer)
-				src.logging.writeLog('DHCPOFFER sent to %(mac)s' % {
-				 'mac': mac,
-				})
-			else:
-				src.logging.writeLog('%(mac)s unknown; ignoring for %(time)i seconds' % {
-				 'mac': mac,
-				 'time': conf.UNAUTHORIZED_CLIENT_TIMEOUT,
-				})
-				self._stats_lock.acquire()
-				self._ignored_addresses.append([mac, conf.UNAUTHORIZED_CLIENT_TIMEOUT])
-				self._stats_lock.release()
+			try:
+				result = self._sql_broker.lookupMAC(mac)
+				if result:
+					offer = pydhcplib.dhcp_packet.DhcpPacket()
+					offer.CreateDhcpOfferPacketFrom(packet)
+					
+					offer.SetOption('server_identifier', [int(i) for i in self._server_address.split('.')])
+					self._loadDHCPPacket(offer, result)
+					conf.loadDHCPPacket(offer, [int(i) for i in result[0].split('.')], packet.GetGiaddr())
+					
+					self.SendDhcpPacket(offer)
+					src.logging.writeLog('DHCPOFFER sent to %(mac)s' % {
+					 'mac': mac,
+					})
+				else:
+					src.logging.writeLog('%(mac)s unknown; ignoring for %(time)i seconds' % {
+					 'mac': mac,
+					 'time': conf.UNAUTHORIZED_CLIENT_TIMEOUT,
+					})
+					self._stats_lock.acquire()
+					self._ignored_addresses.append([mac, conf.UNAUTHORIZED_CLIENT_TIMEOUT])
+					self._stats_lock.release()
+			except Exception, e:
+				_sendErrorReport('Unable to respond to %(mac)s' % {'mac': mac,}, e)
 		else:
 			self._logDiscardedPacket()
 		self._logTimeTaken(time.time() - start_time)
@@ -127,11 +202,35 @@ class DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 				 'mac': mac,
 				})
 				if s_sid == self._server_address: #Chosen!
+					try:
+						result = self._sql_broker.lookupMAC(mac)
+						if not ip or (result and result[0] == s_ip):
+							packet.TransformToDhcpAckPacket()
+							self._loadDHCPPacket(packet, result)
+							conf.loadDHCPPacket(packet, result[0], packet.GetGiaddr())
+							
+							src.logging.writeLog('DHCPACK sent to %(mac)s' % {
+							 'mac': mac,
+							})
+						else:
+							packet.TransformToDhcpNackPacket()
+							src.logging.writeLog('DHCPNAK sent to %(mac)s' % {
+							 'mac': mac,
+							})
+						self.SendDhcpPacket(packet)
+					except Exception, e:
+						_sendErrorReport('Unable to respond to %(mac)s' % {'mac': mac,}, e)
+			elif sid == [0,0,0,0] and ciaddr == [0,0,0,0] and ip:
+				#INIT-REBOOT
+				src.logging.writeLog('DHCPREQUEST:INIT-REBOOT received from %(mac)s' % {
+				 'mac': mac,
+				})
+				try:
 					result = self._sql_broker.lookupMAC(mac)
-					if not ip or (result and result[0] == s_ip):
+					if result and result[0] == s_ip:
 						packet.TransformToDhcpAckPacket()
 						self._loadDHCPPacket(packet, result)
-						conf.loadDHCPPacket(packet, result[0], packet.GetGiaddr())
+						conf.loadDHCPPacket(packet, ip, packet.GetGiaddr())
 						
 						src.logging.writeLog('DHCPACK sent to %(mac)s' % {
 						 'mac': mac,
@@ -142,26 +241,8 @@ class DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 						 'mac': mac,
 						})
 					self.SendDhcpPacket(packet)
-			elif sid == [0,0,0,0] and ciaddr == [0,0,0,0] and ip:
-				#INIT-REBOOT
-				src.logging.writeLog('DHCPREQUEST:INIT-REBOOT received from %(mac)s' % {
-				 'mac': mac,
-				})
-				result = self._sql_broker.lookupMAC(mac)
-				if result and result[0] == s_ip:
-					packet.TransformToDhcpAckPacket()
-					self._loadDHCPPacket(packet, result)
-					conf.loadDHCPPacket(packet, ip, packet.GetGiaddr())
-					
-					src.logging.writeLog('DHCPACK sent to %(mac)s' % {
-					 'mac': mac,
-					})
-				else:
-					packet.TransformToDhcpNackPacket()
-					src.logging.writeLog('DHCPNAK sent to %(mac)s' % {
-					 'mac': mac,
-					})
-				self.SendDhcpPacket(packet)
+				except Exception, e:
+					_sendErrorReport('Unable to respond to %(mac)s' % {'mac': mac,}, e)
 			elif sid == [0,0,0,0] and ciaddr != [0,0,0,0] and not ip:
 				if conf.NAK_RENEWALS:
 					packet.TransformToDhcpNackPacket()
@@ -184,22 +265,25 @@ class DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 						 'mac': mac,
 						})
 						if conf.ALLOW_DHCP_RENEW:
-							result = self._sql_broker.lookupMAC(mac)
-							if result and result[0] == s_ciaddr:
-								packet.TransformToDhcpAckPacket()
-								packet.SetOption('yiaddr', ciaddr)
-								self._loadDHCPPacket(packet, result)
-								conf.loadDHCPPacket(packet, ciaddr, packet.GetGiaddr())
-								
-								src.logging.writeLog('DHCPACK sent to %(mac)s' % {
-								 'mac': mac,
-								})
-							else:
-								packet.TransformToDhcpNackPacket()
-								src.logging.writeLog('DHCPNAK sent to %(mac)s' % {
-								 'mac': mac,
-								})
-							self.SendDhcpPacket(packet, s_ciaddr)
+							try:
+								result = self._sql_broker.lookupMAC(mac)
+								if result and result[0] == s_ciaddr:
+									packet.TransformToDhcpAckPacket()
+									packet.SetOption('yiaddr', ciaddr)
+									self._loadDHCPPacket(packet, result)
+									conf.loadDHCPPacket(packet, ciaddr, packet.GetGiaddr())
+									
+									src.logging.writeLog('DHCPACK sent to %(mac)s' % {
+									 'mac': mac,
+									})
+								else:
+									packet.TransformToDhcpNackPacket()
+									src.logging.writeLog('DHCPNAK sent to %(mac)s' % {
+									 'mac': mac,
+									})
+								self.SendDhcpPacket(packet, s_ciaddr)
+							except Exception, e:
+								_sendErrorReport('Unable to respond to %(mac)s' % {'mac': mac,}, e)
 						else:
 							src.logging.writeLog('Requiring %(mac)s to initiate DISCOVER' % {
 							 'mac': mac,
@@ -208,13 +292,7 @@ class DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 				src.logging.writeLog('DHCPREQUEST:UNKNOWN received from %(mac)s' % {
 				 'mac': mac,
 				})
-				self._stats_lock.acquire()
-				self._ignored_addresses.append([mac, conf.UNAUTHORIZED_CLIENT_TIMEOUT])
-				self._stats_lock.release()
-				src.logging.writeLog('Ignoring %(mac)s for %(time)i seconds' % {
-				 'mac': mac,
-				 'time': conf.UNAUTHORIZED_CLIENT_TIMEOUT,
-				})
+				self._logDiscardedPackets()
 		else:
 			self._logDiscardedPacket()
 		self._logTimeTaken(time.time() - start_time)

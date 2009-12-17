@@ -1,22 +1,31 @@
-# pydhcplib
-# Copyright (C) 2008 Mathieu Ignacio -- mignacio@april.org
-#
-# This file is part of pydhcplib.
-# Pydhcplib is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <http://www.gnu.org/licenses/>.
+# -*- encoding: utf-8 -*-
+"""
+pydhcplib module: type_strlist
 
-class strlist :
-    def __init__(self,data="") :
+Purpose
+=======
+ Defines the pydhcplib-specific strlist type.
+ 
+Legal
+=====
+ This file is part of pydhcplib.
+ pydhcplib is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 3 of the License, or
+ (at your option) any later version.
+
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License
+ along with this program. If not, see <http://www.gnu.org/licenses/>.
+ 
+ (C) Mathieu Ignacia, 2008 <mignacio@april.org>
+"""
+class strlist(object):
+    def __init__(self, data=""):
         str_type = type(data)
         self._str = ""
         self._list = []
@@ -25,10 +34,10 @@ class strlist :
             self._str = data
             for each in range(len(self._str)) :
                 self._list.append(ord(self._str[each]))
-        elif str_type == list :
+        elif str_type in (list, tuple):
             self._list = data
-            self._str = "".join(map(chr,self._list))
-        else : raise TypeError , 'strlist init : Valid types are str and  list of int'
+            self._str = "".join(map(chr, self._list))
+        else : raise TypeError , 'strlist init : Valid types are str and list of int'
 
     # return string
     def str(self) :
@@ -42,11 +51,7 @@ class strlist :
     # FIXME
     def int(self) :
         return 0
-
-
-
-    """ Useful function for native python operations """
-
+        
     def __hash__(self) :
         return self._str.__hash__()
 

@@ -1,3 +1,29 @@
+# -*- encoding: utf-8 -*-
+"""
+staticDHCPd module: src.web
+
+Purpose
+=======
+ Provides a web interface for viewing and interacting with a staticDHCPd server.
+ 
+Legal
+=====
+ This file is part of staticDHCPd.
+ staticDHCPd is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 3 of the License, or
+ (at your option) any later version.
+
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License
+ along with this program. If not, see <http://www.gnu.org/licenses/>.
+ 
+ (C) Neil Tallim, 2009
+"""
 import BaseHTTPServer
 import cgi
 import hashlib
@@ -20,7 +46,8 @@ class WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
 			self.send_header('Last-modified', time.strftime('%a, %d %b %Y %H:%M:%S %Z'))
 			self.end_headers()
 			
-			self.wfile.write('<html><head><title>staticDHCPd log</title></head><body><div style="width: 950px; margin-left: auto; margin-right: auto; border: 1px solid black;">')
+			self.wfile.write('<html><head><title>staticDHCPd log</title></head><body>')
+			self.wfile.write('<div style="width: 950px; margin-left: auto; margin-right: auto; border: 1px solid black;">')
 			
 			self.wfile.write('<div>Statistics:<div style="text-size: 0.9em; margin-left: 20px;">')
 			for (timestamp, packets, discarded, time_taken, ignored_macs) in src.logging.readPollRecords():
@@ -45,17 +72,20 @@ class WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
 				})
 			self.wfile.write("</div></div><br/>")
 			
-			self.wfile.write('<div style="text-align: center;"><small>Summary generated %(time)s</small>' % {
+			self.wfile.write('<div style="text-align: center;">')
+			self.wfile.write('<small>Summary generated %(time)s</small><br/>' % {
 			 'time': time.asctime(),
 			})
-			self.wfile.write('<br/><small>PID: %(pid)i | Server: %(server)s:%(port)i</small>' % {
+			self.wfile.write('<small>PID: %(pid)i | Server: %(server)s:%(port)i</small><br/>' % {
 			 'pid': os.getpid(),
 			 'server': conf.DHCP_SERVER_IP,
 			 'port': conf.DHCP_SERVER_PORT,
 			})
-			self.wfile.write('<br/><form action="/" method="post"><div>')
-			self.wfile.write('<label for="key">Key: </label><input type="password" name="key" id="key"/><input type="submit" value="Reload configuration"/>')
-			self.wfile.write('</div></form></div>')
+			self.wfile.write('<form action="/" method="post"><div>')
+			self.wfile.write('<label for="key">Key: </label><input type="password" name="key" id="key"/>')
+			self.wfile.write('<input type="submit" value="Reload configuration"/>')
+			self.wfile.write('</div></form>')
+			self.wfile.write('</div>')
 			
 			self.wfile.write("</div></body></html>")
 			

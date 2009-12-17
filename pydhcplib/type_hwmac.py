@@ -1,25 +1,33 @@
-# pydhcplib
-# Copyright (C) 2008 Mathieu Ignacio -- mignacio@april.org
-#
-# This file is part of pydhcplib.
-# Pydhcplib is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <http://www.gnu.org/licenses/>.
+# -*- encoding: utf-8 -*-
+"""
+pydhcplib module: type_hwmac
 
+Purpose
+=======
+ Defines the pydhcplib-specific hwmac type.
+ 
+Legal
+=====
+ This file is part of pydhcplib.
+ pydhcplib is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 3 of the License, or
+ (at your option) any later version.
 
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License
+ along with this program. If not, see <http://www.gnu.org/licenses/>.
+ 
+ (C) Mathieu Ignacia, 2008 <mignacio@april.org>
+"""
 from binascii import unhexlify,hexlify
 
 # Check and convert hardware/nic/mac address type
-class hwmac:
+class hwmac(object):
     def __init__(self,value="00:00:00:00:00:00") :
         self._hw_numlist = []
         self._hw_string = ""
