@@ -14,21 +14,17 @@ POLL_INTERVALS_TO_TRACK = 20 #The amount of stats to keep track of.
 #####
 #Changes take effect on restart
 #######################################
-UID = 502 #The UID that will run this daemon.
-GID = 99 #The GID that will run this daemon.
+UID = 999 #The UID that will run this daemon.
+GID = 999 #The GID that will run this daemon.
 PID_FILE = '/var/run/' + SYSTEM_NAME + '.pid' #The file to which PID information should be written.
 
-DHCP_SERVER_IP = '192.168.1.2' #The IP of the interface on which DHCP responses should be sent.
+DHCP_SERVER_IP = '192.168.1.100' #The IP of the interface on which DHCP responses should be sent.
 DHCP_SERVER_PORT = 67 #The port on which DHCP requests are to be received; 67 is the standard.
 DHCP_CLIENT_PORT = 68 #The port on which clients wait for DHCP responses; 68 is the standard.
-UNAUTHORIZED_CLIENT_TIMEOUT = 60 #The number of seconds for which to ignore unknown MACs.
-MISBEHAVING_CLIENT_TIMEOUT = 300 #The number of seconds for which to ignore potentially malicious
-#MACs.
 
 WEB_ENABLED = True #True to enable access to server statistics and logs.
-WEB_IP = '192.168.1.2' #The IP of the interface on which the HTTP interface should be served.
+WEB_IP = '192.168.1.100' #The IP of the interface on which the HTTP interface should be served.
 WEB_PORT = 30880 #The port on which the HTTP interface should be served.
-WEB_RELOAD_KEY = '5f4dcc3b5aa765d61d8327deb882cf99' #MD5 hash of the password needed to reload config.
 
 #Server behaviour settings
 #####
@@ -37,12 +33,19 @@ WEB_RELOAD_KEY = '5f4dcc3b5aa765d61d8327deb882cf99' #MD5 hash of the password ne
 ALLOW_DHCP_RELAYS = True #If False, relayed DHCP requests will be ignored.
 ALLOWED_DHCP_RELAYS = () #A list of all IPs allowed to relay requests; if empty, all are allowed.
 #(End with trailing comma)
+
 ALLOW_DHCP_RENEW = False #If True, DHCP clients may renew their "lease" before it expires.
 #Since there are no leases, this setting makes no real difference.
 NAK_RENEWALS = True #If True, REBIND and RENEW requests are NAKed when received, forcing clients to
 #either wait out their lease or return to the DISCOVER phase.
+
+UNAUTHORIZED_CLIENT_TIMEOUT = 60 #The number of seconds for which to ignore unknown MACs.
+MISBEHAVING_CLIENT_TIMEOUT = 300 #The number of seconds for which to ignore potentially malicious
+#MACs.
 SUSPEND_THRESHOLD = 8 #The number of times a well-behaved MAC can search for or request an IP
 #within the polling interval.
+
+WEB_RELOAD_KEY = '5f4dcc3b5aa765d61d8327deb882cf99' #MD5 hash of the password needed to reload config.
 
 #Database settings
 #####
@@ -73,17 +76,23 @@ EMAIL_PASSWORD = 'password' #The password of the user who should authenticate to
 #####
 #Changes take effect on reload
 #######################################
-#PLACE REQUIRED MODULES BELOW THIS LINE
-import pydhcplib.type_strlist
-#PLACE REQUIRED MODULES ABOVE THIS LINE
+#IMPORT REQUIRED MODULES BELOW THIS LINE
 
-def loadDHCPPacket(packet, client_ip, relay_ip):
+#IMPORT REQUIRED MODULES ABOVE THIS LINE
+
+def loadDHCPPacket(packet, mac, client_ip, relay_ip):
+	#This is a custom function, called before each packet is sent, that
+	#allows you to tweak the options attached to a DHCP response.
+	#
+	#If, for any reason, you want to abort sending the packet, return False.
+	#
 	#If you do not need an option, just comment it out.
 	#
 	#If you need to add an option, consult pyDHCPlib's documentation.
 	#
+	#mac is a human-readable MAC string, lower-case, separated by colons.
 	#client_ip is a quadruple of octets.
 	#relay_ip is either None or an address as a quadruple of octets,
 	#	depending on whether this is a response to a relay request.
-	pass
+	return True
 	

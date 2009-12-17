@@ -80,8 +80,16 @@ Exception traceback:
 		 message.as_string()
 		)
 		smtp_server.close()
+		
+		src.logging.writeLog("E-mail about '%(error)s' sent to %(destination)s" % {
+		 'error': exception,
+		 'destination': conf.EMAIL_DESTINATION,
+		})
 	except Exception, e:
-		sys.stderr.write(str(e))
+		src.logging.writeLog("Unable to send e-mail about '%(e)s': %(error)s" % {
+		 'e': e,
+		 'error': exception,
+		})
 		
 def longToQuad(l):
 	q = [l % 256]
@@ -159,12 +167,16 @@ class DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 					
 					offer.SetOption('server_identifier', [int(i) for i in self._server_address.split('.')])
 					self._loadDHCPPacket(offer, result)
-					conf.loadDHCPPacket(offer, [int(i) for i in result[0].split('.')], packet.GetGiaddr())
-					
-					self.SendDhcpPacket(offer)
-					src.logging.writeLog('DHCPOFFER sent to %(mac)s' % {
-					 'mac': mac,
-					})
+					if conf.loadDHCPPacket(offer, mac, [int(i) for i in result[0].split('.')], packet.GetGiaddr()):
+						src.logging.writeLog('DHCPOFFER sent to %(mac)s' % {
+						 'mac': mac,
+						})
+						self.SendDhcpPacket(offer)
+					else:
+						src.logging.writeLog('Ignoring %(mac)s per loadDHCPPacket()' % {
+						 'mac': mac,
+						})
+						self._logDiscardedPacket()
 				else:
 					src.logging.writeLog('%(mac)s unknown; ignoring for %(time)i seconds' % {
 					 'mac': mac,
@@ -207,17 +219,22 @@ class DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 						if not ip or (result and result[0] == s_ip):
 							packet.TransformToDhcpAckPacket()
 							self._loadDHCPPacket(packet, result)
-							conf.loadDHCPPacket(packet, result[0], packet.GetGiaddr())
-							
-							src.logging.writeLog('DHCPACK sent to %(mac)s' % {
-							 'mac': mac,
-							})
+							if conf.loadDHCPPacket(packet, mac, result[0], packet.GetGiaddr()):
+								src.logging.writeLog('DHCPACK sent to %(mac)s' % {
+								 'mac': mac,
+								})
+								self.SendDhcpPacket(packet)
+							else:
+								src.logging.writeLog('Ignoring %(mac)s per loadDHCPPacket()' % {
+								 'mac': mac,
+								})
+								self._logDiscardedPacket()
 						else:
 							packet.TransformToDhcpNackPacket()
 							src.logging.writeLog('DHCPNAK sent to %(mac)s' % {
 							 'mac': mac,
 							})
-						self.SendDhcpPacket(packet)
+							self.SendDhcpPacket(packet)
 					except Exception, e:
 						_sendErrorReport('Unable to respond to %(mac)s' % {'mac': mac,}, e)
 			elif sid == [0,0,0,0] and ciaddr == [0,0,0,0] and ip:
@@ -230,17 +247,22 @@ class DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 					if result and result[0] == s_ip:
 						packet.TransformToDhcpAckPacket()
 						self._loadDHCPPacket(packet, result)
-						conf.loadDHCPPacket(packet, ip, packet.GetGiaddr())
-						
-						src.logging.writeLog('DHCPACK sent to %(mac)s' % {
-						 'mac': mac,
-						})
+						if conf.loadDHCPPacket(packet, mac, ip, packet.GetGiaddr()):
+							src.logging.writeLog('DHCPACK sent to %(mac)s' % {
+							 'mac': mac,
+							})
+							self.SendDhcpPacket(packet)
+						else:
+							src.logging.writeLog('Ignoring %(mac)s per loadDHCPPacket()' % {
+							 'mac': mac,
+							})
+							self._logDiscardedPacket()
 					else:
 						packet.TransformToDhcpNackPacket()
 						src.logging.writeLog('DHCPNAK sent to %(mac)s' % {
 						 'mac': mac,
 						})
-					self.SendDhcpPacket(packet)
+						self.SendDhcpPacket(packet)
 				except Exception, e:
 					_sendErrorReport('Unable to respond to %(mac)s' % {'mac': mac,}, e)
 			elif sid == [0,0,0,0] and ciaddr != [0,0,0,0] and not ip:
@@ -271,17 +293,22 @@ class DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 									packet.TransformToDhcpAckPacket()
 									packet.SetOption('yiaddr', ciaddr)
 									self._loadDHCPPacket(packet, result)
-									conf.loadDHCPPacket(packet, ciaddr, packet.GetGiaddr())
-									
-									src.logging.writeLog('DHCPACK sent to %(mac)s' % {
-									 'mac': mac,
-									})
+									if conf.loadDHCPPacket(packet, mac, ciaddr, packet.GetGiaddr()):
+										src.logging.writeLog('DHCPACK sent to %(mac)s' % {
+										 'mac': mac,
+										})
+										self.SendDhcpPacket(packet, s_ciaddr)
+									else:
+										src.logging.writeLog('Ignoring %(mac)s per loadDHCPPacket()' % {
+										 'mac': mac,
+										})
+										self._logDiscardedPacket()
 								else:
 									packet.TransformToDhcpNackPacket()
 									src.logging.writeLog('DHCPNAK sent to %(mac)s' % {
 									 'mac': mac,
 									})
-								self.SendDhcpPacket(packet, s_ciaddr)
+									self.SendDhcpPacket(packet, s_ciaddr)
 							except Exception, e:
 								_sendErrorReport('Unable to respond to %(mac)s' % {'mac': mac,}, e)
 						else:
