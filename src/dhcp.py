@@ -158,8 +158,14 @@ class DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 			s_sid = '.'.join(map(str, sid))
 			s_ciaddr = '.'.join(map(str, ciaddr))
 			
-			if sid != [0,0,0,0] and ciaddr == [0,0,0,0]:
-				#SELECTING
+			if not ip or ip == [0,0,0,0]:
+				ip = None
+			if not sid or sid == [0,0,0,0]:
+				sid = None
+			if not ciaddr or ciaddr == [0,0,0,0]:
+				ciaddr = None
+				
+			if sid and not ciaddr: #SELECTING
 				src.logging.writeLog('DHCPREQUEST:SELECTING(%(ip)s) received from %(mac)s' % {
 				 'ip': s_ip,
 				 'mac': mac,
@@ -188,8 +194,7 @@ class DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 							self.SendDhcpPacket(packet, source_address)
 					except Exception, e:
 						src.logging.sendErrorReport('Unable to respond to %(mac)s' % {'mac': mac,}, e)
-			elif sid == [0,0,0,0] and ciaddr == [0,0,0,0] and ip:
-				#INIT-REBOOT
+			elif not sid and not ciaddr and ip: #INIT-REBOOT
 				src.logging.writeLog('DHCPREQUEST:INIT-REBOOT received from %(mac)s' % {
 				 'mac': mac,
 				})
@@ -216,59 +221,46 @@ class DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 						self.SendDhcpPacket(packet, source_address)
 				except Exception, e:
 					src.logging.sendErrorReport('Unable to respond to %(mac)s' % {'mac': mac,}, e)
-			elif sid == [0,0,0,0] and ciaddr != [0,0,0,0] and not ip:
+			elif not sid and ciaddr and not ip: #REBINDING or RENEWING
 				if conf.NAK_RENEWALS:
 					packet.TransformToDhcpNackPacket()
-					src.logging.writeLog('DHCPNAK sent to %(mac)s per NAK_RENEWALS setting' % {
+					src.logging.writeLog('DHCPNAK sent to %(mac)s per NAK_RENEWALS' % {
 					 'mac': mac,
 					})
 					self.SendDhcpPacket(packet, source_address)
 				else:
-					if packet.GetOption("ciaddr") == [255,255,255,255]:
-						#REBINDING
-						src.logging.writeLog('DHCPREQUEST:REBIND received from %(mac)s' % {
-						 'mac': mac,
-						})
-						src.logging.writeLog('Requiring %(mac)s to initiate DISCOVER' % {
-						 'mac': mac,
-						})
-					else:
-						#RENEWING
-						src.logging.writeLog('DHCPREQUEST:RENEW received from %(mac)s' % {
-						 'mac': mac,
-						})
-						if conf.ALLOW_DHCP_RENEW:
-							try:
-								result = self._sql_broker.lookupMAC(mac)
-								if result and result[0] == s_ciaddr:
-									packet.TransformToDhcpAckPacket()
-									packet.SetOption('yiaddr', ciaddr)
-									self._loadDHCPPacket(packet, result)
-									if conf.loadDHCPPacket(packet, mac, tuple(ciaddr), tuple(packet.GetGiaddr())):
-										src.logging.writeLog('DHCPACK sent to %(mac)s' % {
-										 'mac': mac,
-										})
-										self.SendDhcpPacket(packet, ('.'.join(map(str, ciaddr)), 0))
-									else:
-										src.logging.writeLog('Ignoring %(mac)s per loadDHCPPacket()' % {
-										 'mac': mac,
-										})
-										self._logDiscardedPacket()
-								else:
-									packet.TransformToDhcpNackPacket()
-									src.logging.writeLog('DHCPNAK sent to %(mac)s' % {
-									 'mac': mac,
-									})
-									self.SendDhcpPacket(packet, source_address)
-							except Exception, e:
-								src.logging.sendErrorReport('Unable to respond to %(mac)s' % {'mac': mac,}, e)
+					src.logging.writeLog('DHCPREQUEST:RENEW received from %(mac)s' % {
+					 'mac': mac,
+					})
+					try:
+						result = self._sql_broker.lookupMAC(mac)
+						if result and result[0] == s_ciaddr:
+							packet.TransformToDhcpAckPacket()
+							packet.SetOption('yiaddr', ciaddr)
+							self._loadDHCPPacket(packet, result)
+							if conf.loadDHCPPacket(packet, mac, tuple(ciaddr), tuple(packet.GetGiaddr())):
+								src.logging.writeLog('DHCPACK sent to %(mac)s' % {
+								 'mac': mac,
+								})
+								self.SendDhcpPacket(packet, (s_ciaddr, 0))
+							else:
+								src.logging.writeLog('Ignoring %(mac)s per loadDHCPPacket()' % {
+								 'mac': mac,
+								})
+								self._logDiscardedPacket()
 						else:
-							src.logging.writeLog('Requiring %(mac)s to initiate DISCOVER' % {
+							packet.TransformToDhcpNackPacket()
+							src.logging.writeLog('DHCPNAK sent to %(mac)s' % {
 							 'mac': mac,
 							})
+							self.SendDhcpPacket(packet, (s_ciaddr, 0))
+					except Exception, e:
+						_sendErrorReport('Unable to respond to %(mac)s' % {'mac': mac,}, e)
 			else:
-				print sid, ciaddr, ip
-				src.logging.writeLog('DHCPREQUEST:UNKNOWN received from %(mac)s' % {
+				src.logging.writeLog('DHCPREQUEST:UNKNOWN (%(sid)s %(ciaddr)s %(ip)s) received from %(mac)s' % {
+				 'sid': str(sid),
+				 'ciaddr': str(ciaddr),
+				 'ip': str(ip),
 				 'mac': mac,
 				})
 				self._logDiscardedPacket()
@@ -299,28 +291,19 @@ class DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 				dns_list += [int(i) for i in dns.strip().split('.')]
 			packet.SetOption('domain_name_server', dns_list)
 			
-	def SendDhcpPacket(self, packet, source_address):
-		if source_address[0] not in ('255.255.255.255', '0.0.0.0', ''):
+	def SendDhcpPacket(self, packet, address):
+		if address[0] not in ('255.255.255.255', '0.0.0.0', ''):
 			port = destination_ip = None
 			giaddr = packet.GetGiaddr()
-			if not giaddr == [0,0,0,0]:
+			if giaddr and not giaddr == [0,0,0,0]: #Relayed request.
 				port = conf.DHCP_SERVER_PORT
 				destination_ip = '.'.join(map(str, giaddr))
-			else:
+			else: #Request directly from client, routed or otherwise.
 				port = conf.DHCP_CLIENT_PORT
-				destinaton_ip = source_address[0]
-			bytes = self.SendDhcpPacketTo(packet, destination_ip, port)
-			src.logging.writeLog('%(bytes)i-byte packet sent to client at %(ip)s' % {
-			 'bytes': bytes,
-			 'ip': destination_ip,
-			})
-			return bytes
-		else:
-			bytes = self.SendDhcpPacketTo(packet, '255.255.255.255')
-			src.logging.writeLog('%(bytes)i-byte packet sent to broadcast address' % {
-			 'bytes': bytes,
-			})
-			return bytes
+				destinaton_ip = address[0]
+			return self.SendDhcpPacketTo(packet, destination_ip, port)
+		else: #Local subnet.
+			return self.SendDhcpPacketTo(packet, '255.255.255.255')
 			
 	def GetNextDhcpPacket(self):
 		if pydhcplib.dhcp_network.DhcpNetwork.GetNextDhcpPacket(self):

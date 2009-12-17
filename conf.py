@@ -35,8 +35,6 @@ ALLOW_DHCP_RELAYS = False #If False, relayed DHCP requests will be ignored.
 ALLOWED_DHCP_RELAYS = () #A list of all IPs allowed to relay requests; if empty, all are allowed.
 #(End with trailing comma)
 
-ALLOW_DHCP_RENEW = False #If True, DHCP clients may renew their "lease" before it expires.
-#Since there are no leases, this setting makes no real difference.
 NAK_RENEWALS = True #If True, REBIND and RENEW requests are NAKed when received, forcing clients to
 #either wait out their lease or return to the DISCOVER phase.
 
