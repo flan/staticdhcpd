@@ -30,7 +30,8 @@ WEB_PORT = 30880 #The port on which the HTTP interface should be served.
 #####
 #Changes take effect on reload
 #######################################
-ALLOW_DHCP_RELAYS = True #If False, relayed DHCP requests will be ignored.
+ALLOW_LOCAL_DHCP = True #: If False, local DHCP requests will be ignored.
+ALLOW_DHCP_RELAYS = False #If False, relayed DHCP requests will be ignored.
 ALLOWED_DHCP_RELAYS = () #A list of all IPs allowed to relay requests; if empty, all are allowed.
 #(End with trailing comma)
 

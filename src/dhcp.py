@@ -144,6 +144,8 @@ class DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 				 'ip': '.'.join(map(str, giaddr)),
 				})
 				return False
+		elif not conf.ALLOW_LOCAL_DHCP: #Local request, but denied.
+			return False
 		return True
 		
 	def HandleDhcpDiscover(self, packet):
