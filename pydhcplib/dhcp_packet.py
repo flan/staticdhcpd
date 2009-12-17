@@ -38,7 +38,7 @@ class DhcpPacket(DhcpBasicPacket):
 	def str(self):
 		# Process headers
 		printable_data = "# Header fields\n"
-		op = self.packet_data[DhcpFields['op'][0]:DhcpFields['op'][0]+DhcpFields['op'][1]]
+		op = self.packet_data[DhcpFields['op'][0]:DhcpFields['op'][0] + DhcpFields['op'][1]]
 		printable_data += "op : " + DhcpFieldsName['op'][str(op[0])] + "\n"
 		
 		for opt in (
@@ -193,7 +193,7 @@ class DhcpPacket(DhcpBasicPacket):
 				return False
 		elif option_type == "ipv4+":
 			# this is multiple ip address
-			binary_value = opt[ipv4(single).list() for single in value.split(",")]
+			binary_value = [ipv4(single).list() for single in value.split(",")]
 		elif option_type == "32-bits" :
 			# This is probably a number...
 			try:

@@ -118,7 +118,12 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 					
 					offer.SetOption('server_identifier', [int(i) for i in self._server_address.split('.')])
 					self.LoadDHCPPacket(offer, result)
-					if conf.loadDHCPPacket(offer, mac, tuple([int(i) for i in result[0].split('.')]), tuple(packet.GetGiaddr())):
+					giaddr = packet.GetGiaddr()
+					if not giaddr or giaddr == [0,0,0,0]:
+						giaddr = None
+					else:
+						giaddr = tuple(giaddr)
+					if conf.loadDHCPPacket(offer, mac, tuple([int(i) for i in result[0].split('.')]), giaddr):
 						src.logging.writeLog('DHCPOFFER sent to %(mac)s' % {
 						 'mac': mac,
 						})
@@ -169,6 +174,8 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 				ciaddr = None
 			if not giaddr or giaddr == [0,0,0,0]:
 				giaddr = None
+			else:
+				giaddr = tuple(giaddr)
 				
 			if sid and not ciaddr: #SELECTING
 				src.logging.writeLog('DHCPREQUEST:SELECTING(%(ip)s) received from %(mac)s' % {
@@ -181,7 +188,7 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 						if not ip or (result and result[0] == s_ip):
 							packet.TransformToDhcpAckPacket()
 							self.LoadDHCPPacket(packet, result)
-							if conf.loadDHCPPacket(packet, mac, tuple(result[0]), tuple(giaddr)):
+							if conf.loadDHCPPacket(packet, mac, tuple(result[0]), giaddr):
 								src.logging.writeLog('DHCPACK sent to %(mac)s' % {
 								 'mac': mac,
 								})
@@ -208,7 +215,7 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 					if result and result[0] == s_ip:
 						packet.TransformToDhcpAckPacket()
 						self.LoadDHCPPacket(packet, result)
-						if conf.loadDHCPPacket(packet, mac, tuple(ip), tuple(giaddr)):
+						if conf.loadDHCPPacket(packet, mac, tuple(ip), giaddr):
 							src.logging.writeLog('DHCPACK sent to %(mac)s' % {
 							 'mac': mac,
 							})
@@ -243,7 +250,7 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 							packet.TransformToDhcpAckPacket()
 							packet.SetOption('yiaddr', ciaddr)
 							self.LoadDHCPPacket(packet, result)
-							if conf.loadDHCPPacket(packet, mac, tuple(ciaddr), tuple(giaddr)):
+							if conf.loadDHCPPacket(packet, mac, tuple(ciaddr), giaddr):
 								src.logging.writeLog('DHCPACK sent to %(mac)s' % {
 								 'mac': mac,
 								})
@@ -297,7 +304,7 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 			packet.SetOption('domain_name_server', dns_list)
 			
 	def SendDhcpPacket(self, packet, address):
-		if address[0] not in ('255.255.255.255', '0.0.0.0', ''):
+		if address[0] not in ('255.255.255.255', '0.0.0.0', ''): #Unicast.
 			port = destination_ip = None
 			giaddr = packet.GetGiaddr()
 			if giaddr and not giaddr == [0,0,0,0]: #Relayed request.
@@ -305,9 +312,9 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 				destination_ip = '.'.join(map(str, giaddr))
 			else: #Request directly from client, routed or otherwise.
 				port = conf.DHCP_CLIENT_PORT
-				destinaton_ip = address[0]
+				destination_ip = address[0]
 			return self.SendDhcpPacketTo(packet, destination_ip, port)
-		else: #Local subnet.
+		else: #Broadcast.
 			return self.SendDhcpPacketTo(packet, '255.255.255.255')
 			
 	def GetNextDhcpPacket(self):

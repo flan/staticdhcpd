@@ -123,27 +123,26 @@ class DhcpBasicPacket(object):
 			option.append(len(options_each))
 			option += options_each
 			
-		options = [order[i] for i in sorted(order.keys())]
-		
+		options = []
+		for key in sorted(order.keys()):
+			options += order[key]
+			
 		packet = self.packet_data[:240] + options
 		packet.append(255) # add end option
 		pack_fmt = str(len(packet)) + "c"
-		
 		packet = map(chr, packet)
 		
 		return pack(pack_fmt, *packet)
 		
 	# Insert packet in the object
 	def DecodePacket(self, data, debug=False):
-		self.packet_data = []
-		self.options_data = {}
-		
 		if not data:
 			return False
 			
 		# we transform all data to int list
 		unpack_fmt = str(len(data)) + "c"
-		self._packet_data = [ord(i) for i in unpack(unpack_fmt,data)]
+		self.packet_data = [ord(i) for i in unpack(unpack_fmt, data)]
+		self.options_data = {}
 		
 		# Some servers or clients don't place magic cookie immediately
 		# after headers and begin options fields only after magic.
@@ -159,7 +158,7 @@ class DhcpBasicPacket(object):
 			if self.packet_data[iterator] == 0: # pad option
 				opt_first = iterator + 1
 				iterator += 1
-			elif self.packet_data[iterator] == 255 :
+			elif self.packet_data[iterator] == 255:
 				self.packet_data = self.packet_data[:240] # base packet length without magic cookie
 				return
 			elif DhcpOptionsTypes.has_key(self.packet_data[iterator]) and not self.packet_data[iterator] == 255:
