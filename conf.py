@@ -41,9 +41,9 @@ NAK_RENEWALS = True #If True, REBIND and RENEW requests are NAKed when received,
 #either wait out their lease or return to the DISCOVER phase.
 
 UNAUTHORIZED_CLIENT_TIMEOUT = 60 #The number of seconds for which to ignore unknown MACs.
-MISBEHAVING_CLIENT_TIMEOUT = 300 #The number of seconds for which to ignore potentially malicious
+MISBEHAVING_CLIENT_TIMEOUT = 150 #The number of seconds for which to ignore potentially malicious
 #MACs.
-SUSPEND_THRESHOLD = 8 #The number of times a well-behaved MAC can search for or request an IP
+SUSPEND_THRESHOLD = 10 #The number of times a well-behaved MAC can search for or request an IP
 #within the polling interval.
 
 WEB_RELOAD_KEY = '5f4dcc3b5aa765d61d8327deb882cf99' #MD5 hash of the password needed to reload config.
