@@ -169,7 +169,7 @@ class DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 					
 					offer.SetOption('server_identifier', [int(i) for i in self._server_address.split('.')])
 					self._loadDHCPPacket(offer, result)
-					if conf.loadDHCPPacket(offer, mac, [int(i) for i in result[0].split('.')], packet.GetGiaddr()):
+					if conf.loadDHCPPacket(offer, mac, tuple([int(i) for i in result[0].split('.')]), tuple(packet.GetGiaddr())):
 						src.logging.writeLog('DHCPOFFER sent to %(mac)s' % {
 						 'mac': mac,
 						})
@@ -221,7 +221,7 @@ class DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 						if not ip or (result and result[0] == s_ip):
 							packet.TransformToDhcpAckPacket()
 							self._loadDHCPPacket(packet, result)
-							if conf.loadDHCPPacket(packet, mac, result[0], packet.GetGiaddr()):
+							if conf.loadDHCPPacket(packet, mac, tuple(result[0]), tuple(packet.GetGiaddr())):
 								src.logging.writeLog('DHCPACK sent to %(mac)s' % {
 								 'mac': mac,
 								})
@@ -249,7 +249,7 @@ class DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 					if result and result[0] == s_ip:
 						packet.TransformToDhcpAckPacket()
 						self._loadDHCPPacket(packet, result)
-						if conf.loadDHCPPacket(packet, mac, ip, packet.GetGiaddr()):
+						if conf.loadDHCPPacket(packet, mac, tuple(ip), tuple(packet.GetGiaddr())):
 							src.logging.writeLog('DHCPACK sent to %(mac)s' % {
 							 'mac': mac,
 							})
@@ -295,7 +295,7 @@ class DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 									packet.TransformToDhcpAckPacket()
 									packet.SetOption('yiaddr', ciaddr)
 									self._loadDHCPPacket(packet, result)
-									if conf.loadDHCPPacket(packet, mac, ciaddr, packet.GetGiaddr()):
+									if conf.loadDHCPPacket(packet, mac, tuple(ciaddr), tuple(packet.GetGiaddr())):
 										src.logging.writeLog('DHCPACK sent to %(mac)s' % {
 										 'mac': mac,
 										})
