@@ -35,7 +35,7 @@ ALLOW_DHCP_RELAYS = False #If False, relayed DHCP requests will be ignored.
 ALLOWED_DHCP_RELAYS = () #A list of all IPs allowed to relay requests; if empty, all are allowed.
 #(End with trailing comma)
 
-NAK_RENEWALS = True #If True, REBIND and RENEW requests are NAKed when received, forcing clients to
+NAK_RENEWALS = False #If True, REBIND and RENEW requests are NAKed when received, forcing clients to
 #either wait out their lease or return to the DISCOVER phase.
 
 UNAUTHORIZED_CLIENT_TIMEOUT = 60 #The number of seconds for which to ignore unknown MACs.
