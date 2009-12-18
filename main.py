@@ -35,6 +35,9 @@ import src.dhcp
 import src.logging
 import src.web
 
+if not conf.DEBUG:
+	sys.stdout = open('/dev/null', 'w')
+	
 def _quitHandler(signum, frame):
 	"""
 	Cleanly shuts down this daemon upon receipt of a SIGTERM.

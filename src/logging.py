@@ -44,6 +44,11 @@ def writeLog(data):
 	_LOG_LOCK.acquire()
 	try:
 		_LOG = [(time.time(), data)] + _LOG[:conf.LOG_CAPACITY - 1]
+		if conf.DEBUG:
+			print '%(time)s : %(event)s' % {
+			 'time': time.asctime(),
+			 'event': data,
+			}
 	finally:
 		_LOG_LOCK.release()
 		
