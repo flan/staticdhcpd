@@ -65,16 +65,17 @@ class _WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
 			if ctype == 'application/x-www-form-urlencoded':
 				query = urlparse.parse_qs(self.rfile.read(int(self.headers.getheader('content-length'))))
 				key = query.get('key')
-				if key and hashlib.md5(key[0]).hexdigest() == conf.WEB_RELOAD_KEY:
-					try:
-						reload(conf)
-						src.logging.writeLog("Reloaded configuration")
-					except Exception, e:
-						src.logging.writeLog("Error while reloading configuration: %(error)s" % {
-						 'error': str(e),
-						})
-				else:
-					src.logging.writeLog("Invalid reload key provided")
+				if key:
+					if hashlib.md5(key[0]).hexdigest() == conf.WEB_RELOAD_KEY:
+						try:
+							reload(conf)
+							src.logging.writeLog("Reloaded configuration")
+						except Exception, e:
+							src.logging.writeLog("Error while reloading configuration: %(error)s" % {
+							 'error': str(e),
+							})
+					else:
+						src.logging.writeLog("Invalid reload key provided")
 				if query.get('log'):
 					if src.logging.logToDisk():
 						src.logging.writeLog("Wrote log to '%(log)s'" % {'log': conf.LOG_FILE,})
@@ -132,7 +133,7 @@ class _WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
 			self.wfile.write('</div></form>')
 			self.wfile.write('<br/>')
 			self.wfile.write('<form action="/" method="post"><div style="display: inline;">')
-			self.wfile.write('<input type="submit" value="Write log to disk"/>')
+			self.wfile.write('<input type="hidden" name="log"/><input type="submit" value="Write log to disk"/>')
 			self.wfile.write('</div></form>')
 			self.wfile.write('</div>')
 			
