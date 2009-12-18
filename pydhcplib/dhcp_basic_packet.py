@@ -52,7 +52,7 @@ class DhcpBasicPacket(object):
 		else:
 			return False
 			
-	def DeleteOption(self,name):
+	def DeleteOption(self, name):
 		if DhcpFields.has_key(name):
 			dhcp_field = DhcpFields[name]
 			begin = dhcp_field[0]
