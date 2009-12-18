@@ -133,7 +133,7 @@ class _WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
 			self.wfile.write('</div></form>')
 			self.wfile.write('<br/>')
 			self.wfile.write('<form action="/" method="post"><div style="display: inline;">')
-			self.wfile.write('<input type="hidden" name="log"/><input type="submit" value="Write log to disk"/>')
+			self.wfile.write('<input type="hidden" name="log" value="log"/><input type="submit" value="Write log to disk"/>')
 			self.wfile.write('</div></form>')
 			self.wfile.write('</div>')
 			
