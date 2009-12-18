@@ -68,7 +68,6 @@ class _WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
 				if key:
 					if hashlib.md5(key[0]).hexdigest() == conf.WEB_RELOAD_KEY:
 						try:
-							import conf
 							reload(conf)
 							src.logging.writeLog("Reloaded configuration")
 						except Exception, e:
