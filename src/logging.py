@@ -105,7 +105,8 @@ def logToDisk():
 		log_file.close()
 		
 		return True
-	except:
+	except Exception, e:
+		writeLog('Writing to disk failed: %(error)s' % {'error': str(e),})
 		return False
 		
 def sendErrorReport(summary, exception):
