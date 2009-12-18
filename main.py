@@ -36,7 +36,7 @@ import src.logging
 import src.web
 
 if not conf.DEBUG:
-	sys.stdout = open('/dev/null', 'w')
+	sys.stdout = sys.stderr = open('/dev/null', 'w')
 	
 def _quitHandler(signum, frame):
 	"""
