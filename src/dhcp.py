@@ -204,7 +204,7 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 				
 			if sid and not ciaddr: #SELECTING
 				src.logging.writeLog('DHCPREQUEST:SELECTING(%(ip)s) received from %(mac)s' % {
-				 'ip': s_ip,
+				 'ip': s_sid,
 				 'mac': mac,
 				})
 				if s_sid == self._server_address: #Chosen!

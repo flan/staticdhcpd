@@ -21,9 +21,17 @@ CREATE TABLE maps (
 	FOREIGN KEY (subnet, serial) REFERENCES subnets (subnet, serial)
 );
 
+delimiter |
+CREATE PROCEDURE cleanup()
+	BEGIN
+		OPTIMIZE LOCAL TABLE subnets, maps;
+	END;
+|
+delimiter ;
+
 /* staticDHCPd requires an account with SELECT access; the first of these lines grants that against its
    default config settings; the second provides a management account so you don't have to use root.
    How you get entries into the database is up to you, however.
 GRANT SELECT ON dhcp.* TO 'dhcp_user'@'localhost' IDENTIFIED BY 'dhcp_pass';
-GRANT SELECT, INSERT, DELETE, UPDATE ON dhcp.* TO 'dhcp_maintainer'@'localhost' IDENTIFIED by 'dhcp_pass';
+GRANT SELECT, INSERT, DELETE, UPDATE, EXECUTE ON dhcp.* TO 'dhcp_maintainer'@'localhost' IDENTIFIED by 'dhcp_pass';
 */
