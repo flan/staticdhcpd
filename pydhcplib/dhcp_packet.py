@@ -39,7 +39,7 @@ class DhcpPacket(DhcpBasicPacket):
 		# Process headers
 		printable_data = "# Header fields\n"
 		op = self.packet_data[DhcpFields['op'][0]:DhcpFields['op'][0] + DhcpFields['op'][1]]
-		printable_data += "op : " + DhcpFieldsName['op'][str(op[0])] + "\n"
+		printable_data += "op : %(type)s\n" % {'type': DhcpFieldsName['op'][str(op[0])],}
 		
 		for opt in (
 		 'htype','hlen','hops','xid','secs','flags',
