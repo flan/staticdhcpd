@@ -22,7 +22,7 @@ Legal
  You should have received a copy of the GNU General Public License
  along with this program. If not, see <http://www.gnu.org/licenses/>.
  
- (C) Mathieu Ignacia, 2008 <mignacio@april.org>
+ (C) Mathieu Ignacio, 2008 <mignacio@april.org>
 """
 MagicCookie = [99,130,83,99]
 PyDhcpLibVersion = '0.6-hamsterx'

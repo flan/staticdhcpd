@@ -22,9 +22,9 @@ Legal
  You should have received a copy of the GNU General Public License
  along with this program. If not, see <http://www.gnu.org/licenses/>.
  
- (C) Mathieu Ignacia, 2008 <mignacio@april.org>
+ (C) Mathieu Ignacio, 2008 <mignacio@april.org>
 """
-from binascii import unhexlify,hexlify
+from binascii import unhexlify, hexlify
 
 # Check and convert hardware/nic/mac address type
 class hwmac(object):

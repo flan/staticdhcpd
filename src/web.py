@@ -28,19 +28,63 @@ import BaseHTTPServer
 import cgi
 import hashlib
 import os
+import select
 import threading
 import time
 import urlparse
-import select
 
 import conf
 
 import src.logging
 
-class WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
+class _WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
 	_allowed_pages = ('/', '/index.html')
 	
-	def doResponse(self):
+	def do_GET(self):
+		if not self.path in self._allowed_pages:
+			self.send_response(404)
+			return
+		self._doResponse()
+		
+	def do_HEAD(self):
+		if not self.path in self._allowed_pages:
+				self.send_response(404)
+				return
+				
+		try:
+			self.send_response(200)
+			self.send_header('Content-type', 'text/html')
+			self.send_header('Last-modified', time.strftime('%a, %d %b %Y %H:%M:%S %Z'))
+			self.end_headers()
+		except Exception, e:
+			src.logging.writeLog("Problem while processing HEAD in Web module: %(errors)s" % {'error': str(e),})
+			
+	def do_POST(self):
+		try:
+			(ctype, pdict) = cgi.parse_header(self.headers.getheader('content-type'))
+			if ctype == 'application/x-www-form-urlencoded':
+				query = urlparse.parse_qs(self.rfile.read(int(self.headers.getheader('content-length'))))
+				key = query.get('key')
+				if key and hashlib.md5(key[0]).hexdigest() == conf.WEB_RELOAD_KEY:
+					try:
+						reload(conf)
+						src.logging.writeLog("Reloaded configuration")
+					except Exception, e:
+						src.logging.writeLog("Error while reloading configuration: %(error)s" % {
+						 'error': str(e),
+						})
+				else:
+					src.logging.writeLog("Invalid reload key provided")
+				if query.get('log'):
+					if src.logging.logToDisk():
+						src.logging.writeLog("Wrote log to '%(log)s'" % {'log': conf.LOG_FILE,})
+					else:
+						src.logging.writeLog("Unable to write log to '%(log)s'" % {'log': conf.LOG_FILE,})
+		except Exception, e: 
+			src.logging.writeLog("Problem while processing POST in Web module: %(errors)s" % {'error': str(e),})
+		self._doResponse()
+		
+	def _doResponse(self):
 		try:
 			self.send_response(200)
 			self.send_header('Content-type', 'text/html')
@@ -82,11 +126,12 @@ class WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
 			 'server': conf.DHCP_SERVER_IP,
 			 'port': conf.DHCP_SERVER_PORT,
 			})
-			self.wfile.write('<form action="/" method="post"><div>')
+			self.wfile.write('<form action="/" method="post"><div style="display: inline;">')
 			self.wfile.write('<label for="key">Key: </label><input type="password" name="key" id="key"/>')
 			self.wfile.write('<input type="submit" value="Reload configuration"/>')
 			self.wfile.write('</div></form>')
-			self.wfile.write('<form action="/" method="post"><div>')
+			self.wfile.write('<br/>')
+			self.wfile.write('<form action="/" method="post"><div style="display: inline;">')
 			self.wfile.write('<input type="submit" value="Write log to disk"/>')
 			self.wfile.write('</div></form>')
 			self.wfile.write('</div>')
@@ -94,53 +139,9 @@ class WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
 			self.wfile.write("</div></body></html>")
 			
 			return
-		except:
-			pass
+		except Exception, e:
+			src.logging.writeLog("Problem while serving response in Web module: %(errors)s" % {'error': str(e),})
 			
-	def do_GET(self):
-		if not self.path in self._allowed_pages:
-			self.send_response(404)
-			return
-			
-		self.doResponse()
-		
-	def do_POST(self):
-		try:
-			(ctype, pdict) = cgi.parse_header(self.headers.getheader('content-type'))
-			if ctype == 'application/x-www-form-urlencoded':
-				query = urlparse.parse_qs(self.rfile.read(int(self.headers.getheader('content-length'))))
-				key = query.get('key')
-				if key and hashlib.md5(key[0]).hexdigest() == conf.WEB_RELOAD_KEY:
-					try:
-						reload(conf)
-						src.logging.writeLog("Reloaded configuration")
-					except Exception, e:
-						src.logging.writeLog("Error while reloading configuration: %(error)s" % {
-						 'error': str(e),
-						})
-				else:
-					src.logging.writeLog("Invalid reload key provided")
-				if query.get('log'):
-					if src.logging.logToDisk():
-						src.logging.writeLog("Wrote log to '%(log)s'" % {'log': conf.LOG_FILE,})
-					else:
-						src.logging.writeLog("Unable to write log to '%(log)s'" % {'log': conf.LOG_FILE,})
-		except Exception, e: 
-			print e
-		self.doResponse()
-		
-	def do_HEAD(self):
-		if not self.path in self._allowed_pages:
-				self.send_response(404)
-				return
-				
-		try:
-			self.send_response(200)
-			self.send_header('Content-type', 'text/html')
-			self.send_header('Last-modified', time.strftime('%a, %d %b %Y %H:%M:%S %Z'))
-			self.end_headers()
-		except:
-			pass
 			
 class WebService(threading.Thread):
 	_web_server = None
@@ -150,7 +151,7 @@ class WebService(threading.Thread):
 		self.daemon = True
 		
 		self._web_server = BaseHTTPServer.HTTPServer(
-		 (conf.WEB_IP, conf.WEB_PORT), WebServer
+		 (conf.WEB_IP, conf.WEB_PORT), _WebServer
 		)
 		
 		src.logging.writeLog('Configured Web server')

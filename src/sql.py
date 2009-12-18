@@ -26,6 +26,7 @@ Legal
 """
 ###############################################################################
 #   The decision of which engine to use occurs at the bottom of this module   #
+# The chosen class is made accessible via the module-level SQL_BROKER variable#
 ###############################################################################
 import threading
 
@@ -98,7 +99,7 @@ class _SQLite(_SQLBroker):
 	_file = None
 	
 	def __init__(self):
-		self._resource_lock = threading.Lock()
+		self._resource_lock = threading.BoundedSemaphore(conf.SQLITE_MAXIMUM_CONNECTIONS)
 		
 		self._file = conf.SQLITE_FILE
 		

@@ -23,26 +23,29 @@ Legal
  You should have received a copy of the GNU General Public License
  along with this program. If not, see <http://www.gnu.org/licenses/>.
  
- (C) Mathieu Ignacia, 2008 <mignacio@april.org>
+ (C) Mathieu Ignacio, 2008 <mignacio@april.org>
  (C) Neil Tallim, 2009
 """
-import sys
-import socket
 import select
+import socket
 import threading
 
 import dhcp_packet
 
 class DhcpNetwork:
 	def __init__(self, listen_address, listen_port, emit_port):
+		self.listen_address = listen_address
 		self.listen_port = listen_port
 		self.emit_port = emit_port
-		self.listen_address = listen_address
-		
-		self.dhcp_socket = None
-		self.response_socket = None
 		
 	# Networking stuff
+	def BindToAddress(self) :
+		try:
+			self.response_socket.bind((self.listen_address, 0))
+			self.dhcp_socket.bind(('', self.listen_port))
+		except socket.error,msg:
+			raise Exception('pydhcplib.DhcpNetwork socket unable to bind to address: %(err)s' % {'err': str(msg),})
+			
 	def CreateSocket(self) :
 		try:
 			self.response_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -59,13 +62,6 @@ class DhcpNetwork:
 			self.dhcp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 		except socket.error, msg :
 			raise Exception('pydhcplib.DhcpNetwork socket unable to set SO_REUSEADDR: %(err)s' % {'err': str(msg),})
-			
-	def BindToAddress(self) :
-		try:
-			self.response_socket.bind((self.listen_address, 0))
-			self.dhcp_socket.bind(('', self.listen_port))
-		except socket.error,msg:
-			raise Exception('pydhcplib.DhcpNetwork socket unable to bind to address: %(err)s' % {'err': str(msg),})
 			
 	def GetNextDhcpPacket(self,timeout=60):
 		data = None
@@ -85,22 +81,10 @@ class DhcpNetwork:
 					threading.Thread(target=self.HandleDhcpDiscover, args=(packet, source_address)).start()
 				elif packet.IsDhcpRequestPacket():
 					threading.Thread(target=self.HandleDhcpRequest, args=(packet, source_address)).start()
-				#elif packet.IsDhcpDeclinePacket():
-				#	self.HandleDhcpDecline(packet, source_address)
-				#elif packet.IsDhcpReleasePacket():
-				#	self.HandleDhcpRelease(packet, source_address)
-				#elif packet.IsDhcpInformPacket():
-				#	self.HandleDhcpInform(packet, source_address)
-				
+					
 				return packet
 			return None
 			
-	def SendDhcpPacketTo(self, packet, _ip, _port=None):
-		return self.response_socket.sendto(
-		 packet.EncodePacket(),
-		 (_ip, _port or self.emit_port)
-		)
-		
 	# Server side Handle methods
 	def HandleDhcpDiscover(self, packet, source_address):
 		pass
@@ -108,12 +92,9 @@ class DhcpNetwork:
 	def HandleDhcpRequest(self, packet, source_address):
 		pass
 		
-	def HandleDhcpDecline(self, packet, source_address):
-		pass
-		
-	def HandleDhcpRelease(self, packet, source_address):
-		pass
-		
-	def HandleDhcpInform(self, packet, source_address):
-		pass
+	def SendDhcpPacketTo(self, packet, _ip, _port=None):
+		return self.response_socket.sendto(
+		 packet.EncodePacket(),
+		 (_ip, _port or self.emit_port)
+		)
 		

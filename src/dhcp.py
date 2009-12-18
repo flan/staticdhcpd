@@ -4,7 +4,7 @@ staticDHCPd module: src.dhcp
 
 Purpose
 =======
- Provides the DHCP side of a staticDHCPd server.
+ Provides the DHCPd side of a staticDHCPd server.
  
 Legal
 =====
@@ -31,7 +31,7 @@ import time
 import conf
 
 import src.logging
-import sql
+import src.sql
 
 import pydhcplib.dhcp_network
 import pydhcplib.dhcp_packet
@@ -78,9 +78,9 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 		self.CreateSocket()
 		self.BindToAddress()
 		
-		self._sql_broker = sql.SQL_BROKER()
+		self._sql_broker = src.sql.SQL_BROKER()
 		
-	def evaluateRelay(self, packet):
+	def EvaluateRelay(self, packet):
 		#If this is a relayed request, decide whether to handle it or not.
 		giaddr = packet.GetGiaddr()
 		if not giaddr == [0, 0, 0, 0]: #Relayed request.
@@ -95,8 +95,33 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 			return False
 		return True
 		
+	def GetNextDhcpPacket(self):
+		if pydhcplib.dhcp_network.DhcpNetwork.GetNextDhcpPacket(self):
+			self._stats_lock.acquire()
+			self._packets_processed += 1
+			self._stats_lock.release()
+			
+	def GetStats(self):
+		self._stats_lock.acquire()
+		try:
+			for i in range(len(self._ignored_addresses)):
+				self._ignored_addresses[i][1] -= conf.POLLING_INTERVAL
+			self._ignored_addresses = [address for address in self._ignored_addresses if address[1] > 0]
+			
+			stats = (self._packets_processed, self._packets_discarded, self._time_taken, len(self._ignored_addresses))
+			
+			self._packets_processed = 0
+			self._packets_discarded = 0
+			self._time_taken = 0.0
+			if conf.ENABLE_SUSPEND:
+				self._dhcp_assignments = {}
+				
+			return stats
+		finally:
+			self._stats_lock.release()
+			
 	def HandleDhcpDiscover(self, packet, source_address):
-		if not self.evaluateRelay(packet):
+		if not self.EvaluateRelay(packet):
 			return
 			
 		start_time = time.time()
@@ -148,7 +173,7 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 		self.LogTimeTaken(time.time() - start_time)
 		
 	def HandleDhcpRequest(self, packet, source_address):
-		if not self.evaluateRelay(packet):
+		if not self.EvaluateRelay(packet):
 			return
 			
 		start_time = time.time()
@@ -303,36 +328,6 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 				dns_list += [int(i) for i in dns.strip().split('.')]
 			packet.SetOption('domain_name_server', dns_list)
 			
-	def SendDhcpPacket(self, packet, address):
-		if address[0] not in ('255.255.255.255', '0.0.0.0', ''): #Unicast.
-			port = destination_ip = None
-			giaddr = packet.GetGiaddr()
-			if giaddr and not giaddr == [0,0,0,0]: #Relayed request.
-				port = conf.DHCP_SERVER_PORT
-				destination_ip = '.'.join(map(str, giaddr))
-			else: #Request directly from client, routed or otherwise.
-				port = conf.DHCP_CLIENT_PORT
-				destination_ip = address[0]
-			return self.SendDhcpPacketTo(packet, destination_ip, port)
-		else: #Broadcast.
-			return self.SendDhcpPacketTo(packet, '255.255.255.255')
-			
-	def GetNextDhcpPacket(self):
-		if pydhcplib.dhcp_network.DhcpNetwork.GetNextDhcpPacket(self):
-			self._stats_lock.acquire()
-			self._packets_processed += 1
-			self._stats_lock.release()
-			
-	def LogTimeTaken(self, time_taken):
-		self._stats_lock.acquire()
-		self._time_taken += time_taken
-		self._stats_lock.release()
-		
-	def LogDiscardedPacket(self):
-		self._stats_lock.acquire()
-		self._packets_discarded += 1
-		self._stats_lock.release()
-		
 	def LogDHCPAccess(self, mac):
 		if conf.ENABLE_SUSPEND:
 			self._stats_lock.acquire()
@@ -353,24 +348,30 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 				self._stats_lock.release()
 		return True
 		
-	def GetStats(self):
+	def LogDiscardedPacket(self):
 		self._stats_lock.acquire()
-		try:
-			for i in range(len(self._ignored_addresses)):
-				self._ignored_addresses[i][1] -= conf.POLLING_INTERVAL
-			self._ignored_addresses = [address for address in self._ignored_addresses if address[1] > 0]
+		self._packets_discarded += 1
+		self._stats_lock.release()
+		
+	def LogTimeTaken(self, time_taken):
+		self._stats_lock.acquire()
+		self._time_taken += time_taken
+		self._stats_lock.release()
+		
+	def SendDhcpPacket(self, packet, address):
+		if address[0] not in ('255.255.255.255', '0.0.0.0', ''): #Unicast.
+			port = destination_ip = None
+			giaddr = packet.GetGiaddr()
+			if giaddr and not giaddr == [0,0,0,0]: #Relayed request.
+				port = conf.DHCP_SERVER_PORT
+				destination_ip = '.'.join(map(str, giaddr))
+			else: #Request directly from client, routed or otherwise.
+				port = conf.DHCP_CLIENT_PORT
+				destination_ip = address[0]
+			return self.SendDhcpPacketTo(packet, destination_ip, port)
+		else: #Broadcast.
+			return self.SendDhcpPacketTo(packet, '255.255.255.255')
 			
-			stats = (self._packets_processed, self._packets_discarded, self._time_taken, len(self._ignored_addresses))
-			
-			self._packets_processed = 0
-			self._packets_discarded = 0
-			self._time_taken = 0.0
-			if conf.ENABLE_SUSPEND:
-				self._dhcp_assignments = {}
-				
-			return stats
-		finally:
-			self._stats_lock.release()
 			
 class DHCPService(threading.Thread):
 	_dhcp_server = None

@@ -22,7 +22,7 @@ Legal
  You should have received a copy of the GNU General Public License
  along with this program. If not, see <http://www.gnu.org/licenses/>.
  
- (C) Mathieu Ignacia, 2008 <mignacio@april.org>
+ (C) Mathieu Ignacio, 2008 <mignacio@april.org>
 """
 class ipv4(object):
 	def __init__(self, value="0.0.0.0") :

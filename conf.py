@@ -61,11 +61,14 @@ MYSQL_PORT = 3306 #The port on which MySQL is running; ignored when HOST is None
 MYSQL_MAXIMUM_CONNECTIONS = 4 #The number of threads that may read the database at once.
 
 SQLITE_FILE = '/etc/staticDHCPd/dhcp.sqlite3' #The file that contains your SQLite database.
+SQLITE_MAXIMUM_CONNECTIONS = 5 #The number of threads that may read the database at once.
 
 #E-mail settings
 #####
 #Changes take effect on reload
 #######################################
+EMAIL_ENABLED = False #True to allow staticDHCPd to inform you of any problems it cannot handle by
+#itself.
 EMAIL_SERVER = 'mail.yourdomain.com' #The server that receives your e-mail.
 EMAIL_SOURCE = 'you@yourdomain.com' #The user from which e-mail should claim to be sent.
 EMAIL_DESTINATION = 'problems@yourdomain.com' #The user to whom e-mail should be sent.

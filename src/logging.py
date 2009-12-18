@@ -104,8 +104,9 @@ def logToDisk():
 		return False
 		
 def sendErrorReport(summary, exception):
-	print type(exception), exception
-	print traceback.format_exc()
+	if not conf.EMAIL_ENABLED:
+		return
+		
 	message = email.MIMEMultipart.MIMEMultipart()
 	message['From'] = conf.EMAIL_SOURCE
 	message['To'] = conf.EMAIL_DESTINATION

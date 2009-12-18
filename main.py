@@ -103,7 +103,7 @@ if __name__ == '__main__':
 		time.sleep(1)
 		
 		tick += 1
-		if tick == conf.POLLING_INTERVAL:
+		if tick >= conf.POLLING_INTERVAL:
 			dhcp_thread.getStats()
 			tick = 0
 			
