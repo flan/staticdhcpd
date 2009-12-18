@@ -82,7 +82,7 @@ def logToDisk():
 		log_file.write("Summary generated %(time)s\n" % {'time': time.asctime(),})
 		
 		log_file.write("\nStatistics:\n")
-		for (timestamp, packets, discarded, time_taken, ignored_macs) in src.logging.readPollRecords():
+		for (timestamp, packets, discarded, time_taken, ignored_macs) in readPollRecords():
 			if packets:
 				turnaround = time_taken / packets
 			else:
@@ -96,7 +96,7 @@ def logToDisk():
 			})
 			
 		log_file.write("\nEvents:\n")
-		for (timestamp, line) in src.logging.readLog():
+		for (timestamp, line) in readLog():
 			log_file.write("%(time)s : %(line)s\n" % {
 			 'time': time.ctime(timestamp),
 			 'line': line,
