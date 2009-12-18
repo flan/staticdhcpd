@@ -76,12 +76,11 @@ class _WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
 							})
 					else:
 						src.logging.writeLog("Invalid reload key provided")
-				if query.get('log'):
-					if src.logging.logToDisk():
-						src.logging.writeLog("Wrote log to '%(log)s'" % {'log': conf.LOG_FILE,})
-					else:
-						src.logging.writeLog("Unable to write log to '%(log)s'" % {'log': conf.LOG_FILE,})
-		except Exception, e: 
+				if src.logging.logToDisk():
+					src.logging.writeLog("Wrote log to '%(log)s'" % {'log': conf.LOG_FILE,})
+				else:
+					src.logging.writeLog("Unable to write log to '%(log)s'" % {'log': conf.LOG_FILE,})
+		except Exception, e:
 			src.logging.writeLog("Problem while processing POST in Web module: %(errors)s" % {'error': str(e),})
 		self._doResponse()
 		
@@ -130,10 +129,6 @@ class _WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
 			self.wfile.write('<form action="/" method="post"><div style="display: inline;">')
 			self.wfile.write('<label for="key">Key: </label><input type="password" name="key" id="key"/>')
 			self.wfile.write('<input type="submit" value="Reload configuration"/>')
-			self.wfile.write('</div></form>')
-			self.wfile.write('<br/>')
-			self.wfile.write('<form action="/" method="post"><div style="display: inline;">')
-			self.wfile.write('<input type="hidden" name="log" value="log"/><input type="submit" value="Write log to disk"/>')
 			self.wfile.write('</div></form>')
 			self.wfile.write('</div>')
 			
