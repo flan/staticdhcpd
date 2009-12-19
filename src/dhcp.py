@@ -207,7 +207,7 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 				if s_sid == self._server_address: #Chosen!
 					try:
 						result = self._sql_broker.lookupMAC(mac)
-						if result and (result[0] == s_ip or not ip):
+						if result and (not ip or result[0] == s_ip):
 							packet.TransformToDhcpAckPacket()
 							self.LoadDHCPPacket(packet, result)
 							if conf.loadDHCPPacket(packet, mac, tuple(map(int, result[0].split('.'))), giaddr):
