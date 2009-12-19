@@ -74,7 +74,6 @@ class DhcpBasicPacket(object):
 		
 	def SetOption(self,name,value):
 		# Basic value checking: does the value list have a valid length?
-		# has value list a correct length
 		if DhcpFields.has_key(name):
 			dhcp_field = DhcpFields[name]
 			if not len(value) == dhcp_field[1]:
@@ -84,21 +83,9 @@ class DhcpBasicPacket(object):
 			self.packet_data[begin:end] = value
 			return True
 		elif DhcpOptions.has_key(name):
-			# fields_specs : {'option_code':fixed_length,minimum_length,multiple}
-			# if fixed_length == 0 : minimum_length and multiple apply
-			# else : forget minimum_length and multiple 
-			# multiple : length MUST be a multiple of 'multiple'
-			# FIXME : this definition should'nt be in dhcp_constants ?
-			fields_specs = {
-			 "ipv4":[4,0,1], "ipv4+":[0,4,4],
-			 "string":[0,0,1], "bool":[1,0,1],
-			 "char":[1,0,1], "16-bits":[2,0,1],
-			 "32-bits":[4,0,1], "identifier":[0,2,1],
-			 "RFC3397":[0,4,1],"none":[0,0,1],"char+":[0,1,1]
-			}
-			specs = fields_specs[DhcpOptionsTypes[DhcpOptions[name]]]
+			(fixed_length, minimum_length, multiple) = DhcpFieldsSpecs[DhcpOptionsTypes[DhcpOptions[name]]]
 			length = len(value)
-			if (not specs[0] == 0 and specs == length) or (specs[1] <= length and length % specs[2] == 0):
+			if fixed_length == length or (minimum_length <= length and length % multiple == 0):
 				self.options_data[name] = value
 				return True
 			else:

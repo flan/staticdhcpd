@@ -74,6 +74,17 @@ DhcpFieldsTypes = {
  'sname': "str",
  'file': "str",
 }
+DhcpFieldsSpecs = {
+ "ipv4":(4,0,1), "ipv4+":(0,4,4),
+ "string":(0,0,1), "bool":(1,0,1),
+ "char":(1,0,1), "16-bits":(2,0,1),
+ "32-bits":(4,0,1), "identifier":(0,2,1),
+ "RFC3397":(0,4,1),"none":(0,0,1),"char+":(0,1,1)
+}
+# DhcpFieldsSpecs : {'option_code': (fixed_length,minimum_length,multiple)}
+# if fixed_length == 0 : minimum_length and multiple apply
+# else : forget minimum_length and multiple 
+# multiple : length MUST be a multiple of 'multiple'
 
 # DhcpOptions = {'option_name': option_code,}
 DhcpOptions = {
@@ -231,7 +242,7 @@ DhcpOptionsList.sort()
 DhcpOptionsList = [value for (i, value) in DhcpOptionsList]
 
 # See http://www.iana.org/assignments/bootp-dhcp-parameters
-# FIXME : verify all ipv4+ options, somes are 32 bits...
+# FIXME : verify all ipv4+ options, some are 32 bits...
 DhcpOptionsTypes = {
  0:"none", 1:"ipv4", 2:"ipv4", 3:"ipv4+", 
  4:"ipv4+", 5:"ipv4+", 6:"ipv4+", 7:"ipv4+", 
@@ -250,7 +261,7 @@ DhcpOptionsTypes = {
  56:"string", 57:"16-bits", 58:"32-bits", 59:"32-bits", 
  60:"string", 61:"identifier", 62:"string", 63:"RFC2242", 
  64:"string", 65:"ipv4+", 66:"string", 67:"string", 
- 68:"ipv4", 69:"ipv4+", 70:"ipv4+", 71:"ipv4+",					 
+ 68:"ipv4", 69:"ipv4+", 70:"ipv4+", 71:"ipv4+",
  72:"ipv4+", 73:"ipv4+", 74:"ipv4+", 75:"ipv4+", 
  76:"ipv4+", 77:"RFC3004", 78:"RFC2610", 79:"RFC2610", 
  80:"null", 81:"string", 82:"RFC3046", 83:"RFC4174", 

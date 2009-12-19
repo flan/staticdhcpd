@@ -66,7 +66,7 @@ class DhcpPacket(DhcpBasicPacket):
 				result = ipv4(data).str()
 			elif DhcpFieldsTypes[opt] == "hwmac":
 				result = []
-				hexsym = ['0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f']
+				hexsym = ('0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f',)
 				for iterator in range(6):
 					result.append(str(hexsym[data[iterator] / 16] + hexsym[data[iterator] % 16]))
 				result = ':'.join(result)
@@ -112,7 +112,7 @@ class DhcpPacket(DhcpBasicPacket):
 	def AddLine(self,_string) :
 		(parameter,junk,value) = _string.partition(':')
 		parameter = parameter.strip()
-		# If value begin with a whitespace, remove it, leave others
+		#If value begins with a whitespace, strip it
 		if len(value) > 0 and value[0] == ' ':
 			value = value[1:]
 		value = self._OptionsToBinary(parameter, value)
@@ -173,7 +173,7 @@ class DhcpPacket(DhcpBasicPacket):
 				if DhcpOptions.has_key(each):
 					tmp.append(DhcpOptions[each])
 			return tmp
-		elif  p=='dhcp_message_type':
+		elif  p == 'dhcp_message_type':
 			try :
 				return [DhcpNames[value]]
 			except KeyError:
