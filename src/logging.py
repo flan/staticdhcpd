@@ -32,16 +32,23 @@ import time
 
 import conf
 
-_LOG_LOCK = threading.Lock()
-_LOG = []
+_LOG_LOCK = threading.Lock() #: A lock used to synchronize access to the memory-log.
+_LOG = [] #: The memory-log.
 
-_POLL_RECORDS_LOCK = threading.Lock()
-_POLL_RECORDS = []
+_POLL_RECORDS_LOCK = threading.Lock() #: A lock used to synchronize access to the stats-log.
+_POLL_RECORDS = [] #: The stats-log.
 
-_EMAIL_LOCK = threading.Lock()
-_EMAIL_TIMEOUT = 0
+_EMAIL_LOCK = threading.Lock() #: A lock used to synchronize access to the e-mail routines.
+_EMAIL_TIMEOUT = 0 #: The number of seconds left before another e-mail can be sent.
 
+#Status-recording functions
 def writeLog(data):
+	"""
+	Adds an entry to the memory-log.
+	
+	@type data: basestring
+	@param data: The event to be logged.
+	"""
 	global _LOG
 	
 	_LOG_LOCK.acquire()
@@ -56,6 +63,14 @@ def writeLog(data):
 		_LOG_LOCK.release()
 		
 def readLog():
+	"""
+	Returns a static, immutable copy of the memory-log.
+	
+	@rtype: tuple
+	@return: A collection of
+		(timestamp:float, details:basestring) values, in reverse-chronological
+		order.
+	"""
 	_LOG_LOCK.acquire()
 	try:
 		return tuple(_LOG)
@@ -63,6 +78,20 @@ def readLog():
 		_LOG_LOCK.release()
 		
 def writePollRecord(packets, discarded, time_taken, ignored_macs):
+	"""
+	Adds statistics to the stats-log.
+	
+	@type packets: int
+	@param packets: The number of packets processed.
+	@type discarded: int
+	@param discarded: The number of processed packets that were discarded before
+		being fully processed.
+	@type time_taken: float
+	@param time_taken: The number of seconds spent handling all received,
+		non-ignored requests.
+	@type ignored_macs: int
+	@param ignored_macs: The number of MAC addresses being actively ignored.
+	"""
 	global _POLL_RECORDS
 	
 	_POLL_RECORDS_LOCK.acquire()
@@ -72,13 +101,32 @@ def writePollRecord(packets, discarded, time_taken, ignored_macs):
 		_POLL_RECORDS_LOCK.release()
 		
 def readPollRecords():
+	"""
+	Returns a static, immutable copy of the stats-log.
+	
+	@rtype: tuple
+	@return: A collection of
+		(timestamp:float, processed:int, discarded:int,
+		processing_time:float, ignored_macs:int) values, in reverse-chronological
+		order.
+	"""
 	_POLL_RECORDS_LOCK.acquire()
 	try:
 		return tuple(_POLL_RECORDS)
 	finally:
 		_POLL_RECORDS_LOCK.release()
 		
+#Logging functions
 def logToDisk():
+	"""
+	Writes the current memory-log and stats-log to disk, making it possible to
+	export information for use by a developer or to track a misbehaving client.
+	
+	If logging fails, a message will be written to the memory-log.
+	
+	@rtype: bool
+	@return: True if the logfile was written.
+	"""
 	try:
 		log_file = open(conf.LOG_FILE, 'w')
 		
@@ -112,7 +160,11 @@ def logToDisk():
 		writeLog('Writing to disk failed: %(error)s' % {'error': str(e),})
 		return False
 		
+#E-mail functions
 def emailTimeoutCooldown():
+	"""
+	Ticks the e-mail timeout value, possibly allowing another e-mail to be sent.
+	"""
 	global _EMAIL_TIMEOUT
 	
 	_EMAIL_LOCK.acquire()
@@ -120,6 +172,23 @@ def emailTimeoutCooldown():
 	_EMAIL_LOCK.release()
 	
 def sendErrorReport(summary, exception):
+	"""
+	Sends e-mail using the config options specified, if e-mail is enabled.
+	
+	Since it's highly likely that any error that needs to be reported will fire
+	for most, if not all, DHCP requests received, a cooldown is imposed to avoid
+	flooding the recipient's inbox too quickly.
+	
+	If this function is unable to send e-mail, a summary of the error being
+	reported will be written to the memory-log.
+	
+	@type summary: basestring
+	@param summary: A short description of the error, including a probable
+		cause, if known.
+	@type exception: Exception
+	@param exception: The C{Exception} raised to result in this message being
+		sent.
+	"""
 	if not conf.EMAIL_ENABLED:
 		return
 		

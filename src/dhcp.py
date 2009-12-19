@@ -39,6 +39,16 @@ import pydhcplib.type_hwmac
 import pydhcplib.type_strlist
 
 def longToQuad(l):
+	"""
+	A convenience function that converts a long into a pydhcplib-compatible
+	quad.
+	
+	@type l: int
+	@param l: The long value to convert.
+	
+	@rtype: list
+	@return: The converted quad.
+	"""
 	q = [l % 256]
 	l /= 256
 	q.insert(0, l % 256)
@@ -49,18 +59,21 @@ def longToQuad(l):
 	return q
 	
 class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
-	_server_address = None
-	_server_port = None
-	_client_port = None
+	"""
+	The handler that responds to all received DHCP requests.
+	"""
+	_server_address = None #: The IP of the interface from which DHCP responses should be sent.
+	_server_port = None #: The port on which DHCP requests are expected to arrive.
+	_client_port = None #: The port on which clients expect DHCP responses to be sent.
 	
-	_sql_broker = None
+	_sql_broker = None #: The SQL broker to be used when handling MAC lookups.
 	
-	_stats_lock = None
-	_packets_processed = 0
-	_packets_discarded = 0
-	_time_taken = 0.0
-	_dhcp_assignments = None
-	_ignored_addresses = None
+	_stats_lock = None #: A lock used to ensure synchronous access to performance statistics.
+	_packets_processed = 0 #: The number of packets processed since the last polling interval.
+	_packets_discarded = 0 #: The number of packets discarded since the last polling interval.
+	_time_taken = 0.0 #: The amount of time taken since the last polling interval.
+	_dhcp_assignments = None #: The MACs and the number of DHCP "leases" granted to each since the last polling interval.
+	_ignored_addresses = None #: A list of all MACs currently ignored, plus the time remaining until requests will be honoured again.
 	
 	def __init__(self, server_address, server_port, client_port):
 		self._stats_lock = threading.Lock()
@@ -362,9 +375,15 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 		
 		
 class DHCPService(threading.Thread):
-	_dhcp_server = None
+	"""
+	A thread that handles DHCP requests indefinitely, daemonically.
+	"""
+	_dhcp_server = None #: The handler that responds to DHCP requests.
 	
 	def __init__(self):
+		"""
+		Sets up the DHCP server.
+		"""
 		threading.Thread.__init__(self)
 		self.daemon = True
 		
@@ -377,6 +396,12 @@ class DHCPService(threading.Thread):
 		src.logging.writeLog('Configured DHCP server')
 		
 	def run(self):
+		"""
+		Runs the DHCP server indefinitely.
+		
+		In the event of an unexpected error, e-mail will be sent and processing
+		will continue with the next request.
+		"""
 		src.logging.writeLog('Running DHCP server')
 		while True:
 			try:
@@ -386,7 +411,11 @@ class DHCPService(threading.Thread):
 			except Exception, e:
 				src.logging.sendErrorReport('Unhandled exception', e)
 				
-	def getStats(self):
+	def pollStats(self):
+		"""
+		Updates the performance statistics in the in-memory stats-log and
+		implicitly updates the ignored MACs values.
+		"""
 		(processed, discarded, time_taken, ignored_macs) = self._dhcp_server.GetStats()
 		src.logging.writePollRecord(processed, discarded, time_taken, ignored_macs)
 		

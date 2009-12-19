@@ -38,7 +38,10 @@ import conf
 import src.logging
 
 class _WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
-	_allowed_pages = ('/', '/index.html')
+	"""
+	The handler that responds to all received HTTP requests.
+	"""
+	_allowed_pages = ('/', '/index.html') #: A collection of all paths that will be allowed.
 	
 	def do_GET(self):
 		if not self.path in self._allowed_pages:
@@ -133,9 +136,15 @@ class _WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
 			
 			
 class WebService(threading.Thread):
-	_web_server = None
+	"""
+	A thread that handles HTTP requests indefinitely, daemonically.
+	"""
+	_web_server = None #: The handler that responds to HTTP requests.
 	
 	def __init__(self):
+		"""
+		Sets up the Web server.
+		"""
 		threading.Thread.__init__(self)
 		self.daemon = True
 		
@@ -146,6 +155,12 @@ class WebService(threading.Thread):
 		src.logging.writeLog('Configured Web server')
 		
 	def run(self):
+		"""
+		Runs the Web server indefinitely.
+		
+		In the event of an unexpected error, e-mail will be sent and processing
+		will continue with the next request.
+		"""
 		src.logging.writeLog('Running Web server')
 		while True:
 			try:

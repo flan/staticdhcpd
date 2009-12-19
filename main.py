@@ -35,7 +35,7 @@ import src.dhcp
 import src.logging
 import src.web
 
-if not conf.DEBUG:
+if not conf.DEBUG: #Suppress all unnecessary prints. 
 	sys.stdout = sys.stderr = open('/dev/null', 'w')
 	
 def _quitHandler(signum, frame):
@@ -74,9 +74,11 @@ def _logHandler(signum, frame):
 		src.logging.writeLog("Unable to write logfile: %(file)s" % {'file': conf.LOG_FILE,})
 		
 if __name__ == '__main__':
+	#Start DHCP server.
 	dhcp_thread = src.dhcp.DHCPService()
 	dhcp_thread.start()
 	
+	#Start Web server.
 	if conf.WEB_ENABLED:
 		web_thread = src.web.WebService()
 		web_thread.start()
@@ -84,22 +86,26 @@ if __name__ == '__main__':
 	#Record PID.
 	try:
 		open(conf.PID_FILE, 'w').write(str(os.getpid()) + '\n')
+		os.chown(conf.PID_FILE, conf.UID, conf.GID)
 	except:
 		src.logging.writeLog("Unable to write pidfile: %(file)s" % {'file': conf.PID_FILE,})
 		
+	#Set signal-handlers.
 	signal.signal(signal.SIGHUP, _logHandler)
 	signal.signal(signal.SIGTERM, _quitHandler)
 	
+	#Set proper permissions for execution
 	os.setregid(conf.GID, conf.GID)
 	os.setreuid(conf.UID, conf.UID)
 	
+	#Serve until interrupted.
 	tick = 0
 	while True:
 		time.sleep(1)
 		
 		tick += 1
-		if tick >= conf.POLLING_INTERVAL:
-			dhcp_thread.getStats()
+		if tick >= conf.POLLING_INTERVAL: #Perform periodic cleanup.
+			dhcp_thread.pollStats()
 			src.logging.emailTimeoutCooldown()
 			tick = 0
 			
