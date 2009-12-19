@@ -71,16 +71,8 @@ class _WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
 							src.logging.writeLog("Wrote log to '%(log)s'" % {'log': conf.LOG_FILE,})
 						else:
 							src.logging.writeLog("Unable to write log to '%(log)s'" % {'log': conf.LOG_FILE,})
-							
-						try:
-							reload(conf)
-							src.logging.writeLog("Reloaded configuration")
-						except Exception, e:
-							src.logging.writeLog("Error while reloading configuration: %(error)s" % {
-							 'error': str(e),
-							})
 					else:
-						src.logging.writeLog("Invalid reload key provided")
+						src.logging.writeLog("Invalid Web-access-key provided")
 		except Exception, e:
 			src.logging.writeLog("Problem while processing POST in Web module: %(errors)s" % {'error': str(e),})
 		self._doResponse()
@@ -129,7 +121,7 @@ class _WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
 			})
 			self.wfile.write('<form action="/" method="post"><div style="display: inline;">')
 			self.wfile.write('<label for="key">Key: </label><input type="password" name="key" id="key"/>')
-			self.wfile.write('<input type="submit" value="Reload configuration and write log to disk"/>')
+			self.wfile.write('<input type="submit" value="Write log to disk"/>')
 			self.wfile.write('</div></form>')
 			self.wfile.write('</div>')
 			

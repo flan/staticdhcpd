@@ -59,9 +59,9 @@ def _quitHandler(signum, frame):
 	
 	exit(0)
 	
-def _reloadHandler(signum, frame):
+def _logHandler(signum, frame):
 	"""
-	Reloads conf upon receipt of a SIGHUP.
+	Writes log to disk upon receipt of a SIGHUP.
 	
 	@type signum: int
 	@param signum: The kill-signal constant received. This will always be
@@ -70,14 +70,6 @@ def _reloadHandler(signum, frame):
 	@param frame: The stack-frame in which the kill-signal was received.
 		This is not used.
 	"""
-	try:
-		reload(conf)
-		src.logging.writeLog("Reloaded configuration")
-	except Exception, e:
-		src.logging.writeLog("Error while reloading configuration: %(error)s" % {
-		 'error': str(e),
-		})
-		
 	if not src.logging.logToDisk():
 		src.logging.writeLog("Unable to write logfile: %(file)s" % {'file': conf.LOG_FILE,})
 		
@@ -88,14 +80,14 @@ if __name__ == '__main__':
 	if conf.WEB_ENABLED:
 		web_thread = src.web.WebService()
 		web_thread.start()
-	
+		
 	#Record PID.
 	try:
 		open(conf.PID_FILE, 'w').write(str(os.getpid()) + '\n')
 	except:
 		src.logging.writeLog("Unable to write pidfile: %(file)s" % {'file': conf.PID_FILE,})
 		
-	signal.signal(signal.SIGHUP, _reloadHandler)
+	signal.signal(signal.SIGHUP, _logHandler)
 	signal.signal(signal.SIGTERM, _quitHandler)
 	
 	os.setregid(conf.GID, conf.GID)
@@ -108,5 +100,6 @@ if __name__ == '__main__':
 		tick += 1
 		if tick >= conf.POLLING_INTERVAL:
 			dhcp_thread.getStats()
+			src.logging.emailTimeoutCooldown()
 			tick = 0
 			

@@ -38,6 +38,9 @@ _LOG = []
 _POLL_RECORDS_LOCK = threading.Lock()
 _POLL_RECORDS = []
 
+_EMAIL_LOCK = threading.Lock()
+_EMAIL_TIMEOUT = 0
+
 def writeLog(data):
 	global _LOG
 	
@@ -109,9 +112,25 @@ def logToDisk():
 		writeLog('Writing to disk failed: %(error)s' % {'error': str(e),})
 		return False
 		
+def emailTimeoutCooldown():
+	global _EMAIL_TIMEOUT
+	
+	_EMAIL_LOCK.acquire()
+	_EMAIL_TIMEOUT = max(0, _EMAIL_TIMEOUT - conf.POLLING_INTERVAL)
+	_EMAIL_LOCK.release()
+	
 def sendErrorReport(summary, exception):
 	if not conf.EMAIL_ENABLED:
 		return
+		
+	global _EMAIL_TIMEOUT
+	_EMAIL_LOCK.acquire()
+	try:
+		if _EMAIL_TIMEOUT > 0:
+			return
+		_EMAIL_TIMEOUT = conf.EMAIL_TIMEOUT
+	finally:
+		_EMAIL_LOCK.release()
 		
 	message = email.MIMEMultipart.MIMEMultipart()
 	message['From'] = conf.EMAIL_SOURCE

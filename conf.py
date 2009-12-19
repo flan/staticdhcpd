@@ -1,6 +1,4 @@
 #General settings
-#####
-#Changes take effect on reload
 #######################################
 DEBUG = False #If true, all events will be printed to console.
 
@@ -13,8 +11,6 @@ LOG_CAPACITY = 1000 #The number of events to keep in the server's log-buffer.
 POLL_INTERVALS_TO_TRACK = 20 #The amount of stats to keep track of.
 
 #Server settings
-#####
-#Changes take effect on restart
 #######################################
 UID = 999 #The UID that will run this daemon.
 GID = 999 #The GID that will run this daemon.
@@ -29,8 +25,6 @@ WEB_IP = '192.168.1.100' #The IP of the interface on which the HTTP interface sh
 WEB_PORT = 30880 #The port on which the HTTP interface should be served.
 
 #Server behaviour settings
-#####
-#Changes take effect on reload
 #######################################
 ALLOW_LOCAL_DHCP = True #: If False, local DHCP requests will be ignored.
 ALLOW_DHCP_RELAYS = False #If False, relayed DHCP requests will be ignored.
@@ -50,8 +44,6 @@ SUSPEND_THRESHOLD = 10 #The number of times a well-behaved MAC can search for or
 WEB_RELOAD_KEY = '5f4dcc3b5aa765d61d8327deb882cf99' #MD5 of the password needed to reload config.
 
 #Database settings
-#####
-#Changes take effect on restart
 #######################################
 DATABASE_ENGINE = 'MySQL' #Allowed values: MySQL, SQLite
 
@@ -66,8 +58,6 @@ SQLITE_FILE = '/etc/staticDHCPd/dhcp.sqlite3' #The file that contains your SQLit
 SQLITE_MAXIMUM_CONNECTIONS = 5 #The number of threads that may read the database at once.
 
 #E-mail settings
-#####
-#Changes take effect on reload
 #######################################
 EMAIL_ENABLED = False #True to allow staticDHCPd to inform you of any problems it cannot handle by
 #itself.
@@ -76,10 +66,9 @@ EMAIL_SOURCE = 'you@yourdomain.com' #The user from which e-mail should claim to 
 EMAIL_DESTINATION = 'problems@yourdomain.com' #The user to whom e-mail should be sent.
 EMAIL_USER = 'you' #The user who should authenticate to the mail server.
 EMAIL_PASSWORD = 'password' #The password of the user who should authenticate to the mail server.
+EMAIL_TIMEOUT = 600 #The number of seconds to wait between sending e-mails.
 
 #DHCP-processing functions
-#####
-#Changes take effect on reload
 #######################################
 #IMPORT REQUIRED MODULES BELOW THIS LINE
 #IMPORT REQUIRED MODULES ABOVE THIS LINE
