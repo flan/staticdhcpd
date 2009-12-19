@@ -82,6 +82,7 @@ class DhcpBasicPacket(object):
 			begin = dhcp_field[0]
 			end = dhcp_field[0] + dhcp_field[1]
 			self.packet_data[begin:end] = value
+			return True
 		elif DhcpOptions.has_key(name):
 			# fields_specs : {'option_code':fixed_length,minimum_length,multiple}
 			# if fixed_length == 0 : minimum_length and multiple apply
@@ -99,8 +100,9 @@ class DhcpBasicPacket(object):
 			length = len(value)
 			if (not specs[0] == 0 and specs == length) or (specs[1] <= length and length % specs[2] == 0):
 				self.options_data[name] = value
+				return True
 			else:
-				raise ValueError("pydhcplib.dhcp_basic_packet.setoption error : invalid value: %(name)s" % {'name': name})
+				return False
 		raise ValueError("pydhcplib.dhcp_basic_packet.setoption error : unknown option: %(name)s" % {'name': name})
 		
 	def IsOption(self,name):
