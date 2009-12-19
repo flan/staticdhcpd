@@ -92,9 +92,9 @@ class DhcpNetwork:
 	def HandleDhcpRequest(self, packet, source_address):
 		pass
 		
-	def SendDhcpPacketTo(self, packet, _ip, _port=None):
+	def SendDhcpPacketTo(self, packet, ip, port):
 		return self.response_socket.sendto(
 		 packet.EncodePacket(),
-		 (_ip, _port or self.emit_port)
+		 (ip, port)
 		)
 		
