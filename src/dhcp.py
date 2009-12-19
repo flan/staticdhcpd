@@ -352,7 +352,7 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 			port = self.emit_port
 			
 		bytes = self.SendDhcpPacketTo(packet, ip, port)
-		src.logging.writeLog('DHCP%(type)s sent to %(mac)s for %(ip) [%(bytes)i bytes]' % {
+		src.logging.writeLog('DHCP%(type)s sent to %(mac)s for %(ip)s [%(bytes)i bytes]' % {
 			 'type': response_type,
 			 'mac': mac,
 			 'ip': client_ip,
