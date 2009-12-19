@@ -52,7 +52,7 @@ class _SQLBroker(object):
 			subnet_mask:basestring|None, broadcast_address:basestring|None,
 			domain_name:basestring|None, domain_name_servers:basestring|None,
 			ntp_servers:basestring|None, lease_time:int) or None if no match was
-			found. 
+			found.
 		"""
 		self._resource_lock.acquire()
 		try:
@@ -61,13 +61,19 @@ class _SQLBroker(object):
 			self._resource_lock.release()
 			
 class _MySQL(_SQLBroker):
-	_host = None
-	_port = None
-	_username = None
-	_password = None
-	_database = None
+	"""
+	Implements a MySQL broker.
+	"""
+	_host = None #: The address of the database's host.
+	_port = None #: The port on which the database process is listening.
+	_username = None #: The username with which to authenticate.
+	_password = None #: The password with which to authenticate.
+	_database = None #: The name of the database to be consulted.
 	
 	def __init__(self):
+		"""
+		Constructs the broker.
+		"""
 		self._resource_lock = threading.BoundedSemaphore(conf.MYSQL_MAXIMUM_CONNECTIONS)
 		
 		if conf.MYSQL_HOST is None:
@@ -81,7 +87,20 @@ class _MySQL(_SQLBroker):
 		
 	def _lookupMAC(self, mac):
 		"""
-		May raise exception.
+		Queries the database for the given MAC address and returns the IP and
+		associated details if the MAC is known.
+		
+		@type mac: basestring
+		@param mac: The MAC address to lookup.
+		
+		@rtype: tuple|None
+		@return: (ip:basestring, gateway:basestring|None,
+			subnet_mask:basestring|None, broadcast_address:basestring|None,
+			domain_name:basestring|None, domain_name_servers:basestring|None,
+			ntp_servers:basestring|None, lease_time:int) or None if no match was
+			found.
+		
+		@raise Exception: If a problem occurs while accessing the database.
 		"""
 		try:
 			mysql_db = None
@@ -116,16 +135,35 @@ class _MySQL(_SQLBroker):
 				pass
 				
 class _SQLite(_SQLBroker):
-	_file = None
+	"""
+	Implements a SQLite broker.
+	"""
+	_file = None #: The path to the file containing the SQLite3 database to be used.
 	
 	def __init__(self):
+		"""
+		Constructs the broker.
+		"""
 		self._resource_lock = threading.BoundedSemaphore(conf.SQLITE_MAXIMUM_CONNECTIONS)
 		
 		self._file = conf.SQLITE_FILE
 		
 	def _lookupMAC(self, mac):
 		"""
-		May raise exception.
+		Queries the database for the given MAC address and returns the IP and
+		associated details if the MAC is known.
+		
+		@type mac: basestring
+		@param mac: The MAC address to lookup.
+		
+		@rtype: tuple|None
+		@return: (ip:basestring, gateway:basestring|None,
+			subnet_mask:basestring|None, broadcast_address:basestring|None,
+			domain_name:basestring|None, domain_name_servers:basestring|None,
+			ntp_servers:basestring|None, lease_time:int) or None if no match was
+			found.
+		
+		@raise Exception: If a problem occurs while accessing the database.
 		"""
 		try:
 			sqlite_db = sqlite3.connect(self._file)
