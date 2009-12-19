@@ -4,7 +4,8 @@ staticDHCPd module: src.sql
 
 Purpose
 =======
- Provides a uniform SQL API for a staticDHCPd server.
+ Provides a uniform datasource API, selecting from multiple backends,
+ for a staticDHCPd server.
  
 Legal
 =====
@@ -33,9 +34,26 @@ import threading
 import conf
 
 class _SQLBroker(object):
-	_resource_lock = None
+	"""
+	A stub documenting the features an _SQLBroker object must provide.
+	"""
+	_resource_lock = None #: A lock used to prevent the database from being overwhelmed.
 	
 	def lookupMAC(self, mac):
+		"""
+		Queries the database for the given MAC address and returns the IP and
+		associated details if the MAC is known.
+		
+		@type mac: basestring
+		@param mac: The MAC address to lookup.
+		
+		@rtype: tuple|None
+		@return: (ip:basestring, gateway:basestring|None,
+			subnet_mask:basestring|None, broadcast_address:basestring|None,
+			domain_name:basestring|None, domain_name_servers:basestring|None,
+			ntp_servers:basestring|None, lease_time:int) or None if no match was
+			found. 
+		"""
 		self._resource_lock.acquire()
 		try:
 			return self._lookupMAC(mac)
@@ -69,18 +87,20 @@ class _MySQL(_SQLBroker):
 			mysql_db = None
 			if not self._port is None:
 				mysql_db = MySQLdb.connect(
-				 host=self._host, port=self._port, user=self._username, passwd=self._password, db=self._database
+				 host=self._host, port=self._port, db=self._database,
+				 user=self._username, passwd=self._password,
 				)
 			else:
 				mysql_db = MySQLdb.connect(
-				 host=self._host, user=self._username, passwd=self._password, db=self._database
+				 host=self._host, db=self._database,
+				 user=self._username, passwd=self._password
 				)
 			mysql_cur = mysql_db.cursor()
 			
 			mysql_cur.execute(' '.join((
 			 "SELECT m.ip,",
 			 "s.gateway, s.subnet_mask, s.broadcast_address, s.domain_name, s.domain_name_servers,",
-			 "s.lease_time FROM maps m, subnets s",
+			 "s.ntp_servers, s.lease_time FROM maps m, subnets s",
 			 "WHERE m.mac = %s AND m.subnet = s.subnet AND m.serial = s.serial",
 			 "LIMIT 1"
 			)), (mac,))
@@ -114,7 +134,7 @@ class _SQLite(_SQLBroker):
 			sqlite_cur.execute(' '.join((
 			 "SELECT m.ip,",
 			 "s.gateway, s.subnet_mask, s.broadcast_address, s.domain_name, s.domain_name_servers,",
-			 "s.lease_time FROM maps m, subnets s",
+			 "s.ntp_servers, s.lease_time FROM maps m, subnets s",
 			 "WHERE m.mac = ? AND m.subnet = s.subnet AND m.serial = s.serial",
 			 "LIMIT 1"
 			)), (mac,))
@@ -129,7 +149,8 @@ class _SQLite(_SQLBroker):
 			except:
 				pass
 				
-SQL_BROKER = None
+#Decide which SQL engine to use and store the class in SQL_BROKER.
+SQL_BROKER = None #: The class of the SQL engine to use for looking up MACs.
 if conf.DATABASE_ENGINE == 'MySQL':
 	import MySQLdb
 	SQL_BROKER = _MySQL

@@ -298,7 +298,7 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 		self.LogTimeTaken(time.time() - start_time)
 		
 	def LoadDHCPPacket(self, packet, result):
-		(ip, gateway, subnet_mask, broadcast_address, domain_name, domain_name_servers, lease_time) = result
+		(ip, gateway, subnet_mask, broadcast_address, domain_name, domain_name_servers, ntp_servers, lease_time) = result
 		
 		packet.SetOption('yiaddr', [int(i) for i in ip.split('.')])
 		packet.SetOption('ip_address_lease_time', longToQuad(lease_time))
@@ -318,7 +318,14 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 			dns_list = []
 			for dns in domain_name_servers.split(','):
 				dns_list += [int(i) for i in dns.strip().split('.')]
-			packet.SetOption('domain_name_server', dns_list)
+			packet.SetOption('domain_name_servers', dns_list)
+			
+		#NTP servers.
+		if ntp_servers:
+			ntp_list = []
+			for ntp in ntp_servers.split(','):
+				ntp_list += [int(i) for i in ntp.strip().split('.')]
+			packet.SetOption('ntp_servers', ntp_list)
 			
 	def LogDHCPAccess(self, mac):
 		if conf.ENABLE_SUSPEND:

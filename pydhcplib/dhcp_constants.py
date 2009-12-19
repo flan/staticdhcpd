@@ -92,7 +92,7 @@ DhcpOptions = {
  # Vendor Extension
  'subnet_mask':1,'time_offset':2,
  'router':3,'time_server':4,'name_server':5,
- 'domain_name_server':6,'log_server':7,
+ 'domain_name_servers':6,'log_server':7,
  'cookie_server':8,'lpr_server':9,
  'impress_server':10,'resource_location_server':11,
  'host_name':12,'boot_file':13,'merit_dump_file':14,
