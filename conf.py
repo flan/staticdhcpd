@@ -1,6 +1,6 @@
 #General settings
 #######################################
-DEBUG = False #If true, all events will be printed to console.
+DEBUG = False #If True, all events will be printed to console.
 
 SYSTEM_NAME = 'staticDHCPd'
 LOG_FILE = '/var/log/' + SYSTEM_NAME + '.log' #The file to which logs should be dumped on receipt of
