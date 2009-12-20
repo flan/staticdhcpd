@@ -77,7 +77,7 @@ class DhcpBasicPacket(object):
 		if DhcpFields.has_key(name):
 			dhcp_field = DhcpFields[name]
 			if not len(value) == dhcp_field[1]:
-				raise ValueError("pydhcplib.dhcp_basic_packet.setoption error : bad option length: %(name)s" % {'name': name}) 
+				return False 
 			begin = dhcp_field[0]
 			end = dhcp_field[0] + dhcp_field[1]
 			self.packet_data[begin:end] = value
