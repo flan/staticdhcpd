@@ -189,26 +189,7 @@ def sendErrorReport(summary, exception):
 	@param exception: The C{Exception} raised to result in this message being
 		sent.
 	"""
-	if not conf.EMAIL_ENABLED:
-		return
-		
-	global _EMAIL_TIMEOUT
-	_EMAIL_LOCK.acquire()
-	try:
-		if _EMAIL_TIMEOUT > 0:
-			return
-		_EMAIL_TIMEOUT = conf.EMAIL_TIMEOUT
-	finally:
-		_EMAIL_LOCK.release()
-		
-	message = email.MIMEMultipart.MIMEMultipart()
-	message['From'] = conf.EMAIL_SOURCE
-	message['To'] = conf.EMAIL_DESTINATION
-	message['Date'] = email.Utils.formatdate(localtime=True)
-	message['Subject'] = 'Problem with the DHCP server'
-	
-	message.attach(email.MIMEText.MIMEText(
-"""
+	report ="""
 A problem occurred with the DHCP server running on %(server)s.
 
 Given description:
@@ -228,7 +209,30 @@ Exception traceback:
 	 'type': str(type(exception)),
 	 'details': str(exception),
 	 'traceback': traceback.format_exc(),
-	}))
+	}
+	
+	if conf.DEBUG:
+		print report
+		
+	if not conf.EMAIL_ENABLED:
+		return
+		
+	global _EMAIL_TIMEOUT
+	_EMAIL_LOCK.acquire()
+	try:
+		if _EMAIL_TIMEOUT > 0:
+			return
+		_EMAIL_TIMEOUT = conf.EMAIL_TIMEOUT
+	finally:
+		_EMAIL_LOCK.release()
+		
+	message = email.MIMEMultipart.MIMEMultipart()
+	message['From'] = conf.EMAIL_SOURCE
+	message['To'] = conf.EMAIL_DESTINATION
+	message['Date'] = email.Utils.formatdate(localtime=True)
+	message['Subject'] = 'Problem with the DHCP server'
+	
+	message.attach(email.MIMEText.MIMEText(report))
 	
 	try:
 		smtp_server = smtplib.SMTP(conf.EMAIL_SERVER)

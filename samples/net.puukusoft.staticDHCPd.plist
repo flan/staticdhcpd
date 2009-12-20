@@ -2,12 +2,12 @@
 <plist version="1.0">
 	<dict>
 		<key>Label</key>
-		<string>org.homelinux.hamsterx.staticDHCPd</string>
+		<string>net.puukusoft.staticDHCPd</string>
 		<key>ProgramArguments</key>
 		<array>
 			<string>/usr/bin/env</string>
-			<string>python2.6</string>
-			<string>/opt/hamsterx/staticDHCPd/main.py</string>
+			<string>python</string>
+			<string>/opt/puukusoft/staticDHCPd/main.py</string>
 		</array>
 		<key>KeepAlive</key>
 		<true/>
