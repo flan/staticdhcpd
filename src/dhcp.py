@@ -534,14 +534,14 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 		@rtype: int
 		@return: The number of bytes transmitted.
 		"""
-		relay = False
+		relay = ''
 		ip = port = None
 		if address[0] not in ('255.255.255.255', '0.0.0.0', ''): #Unicast.
 			giaddr = packet.GetGiaddr()
 			if giaddr and not giaddr == [0,0,0,0]: #Relayed request.
 				ip = '.'.join(map(str, giaddr))
 				port = conf.DHCP_SERVER_PORT
-				relay = True
+				relay = 'via %(ip)s ' % {'ip': ip,}
 			else: #Request directly from client, routed or otherwise.
 				ip = address[0]
 				port = conf.DHCP_CLIENT_PORT
@@ -550,12 +550,12 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 			port = self.emit_port
 			
 		bytes = self.SendDhcpPacketTo(packet, ip, port)
-		src.logging.writeLog('DHCP%(type)s sent to %(mac)s for %(ip)s [%(bytes)i bytes|relayed = %(relay)s]' % {
+		src.logging.writeLog('DHCP%(type)s sent to %(mac)s for %(ip)s %(relay)s[%(bytes)i bytes]' % {
 			 'type': response_type,
 			 'mac': mac,
 			 'ip': client_ip,
 			 'bytes': bytes,
-			 'relay': str(relay),
+			 'relay': relay,
 		})
 		return bytes
 		
