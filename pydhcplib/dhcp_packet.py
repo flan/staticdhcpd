@@ -123,48 +123,50 @@ class DhcpPacket(DhcpBasicPacket):
 		# Transform textual data into dhcp binary data
 		p = parameter.strip()
 		# 1- Search for header informations or specific parameter
-		if p in ('op', 'htype'):
-			value = value.strip()
-			if value.isdigit():
-				return [int(value)]
-			try:
-				value = DhcpNames[value.strip()]
-				return [value]
-			except KeyError:
-				return [0]
-		elif p in ('hlen', 'hops'):
-			try:
-				value = int(value)
-				return [value]
-			except ValueError:
-				return [0]
-		elif p in ('secs', 'flags'):
-			try:
-				value = ipv4(int(value)).list()
-			except ValueError:
-				value = [0,0,0,0]
-			return value[2:]
-		elif p == 'xid':
-			try :
-				value = ipv4(int(value)).list()
-			except ValueError:
-				value = [0,0,0,0]
-			return value
-		elif p in ('ciaddr', 'yiaddr', 'siaddr', 'giaddr'):
-			try:
-				ip = ipv4(value).list()
-			except ValueError:
-				ip = [0,0,0,0]
-			return ip
-		elif p == 'chaddr':
-			try:
-				value = hwmac(value).list() + [0]*10
-			except ValueError,TypeError:
-				value = [0]*16
-			return value
-		elif p == 'sname':
-			return
-		elif p == 'file':
+		if p in DhcpFields:
+			if p in ('op', 'htype'):
+				value = value.strip()
+				if value.isdigit():
+					return [int(value)]
+				try:
+					value = DhcpNames[value.strip()]
+					return [value]
+				except KeyError:
+					return [0]
+			elif p in ('hlen', 'hops'):
+				try:
+					value = int(value)
+					return [value]
+				except ValueError:
+					return [0]
+			elif p in ('secs', 'flags'):
+				try:
+					value = ipv4(int(value)).list()
+				except ValueError:
+					value = [0,0,0,0]
+				return value[2:]
+			elif p == 'xid':
+				try :
+					value = ipv4(int(value)).list()
+				except ValueError:
+					value = [0,0,0,0]
+				return value
+			elif p in ('ciaddr', 'yiaddr', 'siaddr', 'giaddr'):
+				try:
+					ip = ipv4(value).list()
+				except ValueError:
+					ip = [0,0,0,0]
+				return ip
+			elif p == 'chaddr':
+				try:
+					value = hwmac(value).list() + [0]*10
+				except ValueError,TypeError:
+					value = [0]*16
+				return value
+			elif p == 'sname':
+				return
+			elif p == 'file':
+				return
 			return
 		elif p == 'parameter_request_list':
 			value = value.strip().split(',')
@@ -180,50 +182,54 @@ class DhcpPacket(DhcpBasicPacket):
 				return
 				
 		# 2- Search for options
-		try:
-			option_type = DhcpOptionsTypes[DhcpOptions[parameter]]
-		except KeyError:
-			return False
+		option_type = DhcpOptions.get(parameter)
+		if not option_type:
+			return
+		else:
+			option_type = DhcpOptionsTypes.get(option_type)
+			if not option_type:
+				return
+			binary_value = None
 			
-		if option_type == "ipv4":
-			# this is a single ip address
-			try:
-				binary_value = map(int, value.split("."))
-			except ValueError:
-				return False
-		elif option_type == "ipv4+":
-			# this is multiple ip address
-			binary_value = [ipv4(single).list() for single in value.split(",")]
-		elif option_type == "32-bits" :
-			# This is probably a number...
-			try:
-				digit = int(value)
-				binary_value = [digit>>24&0xFF,(digit>>16)&0xFF,(digit>>8)&0xFF,digit&0xFF]
-			except ValueError:
-				return False
-		elif option_type == "16-bits":
-			try:
-				digit = int(value)
-				binary_value = [(digit>>8)&0xFF,digit&0xFF]
-			except ValueError:
-				return False
-		elif option_type == "char":
-			try:
-				digit = int(value)
-				binary_value = [digit&0xFF]
-			except ValueError:
-				return False
-		elif option_type == "bool":
-			if value in (0, 'false', 'False'):
-				binary_value = [0]
+			if option_type == "ipv4":
+				# this is a single ip address
+				try:
+					binary_value = map(int, value.split("."))
+				except ValueError:
+					return False
+			elif option_type == "ipv4+":
+				# this is multiple ip address
+				binary_value = [ipv4(single).list() for single in value.split(",")]
+			elif option_type == "32-bits" :
+				# This is probably a number...
+				try:
+					digit = int(value)
+					binary_value = [digit>>24&0xFF,(digit>>16)&0xFF,(digit>>8)&0xFF,digit&0xFF]
+				except ValueError:
+					return False
+			elif option_type == "16-bits":
+				try:
+					digit = int(value)
+					binary_value = [(digit>>8)&0xFF,digit&0xFF]
+				except ValueError:
+					return False
+			elif option_type == "char":
+				try:
+					digit = int(value)
+					binary_value = [digit&0xFF]
+				except ValueError:
+					return False
+			elif option_type == "bool":
+				if value in (0, 'false', 'False'):
+					binary_value = [0]
+				else:
+					binary_value = [1]
+			elif option_type == "string":
+				binary_value = strlist(value).list()
 			else:
-				binary_value = [1]
-		elif option_type == "string":
-			binary_value = strlist(value).list()
-		else :
-			binary_value = strlist(value).list()
-		return binary_value
-		
+				binary_value = strlist(value).list()
+			return binary_value
+			
 	#Packet type resolution
 	def IsDhcpSomethingPacket(self, type):
 		if not self.IsDhcpPacket():
