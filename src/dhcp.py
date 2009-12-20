@@ -374,7 +374,7 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 					packet.TransformToDhcpNackPacket()
 					self.SendDhcpPacket(packet, source_address, 'NAK', mac, 'NAK_RENEWALS')
 				else:
-					if address[0] not in ('255.255.255.255', '0.0.0.0', ''):
+					if source_address[0] not in ('255.255.255.255', '0.0.0.0', ''):
 						src.logging.writeLog('DHCPREQUEST:RENEW received from %(mac)s' % {
 						 'mac': mac,
 						})
