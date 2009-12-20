@@ -74,15 +74,18 @@ def _logHandler(signum, frame):
 		src.logging.writeLog("Unable to write logfile: %(file)s" % {'file': conf.LOG_FILE,})
 		
 if __name__ == '__main__':
-	#Start DHCP server.
-	dhcp_thread = src.dhcp.DHCPService()
-	dhcp_thread.start()
+	#Ensure that pre-setup tasks are taken care of.
+	conf.init()
 	
 	#Start Web server.
 	if conf.WEB_ENABLED:
 		web_thread = src.web.WebService()
 		web_thread.start()
 		
+	#Start DHCP server.
+	dhcp_thread = src.dhcp.DHCPService()
+	dhcp_thread.start()
+	
 	#Record PID.
 	try:
 		open(conf.PID_FILE, 'w').write(str(os.getpid()) + '\n')

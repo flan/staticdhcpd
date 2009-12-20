@@ -70,11 +70,12 @@ EMAIL_TIMEOUT = 600 #The number of seconds to wait between sending e-mails.
 
 #DHCP-processing functions
 #######################################
-#IMPORT REQUIRED MODULES BELOW THIS LINE
-from src.dhcp import longToQuad
-#IMPORT REQUIRED MODULES ABOVE THIS LINE
+#PERFORM ANY REQUIRED IMPORTS WITHIN init()
+def init():
+	from src.dhcp import longToQuad
+#DEFINE ANY REQUIRED FUNCTIONS OR VARIABLES BELOW THIS LINE
 
-def loadDHCPPacket(packet, mac, client_ip, relay_ip):
+def loadDHCPPacket(packet, mac, client_ip, relay_ip, subnet, serial):
 	#This is a custom function, called before each packet is sent, that
 	#allows you to tweak the options attached to a DHCP response.
 	#
@@ -88,5 +89,6 @@ def loadDHCPPacket(packet, mac, client_ip, relay_ip):
 	#client_ip is a quadruple of octets.
 	#relay_ip is either None or an address as a quadruple of octets,
 	#	depending on whether this is a response to a relay request.
+	#subnet and serial are values passed through from the database.
 	return True
 	

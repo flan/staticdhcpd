@@ -161,7 +161,11 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 						giaddr = None
 					else:
 						giaddr = tuple(giaddr)
-					if conf.loadDHCPPacket(offer, mac, tuple([int(i) for i in result[0].split('.')]), giaddr):
+					if conf.loadDHCPPacket(
+					 offer,
+					 mac, tuple([int(i) for i in result[0].split('.')]), giaddr,
+					 result[8], result[9]
+					):
 						self.SendDhcpPacket(offer, source_address, 'OFFER', mac, result[0])
 					else:
 						src.logging.writeLog('Ignoring %(mac)s per loadDHCPPacket()' % {
@@ -223,7 +227,11 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 						if result and (not ip or result[0] == s_ip):
 							packet.TransformToDhcpAckPacket()
 							self.LoadDHCPPacket(packet, result)
-							if conf.loadDHCPPacket(packet, mac, tuple(map(int, result[0].split('.'))), giaddr):
+							if conf.loadDHCPPacket(
+							 packet,
+							 mac, tuple(map(int, result[0].split('.'))), giaddr,
+							 result[8], result[9]
+							):
 								self.SendDhcpPacket(packet, source_address, 'ACK', mac, s_ip)
 							else:
 								src.logging.writeLog('Ignoring %(mac)s per loadDHCPPacket()' % {
@@ -244,7 +252,11 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 					if result and result[0] == s_ip:
 						packet.TransformToDhcpAckPacket()
 						self.LoadDHCPPacket(packet, result)
-						if conf.loadDHCPPacket(packet, mac, tuple(ip), giaddr):
+						if conf.loadDHCPPacket(
+						 packet,
+						 mac, tuple(ip), giaddr,
+						 result[8], result[9]
+						):
 							src.logging.writeLog('DHCPACK sent to %(mac)s' % {
 							 'mac': mac,
 							})
@@ -273,7 +285,11 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 							packet.TransformToDhcpAckPacket()
 							packet.SetOption('yiaddr', ciaddr)
 							self.LoadDHCPPacket(packet, result)
-							if conf.loadDHCPPacket(packet, mac, tuple(ciaddr), giaddr):
+							if conf.loadDHCPPacket(
+							 packet,
+							 mac, tuple(ciaddr), giaddr,
+							 result[8], result[9]
+							):
 								self.SendDhcpPacket(packet, (s_ciaddr, 0), 'ACK', mac, s_ciaddr)
 							else:
 								src.logging.writeLog('Ignoring %(mac)s per loadDHCPPacket()' % {

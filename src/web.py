@@ -44,12 +44,21 @@ class _WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
 	_allowed_pages = ('/', '/index.html') #: A collection of all paths that will be allowed.
 	
 	def do_GET(self):
+		"""
+		Handles all HTTP GET requests.
+		"""
 		if not self.path in self._allowed_pages:
 			self.send_response(404)
 			return
 		self._doResponse()
 		
 	def do_HEAD(self):
+		"""
+		Handles all HTTP HEAD requests.
+		
+		This involves lying about the existence of files and telling the browser
+		to always pull a fresh copy.
+		"""
 		if not self.path in self._allowed_pages:
 				self.send_response(404)
 				return
@@ -63,6 +72,12 @@ class _WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
 			src.logging.writeLog("Problem while processing HEAD in Web module: %(errors)s" % {'error': str(e),})
 			
 	def do_POST(self):
+		"""
+		Handles all HTTP POST requests.
+		
+		This checks to see if the user entered the log-to-disk key and, if so,
+		writes the memory-log to disk.
+		"""
 		try:
 			(ctype, pdict) = cgi.parse_header(self.headers.getheader('content-type'))
 			if ctype == 'application/x-www-form-urlencoded':
@@ -81,6 +96,10 @@ class _WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
 		self._doResponse()
 		
 	def _doResponse(self):
+		"""
+		Renders the current state of the memory-log as HTML for consumption by
+		the client.
+		"""
 		try:
 			self.send_response(200)
 			self.send_header('Content-type', 'text/html')
@@ -129,8 +148,6 @@ class _WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
 			self.wfile.write('</div>')
 			
 			self.wfile.write("</div></body></html>")
-			
-			return
 		except Exception, e:
 			src.logging.writeLog("Problem while serving response in Web module: %(errors)s" % {'error': str(e),})
 			

@@ -51,7 +51,8 @@ class _SQLBroker(object):
 		@return: (ip:basestring, gateway:basestring|None,
 			subnet_mask:basestring|None, broadcast_address:basestring|None,
 			domain_name:basestring|None, domain_name_servers:basestring|None,
-			ntp_servers:basestring|None, lease_time:int) or None if no match was
+			ntp_servers:basestring|None, lease_time:int,
+			subnet:basestring, serial:int) or None if no match was
 			found.
 		"""
 		self._resource_lock.acquire()
@@ -97,7 +98,8 @@ class _MySQL(_SQLBroker):
 		@return: (ip:basestring, gateway:basestring|None,
 			subnet_mask:basestring|None, broadcast_address:basestring|None,
 			domain_name:basestring|None, domain_name_servers:basestring|None,
-			ntp_servers:basestring|None, lease_time:int) or None if no match was
+			ntp_servers:basestring|None, lease_time:int,
+			subnet:basestring, serial:int) or None if no match was
 			found.
 		
 		@raise Exception: If a problem occurs while accessing the database.
@@ -119,7 +121,7 @@ class _MySQL(_SQLBroker):
 			mysql_cur.execute(' '.join((
 			 "SELECT m.ip,",
 			 "s.gateway, s.subnet_mask, s.broadcast_address, s.domain_name, s.domain_name_servers,",
-			 "s.ntp_servers, s.lease_time FROM maps m, subnets s",
+			 "s.ntp_servers, s.lease_time, s.subnet, s.serial FROM maps m, subnets s",
 			 "WHERE m.mac = %s AND m.subnet = s.subnet AND m.serial = s.serial",
 			 "LIMIT 1"
 			)), (mac,))
@@ -160,7 +162,8 @@ class _SQLite(_SQLBroker):
 		@return: (ip:basestring, gateway:basestring|None,
 			subnet_mask:basestring|None, broadcast_address:basestring|None,
 			domain_name:basestring|None, domain_name_servers:basestring|None,
-			ntp_servers:basestring|None, lease_time:int) or None if no match was
+			ntp_servers:basestring|None, lease_time:int,
+			subnet:basestring, serial:int) or None if no match was
 			found.
 		
 		@raise Exception: If a problem occurs while accessing the database.
@@ -172,7 +175,7 @@ class _SQLite(_SQLBroker):
 			sqlite_cur.execute(' '.join((
 			 "SELECT m.ip,",
 			 "s.gateway, s.subnet_mask, s.broadcast_address, s.domain_name, s.domain_name_servers,",
-			 "s.ntp_servers, s.lease_time FROM maps m, subnets s",
+			 "s.ntp_servers, s.lease_time, s.subnet, s.serial FROM maps m, subnets s",
 			 "WHERE m.mac = ? AND m.subnet = s.subnet AND m.serial = s.serial",
 			 "LIMIT 1"
 			)), (mac,))
