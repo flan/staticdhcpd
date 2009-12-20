@@ -220,7 +220,7 @@ class DhcpPacket(DhcpBasicPacket):
 				except ValueError:
 					return False
 			elif option_type == "bool":
-				if value in (0, 'false', 'False'):
+				if not value or value in ('false', 'no', 'off'):
 					binary_value = [0]
 				else:
 					binary_value = [1]
