@@ -106,7 +106,7 @@ class _WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
 			self.send_header('Last-modified', time.strftime('%a, %d %b %Y %H:%M:%S %Z'))
 			self.end_headers()
 			
-			self.wfile.write('<html><head><title>staticDHCPd log</title></head><body>')
+			self.wfile.write('<html><head><title>%(name)s log</title></head><body>' % {'name': conf.SYSTEM_NAME,})
 			self.wfile.write('<div style="width: 950px; margin-left: auto; margin-right: auto; border: 1px solid black;">')
 			
 			self.wfile.write('<div>Statistics:<div style="text-size: 0.9em; margin-left: 20px;">')
