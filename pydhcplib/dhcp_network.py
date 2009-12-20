@@ -85,16 +85,16 @@ class DhcpNetwork:
 				return packet
 			return None
 			
+	def SendDhcpPacketTo(self, packet, ip, port):
+		return self.response_socket.sendto(
+		 packet.EncodePacket(),
+		 (ip, port)
+		)
+		
 	# Server side Handle methods
 	def HandleDhcpDiscover(self, packet, source_address):
 		pass
 		
 	def HandleDhcpRequest(self, packet, source_address):
 		pass
-		
-	def SendDhcpPacketTo(self, packet, ip, port):
-		return self.response_socket.sendto(
-		 packet.EncodePacket(),
-		 (ip, port)
-		)
 		

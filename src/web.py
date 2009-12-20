@@ -161,6 +161,9 @@ class WebService(threading.Thread):
 	def __init__(self):
 		"""
 		Sets up the Web server.
+		
+		@raise Exception: If a problem occurs while binding the sockets needed
+			to handle HTTP traffic.
 		"""
 		threading.Thread.__init__(self)
 		self.daemon = True
