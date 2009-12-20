@@ -106,7 +106,7 @@ DhcpOptions = {
  'interface_mtu':26,'all_subnets_are_local':27,
  'broadcast_address':28,'perform_mask_discovery':29,
  'mask_supplier':30,'perform_router_discovery':31,
- 'router_solicitation_address':32,'static_route':33,
+ 'router_solicitation_address':32,'static_routes':33,
  # link layer parameters per interface
  'trailer_encapsulation':34,'arp_cache_timeout':35,
  'ethernet_encapsulation':36,
@@ -237,9 +237,7 @@ DhcpOptions = {
 }
 
 # DhcpOptionsList : reverse of DhcpOptions
-DhcpOptionsList = [(i, value) for (value, i) in DhcpOptions.iteritems()]
-DhcpOptionsList.sort()
-DhcpOptionsList = [value for (i, value) in DhcpOptionsList]
+DhcpOptionsList = dict([(i, value) for (value, i) in DhcpOptions.iteritems()])
 
 # See http://www.iana.org/assignments/bootp-dhcp-parameters
 # FIXME : verify all ipv4+ options, some are 32 bits...

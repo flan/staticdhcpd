@@ -55,6 +55,19 @@ def ipsToQuads(ips):
 		quads += [int(i) for i in ip.strip().split('.')]
 	return quads
 	
+def intToDouble(i):
+	"""
+	A convenience function that converts an int into a pydhcplib-compatible
+	double.
+	
+	@type i: int
+	@param i: The long value to convert.
+	
+	@rtype: list
+	@return: The converted double.
+	"""
+	return [(i / 256) % 256, i % 256]
+	
 def longToQuad(l):
 	"""
 	A convenience function that converts a long into a pydhcplib-compatible

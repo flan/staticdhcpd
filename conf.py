@@ -72,7 +72,7 @@ EMAIL_TIMEOUT = 600 #The number of seconds to wait between sending e-mails.
 #######################################
 #PERFORM ANY REQUIRED IMPORTS WITHIN init()
 def init():
-	from src.dhcp import ipToQuad, ipsToQuads, longToQuad, strToStrList
+	from src.dhcp import ipToQuad, ipsToQuads, intToDouble, longToQuad, strToStrList
 #DEFINE ANY REQUIRED FUNCTIONS OR VARIABLES BELOW THIS LINE
 
 def loadDHCPPacket(packet, mac, client_ip, relay_ip, subnet, serial):
