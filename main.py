@@ -37,6 +37,8 @@ import src.web
 
 if not conf.DEBUG: #Suppress all unnecessary prints. 
 	sys.stdout = sys.stderr = open('/dev/null', 'w')
+else:
+	sys.stdout = sys.stderr
 	
 def _quitHandler(signum, frame):
 	"""

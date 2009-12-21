@@ -172,7 +172,7 @@ class DhcpPacket(DhcpBasicPacket):
 			value = value.strip().split(',')
 			tmp = []
 			for each in value:
-				if DhcpOptions.has_key(each):
+				if each in DhcpOptions:
 					tmp.append(DhcpOptions[each])
 			return tmp
 		elif  p == 'dhcp_message_type':
