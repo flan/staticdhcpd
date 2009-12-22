@@ -272,7 +272,7 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 		The logic here is to make sure the MAC isn't ignored or acting
 		maliciously, then check the database to see whether it has an assigned
 		IP. If it does, and the IP it thinks it has a right to matches this IP,
-		then an ACK is sent, along with all relevant options; if	not, a DHCPNAK
+		then an ACK is sent, along with all relevant options; if not, a DHCPNAK
 		is sent to inform the client that it is not allowed to use the requested
 		IP, forcing it to DISCOVER a new one.
 		
@@ -417,7 +417,89 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 			self.LogDiscardedPacket()
 		self.LogTimeTaken(time.time() - start_time)
 		
-	def LoadDHCPPacket(self, packet, result):
+	def HandleDhcpInform(self, packet, source_address):
+		"""
+		Evaluates a DHCPINFORM request from a client and determines whether a
+		DHCPACK should be sent.
+		
+		The logic here is to make sure the MAC isn't ignored or acting
+		maliciously, then check the database to see whether it has an assigned
+		IP. If it does, and the IP it thinks it has a right to matches this IP,
+		then an ACK is sent, along with all relevant options; if not, the request
+		is ignored.
+		
+		@type packet: L{pydhcplib.dhcp_packet.DhcpPacket}
+		@param packet: The DHCPREQUEST to be evaluated.
+		@type source_address: tuple
+		@param source_address: The address (host, port) from which the request
+			was received.
+		"""
+		if not self.EvaluateRelay(packet):
+			return
+			
+		start_time = time.time()
+		mac = pydhcplib.type_hwmac.hwmac(packet.GetHardwareAddress()).str()
+		if not [None for (ignored_mac, timeout) in self._ignored_addresses if mac == ignored_mac]:
+			if not self.LogDHCPAccess(mac):
+				self.LogDiscardedPacket()
+				return
+				
+			ciaddr = packet.GetOption("ciaddr")
+			s_ciaddr = '.'.join(map(str, ciaddr))
+			if not ciaddr or ciaddr == [0,0,0,0]:
+				ciaddr = None
+			if not giaddr or giaddr == [0,0,0,0]:
+				giaddr = None
+			else:
+				giaddr = tuple(giaddr)
+				
+			src.logging.writeLog('DHCPINFORM received from %(mac)s' % {
+			 'mac': mac,
+			})
+			
+			if not ciaddr:
+				src.logging.writeLog('Malformed packet from %(mac)s; ignoring for %(time)i seconds' % {
+				 'mac': mac,
+				 'time': conf.UNAUTHORIZED_CLIENT_TIMEOUT,
+				})
+				self._stats_lock.acquire()
+				self._ignored_addresses.append([mac, conf.UNAUTHORIZED_CLIENT_TIMEOUT])
+				self._stats_lock.release()
+				self.LogDiscardedPacket()
+				return
+				
+			try:
+				result = self._sql_broker.lookupMAC(mac)
+				if result:
+					packet.TransformToDhcpAckPacket()
+					self.LoadDHCPPacket(packet, result, True)
+					if conf.loadDHCPPacket(
+					 packet,
+					 mac, tuple(ipToQuad(result[0])), giaddr,
+					 result[9], result[10]
+					):
+						self.SendDhcpPacket(packet, source_address, 'ACK', mac, s_ciaddr)
+					else:
+						src.logging.writeLog('Ignoring %(mac)s per loadDHCPPacket()' % {
+						 'mac': mac,
+						})
+						self.LogDiscardedPacket()
+				else:
+					src.logging.writeLog('%(mac)s unknown; ignoring for %(time)i seconds' % {
+					 'mac': mac,
+					 'time': conf.UNAUTHORIZED_CLIENT_TIMEOUT,
+					})
+					self._stats_lock.acquire()
+					self._ignored_addresses.append([mac, conf.UNAUTHORIZED_CLIENT_TIMEOUT])
+					self._stats_lock.release()
+					self.LogDiscardedPacket()
+			except Exception, e:
+				src.logging.sendErrorReport('Unable to respond to %(mac)s' % {'mac': mac,}, e)
+		else:
+			self.LogDiscardedPacket()
+		self.LogTimeTaken(time.time() - start_time)
+		
+	def LoadDHCPPacket(self, packet, result, inform=False):
 		"""
 		Sets DHCP option fields based on values returned from the database.
 		
@@ -425,15 +507,19 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 		@param packet: The packet being updated.
 		@type result: tuple(11)
 		@param result: The value returned from the SQL broker.
+		@type inform: bool
+		@param inform: True if this is a response to a DHCPINFORM message.
 		"""
 		(ip, hostname,
 		 gateway, subnet_mask, broadcast_address,
 		 domain_name, domain_name_servers, ntp_servers,
 		 lease_time, subnet, serial) = result
 		
-		packet.SetOption('yiaddr', ipToQuad(ip))
-		packet.SetOption('ip_address_lease_time', longToQuad(lease_time))
-		
+		#Core parameters.
+		if not inform:
+			packet.SetOption('yiaddr', ipToQuad(ip))
+			packet.SetOption('ip_address_lease_time', longToQuad(lease_time))
+			
 		#Default gateway, subnet mask, and broadcast address.
 		if gateway:
 			if not packet.SetOption('router', ipToQuad(gateway)):
