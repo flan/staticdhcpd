@@ -8,8 +8,8 @@ CREATE TABLE subnets (
 	gateway CHAR(15), -- The IPv4 gateway to supply to clients; may be null.
 	subnet_mask CHAR(15), -- The IPv4 subnet mask to supply to clients; may be null.
 	broadcast_address CHAR(15), -- The IPv4 broadcast address to supply to clients; may be null.
-	domain_name_servers CHAR(50), -- A comma-separated list of IPv4 addresses pointing to DNS servers; limit 3; may be null.
 	ntp_servers CHAR(50), -- A comma-separated list of IPv4 addresses pointing to NTP servers; limit 3; may be null.
+	domain_name_servers CHAR(50), -- A comma-separated list of IPv4 addresses pointing to DNS servers; limit 3; may be null.
 	domain_name CHAR(128), -- The name of the search domain to be provided to clients.
 	PRIMARY KEY(subnet, serial)
 );
