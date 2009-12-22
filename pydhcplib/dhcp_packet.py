@@ -67,7 +67,7 @@ class DhcpPacket(DhcpBasicPacket):
 			elif DhcpFieldsTypes[opt] == "hwmac":
 				result = []
 				hexsym = ('0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f',)
-				for iterator in range(6):
+				for iterator in xrange(6):
 					result.append(str(hexsym[data[iterator] / 16] + hexsym[data[iterator] % 16]))
 				result = ':'.join(result)
 			printable_data += "%(opt)s : %(result)s\n" % {'opt': opt, 'result': result,}
@@ -96,14 +96,15 @@ class DhcpPacket(DhcpBasicPacket):
 			elif DhcpOptionsTypes[optnum] == "ipv4":
 				result = ipv4(data).str()
 			elif DhcpOptionsTypes[optnum] == "ipv4+":
-				for i in range(0, len(data), 4):
+				for i in xrange(0, len(data), 4):
 					if len(data[i:i+4]) == 4:
 						result += ipv4(data[i:i+4]).str() + " - "
 			elif DhcpOptionsTypes[optnum] == "char+":
 				if optnum == 55: # parameter_request_list
-					for each in range(len(data)):
-						data[each] = DhcpOptionsList[each]
-					result = ','.join(data)
+					requested_options = []
+					for each in data:
+						requested_options.append(DhcpOptionsList[int(each)])
+					result = ','.join(requested_options)
 				else:
 					result += str(data)
 			printable_data += "%(opt)s : %(result)s\n" % {'opt': opt, 'result': result,}
@@ -277,6 +278,7 @@ class DhcpPacket(DhcpBasicPacket):
 			
 	#OFFER section
 	def CreateDhcpOfferPacketFrom(self, src): # src = discover packet
+		self.requested_options = src.requested_options
 		self.SetOption("htype", src.GetOption("htype"))
 		self.SetOption("xid", src.GetOption("xid"))
 		self.SetOption("flags", src.GetOption("flags"))
@@ -299,6 +301,7 @@ class DhcpPacket(DhcpBasicPacket):
 		
 	#ACK section
 	def CreateDhcpAckPacketFrom(self, src): # src = request or inform packet
+		self.requested_options = src.requested_options
 		self.SetOption("htype", src.GetOption("htype"))
 		self.SetOption("xid", src.GetOption("xid"))
 		self.SetOption("ciaddr", src.GetOption("ciaddr"))
@@ -321,6 +324,7 @@ class DhcpPacket(DhcpBasicPacket):
 		
 	#NAK section
 	def CreateDhcpNackPacketFrom(self, src): # src = request or inform packet
+		self.requested_options = src.requested_options
 		self.SetOption("htype", src.GetOption("htype"))
 		self.SetOption("xid", src.GetOption("xid"))
 		self.SetOption("flags", src.GetOption("flags"))

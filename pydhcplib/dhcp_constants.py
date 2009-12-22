@@ -95,7 +95,7 @@ DhcpOptions = {
  'domain_name_servers':6,'log_server':7,
  'cookie_server':8,'lpr_server':9,
  'impress_server':10,'resource_location_server':11,
- 'host_name':12,'boot_file':13,'merit_dump_file':14,
+ 'hostname':12,'bootfile':13,'merit_dump_file':14,
  'domain_name':15,'swap_server':16,'root_path':17,'extensions_path':18,
  # IP layer parameters per host
  'ip_forwarding':19,'nonlocal_source_rooting':20,

@@ -36,6 +36,7 @@ class DhcpBasicPacket(object):
 		self.options_data = {}
 		self.packet_data[236:240] = MagicCookie
 		self.source_address = False
+		self.requested_options = ()
 		
 	def IsDhcpPacket(self):
 		if not self.packet_data[236:240] == MagicCookie:
@@ -112,8 +113,9 @@ class DhcpBasicPacket(object):
 			
 		options = []
 		for key in sorted(order.keys()):
-			options += order[key]
-			
+			if key in self.requested_options:
+				options += order[key]
+				
 		packet = self.packet_data[:240] + options
 		packet.append(255) # add end option
 		pack_fmt = str(len(packet)) + "c"
@@ -151,7 +153,11 @@ class DhcpBasicPacket(object):
 			elif DhcpOptionsTypes.has_key(self.packet_data[iterator]) and not self.packet_data[iterator] == 255:
 				opt_len = self.packet_data[iterator + 1]
 				opt_first = iterator + 1
-				self.options_data[DhcpOptionsList[self.packet_data[iterator]]] = self.packet_data[opt_first + 1:opt_len + opt_first + 1]
+				opt_id = self.packet_data[iterator]
+				opt_val = self.packet_data[opt_first + 1:opt_len + opt_first + 1]
+				self.options_data[DhcpOptionsList[opt_id]] = opt_val
+				if opt_id == 55:
+					self.requested_options = tuple([int(i) for i in opt_val] + [51, 53, 54])
 				iterator += self.packet_data[opt_first] + 2
 			else:
 				opt_first = iterator+1

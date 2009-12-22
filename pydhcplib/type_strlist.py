@@ -29,7 +29,7 @@ class strlist(object):
 		str_type = type(data)
 		if str_type == str:
 			self._str = data
-			#for each in range(len(self._str)):
+			#for each in xrange(len(self._str)):
 			#	self._list.append(ord(self._str[each]))
 			self._list = [ord(each) for each in self._str]
 		elif str_type in (list, tuple):
