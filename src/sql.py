@@ -47,13 +47,16 @@ class _SQLBroker(object):
 		@type mac: basestring
 		@param mac: The MAC address to lookup.
 		
-		@rtype: tuple|None
-		@return: (ip:basestring, gateway:basestring|None,
-			subnet_mask:basestring|None, broadcast_address:basestring|None,
+		@rtype: tuple(11)|None
+		@return: (ip:basestring, hostname:basestring|None,
+			gateway:basestring|None, subnet_mask:basestring|None,
+			broadcast_address:basestring|None,
 			domain_name:basestring|None, domain_name_servers:basestring|None,
 			ntp_servers:basestring|None, lease_time:int,
 			subnet:basestring, serial:int) or None if no match was
 			found.
+		
+		@raise Exception: If a problem occurs while accessing the database.
 		"""
 		self._resource_lock.acquire()
 		try:
@@ -94,9 +97,10 @@ class _MySQL(_SQLBroker):
 		@type mac: basestring
 		@param mac: The MAC address to lookup.
 		
-		@rtype: tuple|None
-		@return: (ip:basestring, gateway:basestring|None,
-			subnet_mask:basestring|None, broadcast_address:basestring|None,
+		@rtype: tuple(11)|None
+		@return: (ip:basestring, hostname:basestring|None,
+			gateway:basestring|None, subnet_mask:basestring|None,
+			broadcast_address:basestring|None,
 			domain_name:basestring|None, domain_name_servers:basestring|None,
 			ntp_servers:basestring|None, lease_time:int,
 			subnet:basestring, serial:int) or None if no match was
@@ -119,7 +123,7 @@ class _MySQL(_SQLBroker):
 			mysql_cur = mysql_db.cursor()
 			
 			mysql_cur.execute(' '.join((
-			 "SELECT m.ip,",
+			 "SELECT m.ip, m.hostname,",
 			 "s.gateway, s.subnet_mask, s.broadcast_address, s.domain_name, s.domain_name_servers,",
 			 "s.ntp_servers, s.lease_time, s.subnet, s.serial FROM maps m, subnets s",
 			 "WHERE m.mac = %s AND m.subnet = s.subnet AND m.serial = s.serial",
@@ -158,9 +162,10 @@ class _SQLite(_SQLBroker):
 		@type mac: basestring
 		@param mac: The MAC address to lookup.
 		
-		@rtype: tuple|None
-		@return: (ip:basestring, gateway:basestring|None,
-			subnet_mask:basestring|None, broadcast_address:basestring|None,
+		@rtype: tuple(11)|None
+		@return: (ip:basestring, hostname:basestring|None,
+			gateway:basestring|None, subnet_mask:basestring|None,
+			broadcast_address:basestring|None,
 			domain_name:basestring|None, domain_name_servers:basestring|None,
 			ntp_servers:basestring|None, lease_time:int,
 			subnet:basestring, serial:int) or None if no match was
@@ -173,7 +178,7 @@ class _SQLite(_SQLBroker):
 			sqlite_cur = sqlite_db.cursor()
 			
 			sqlite_cur.execute(' '.join((
-			 "SELECT m.ip,",
+			 "SELECT m.ip, m.hostname,",
 			 "s.gateway, s.subnet_mask, s.broadcast_address, s.domain_name, s.domain_name_servers,",
 			 "s.ntp_servers, s.lease_time, s.subnet, s.serial FROM maps m, subnets s",
 			 "WHERE m.mac = ? AND m.subnet = s.subnet AND m.serial = s.serial",

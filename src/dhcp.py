@@ -242,7 +242,7 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 					if conf.loadDHCPPacket(
 					 offer,
 					 mac, tuple(ipToQuad(result[0])), giaddr,
-					 result[8], result[9]
+					 result[9], result[10]
 					):
 						self.SendDhcpPacket(offer, source_address, 'OFFER', mac, result[0])
 					else:
@@ -328,7 +328,7 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 							if conf.loadDHCPPacket(
 							 packet,
 							 mac, tuple(ipToQuad(result[0])), giaddr,
-							 result[8], result[9]
+							 result[9], result[10]
 							):
 								self.SendDhcpPacket(packet, source_address, 'ACK', mac, s_ip)
 							else:
@@ -353,7 +353,7 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 						if conf.loadDHCPPacket(
 						 packet,
 						 mac, tuple(ip), giaddr,
-						 result[8], result[9]
+						 result[9], result[10]
 						):
 							src.logging.writeLog('DHCPACK sent to %(mac)s' % {
 							 'mac': mac,
@@ -392,7 +392,7 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 							if conf.loadDHCPPacket(
 							 packet,
 							 mac, tuple(ciaddr), giaddr,
-							 result[8], result[9]
+							 result[9], result[10]
 							):
 								self.SendDhcpPacket(packet, (s_ciaddr, 0), 'ACK', mac, s_ciaddr)
 							else:
@@ -423,10 +423,11 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 		
 		@type packet: L{pydhcplib.dhcp_packet.DhcpPacket}
 		@param packet: The packet being updated.
-		@type result: tuple(10)
+		@type result: tuple(11)
 		@param result: The value returned from the SQL broker.
 		"""
-		(ip, gateway, subnet_mask, broadcast_address,
+		(ip, hostname,
+		 gateway, subnet_mask, broadcast_address,
 		 domain_name, domain_name_servers, ntp_servers,
 		 lease_time, subnet, serial) = result
 		
@@ -444,7 +445,10 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 			if not packet.SetOption('broadcast_address', ipToQuad(broadcast_address)):
 				_logInvalidValue('broadcast_address', broadcast_address, subnet, serial)
 				
-		#Search domain/nameservers.
+		#Domain details.
+		if hostname:
+			if not packet.SetOption('hostname', strToStrList(hostname)):
+				_logInvalidValue('hostname', hostname, subnet, serial)
 		if domain_name:
 			if not packet.SetOption('domain_name', strToStrList(domain_name)):
 				_logInvalidValue('domain_name', domain_name, subnet, serial)

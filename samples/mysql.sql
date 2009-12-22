@@ -17,6 +17,7 @@ CREATE TABLE subnets (
 CREATE TABLE maps (
 	mac CHAR(17) PRIMARY KEY, -- The MAC address of the client to whom the IP and associated options will be passed.
 	ip CHAR(15) NOT NULL, -- The IPv4 address to provide to the client identified by the associated MAC.
+	hostname CHAR(32), -- The hostname to assign to the client; may be null.
 	subnet CHAR(18) NOT NULL, -- A human-readable subnet-identifier, used in conjunction with the serial.
 	serial SMALLINT UNSIGNED NOT NULL DEFAULT 0, -- Together with the serial, this identifies the options to pass to the client.
 	FOREIGN KEY (subnet, serial) REFERENCES subnets (subnet, serial)

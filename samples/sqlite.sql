@@ -14,6 +14,7 @@ CREATE TABLE subnets (
 CREATE TABLE maps (
 	mac TEXT PRIMARY KEY NOT NULL, -- The MAC address of the client to whom the IP and associated options will be passed.
 	ip TEXT NOT NULL, -- The IPv4 address to provide to the client identified by the associated MAC.
+	hostname TEXT, -- The hostname to assign to the client; may be null.
 	subnet TEXT NOT NULL, -- A human-readable subnet-identifier, used in conjunction with the serial.
 	serial INTEGER NOT NULL DEFAULT 0, -- Together with the serial, this identifies the options to pass to the client.
 	FOREIGN KEY (subnet, serial) REFERENCES subnets (subnet, serial)
