@@ -445,6 +445,7 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 				return
 				
 			ciaddr = packet.GetOption("ciaddr")
+			giaddr = packet.GetGiaddr()
 			s_ciaddr = '.'.join(map(str, ciaddr))
 			if not ciaddr or ciaddr == [0,0,0,0]:
 				ciaddr = None
