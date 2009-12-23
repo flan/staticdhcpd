@@ -17,5 +17,6 @@ CREATE TABLE maps (
 	hostname TEXT, -- The hostname to assign to the client; may be null.
 	subnet TEXT NOT NULL, -- A human-readable subnet-identifier, used in conjunction with the serial.
 	serial INTEGER NOT NULL DEFAULT 0, -- Together with the serial, this identifies the options to pass to the client.
+	UNIQUE (ip, subnet, serial),
 	FOREIGN KEY (subnet, serial) REFERENCES subnets (subnet, serial)
 );

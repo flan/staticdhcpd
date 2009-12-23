@@ -56,14 +56,24 @@ class DhcpNetwork:
 		try:
 			self.response_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 		except socket.error, msg:
-			raise Exception('pydhcplib.DhcpNetwork socket unable to set SO_BORADCAST: %(err)s' % {'err': str(msg),})
+			raise Exception('pydhcplib.DhcpNetwork socket unable to set SO_BROADCAST: %(err)s' % {'err': str(msg),})
 			
 		try: 
 			self.dhcp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 		except socket.error, msg :
 			raise Exception('pydhcplib.DhcpNetwork socket unable to set SO_REUSEADDR: %(err)s' % {'err': str(msg),})
 			
-	def GetNextDhcpPacket(self,timeout=60):
+	def GetNextDhcpPacket(self, timeout=60):
+		"""
+		Blocks for up to C{timeout} seconds while waiting for a packet to
+		arrive; if one does, a thread is spawned to process it.
+		
+		@type timeout: int
+		@param timeout: The number of seconds to wait before returning.
+		
+		@rtype: L{dhcp_packet.DhcpPacket}|None
+		@return: The received packet, or None if nothing was received.
+		"""
 		data = None
 		while not data:
 			(data_input, data_output, data_except) = select.select([self.dhcp_socket], [], [], timeout)

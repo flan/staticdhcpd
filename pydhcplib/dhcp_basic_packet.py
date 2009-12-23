@@ -8,7 +8,8 @@ Purpose
  
 Legal
 =====
- This file is part of pydhcplib.
+ This file is part of pydhcplib, but it has been altered for use with
+ staticDHCPd.
  pydhcplib is free software; you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
  the Free Software Foundation; either version 3 of the License, or
@@ -36,7 +37,7 @@ class DhcpBasicPacket(object):
 		self.options_data = {}
 		self.packet_data[236:240] = MagicCookie
 		self.source_address = False
-		self.requested_options = ()
+		self.requested_options = None
 		
 	def IsDhcpPacket(self):
 		if not self.packet_data[236:240] == MagicCookie:
@@ -103,19 +104,18 @@ class DhcpBasicPacket(object):
 		# MUST set options in order to respect the RFC (see router option)
 		order = {}
 		for each in self.options_data.keys():
-			dhcp_each = DhcpOptions[each]
-			order[dhcp_each] = option = []
-			option.append(dhcp_each)
-			
-			options_each = self.options_data[each]
-			option.append(len(options_each))
-			option += options_each
-			
-		options = []
-		for key in sorted(order.keys()):
-			if key in self.requested_options:
-				options += order[key]
+			option_id = DhcpOptions[each]
+			if self.requested_options is None or option_id in self.requested_options:
+				order[option_id] = option = []
+				option.append(option_id)
 				
+				option_value = self.options_data[each]
+				option.append(len(option_value))
+				option += option_value
+		options = []
+		for (option_id, value) in sorted(order.iteritems()):
+			options += value
+			
 		packet = self.packet_data[:240] + options
 		packet.append(255) # add end option
 		pack_fmt = str(len(packet)) + "c"
@@ -157,7 +157,9 @@ class DhcpBasicPacket(object):
 				opt_val = self.packet_data[opt_first + 1:opt_len + opt_first + 1]
 				self.options_data[DhcpOptionsList[opt_id]] = opt_val
 				if opt_id == 55:
-					self.requested_options = tuple([int(i) for i in opt_val] + [51, 53, 54])
+					self.requested_options = tuple(set(
+					 [int(i) for i in opt_val] + [1, 3, 6, 15, 51, 53, 54, 58, 59]
+					))
 				iterator += self.packet_data[opt_first] + 2
 			else:
 				opt_first = iterator+1

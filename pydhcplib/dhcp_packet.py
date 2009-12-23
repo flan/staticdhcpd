@@ -8,7 +8,8 @@ Purpose
  
 Legal
 =====
- This file is part of pydhcplib.
+ This file is part of pydhcplib, but it has been altered for use with
+ staticDHCPd.
  pydhcplib is free software; you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
  the Free Software Foundation; either version 3 of the License, or
@@ -36,6 +37,9 @@ from type_strlist import strlist
 
 class DhcpPacket(DhcpBasicPacket):
 	def str(self):
+		"""
+		Renders this packet's data in human-readable form.
+		"""
 		# Process headers
 		printable_data = "# Header fields\n"
 		op = self.packet_data[DhcpFields['op'][0]:DhcpFields['op'][0] + DhcpFields['op'][1]]
@@ -110,7 +114,7 @@ class DhcpPacket(DhcpBasicPacket):
 			printable_data += "%(opt)s : %(result)s\n" % {'opt': opt, 'result': result,}
 		return printable_data
 		
-	def AddLine(self,_string) :
+	def AddLine(self, _string) :
 		(parameter,junk,value) = _string.partition(':')
 		parameter = parameter.strip()
 		#If value begins with a whitespace, strip it

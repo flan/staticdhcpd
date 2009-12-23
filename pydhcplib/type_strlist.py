@@ -8,7 +8,8 @@ Purpose
  
 Legal
 =====
- This file is part of pydhcplib.
+ This file is part of pydhcplib, but it has been altered for use with
+ staticDHCPd.
  pydhcplib is free software; you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
  the Free Software Foundation; either version 3 of the License, or
@@ -29,8 +30,6 @@ class strlist(object):
 		str_type = type(data)
 		if str_type == str:
 			self._str = data
-			#for each in xrange(len(self._str)):
-			#	self._list.append(ord(self._str[each]))
 			self._list = [ord(each) for each in self._str]
 		elif str_type in (list, tuple):
 			self._list = data

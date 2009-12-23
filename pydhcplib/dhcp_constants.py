@@ -8,7 +8,8 @@ Purpose
  
 Legal
 =====
- This file is part of pydhcplib.
+ This file is part of pydhcplib, but it has been altered for use with
+ staticDHCPd.
  pydhcplib is free software; you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
  the Free Software Foundation; either version 3 of the License, or

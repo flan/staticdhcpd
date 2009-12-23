@@ -8,7 +8,8 @@ Purpose
  
 Legal
 =====
- This file is part of pydhcplib.
+ This file is part of pydhcplib, but it has been altered for use with
+ staticDHCPd.
  pydhcplib is free software; you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
  the Free Software Foundation; either version 3 of the License, or
@@ -80,22 +81,24 @@ class ipv4(object):
 			raise ValueError("ipv4 string argument '%(ip)s' is not a valid IP" % {'ip': self._ip_string,})
 			
 	""" Public methods """
-	# Check if _ip_numlist is valid and raise error if not.
-	def CheckNumList(self,value) :
+	# Check if _ip_numlist is valid.
+	def CheckNumList(self, value) :
 		if not len(value) == 4:
 			return False
 		for part in value:
-			if part < 0 or part > 255:
+			if not 0 <= part <= 255:
 				return False
 		return True
 		
-	# Check if _ip_numlist is valid and raise error if not.
-	def CheckString(self,value):
+	# Check if _ip_string is valid.
+	def CheckString(self, value):
 		tmp = value.strip().split('.')
 		if not len(tmp) == 4:
 			return False
 		for each in tmp:
 			if not each.isdigit():
+				return False
+			if not 0 <= each <= 255:
 				return False
 		return True
 		

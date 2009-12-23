@@ -8,7 +8,8 @@ Purpose
  
 Legal
 =====
- This file is part of pydhcplib.
+ This file is part of pydhcplib, but it has been altered for use with
+ staticDHCPd.
  pydhcplib is free software; you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
  the Free Software Foundation; either version 3 of the License, or
@@ -53,7 +54,7 @@ class hwmac(object):
 				raise ValueError("hwmac : expected 0 <= x <= 255; received %(x)i" % {'x': part,})
 		return True
 		
-	def _StringToNumlist(self,value):
+	def _StringToNumlist(self, value):
 		self._hw_string = self._hw_string.replace("-", ":").replace(".", ":")
 		self._hw_string = self._hw_string.lower()
 		
@@ -77,7 +78,7 @@ class hwmac(object):
 	def __repr__(self) :
 		return self._hw_string
 		
-	def __cmp__(self,other) :
+	def __cmp__(self, other) :
 		if self._hw_string == other:
 			return 0
 		return 1
