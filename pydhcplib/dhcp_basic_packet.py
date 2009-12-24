@@ -113,7 +113,7 @@ class DhcpBasicPacket(object):
 				option.append(len(option_value))
 				option += option_value
 		ordered_options = []
-		for (option_id, value) in sorted(order.iteritems()):
+		for (option_id, value) in sorted(options.iteritems()):
 			ordered_options += value
 			
 		packet = self.packet_data[:240] + ordered_options
