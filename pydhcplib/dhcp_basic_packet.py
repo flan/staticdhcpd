@@ -40,9 +40,7 @@ class DhcpBasicPacket(object):
 		self.requested_options = None
 		
 	def IsDhcpPacket(self):
-		if not self.packet_data[236:240] == MagicCookie:
-			return False
-		return True
+		return self.packet_data[236:240] == MagicCookie
 		
 	def CheckType(self, variable):
 		# Check if variable is a list of ints between 0 and 255
@@ -51,9 +49,8 @@ class DhcpBasicPacket(object):
 				if not type(each) == int or not 0 <= each <= 255:
 					return False
 			return True
-		else:
-			return False
-			
+		return False
+		
 	def DeleteOption(self, name):
 		#zero-out the value if it is core to the DHCP packet, else just drop it
 		if DhcpFields.has_key(name):
@@ -91,14 +88,11 @@ class DhcpBasicPacket(object):
 			if fixed_length == length or (minimum_length <= length and length % multiple == 0):
 				self.options_data[name] = value
 				return True
-			else:
-				return False
+			return False
 		raise ValueError("pydhcplib.dhcp_basic_packet.setoption error : unknown option: %(name)s" % {'name': name})
 		
 	def IsOption(self, name):
-		if self.options_data.has_key(name) or DhcpFields.has_key(name):
-			return True
-		return False
+		return self.options_data.has_key(name) or DhcpFields.has_key(name)
 		
 	def EncodePacket(self):
 		#MUST set options in ascending order to respect RFC2131 (see 'router')
