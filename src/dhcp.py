@@ -232,7 +232,6 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 					offer = pydhcplib.dhcp_packet.DhcpPacket()
 					offer.CreateDhcpOfferPacketFrom(packet)
 					
-					offer.SetOption('server_identifier', ipToQuad(self._server_address))
 					self.LoadDHCPPacket(offer, result)
 					giaddr = packet.GetGiaddr()
 					if not giaddr or giaddr == [0,0,0,0]:
@@ -517,7 +516,8 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 		if not inform:
 			packet.SetOption('yiaddr', ipToQuad(ip))
 			packet.SetOption('ip_address_lease_time', longToQuad(lease_time))
-			
+		packet.SetOption('server_identifier', ipToQuad(self._server_address))
+		
 		#Default gateway, subnet mask, and broadcast address.
 		if gateway:
 			if not packet.SetOption('router', ipToQuad(gateway)):
