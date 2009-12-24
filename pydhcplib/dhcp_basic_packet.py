@@ -75,7 +75,7 @@ class DhcpBasicPacket(object):
 			return self.options_data[name]
 		return []
 		
-	def SetOption(self,name,value):
+	def SetOption(self, name, value):
 		#Basic value checking: does the value list have a valid length?
 		if DhcpFields.has_key(name):
 			dhcp_field = DhcpFields[name]
@@ -95,7 +95,7 @@ class DhcpBasicPacket(object):
 				return False
 		raise ValueError("pydhcplib.dhcp_basic_packet.setoption error : unknown option: %(name)s" % {'name': name})
 		
-	def IsOption(self,name):
+	def IsOption(self, name):
 		if self.options_data.has_key(name) or DhcpFields.has_key(name):
 			return True
 		return False
