@@ -96,7 +96,7 @@ SQLITE_MAXIMUM_CONNECTIONS = 5
 #E-mail settings
 #######################################
 #True to allow staticDHCPd to inform you of any problems it cannot handle by
-#itself. (*Very* useful for development and fast debugging)
+#itself. (*Very* useful for development and fast troubleshooting)
 EMAIL_ENABLED = False
 #The server that receives your e-mail.
 EMAIL_SERVER = 'mail.yourdomain.com'
@@ -105,6 +105,7 @@ EMAIL_SOURCE = 'you@yourdomain.com'
 #The user to whom e-mail should be sent.
 EMAIL_DESTINATION = 'problems@yourdomain.com'
 #The user who should authenticate to the mail server.
+#If None, SMTP authentication is not used.
 EMAIL_USER = 'you'
 #The password of the user who should authenticate to the mail server.
 EMAIL_PASSWORD = 'password'

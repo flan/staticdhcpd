@@ -236,7 +236,8 @@ Exception traceback:
 	
 	try:
 		smtp_server = smtplib.SMTP(conf.EMAIL_SERVER)
-		smtp_server.login(conf.EMAIL_USER, conf.EMAIL_PASSWORD)
+		if conf.EMAIL_USER:
+			smtp_server.login(conf.EMAIL_USER, conf.EMAIL_PASSWORD)
 		smtp_server.sendmail(
 		 conf.EMAIL_SOURCE,
 		 (conf.EMAIL_DESTINATION,),
