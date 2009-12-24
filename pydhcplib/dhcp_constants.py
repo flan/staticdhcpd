@@ -26,7 +26,7 @@ Legal
  (C) Mathieu Ignacio, 2008 <mignacio@april.org>
 """
 MagicCookie = [99,130,83,99]
-PyDhcpLibVersion = '0.6-hamsterx'
+PyDhcpLibVersion = '0.6-puukusoft'
 
 # DhcpBaseOptions = '{fieldname':[location,length]}
 DhcpFields = {
@@ -50,7 +50,7 @@ DhcpFieldsName = {
  'dhcp_message_type': {
   '0': 'ERROR_UNDEF', '1': 'DHCP_DISCOVER', '2': 'DHCP_OFFER',
   '3': 'DHCP_REQUEST', '4':'DHCP_DECLINE', '5': 'DHCP_ACK', '6': 'DHCP_NACK',
-  '7': 'DHCP_RELEASE', '8' : 'DHCP_INFORM',
+  '7': 'DHCP_RELEASE', '8': 'DHCP_INFORM',
  }
 }
 DhcpNames = {

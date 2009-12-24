@@ -36,205 +36,6 @@ from type_ipv4 import ipv4
 from type_strlist import strlist
 
 class DhcpPacket(DhcpBasicPacket):
-	def str(self):
-		"""
-		Renders this packet's data in human-readable form.
-		"""
-		# Process headers
-		printable_data = "# Header fields\n"
-		op = self.packet_data[DhcpFields['op'][0]:DhcpFields['op'][0] + DhcpFields['op'][1]]
-		printable_data += "op : %(type)s\n" % {'type': DhcpFieldsName['op'][str(op[0])],}
-		
-		for opt in (
-		 'htype','hlen','hops','xid','secs','flags',
-		 'ciaddr','yiaddr','siaddr','giaddr','chaddr',
-		 'sname','file',
-		):
-			begin = DhcpFields[opt][0]
-			end = DhcpFields[opt][0] + DhcpFields[opt][1]
-			data = self.packet_data[begin:end]
-			result = ''
-			if DhcpFieldsTypes[opt] == "int":
-				result = str(data[0])
-			elif DhcpFieldsTypes[opt] == "int2":
-				result = str(data[0] * 256 + data[1])
-			elif DhcpFieldsTypes[opt] == "int4":
-				result = str(ipv4(data).int())
-			elif DhcpFieldsTypes[opt] == "str":
-				for each in data:
-					if not each == 0:
-						result += chr(each)
-					else:
-						break
-			elif DhcpFieldsTypes[opt] == "ipv4":
-				result = ipv4(data).str()
-			elif DhcpFieldsTypes[opt] == "hwmac":
-				result = []
-				hexsym = ('0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f',)
-				for iterator in xrange(6):
-					result.append(str(hexsym[data[iterator] / 16] + hexsym[data[iterator] % 16]))
-				result = ':'.join(result)
-			printable_data += "%(opt)s : %(result)s\n" % {'opt': opt, 'result': result,}
-			
-		# Process options
-		printable_data += "# Options fields\n"
-		
-		for opt in self.options_data.keys():
-			data = self.options_data[opt]
-			result = ""
-			optnum  = DhcpOptions[opt]
-			if opt == 'dhcp_message_type':
-				result = DhcpFieldsName['dhcp_message_type'][str(data[0])]
-			elif DhcpOptionsTypes[optnum] == "char":
-				result = str(data[0])
-			elif DhcpOptionsTypes[optnum] == "16-bits":
-				result = str(data[0] * 256 + data[0])
-			elif DhcpOptionsTypes[optnum] == "32-bits":
-				result = str(ipv4(data).int())
-			elif DhcpOptionsTypes[optnum] == "string":
-				for each in data :
-					if not each == 0:
-						result += chr(each)
-					else:
-						break
-			elif DhcpOptionsTypes[optnum] == "ipv4":
-				result = ipv4(data).str()
-			elif DhcpOptionsTypes[optnum] == "ipv4+":
-				for i in xrange(0, len(data), 4):
-					if len(data[i:i+4]) == 4:
-						result += ipv4(data[i:i+4]).str() + " - "
-			elif DhcpOptionsTypes[optnum] == "char+":
-				if optnum == 55: # parameter_request_list
-					requested_options = []
-					for each in data:
-						requested_options.append(DhcpOptionsList[int(each)])
-					result = ','.join(requested_options)
-				else:
-					result += str(data)
-			printable_data += "%(opt)s : %(result)s\n" % {'opt': opt, 'result': result,}
-		return printable_data
-		
-	def AddLine(self, _string) :
-		(parameter,junk,value) = _string.partition(':')
-		parameter = parameter.strip()
-		#If value begins with a whitespace, strip it
-		if len(value) > 0 and value[0] == ' ':
-			value = value[1:]
-		value = self._OptionsToBinary(parameter, value)
-		if value:
-			self.SetOption(parameter, value)
-			
-	def _OptionsToBinary(self, parameter, value):
-		# Transform textual data into dhcp binary data
-		p = parameter.strip()
-		# 1- Search for header informations or specific parameter
-		if p in DhcpFields:
-			if p in ('op', 'htype'):
-				value = value.strip()
-				if value.isdigit():
-					return [int(value)]
-				try:
-					value = DhcpNames[value.strip()]
-					return [value]
-				except KeyError:
-					return [0]
-			elif p in ('hlen', 'hops'):
-				try:
-					value = int(value)
-					return [value]
-				except ValueError:
-					return [0]
-			elif p in ('secs', 'flags'):
-				try:
-					value = ipv4(int(value)).list()
-				except ValueError:
-					value = [0,0,0,0]
-				return value[2:]
-			elif p == 'xid':
-				try :
-					value = ipv4(int(value)).list()
-				except ValueError:
-					value = [0,0,0,0]
-				return value
-			elif p in ('ciaddr', 'yiaddr', 'siaddr', 'giaddr'):
-				try:
-					ip = ipv4(value).list()
-				except ValueError:
-					ip = [0,0,0,0]
-				return ip
-			elif p == 'chaddr':
-				try:
-					value = hwmac(value).list() + [0]*10
-				except ValueError,TypeError:
-					value = [0]*16
-				return value
-			elif p == 'sname':
-				return
-			elif p == 'file':
-				return
-			return
-		elif p == 'parameter_request_list':
-			value = value.strip().split(',')
-			tmp = []
-			for each in value:
-				if each in DhcpOptions:
-					tmp.append(DhcpOptions[each])
-			return tmp
-		elif  p == 'dhcp_message_type':
-			try :
-				return [DhcpNames[value]]
-			except KeyError:
-				return
-				
-		# 2- Search for options
-		option_type = DhcpOptions.get(parameter)
-		if not option_type:
-			return
-		else:
-			option_type = DhcpOptionsTypes.get(option_type)
-			if not option_type:
-				return
-			binary_value = None
-			
-			if option_type == "ipv4":
-				# this is a single ip address
-				try:
-					binary_value = map(int, value.split("."))
-				except ValueError:
-					return False
-			elif option_type == "ipv4+":
-				# this is multiple ip address
-				binary_value = [ipv4(single).list() for single in value.split(",")]
-			elif option_type == "32-bits" :
-				# This is probably a number...
-				try:
-					digit = int(value)
-					binary_value = [digit>>24&0xFF,(digit>>16)&0xFF,(digit>>8)&0xFF,digit&0xFF]
-				except ValueError:
-					return False
-			elif option_type == "16-bits":
-				try:
-					digit = int(value)
-					binary_value = [(digit>>8)&0xFF,digit&0xFF]
-				except ValueError:
-					return False
-			elif option_type == "char":
-				try:
-					digit = int(value)
-					binary_value = [digit&0xFF]
-				except ValueError:
-					return False
-			elif option_type == "bool":
-				if not value or value in ('false', 'no', 'off'):
-					binary_value = [0]
-				else:
-					binary_value = [1]
-			elif option_type == "string":
-				binary_value = strlist(value).list()
-			else:
-				binary_value = strlist(value).list()
-			return binary_value
-			
 	#Packet type resolution
 	def IsDhcpSomethingPacket(self, type):
 		if not self.IsDhcpPacket():
@@ -269,17 +70,6 @@ class DhcpPacket(DhcpBasicPacket):
 	def IsDhcpInformPacket(self):
 		return self.IsDhcpSomethingPacket([8])
 		
-	#Convenience functions
-	def GetMultipleOptions(self,options=()):
-		result = {}
-		for each in options:
-			result[each] = self.GetOption(each)
-		return result
-		
-	def SetMultipleOptions(self,options={}):
-		for (each, value) in options.iteritems():
-			self.SetOption(each, value)
-			
 	#OFFER section
 	def CreateDhcpOfferPacketFrom(self, src): # src = discover packet
 		self.requested_options = src.requested_options
@@ -367,4 +157,83 @@ class DhcpPacket(DhcpBasicPacket):
 		if length and length < len(full_hw):
 			return full_hw[0:length]
 		return full_hw
+		
+	#Python functions
+	def __str__(self):
+		"""
+		Renders this packet's data in human-readable form.
+		"""
+		# Process headers
+		printable_data = "# Header fields\n"
+		op = self.packet_data[DhcpFields['op'][0]:DhcpFields['op'][0] + DhcpFields['op'][1]]
+		printable_data += "op : %(type)s\n" % {'type': DhcpFieldsName['op'][str(op[0])],}
+		
+		for opt in (
+		 'htype','hlen','hops','xid','secs','flags',
+		 'ciaddr','yiaddr','siaddr','giaddr','chaddr',
+		 'sname','file',
+		):
+			begin = DhcpFields[opt][0]
+			end = DhcpFields[opt][0] + DhcpFields[opt][1]
+			data = self.packet_data[begin:end]
+			result = ''
+			if DhcpFieldsTypes[opt] == "int":
+				result = str(data[0])
+			elif DhcpFieldsTypes[opt] == "int2":
+				result = str(data[0] * 256 + data[1])
+			elif DhcpFieldsTypes[opt] == "int4":
+				result = str(ipv4(data).int())
+			elif DhcpFieldsTypes[opt] == "str":
+				for each in data:
+					if not each == 0:
+						result += chr(each)
+					else:
+						break
+			elif DhcpFieldsTypes[opt] == "ipv4":
+				result = ipv4(data).str()
+			elif DhcpFieldsTypes[opt] == "hwmac":
+				result = []
+				hexsym = ('0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f',)
+				for iterator in xrange(6):
+					result.append(str(hexsym[data[iterator] / 16] + hexsym[data[iterator] % 16]))
+				result = ':'.join(result)
+			printable_data += "%(opt)s : %(result)s\n" % {'opt': opt, 'result': result,}
+			
+		# Process options
+		printable_data += "# Options fields\n"
+		
+		for opt in self.options_data.keys():
+			data = self.options_data[opt]
+			result = ""
+			optnum  = DhcpOptions[opt]
+			if opt == 'dhcp_message_type':
+				result = DhcpFieldsName['dhcp_message_type'][str(data[0])]
+			elif DhcpOptionsTypes[optnum] == "char":
+				result = str(data[0])
+			elif DhcpOptionsTypes[optnum] == "16-bits":
+				result = str(data[0] * 256 + data[0])
+			elif DhcpOptionsTypes[optnum] == "32-bits":
+				result = str(ipv4(data).int())
+			elif DhcpOptionsTypes[optnum] == "string":
+				for each in data :
+					if not each == 0:
+						result += chr(each)
+					else:
+						break
+			elif DhcpOptionsTypes[optnum] == "ipv4":
+				result = ipv4(data).str()
+			elif DhcpOptionsTypes[optnum] == "ipv4+":
+				for i in xrange(0, len(data), 4):
+					if len(data[i:i+4]) == 4:
+						result += ipv4(data[i:i+4]).str() + " - "
+			elif DhcpOptionsTypes[optnum] == "char+":
+				if optnum == 55: # parameter_request_list
+					requested_options = []
+					for each in data:
+						requested_options.append(DhcpOptionsList[int(each)])
+					result = ','.join(requested_options)
+				else:
+					result += str(data)
+			printable_data += "%(opt)s : %(result)s\n" % {'opt': opt, 'result': result,}
+		return printable_data
 		

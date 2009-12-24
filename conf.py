@@ -1,72 +1,115 @@
 #General settings
 #######################################
-DEBUG = False #If True, all events will be printed to console.
+#If True, all events will be printed to console.
+DEBUG = False
 
+#The name to use when referring to this system.
 SYSTEM_NAME = 'staticDHCPd'
-LOG_FILE = '/var/log/' + SYSTEM_NAME + '.log' #The file to which logs should be dumped on receipt of
-#TERM or HUP.
+#The file to which logs should be dumped on receipt of TERM or HUP.
+LOG_FILE = '/var/log/' + SYSTEM_NAME + '.log'
 
-POLLING_INTERVAL = 30 #The frequency at which the DHCP server's stats will be polled, in seconds.
-LOG_CAPACITY = 1000 #The number of events to keep in the server's log-buffer.
-POLL_INTERVALS_TO_TRACK = 20 #The amount of stats to keep track of.
+#The frequency at which the DHCP server's stats will be polled, in seconds.
+POLLING_INTERVAL = 30
+#The number of events to keep in the server's log-buffer.
+LOG_CAPACITY = 1000
+#The amount of statistical information to track.
+POLL_INTERVALS_TO_TRACK = 20
 
 #Server settings
 #######################################
-UID = 999 #The UID that will run this daemon.
-GID = 999 #The GID that will run this daemon.
-PID_FILE = '/var/run/' + SYSTEM_NAME + '.pid' #The file to which PID information should be written.
+#The UID that will run this daemon.
+UID = 999
+#The GID that will run this daemon.
+GID = 999
+#The file to which PID information should be written.
+PID_FILE = '/var/run/' + SYSTEM_NAME + '.pid'
 
-DHCP_SERVER_IP = '192.168.1.100' #The IP of the interface on which DHCP responses should be sent.
-DHCP_SERVER_PORT = 67 #The port on which DHCP requests are to be received; 67 is the standard.
-DHCP_CLIENT_PORT = 68 #The port on which clients wait for DHCP responses; 68 is the standard.
+#The IP of the interface on which DHCP responses should be sent.
+#This may be None to assume all interfaces, but this is not a good idea on a
+#multihomed server.
+DHCP_SERVER_IP = '192.168.1.100'
+#The port on which DHCP requests are to be received; 67 is the standard.
+DHCP_SERVER_PORT = 67
+#The port on which clients wait for DHCP responses; 68 is the standard.
+DHCP_CLIENT_PORT = 68
 
-WEB_ENABLED = True #True to enable access to server statistics and logs.
-WEB_IP = '192.168.1.100' #The IP of the interface on which the HTTP interface should be served.
-WEB_PORT = 30880 #The port on which the HTTP interface should be served.
+#True to enable access to server statistics and logs.
+WEB_ENABLED = True
+#The IP of the interface on which the HTTP interface should be served.
+#Use '0.0.0.0' to serve on all interfaces.
+WEB_IP = '192.168.1.100'
+#The port on which the HTTP interface should be served.
+WEB_PORT = 30880
 
 #Server behaviour settings
 #######################################
-ALLOW_LOCAL_DHCP = True #: If False, local DHCP requests will be ignored.
-ALLOW_DHCP_RELAYS = False #If False, relayed DHCP requests will be ignored.
-ALLOWED_DHCP_RELAYS = () #A list of all IPs allowed to relay requests; if empty, all are allowed.
+#If False, local DHCP requests will be ignored.
+ALLOW_LOCAL_DHCP = True
+#If False, relayed DHCP requests will be ignored.
+ALLOW_DHCP_RELAYS = False
+#A list of all IPs allowed to relay requests; if empty, all are allowed.
 #(End with trailing comma)
+ALLOWED_DHCP_RELAYS = ()
 
-NAK_RENEWALS = False #If True, REBIND and RENEW requests are NAKed when received, forcing clients to
+#If True, REBIND and RENEW requests are NAKed when received, forcing clients to
 #either wait out their lease or return to the DISCOVER phase.
+NAK_RENEWALS = False
 
-UNAUTHORIZED_CLIENT_TIMEOUT = 60 #The number of seconds for which to ignore unknown MACs.
-MISBEHAVING_CLIENT_TIMEOUT = 150 #The number of seconds for which to ignore potentially malicious
-#MACs.
-ENABLE_SUSPEND = True #If True, MACs requesting too many addresses will be flagged as malicious.
-SUSPEND_THRESHOLD = 10 #The number of times a well-behaved MAC can search for or request an IP
+#The number of seconds for which to ignore unknown MACs.
+UNAUTHORIZED_CLIENT_TIMEOUT = 60
+#The number of seconds for which to ignore potentially malicious MACs.
+MISBEHAVING_CLIENT_TIMEOUT = 150
+#If True, MACs requesting too many addresses will be flagged as malicious.
+ENABLE_SUSPEND = True
+#The number of times a well-behaved MAC can search for or request an IP
 #within the polling interval.
+SUSPEND_THRESHOLD = 10
 
-WEB_RELOAD_KEY = '5f4dcc3b5aa765d61d8327deb882cf99' #MD5 of the password needed to reload config.
+#MD5 of the password needed to reload config.
+WEB_RELOAD_KEY = '5f4dcc3b5aa765d61d8327deb882cf99'
 
 #Database settings
 #######################################
-DATABASE_ENGINE = 'MySQL' #Allowed values: MySQL, SQLite
+#Allowed values: MySQL, SQLite
+DATABASE_ENGINE = 'MySQL'
 
-MYSQL_DATABASE = 'dhcp' #The name of your database.
-MYSQL_USERNAME = 'dhcp_user' #The name of a user with SELECT access.
-MYSQL_PASSWORD = 'dhcp_pass' #The password of the user.
-MYSQL_HOST = None #The host on which MySQL is running. None for 'localhost'.
-MYSQL_PORT = 3306 #The port on which MySQL is running; ignored when HOST is None.
-MYSQL_MAXIMUM_CONNECTIONS = 4 #The number of threads that may read the database at once.
+#MYSQL_* values used only with 'MySQL' engine.
+#The name of your database.
+MYSQL_DATABASE = 'dhcp'
+#The name of a user with SELECT access.
+MYSQL_USERNAME = 'dhcp_user'
+#The password of the user.
+MYSQL_PASSWORD = 'dhcp_pass'
+#The host on which MySQL is running. None for 'localhost'.
+MYSQL_HOST = None
+#The port on which MySQL is running; ignored when HOST is None.
+MYSQL_PORT = 3306
+#The number of threads that may read the database at once.
+MYSQL_MAXIMUM_CONNECTIONS = 4
 
-SQLITE_FILE = '/etc/staticDHCPd/dhcp.sqlite3' #The file that contains your SQLite database.
-SQLITE_MAXIMUM_CONNECTIONS = 5 #The number of threads that may read the database at once.
+#SQLITE_* values used only with 'SQLite' engine.
+#The file that contains your SQLite database.
+SQLITE_FILE = '/etc/staticDHCPd/dhcp.sqlite3'
+#The number of threads that may read the database at once.
+SQLITE_MAXIMUM_CONNECTIONS = 5
 
 #E-mail settings
 #######################################
-EMAIL_ENABLED = False #True to allow staticDHCPd to inform you of any problems it cannot handle by
-#itself.
-EMAIL_SERVER = 'mail.yourdomain.com' #The server that receives your e-mail.
-EMAIL_SOURCE = 'you@yourdomain.com' #The user from which e-mail should claim to be sent.
-EMAIL_DESTINATION = 'problems@yourdomain.com' #The user to whom e-mail should be sent.
-EMAIL_USER = 'you' #The user who should authenticate to the mail server.
-EMAIL_PASSWORD = 'password' #The password of the user who should authenticate to the mail server.
-EMAIL_TIMEOUT = 600 #The number of seconds to wait between sending e-mails.
+#True to allow staticDHCPd to inform you of any problems it cannot handle by
+#itself. (*Very* useful for development and fast debugging)
+EMAIL_ENABLED = False
+#The server that receives your e-mail.
+EMAIL_SERVER = 'mail.yourdomain.com'
+#The user from which e-mail should claim to be sent.
+EMAIL_SOURCE = 'you@yourdomain.com'
+#The user to whom e-mail should be sent.
+EMAIL_DESTINATION = 'problems@yourdomain.com'
+#The user who should authenticate to the mail server.
+EMAIL_USER = 'you'
+#The password of the user who should authenticate to the mail server.
+EMAIL_PASSWORD = 'password'
+#The number of seconds to wait between sending e-mails.
+EMAIL_TIMEOUT = 600
 
 #DHCP-processing functions
 #######################################
@@ -81,14 +124,15 @@ def loadDHCPPacket(packet, mac, client_ip, relay_ip, subnet, serial):
 	#
 	#If, for any reason, you want to abort sending the packet, return False.
 	#
-	#If you do not need an option, just comment it out.
+	#If you need to add, test for, or delete an option, consult staticDHCPd's
+	#rule-writing guide.
 	#
-	#If you need to add an option, consult pyDHCPlib's documentation.
-	#
+	##### PARAMETERS #####
 	#mac is a human-readable MAC string, lower-case, separated by colons.
-	#client_ip is a quadruple of octets.
+	#client_ip is a quadruple of octets: (192, 168, 1, 1)
 	#relay_ip is either None or an address as a quadruple of octets,
 	#	depending on whether this is a response to a relay request.
-	#subnet and serial are values passed through from the database.
+	#subnet and serial are values passed through from the database, as a
+	#	basestring and int, respectively.
 	return True
 	

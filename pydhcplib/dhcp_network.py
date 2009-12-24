@@ -41,15 +41,19 @@ class DhcpNetwork:
 	# Networking stuff
 	def BindToAddress(self) :
 		try:
-			self.response_socket.bind((self.listen_address, 0))
+			if self.listen_address:
+				self.response_socket.bind((self.listen_address, 0))
 			self.dhcp_socket.bind(('', self.listen_port))
 		except socket.error,msg:
 			raise Exception('pydhcplib.DhcpNetwork socket unable to bind to address: %(err)s' % {'err': str(msg),})
 			
 	def CreateSocket(self) :
 		try:
-			self.response_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 			self.dhcp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+			if self.listen_address:
+				self.response_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+			else:
+				self.response_socket = self.dhcp_socket
 		except socket.error, msg:
 			raise Exception('pydhcplib.DhcpNetwork socket creation error: %(err)s' % {'err': str(msg),})
 			
@@ -87,10 +91,10 @@ class DhcpNetwork:
 				packet.source_address = source_address
 				packet.DecodePacket(data)
 				
-				if packet.IsDhcpDiscoverPacket():
-					threading.Thread(target=self.HandleDhcpDiscover, args=(packet, source_address)).start()
-				elif packet.IsDhcpRequestPacket():
+				if packet.IsDhcpRequestPacket():
 					threading.Thread(target=self.HandleDhcpRequest, args=(packet, source_address)).start()
+				elif packet.IsDhcpDiscoverPacket():
+					threading.Thread(target=self.HandleDhcpDiscover, args=(packet, source_address)).start()
 				elif packet.IsDhcpInformPacket():
 					threading.Thread(target=self.HandleDhcpInform, args=(packet, source_address)).start()
 					
@@ -98,10 +102,7 @@ class DhcpNetwork:
 			return None
 			
 	def SendDhcpPacketTo(self, packet, ip, port):
-		return self.response_socket.sendto(
-		 packet.EncodePacket(),
-		 (ip, port)
-		)
+		return self.response_socket.sendto(packet.EncodePacket(), (ip, port))
 		
 	# Server side Handle methods
 	def HandleDhcpDiscover(self, packet, source_address):

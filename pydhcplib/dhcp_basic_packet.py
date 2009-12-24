@@ -45,23 +45,24 @@ class DhcpBasicPacket(object):
 		return True
 		
 	def CheckType(self, variable):
-		# Check if variable is a list with int between 0 and 255
+		# Check if variable is a list of ints between 0 and 255
 		if type(variable) == list:
 			for each in variable:
-				if not type(each) == int or each < 0 or each > 255:
+				if not type(each) == int or not 0 <= each <= 255:
 					return False
 			return True
 		else:
 			return False
 			
 	def DeleteOption(self, name):
+		#zero-out the value if it is core to the DHCP packet, else just drop it
 		if DhcpFields.has_key(name):
 			dhcp_field = DhcpFields[name]
 			begin = dhcp_field[0]
 			end = dhcp_field[0] + dhcp_field[1]
 			self.packet_data[begin:end] = [0]*dhcp_field[1]
 			return True
-		elif self.options_data.has_key(name) :
+		elif self.options_data.has_key(name):
 			del self.options_data[name]
 			return True
 		return False
@@ -75,7 +76,7 @@ class DhcpBasicPacket(object):
 		return []
 		
 	def SetOption(self,name,value):
-		# Basic value checking: does the value list have a valid length?
+		#Basic value checking: does the value list have a valid length?
 		if DhcpFields.has_key(name):
 			dhcp_field = DhcpFields[name]
 			if not len(value) == dhcp_field[1]:
@@ -99,32 +100,30 @@ class DhcpBasicPacket(object):
 			return True
 		return False
 		
-	# Encode Packet and return it
 	def EncodePacket(self):
-		# MUST set options in order to respect the RFC (see router option)
-		order = {}
+		#MUST set options in ascending order to respect RFC2131 (see 'router')
+		options = {}
 		for each in self.options_data.keys():
 			option_id = DhcpOptions[each]
 			if self.requested_options is None or option_id in self.requested_options:
-				order[option_id] = option = []
+				options[option_id] = option = []
 				option.append(option_id)
 				
 				option_value = self.options_data[each]
 				option.append(len(option_value))
 				option += option_value
-		options = []
+		ordered_options = []
 		for (option_id, value) in sorted(order.iteritems()):
-			options += value
+			ordered_options += value
 			
-		packet = self.packet_data[:240] + options
+		packet = self.packet_data[:240] + ordered_options
 		packet.append(255) # add end option
 		pack_fmt = str(len(packet)) + "c"
 		packet = map(chr, packet)
 		
 		return pack(pack_fmt, *packet)
 		
-	# Insert packet in the object
-	def DecodePacket(self, data, debug=False):
+	def DecodePacket(self, data):
 		if not data:
 			return False
 			

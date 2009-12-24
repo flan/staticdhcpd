@@ -30,7 +30,7 @@ class strlist(object):
 		str_type = type(data)
 		if str_type == str:
 			self._str = data
-			self._list = [ord(each) for each in self._str]
+			self._list = map(ord, self._str)
 		elif str_type in (list, tuple):
 			self._list = data
 			self._str = "".join(map(chr, self._list))
