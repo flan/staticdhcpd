@@ -138,9 +138,9 @@ def logToDisk():
 				turnaround = time_taken / packets
 			else:
 				turnaround = 0.0
-			log_file.write("%(time)s : processed: %(processed)i; discarded: %(discarded)i; turnaround: %(turnaround)fs/pkt; ignored MACs: %(ignored)i\n" % {
+			log_file.write("%(time)s : received: %(received)i; discarded: %(discarded)i; turnaround: %(turnaround)fs/pkt; ignored MACs: %(ignored)i\n" % {
 			 'time': time.ctime(timestamp),
-			 'processed': packets,
+			 'received': packets,
 			 'discarded': discarded,
 			 'turnaround': turnaround,
 			 'ignored': ignored_macs,
