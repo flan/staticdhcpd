@@ -74,7 +74,9 @@ def _logHandler(signum, frame):
 	"""
 	src.dhcp.flushCache()
 	if not src.logging.logToDisk():
-		src.logging.writeLog("Unable to write logfile: %(file)s" % {'file': conf.LOG_FILE,})
+		src.logging.writeLog("Unable to write logfile: %(log)s" % {'log': conf.LOG_FILE,})
+	else:
+		src.logging.writeLog("Wrote log to '%(log)s'" % {'log': conf.LOG_FILE,})
 		
 if __name__ == '__main__':
 	#Ensure that pre-setup tasks are taken care of.
