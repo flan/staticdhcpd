@@ -75,7 +75,8 @@ DATABASE_ENGINE = 'MySQL'
 
 #Controls whether DHCP data gleaned from database lookups should be cached until
 #manually flushed; consumes more resources and adds a step before a MAC can be
-#automatically NAKed, but dramatically improves performance under heavy loads.
+#automatically NAKed or have its details updated, but dramatically improves
+#performance under heavy loads.
 USE_CACHE = False
 
 #MYSQL_* values used only with 'MySQL' engine.
