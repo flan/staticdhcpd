@@ -7,6 +7,8 @@ DEBUG = False
 SYSTEM_NAME = 'staticDHCPd'
 #The file to which logs should be dumped on receipt of TERM or HUP.
 LOG_FILE = '/var/log/' + SYSTEM_NAME + '.log'
+#The file to which PID information should be written.
+PID_FILE = '/var/run/' + SYSTEM_NAME + '.pid'
 
 #The frequency at which the DHCP server's stats will be polled, in seconds.
 POLLING_INTERVAL = 30
@@ -21,8 +23,6 @@ POLL_INTERVALS_TO_TRACK = 20
 UID = 999
 #The GID that will run this daemon.
 GID = 999
-#The file to which PID information should be written.
-PID_FILE = '/var/run/' + SYSTEM_NAME + '.pid'
 
 #The IP of the interface on which DHCP responses should be sent.
 #This may be None to assume all interfaces, but this is not a good idea on a
