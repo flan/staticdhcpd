@@ -102,6 +102,7 @@ class _SQLBroker(object):
 					self._cache[mac] = data
 				finally:
 					self._cache_lock.release()
+			return data
 		finally:
 			self._resource_lock.release()
 			
