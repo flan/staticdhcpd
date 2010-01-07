@@ -683,7 +683,7 @@ class DHCPService(threading.Thread):
 		 conf.DHCP_SERVER_PORT,
 		 conf.DHCP_CLIENT_PORT
 		)
-		_dhcp_servers.append(_dhcp_server) #Add this server to the global list.
+		_dhcp_servers.append(self._dhcp_server) #Add this server to the global list.
 		
 		src.logging.writeLog('Configured DHCP server')
 		
