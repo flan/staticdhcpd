@@ -73,6 +73,11 @@ WEB_RELOAD_KEY = '5f4dcc3b5aa765d61d8327deb882cf99'
 #Allowed values: MySQL, SQLite
 DATABASE_ENGINE = 'MySQL'
 
+#Controls whether DHCP data gleaned from database lookups should be cached until
+#manually flushed; consumes more resources and adds a step before a MAC can be
+#automatically NAKed, but dramatically improves performance under heavy loads.
+USE_CACHE = False
+
 #MYSQL_* values used only with 'MySQL' engine.
 #The name of your database.
 MYSQL_DATABASE = 'dhcp'

@@ -38,6 +38,14 @@ import pydhcplib.dhcp_packet
 import pydhcplib.type_hwmac
 import pydhcplib.type_strlist
 
+_dhcp_servers = [] #: A collection of all instantiated DHCP servers; this should only ever be one element long.
+def flushCache():
+	"""
+	Flushes all cached DHCP data.
+	"""
+	for dhcp_server in _dhcp_servers:
+		dhcp_server.flushCache()
+		
 def _logInvalidValue(name, value, subnet, serial):
 	src.logging.writeLog("Invalid value for %(subnet)s:%(serial)i:%(name)s: %(value)s" % {
 	 'subnet': subnet,
@@ -162,6 +170,12 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 		elif not conf.ALLOW_LOCAL_DHCP: #Local request, but denied.
 			return False
 		return True
+		
+	def flushCache(self):
+		"""
+		Flushes the DHCP cache.
+		"""
+		self._sql_broker.flushCache()
 		
 	def GetNextDhcpPacket(self):
 		"""
@@ -669,6 +683,7 @@ class DHCPService(threading.Thread):
 		 conf.DHCP_SERVER_PORT,
 		 conf.DHCP_CLIENT_PORT
 		)
+		_dhcp_servers.append(_dhcp_server) #Add this server to the global list.
 		
 		src.logging.writeLog('Configured DHCP server')
 		

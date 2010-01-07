@@ -63,7 +63,7 @@ def _quitHandler(signum, frame):
 	
 def _logHandler(signum, frame):
 	"""
-	Writes log to disk upon receipt of a SIGHUP.
+	Flushes DHCP cache and writes log to disk upon receipt of a SIGHUP.
 	
 	@type signum: int
 	@param signum: The kill-signal constant received. This will always be
@@ -72,6 +72,7 @@ def _logHandler(signum, frame):
 	@param frame: The stack-frame in which the kill-signal was received.
 		This is not used.
 	"""
+	src.dhcp.flushCache()
 	if not src.logging.logToDisk():
 		src.logging.writeLog("Unable to write logfile: %(file)s" % {'file': conf.LOG_FILE,})
 		

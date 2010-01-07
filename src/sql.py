@@ -33,16 +33,42 @@ import threading
 
 import conf
 
+import src.logging
+
 class _SQLBroker(object):
 	"""
 	A stub documenting the features an _SQLBroker object must provide.
 	"""
 	_resource_lock = None #: A lock used to prevent the database from being overwhelmed.
+	_cache_lock = None #: A lock used to prevent multiple simultaneous cache updates.
+	_mac_cache = None #: A cache used to prevent unnecessary database hits.
 	
+	def __init__(self):
+		"""
+		Sets up the SQL broker cache.
+		"""
+		self._cache_lock = threading.Lock()
+		self._cache = {}
+		
+	def flushCache(self):
+		"""
+		Resets the cache to an empty state, forcing all lookups to pull fresh
+		data.
+		"""
+		if conf.USE_CACHE:
+			self._cache_lock.acquire()
+			try:
+				self._cache = {}
+				src.logging.writeLog("Flushed DHCP cache")
+			finally:
+				self._cache_lock.release()
+				
 	def lookupMAC(self, mac):
 		"""
 		Queries the database for the given MAC address and returns the IP and
 		associated details if the MAC is known.
+		
+		If enabled, the cache is checked and updated by this function.
 		
 		@type mac: basestring
 		@param mac: The MAC address to lookup.
@@ -58,9 +84,24 @@ class _SQLBroker(object):
 		
 		@raise Exception: If a problem occurs while accessing the database.
 		"""
+		if conf.USE_CACHE:
+			self._cache_lock.acquire()
+			try:
+				data = self._cache.get(mac)
+				if data:
+					return data
+			finally:
+				self._cache_lock.release()
+				
 		self._resource_lock.acquire()
 		try:
-			return self._lookupMAC(mac)
+			data = self._lookupMAC(mac)
+			if conf.USE_CACHE:
+				self._cache_lock.acquire()
+				try:
+					self._cache[mac] = data
+				finally:
+					self._cache_lock.release()
 		finally:
 			self._resource_lock.release()
 			
@@ -78,6 +119,7 @@ class _MySQL(_SQLBroker):
 		"""
 		Constructs the broker.
 		"""
+		_SQLBroker.__init__(self)
 		self._resource_lock = threading.BoundedSemaphore(conf.MYSQL_MAXIMUM_CONNECTIONS)
 		
 		if conf.MYSQL_HOST is None:
@@ -150,6 +192,7 @@ class _SQLite(_SQLBroker):
 		"""
 		Constructs the broker.
 		"""
+		_SQLBroker.__init__(self)
 		self._resource_lock = threading.BoundedSemaphore(conf.SQLITE_MAXIMUM_CONNECTIONS)
 		
 		self._file = conf.SQLITE_FILE
