@@ -54,38 +54,54 @@ def _logInvalidValue(name, value, subnet, serial):
 	 'value': value,
 	})
 	
-def ipToQuad(ip):
+def ipToList(ip):
+	"""
+	Converts an IPv4 address into a collection of four bytes.
+	
+	@type ip: basestring
+	@param ip: The IPv4 to process.
+	
+	@rtype: list
+	@return: The IPv4 expressed as bytes.
+	"""
 	return [int(i) for i in ip.split('.')]
 	
-def ipsToQuads(ips):
+def ipsToList(ips):
+	"""
+	Converts a comma-delimited list of IPv4s into bytes.
+	
+	@type ips: basestring
+	@param ips: The list of IPv4s to process.
+	
+	@rtype: list
+	@return: A collection of bytes corresponding to the given IPv4s.
+	"""
 	quads = []
 	for ip in ips.split(','):
-		quads += [int(i) for i in ip.strip().split('.')]
+		quads += ipToList(ip.strip())
 	return quads
 	
-def intToDouble(i):
+def intToList(i):
 	"""
-	A convenience function that converts an int into a pydhcplib-compatible
-	double.
+	A convenience function that converts an int into a pair of bytes.
 	
 	@type i: int
 	@param i: The long value to convert.
 	
 	@rtype: list
-	@return: The converted double.
+	@return: The converted bytes.
 	"""
 	return [(i / 256) % 256, i % 256]
 	
-def longToQuad(l):
+def longToList(l):
 	"""
-	A convenience function that converts a long into a pydhcplib-compatible
-	quad.
+	A convenience function that converts a long into a set of four bytes.
 	
 	@type l: int
 	@param l: The long value to convert.
 	
 	@rtype: list
-	@return: The converted quad.
+	@return: The converted bytes.
 	"""
 	q = [l % 256]
 	l /= 256
@@ -96,7 +112,16 @@ def longToQuad(l):
 	q.insert(0, l % 256)
 	return q
 	
-def strToStrList(s):
+def strToList(s):
+	"""
+	Converts the given string into an encoded byte format.
+	
+	@type s: basestring
+	@param s: The string to be converted.
+	
+	@rtype: list
+	@return: An encoded byte version of the given string.
+	"""
 	return pydhcplib.type_strlist.strlist(str(s)).list()
 	
 class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
@@ -254,7 +279,7 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 						giaddr = tuple(giaddr)
 					if conf.loadDHCPPacket(
 					 offer,
-					 mac, tuple(ipToQuad(result[0])), giaddr,
+					 mac, tuple(ipToList(result[0])), giaddr,
 					 result[9], result[10]
 					):
 						self.SendDhcpPacket(offer, source_address, 'OFFER', mac, result[0])
@@ -340,7 +365,7 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 							self.LoadDHCPPacket(packet, result)
 							if conf.loadDHCPPacket(
 							 packet,
-							 mac, tuple(ipToQuad(result[0])), giaddr,
+							 mac, tuple(ipToList(result[0])), giaddr,
 							 result[9], result[10]
 							):
 								self.SendDhcpPacket(packet, source_address, 'ACK', mac, s_ip)
@@ -486,7 +511,7 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 					self.LoadDHCPPacket(packet, result, True)
 					if conf.loadDHCPPacket(
 					 packet,
-					 mac, tuple(ipToQuad(result[0])), giaddr,
+					 mac, tuple(ipToList(result[0])), giaddr,
 					 result[9], result[10]
 					):
 						self.SendDhcpPacket(packet, source_address, 'ACK', mac, s_ciaddr)
@@ -528,35 +553,35 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 		
 		#Core parameters.
 		if not inform:
-			packet.SetOption('yiaddr', ipToQuad(ip))
-			packet.SetOption('ip_address_lease_time', longToQuad(lease_time))
-		packet.SetOption('server_identifier', ipToQuad(self._server_address))
+			packet.SetOption('yiaddr', ipToList(ip))
+			packet.SetOption('ip_address_lease_time', longToList(lease_time))
+		packet.SetOption('server_identifier', ipToList(self._server_address))
 		
 		#Default gateway, subnet mask, and broadcast address.
 		if gateway:
-			if not packet.SetOption('router', ipToQuad(gateway)):
+			if not packet.SetOption('router', ipToList(gateway)):
 				_logInvalidValue('gateway', gateway, subnet, serial)
 		if subnet_mask:
-			if not packet.SetOption('subnet_mask', ipToQuad(subnet_mask)):
+			if not packet.SetOption('subnet_mask', ipToList(subnet_mask)):
 				_logInvalidValue('subnet_mask', subnet_mask, subnet, serial)
 		if broadcast_address:
-			if not packet.SetOption('broadcast_address', ipToQuad(broadcast_address)):
+			if not packet.SetOption('broadcast_address', ipToList(broadcast_address)):
 				_logInvalidValue('broadcast_address', broadcast_address, subnet, serial)
 				
 		#Domain details.
 		if hostname:
-			if not packet.SetOption('hostname', strToStrList(hostname)):
+			if not packet.SetOption('hostname', strToList(hostname)):
 				_logInvalidValue('hostname', hostname, subnet, serial)
 		if domain_name:
-			if not packet.SetOption('domain_name', strToStrList(domain_name)):
+			if not packet.SetOption('domain_name', strToList(domain_name)):
 				_logInvalidValue('domain_name', domain_name, subnet, serial)
 		if domain_name_servers:
-			if not packet.SetOption('domain_name_servers', ipsToQuads(domain_name_servers)):
+			if not packet.SetOption('domain_name_servers', ipsToList(domain_name_servers)):
 				_logInvalidValue('domain_name_servers', domain_name_servers, subnet, serial)
 				
 		#NTP servers.
 		if ntp_servers:
-			if not packet.SetOption('ntp_servers', ipsToQuads(ntp_servers)):
+			if not packet.SetOption('ntp_servers', ipsToList(ntp_servers)):
 				_logInvalidValue('ntp_servers', ntp_servers, subnet, serial)
 				
 	def LogDHCPAccess(self, mac):
