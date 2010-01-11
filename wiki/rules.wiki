@@ -1,0 +1,88 @@
+This article explains how to write custom DHCP-option-handling routines for staticDHCPd. This is not a feature most users will need to explore, so if you can't imagine why you would need to do it, you don't need to read on.
+
+----
+== Background ==
+No prior programming experience is required to use this feature of staticDHCPd, but having some would be a definite asset.
+
+----
+== Foreword ==
+Python is whitespace-sensitive and [http://uguu.ca/ Neil Tallim] likes to go against PEP-8 and use tabs for indentation. All code to be added to the <tt>loadDHCPPacket()</tt> function must be indented such that the outermost scope-line aligns with the comments and default <tt>return True</tt>. Failure to do so will result in a syntax error that will prevent staticDHCPd from starting. If this doesn't make sense, find a "Hello, world!" Python script and do some hacking.
+
+As for DHCP options, don't worry about whether the client is configured to handle them or not; when the response is sent, all options the client did not ask to receive will be omitted, to ensure that nothing gets confused. Exception: in the (non-standard) event that a client does not provide a list in option 55, all set options will be returned.
+
+----
+== Examples ==
+=== Tell every client to use <tt>127.0.0.1</tt> and <tt>192.168.0.1</tt> as DNS servers ===
+This example is not representative of the best way to do things; DNS servers may, and should, be set in the [database].
+
+{{{
+packet.SetOption('domain_name_servers', ipsToQuads('127.0.0.1,192.168.0.1'))
+}}}
+
+This snippet sets the option associated with the symbolic, human-readable name <tt>domain_name_servers</tt> to <tt>{{{[127,0,0,1,192,168,0,1]}}}</tt>, eight bytes that constitute the two IP addresses. For efficiency's sake, you would probably want to write this as follows, although it is less readable:
+
+{{{
+packet.SetOption('domain_name_servers', [127,0,0,1,192,168,0,1])
+}}}
+
+For a full list of all human-readable option-name values, see <tt>{{{pydhcplib/dhcp_constants.py:DhcpFields}}}</tt> and <tt>{{{pydhcplib/dhcp_constants.py:DhcpOptions}}}</tt>.
+
+=== Tell all clients with an IP address ending in a multiple of 3 to use <tt>192.168.1.254</tt> as a default gateway ===
+{{{
+if client_ip[3] % 3 == 0:
+    packet.SetOption('router', ipToQuad('192.168.1.254'))
+}}}
+
+Here, the modulus-by-3 of the last octet (zero-based array) of <tt>client_ip</tt>, the IP address assigned to the client, is checked to see if it is zero. If so, the <tt>router</tt> option is set to <tt>{{{[192,168,1,254]}}}</tt>. Note that the function used this time is <tt>ipToQuad()</tt>. This is because only one IP needs to be translated; it's just more efficient this way. Of course, it would be more efficient still to use the same alternative format as before:
+
+{{{
+if client_ip[3] % 3 == 0:
+    packet.SetOption('router', [192,168,1,254]))
+}}}
+
+=== Set T1 to <tt>60</tt> seconds ===
+{{{
+packet.SetOption('renewal_time_value', longToQuad(60))
+}}}
+
+In this case, <tt>longToQuad()</tt> was used to translate the value <tt>60</tt> into <tt>{{{[0,0,0,60]}}}</tt>, <tt>60</tt> as a four-byte value. It's probably best to always use this function to avoid an endian mishap.
+
+=== Set the client's domain name to <tt>example.com</tt> if the request was relayed, but refuse to respond if it was relayed from <tt>10.0.0.1</tt> ===
+{{{
+if relay_ip:
+    if relay_ip == (10,0,0,1):
+        return False
+    packet.SetOption('domain_name', strToStrList('example.com'))
+}}}
+
+Here, <tt>relay_ip</tt>, <tt>giaddr</tt>, is checked to see if it was set (always do this before working with <tt>relay_ip</tt>, to avoid an error), indicating that this request was relayed. The IP of the relay server is then checked and, if it matches, <tt>domain_name</tt> is set to <tt>example.com</tt> using the <tt>strToStrList()</tt> convenience function.
+
+=== Prevent clients in all <tt>192.168.0.0/24</tt> subnets from having a default gateway ===
+{{{
+if subnet == '192.168.0.0/24':
+    packet.DeleteOption('router')
+}}}
+
+<tt>subnet</tt> was checked to see if it matched <tt>192.168.0.0/24</tt>; <tt>serial</tt> was ignored. These values come directly from the database -- staticDHCPd doesn't infer subnets based on IP and mask values.
+
+=== Check to see if option <tt>3</tt>, <tt>router</tt>, was requested, and fail if it was not set ===
+{{{
+if not packet.requested_options is None and 3 in packet.requested_options and not packet.GetOption('router'):
+    return False
+}}}
+
+This one's pretty complicated: <tt>packet.requested_options</tt> is a value that is <tt>None</tt> if the client did not provide option <tt>55</tt>, so any code that references it must first check for that. In the event that it has been set, the code looks for option <tt>3</tt> in the tuple constructed from the set of options requested by the client. If option <tt>3</tt> is set, then the value currently associated with <tt>router</tt> is checked; if not set, it will be <tt>[]</tt>; if set, it will be a list of four ints, 0 <= x <= 255, though the values associated with other options will vary.
+
+If any of these conditions fail, the client's request is ignored or NAKed, depending on its nature.
+
+Note that, because <tt>packet.requested_options</tt> is referenced in computationally expensive routines, it would be highly inefficient to use human-readable strings here; to find the name/number pair you need to use, look at <tt>{{{pydhcplib/dhcp_constants.py:DhcpOptions}}}</tt>, which you can import to make this function more readable for maintainability purposes.
+
+=== Do something stupid to generate an error for testing purposes ===
+{{{
+if not packet.SetOption('router', [192])):
+    raise Exception("192 is not a valid IP")
+}}}
+
+The reason why this fails should be self-explanatory. What's important is noting that raising any sort of exception in this function prevents the DHCP response from being sent, but it will help to debug problems by printing or e-mailing a thorough description of the problem that occurred.
+
+Note that if <tt>packet.SetOption()</tt> returns <tt>False</tt>, which is what was tested, it's because the option was not set due to a format error. It is safe to ignore these problems, but it will lead to a lot of confusion, so it's always a good idea to use an <tt>if</tt>-statement like this.
