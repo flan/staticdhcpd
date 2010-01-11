@@ -85,4 +85,4 @@ if not packet.SetOption('router', [192])):
 
 The reason why this fails should be self-explanatory. What's important is noting that raising any sort of exception in this function prevents the DHCP response from being sent, but it will help to debug problems by printing or e-mailing a thorough description of the problem that occurred.
 
-Note that if <tt>packet.SetOption()</tt> returns <tt>False</tt>, which is what was tested, it's because the option was not set due to a format error. It is safe to ignore these problems, but it will lead to a lot of confusion, so it's always a good idea to use an <tt>if</tt>-statement like this.
+Note that if <tt>{{{packet.SetOption()}}}</tt> returns <tt>False</tt>, which is what was tested, it's because the option was not set due to a format error. It is safe to ignore these problems, but it will lead to a lot of confusion, so it's always a good idea to use an <tt>if</tt>-statement like this.
