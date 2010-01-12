@@ -1,8 +1,10 @@
 This article explains how to set values in the database to provide DHCP-handling for staticDHCPd's clients.
 
+----
 == Background ==
 Knowledge of how to maintain databases using the engine you've chosen is a necessary pre-requisite.
 
+----
 == <tt>subnets</tt> table ==
 At least one entry in this table is required before any values can be added to the maps table.
 
@@ -16,6 +18,7 @@ At least one entry in this table is required before any values can be added to t
  * The <tt>domain_name_servers</tt> value may be up to three IPv4s, separated by commas, or may be NULL to avoid setting the corresponding DHCP option.
  * The <tt>domain_name</tt> value may be any arbitrary, FQDN-valid string or may be NULL to avoid setting the corresponding DHCP option.
 
+----
 == <tt>maps</tt> table ==
 Every entry in this table must be bound to a subnet/serial pair in the subnets table, from which options will be inherited.
 
