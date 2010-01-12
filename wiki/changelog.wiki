@@ -1,0 +1,15 @@
+1.2.0 (r93)
+----
+ * Consistently named and documented convenience functions
+
+1.1.1 (r92)
+----
+ * Added <tt>README</tt> with a quick-start proof-of-concept-for-busy-people guide
+
+1.1.0 (r90)
+----
+ * <tt>USE_CACHE</tt> option added to <tt>conf.py</tt>, allowing for memory-speed performance under heavy load
+
+1.0.0 (r85)
+----
+ * First stable release
