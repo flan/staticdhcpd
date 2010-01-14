@@ -63,7 +63,7 @@ def _quitHandler(signum, frame):
 	
 def _logHandler(signum, frame):
 	"""
-	Flushes DHCP cache and writes log to disk upon receipt of a SIGHUP.
+	Writes log to disk upon receipt of a SIGHUP.
 	
 	@type signum: int
 	@param signum: The kill-signal constant received. This will always be
@@ -72,11 +72,8 @@ def _logHandler(signum, frame):
 	@param frame: The stack-frame in which the kill-signal was received.
 		This is not used.
 	"""
-	src.dhcp.flushCache()
 	if not src.logging.logToDisk():
-		src.logging.writeLog("Unable to write logfile: %(log)s" % {'log': conf.LOG_FILE,})
-	else:
-		src.logging.writeLog("Wrote log to '%(log)s'" % {'log': conf.LOG_FILE,})
+		src.logging.writeLog("Unable to write logfile: %(file)s" % {'file': conf.LOG_FILE,})
 		
 if __name__ == '__main__':
 	#Ensure that pre-setup tasks are taken care of.
@@ -93,17 +90,8 @@ if __name__ == '__main__':
 	
 	#Record PID.
 	try:
-		pidfile = open(conf.PID_FILE, 'w')
-		pidfile.write(str(os.getpid()) + '\n')
-		pidfile.close()
+		open(conf.PID_FILE, 'w').write(str(os.getpid()) + '\n')
 		os.chown(conf.PID_FILE, conf.UID, conf.GID)
-	except:
-		src.logging.writeLog("Unable to write pidfile: %(file)s" % {'file': conf.PID_FILE,})
-		
-	#Touch logfile.
-	try:
-		open(conf.LOG_FILE, 'a').close()
-		os.chown(conf.LOG_FILE, conf.UID, conf.GID)
 	except:
 		src.logging.writeLog("Unable to write pidfile: %(file)s" % {'file': conf.PID_FILE,})
 		

@@ -36,7 +36,6 @@ import urlparse
 import conf
 
 import src.logging
-import src.dhcp
 
 class _WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
 	"""
@@ -76,8 +75,8 @@ class _WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
 		"""
 		Handles all HTTP POST requests.
 		
-		This checks to see if the user entered the flush key and, if so,
-		flushes the cache and writes the memory-log to disk.
+		This checks to see if the user entered the log-to-disk key and, if so,
+		writes the memory-log to disk.
 		"""
 		try:
 			(ctype, pdict) = cgi.parse_header(self.headers.getheader('content-type'))
@@ -86,7 +85,6 @@ class _WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
 				key = query.get('key')
 				if key:
 					if hashlib.md5(key[0]).hexdigest() == conf.WEB_RELOAD_KEY:
-						src.dhcp.flushCache()
 						if src.logging.logToDisk():
 							src.logging.writeLog("Wrote log to '%(log)s'" % {'log': conf.LOG_FILE,})
 						else:
@@ -145,10 +143,7 @@ class _WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
 			})
 			self.wfile.write('<form action="/" method="post"><div style="display: inline;">')
 			self.wfile.write('<label for="key">Key: </label><input type="password" name="key" id="key"/>')
-			if conf.USE_CACHE:
-				self.wfile.write('<input type="submit" value="Flush cache and write log to disk"/>')
-			else:
-				self.wfile.write('<input type="submit" value="Write log to disk"/>')
+			self.wfile.write('<input type="submit" value="Write log to disk"/>')
 			self.wfile.write('</div></form>')
 			self.wfile.write('</div>')
 			

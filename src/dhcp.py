@@ -38,14 +38,6 @@ import pydhcplib.dhcp_packet
 import pydhcplib.type_hwmac
 import pydhcplib.type_strlist
 
-_dhcp_servers = [] #: A collection of all instantiated DHCP servers; this should only ever be one element long.
-def flushCache():
-	"""
-	Flushes all cached DHCP data.
-	"""
-	for dhcp_server in _dhcp_servers:
-		dhcp_server.flushCache()
-		
 def _logInvalidValue(name, value, subnet, serial):
 	src.logging.writeLog("Invalid value for %(subnet)s:%(serial)i:%(name)s: %(value)s" % {
 	 'subnet': subnet,
@@ -54,54 +46,38 @@ def _logInvalidValue(name, value, subnet, serial):
 	 'value': value,
 	})
 	
-def ipToList(ip):
-	"""
-	Converts an IPv4 address into a collection of four bytes.
-	
-	@type ip: basestring
-	@param ip: The IPv4 to process.
-	
-	@rtype: list
-	@return: The IPv4 expressed as bytes.
-	"""
+def ipToQuad(ip):
 	return [int(i) for i in ip.split('.')]
 	
-def ipsToList(ips):
-	"""
-	Converts a comma-delimited list of IPv4s into bytes.
-	
-	@type ips: basestring
-	@param ips: The list of IPv4s to process.
-	
-	@rtype: list
-	@return: A collection of bytes corresponding to the given IPv4s.
-	"""
+def ipsToQuads(ips):
 	quads = []
 	for ip in ips.split(','):
-		quads += ipToList(ip.strip())
+		quads += [int(i) for i in ip.strip().split('.')]
 	return quads
 	
-def intToList(i):
+def intToDouble(i):
 	"""
-	A convenience function that converts an int into a pair of bytes.
+	A convenience function that converts an int into a pydhcplib-compatible
+	double.
 	
 	@type i: int
 	@param i: The long value to convert.
 	
 	@rtype: list
-	@return: The converted bytes.
+	@return: The converted double.
 	"""
 	return [(i / 256) % 256, i % 256]
 	
-def longToList(l):
+def longToQuad(l):
 	"""
-	A convenience function that converts a long into a set of four bytes.
+	A convenience function that converts a long into a pydhcplib-compatible
+	quad.
 	
 	@type l: int
 	@param l: The long value to convert.
 	
 	@rtype: list
-	@return: The converted bytes.
+	@return: The converted quad.
 	"""
 	q = [l % 256]
 	l /= 256
@@ -112,16 +88,7 @@ def longToList(l):
 	q.insert(0, l % 256)
 	return q
 	
-def strToList(s):
-	"""
-	Converts the given string into an encoded byte format.
-	
-	@type s: basestring
-	@param s: The string to be converted.
-	
-	@rtype: list
-	@return: An encoded byte version of the given string.
-	"""
+def strToStrList(s):
 	return pydhcplib.type_strlist.strlist(str(s)).list()
 	
 class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
@@ -195,12 +162,6 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 		elif not conf.ALLOW_LOCAL_DHCP: #Local request, but denied.
 			return False
 		return True
-		
-	def flushCache(self):
-		"""
-		Flushes the DHCP cache.
-		"""
-		self._sql_broker.flushCache()
 		
 	def GetNextDhcpPacket(self):
 		"""
@@ -279,7 +240,7 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 						giaddr = tuple(giaddr)
 					if conf.loadDHCPPacket(
 					 offer,
-					 mac, tuple(ipToList(result[0])), giaddr,
+					 mac, tuple(ipToQuad(result[0])), giaddr,
 					 result[9], result[10]
 					):
 						self.SendDhcpPacket(offer, source_address, 'OFFER', mac, result[0])
@@ -289,17 +250,13 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 						})
 						self.LogDiscardedPacket()
 				else:
-					if conf.AUTHORITATIVE:
-						offer.TransformToDhcpNackPacket()
-						self.SendDhcpPacket(offer, source_address, 'NAK', mac, 'unknown')
-					else:
-						src.logging.writeLog('%(mac)s unknown; ignoring for %(time)i seconds' % {
-						 'mac': mac,
-						 'time': conf.UNAUTHORIZED_CLIENT_TIMEOUT,
-						})
-						self._stats_lock.acquire()
-						self._ignored_addresses.append([mac, conf.UNAUTHORIZED_CLIENT_TIMEOUT])
-						self._stats_lock.release()
+					src.logging.writeLog('%(mac)s unknown; ignoring for %(time)i seconds' % {
+					 'mac': mac,
+					 'time': conf.UNAUTHORIZED_CLIENT_TIMEOUT,
+					})
+					self._stats_lock.acquire()
+					self._ignored_addresses.append([mac, conf.UNAUTHORIZED_CLIENT_TIMEOUT])
+					self._stats_lock.release()
 			except Exception, e:
 				src.logging.sendErrorReport('Unable to respond to %(mac)s' % {'mac': mac,}, e)
 		else:
@@ -369,7 +326,7 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 							self.LoadDHCPPacket(packet, result)
 							if conf.loadDHCPPacket(
 							 packet,
-							 mac, tuple(ipToList(result[0])), giaddr,
+							 mac, tuple(ipToQuad(result[0])), giaddr,
 							 result[9], result[10]
 							):
 								self.SendDhcpPacket(packet, source_address, 'ACK', mac, s_ip)
@@ -515,7 +472,7 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 					self.LoadDHCPPacket(packet, result, True)
 					if conf.loadDHCPPacket(
 					 packet,
-					 mac, tuple(ipToList(result[0])), giaddr,
+					 mac, tuple(ipToQuad(result[0])), giaddr,
 					 result[9], result[10]
 					):
 						self.SendDhcpPacket(packet, source_address, 'ACK', mac, s_ciaddr)
@@ -557,35 +514,35 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 		
 		#Core parameters.
 		if not inform:
-			packet.SetOption('yiaddr', ipToList(ip))
-			packet.SetOption('ip_address_lease_time', longToList(lease_time))
-		packet.SetOption('server_identifier', ipToList(self._server_address))
+			packet.SetOption('yiaddr', ipToQuad(ip))
+			packet.SetOption('ip_address_lease_time', longToQuad(lease_time))
+		packet.SetOption('server_identifier', ipToQuad(self._server_address))
 		
 		#Default gateway, subnet mask, and broadcast address.
 		if gateway:
-			if not packet.SetOption('router', ipToList(gateway)):
+			if not packet.SetOption('router', ipToQuad(gateway)):
 				_logInvalidValue('gateway', gateway, subnet, serial)
 		if subnet_mask:
-			if not packet.SetOption('subnet_mask', ipToList(subnet_mask)):
+			if not packet.SetOption('subnet_mask', ipToQuad(subnet_mask)):
 				_logInvalidValue('subnet_mask', subnet_mask, subnet, serial)
 		if broadcast_address:
-			if not packet.SetOption('broadcast_address', ipToList(broadcast_address)):
+			if not packet.SetOption('broadcast_address', ipToQuad(broadcast_address)):
 				_logInvalidValue('broadcast_address', broadcast_address, subnet, serial)
 				
 		#Domain details.
 		if hostname:
-			if not packet.SetOption('hostname', strToList(hostname)):
+			if not packet.SetOption('hostname', strToStrList(hostname)):
 				_logInvalidValue('hostname', hostname, subnet, serial)
 		if domain_name:
-			if not packet.SetOption('domain_name', strToList(domain_name)):
+			if not packet.SetOption('domain_name', strToStrList(domain_name)):
 				_logInvalidValue('domain_name', domain_name, subnet, serial)
 		if domain_name_servers:
-			if not packet.SetOption('domain_name_servers', ipsToList(domain_name_servers)):
+			if not packet.SetOption('domain_name_servers', ipsToQuads(domain_name_servers)):
 				_logInvalidValue('domain_name_servers', domain_name_servers, subnet, serial)
 				
 		#NTP servers.
 		if ntp_servers:
-			if not packet.SetOption('ntp_servers', ipsToList(ntp_servers)):
+			if not packet.SetOption('ntp_servers', ipsToQuads(ntp_servers)):
 				_logInvalidValue('ntp_servers', ntp_servers, subnet, serial)
 				
 	def LogDHCPAccess(self, mac):
@@ -712,7 +669,6 @@ class DHCPService(threading.Thread):
 		 conf.DHCP_SERVER_PORT,
 		 conf.DHCP_CLIENT_PORT
 		)
-		_dhcp_servers.append(self._dhcp_server) #Add this server to the global list.
 		
 		src.logging.writeLog('Configured DHCP server')
 		
