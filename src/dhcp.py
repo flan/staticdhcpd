@@ -289,17 +289,13 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 						})
 						self.LogDiscardedPacket()
 				else:
-					if conf.AUTHORITATIVE:
-						offer.TransformToDhcpNackPacket()
-						self.SendDhcpPacket(offer, source_address, 'NAK', mac, 'unknown')
-					else:
-						src.logging.writeLog('%(mac)s unknown; ignoring for %(time)i seconds' % {
-						 'mac': mac,
-						 'time': conf.UNAUTHORIZED_CLIENT_TIMEOUT,
-						})
-						self._stats_lock.acquire()
-						self._ignored_addresses.append([mac, conf.UNAUTHORIZED_CLIENT_TIMEOUT])
-						self._stats_lock.release()
+					src.logging.writeLog('%(mac)s unknown; ignoring for %(time)i seconds' % {
+					 'mac': mac,
+					 'time': conf.UNAUTHORIZED_CLIENT_TIMEOUT,
+					})
+					self._stats_lock.acquire()
+					self._ignored_addresses.append([mac, conf.UNAUTHORIZED_CLIENT_TIMEOUT])
+					self._stats_lock.release()
 			except Exception, e:
 				src.logging.sendErrorReport('Unable to respond to %(mac)s' % {'mac': mac,}, e)
 		else:

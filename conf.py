@@ -51,11 +51,6 @@ ALLOW_DHCP_RELAYS = False
 #(End with trailing comma)
 ALLOWED_DHCP_RELAYS = ()
 
-#If True, any unknown MACs will be NAKed instead of ignored. If you may have
-#more than one DHCP server serving a single LAN, this is NOT something you
-#should enable.
-AUTHORITATIVE = False
-
 #If True, REBIND and RENEW requests are NAKed when received, forcing clients to
 #either wait out their lease or return to the DISCOVER phase.
 NAK_RENEWALS = False
