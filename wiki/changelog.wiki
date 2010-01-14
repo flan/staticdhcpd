@@ -1,11 +1,15 @@
-1.2.0 (r93)
+1.3.0
+ * Added <tt>AUTHORITATIVE</tt> mode, allowing staticDHCPd to be configured to NAK DISCOVERs for unknown MACs, rather than silently ignoring them
+ * Added an option to have logfiles written to disk with the current timestamp as a suffix, simplifying the process of creating status snapshots
+----
+1.2.0
  * Consistently named and documented convenience functions
 ----
-1.1.1 (r92)
+1.1.1
  * Added <tt>README</tt> with a quick-start proof-of-concept-for-busy-people guide
 ----
-1.1.0 (r90)
+1.1.0
  * <tt>USE_CACHE</tt> option added to <tt>conf.py</tt>, allowing for memory-speed performance under heavy load
 ----
-1.0.0 (r85)
+1.0.0
  * First stable release
