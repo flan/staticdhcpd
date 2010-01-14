@@ -51,11 +51,6 @@ ALLOW_DHCP_RELAYS = False
 #(End with trailing comma)
 ALLOWED_DHCP_RELAYS = ()
 
-#If True, any unknown MACs will be NAKed instead of ignored. If you may have
-#more than one DHCP server serving a single LAN, this is NOT something you
-#should enable.
-AUTHORITATIVE = False
-
 #If True, REBIND and RENEW requests are NAKed when received, forcing clients to
 #either wait out their lease or return to the DISCOVER phase.
 NAK_RENEWALS = False
@@ -127,7 +122,7 @@ EMAIL_TIMEOUT = 600
 #######################################
 #PERFORM ANY REQUIRED IMPORTS WITHIN init()
 def init():
-	from src.dhcp import ipToList, ipsToList, intToList, longToList, strToList
+	from src.dhcp import ipToQuad, ipsToQuads, intToDouble, longToQuad, strToStrList
 #DEFINE ANY REQUIRED FUNCTIONS OR VARIABLES BELOW THIS LINE
 
 def loadDHCPPacket(packet, mac, client_ip, relay_ip, subnet, serial):
