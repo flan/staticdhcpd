@@ -128,8 +128,12 @@ def logToDisk():
 	@return: True if the logfile was written.
 	"""
 	try:
-		log_file = open(conf.LOG_FILE, 'w')
-		
+		log_file = None
+		if conf.LOG_FILE_TIMESTAMP:
+			log_file = open(conf.LOG_FILE + time.strftime(".%Y%m%d%H%M%S"), 'w')
+		else:
+			log_file = open(conf.LOG_FILE, 'w')
+			
 		log_file.write("Summary generated %(time)s\n" % {'time': time.asctime(),})
 		
 		log_file.write("\nStatistics:\n")
