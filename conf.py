@@ -7,8 +7,6 @@ DEBUG = False
 SYSTEM_NAME = 'staticDHCPd'
 #The file to which logs should be dumped on receipt of TERM or HUP.
 LOG_FILE = '/var/log/' + SYSTEM_NAME + '.log'
-#The file to which PID information should be written.
-PID_FILE = '/var/run/' + SYSTEM_NAME + '.pid'
 
 #The frequency at which the DHCP server's stats will be polled, in seconds.
 POLLING_INTERVAL = 30
@@ -23,6 +21,8 @@ POLL_INTERVALS_TO_TRACK = 20
 UID = 999
 #The GID that will run this daemon.
 GID = 999
+#The file to which PID information should be written.
+PID_FILE = '/var/run/' + SYSTEM_NAME + '.pid'
 
 #The IP of the interface on which DHCP responses should be sent.
 #This may be None to assume all interfaces, but this is not a good idea on a
@@ -50,11 +50,6 @@ ALLOW_DHCP_RELAYS = False
 #A list of all IPs allowed to relay requests; if empty, all are allowed.
 #(End with trailing comma)
 ALLOWED_DHCP_RELAYS = ()
-
-#If True, any unknown MACs will be NAKed instead of ignored. If you may have
-#more than one DHCP server serving a single LAN, this is NOT something you
-#should enable.
-AUTHORITATIVE = False
 
 #If True, REBIND and RENEW requests are NAKed when received, forcing clients to
 #either wait out their lease or return to the DISCOVER phase.
@@ -127,7 +122,7 @@ EMAIL_TIMEOUT = 600
 #######################################
 #PERFORM ANY REQUIRED IMPORTS WITHIN init()
 def init():
-	from src.dhcp import ipToList, ipsToList, intToList, longToList, strToList
+	from src.dhcp import ipToQuad, ipsToQuads, intToDouble, longToQuad, strToStrList
 #DEFINE ANY REQUIRED FUNCTIONS OR VARIABLES BELOW THIS LINE
 
 def loadDHCPPacket(packet, mac, client_ip, relay_ip, subnet, serial):

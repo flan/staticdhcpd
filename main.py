@@ -93,17 +93,8 @@ if __name__ == '__main__':
 	
 	#Record PID.
 	try:
-		pidfile = open(conf.PID_FILE, 'w')
-		pidfile.write(str(os.getpid()) + '\n')
-		pidfile.close()
+		open(conf.PID_FILE, 'w').write(str(os.getpid()) + '\n')
 		os.chown(conf.PID_FILE, conf.UID, conf.GID)
-	except:
-		src.logging.writeLog("Unable to write pidfile: %(file)s" % {'file': conf.PID_FILE,})
-		
-	#Touch logfile.
-	try:
-		open(conf.LOG_FILE, 'a').close()
-		os.chown(conf.LOG_FILE, conf.UID, conf.GID)
 	except:
 		src.logging.writeLog("Unable to write pidfile: %(file)s" % {'file': conf.PID_FILE,})
 		
