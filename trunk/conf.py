@@ -7,6 +7,9 @@ DEBUG = False
 SYSTEM_NAME = 'staticDHCPd'
 #The file to which logs should be dumped on receipt of TERM or HUP.
 LOG_FILE = '/var/log/' + SYSTEM_NAME + '.log'
+#True to write logfiles with the current timestamp; requires that staticDHCPd
+#has write-access to the directory above, which may be a security risk.
+LOG_FILE_TIMESTAMP = False
 #The file to which PID information should be written.
 PID_FILE = '/var/run/' + SYSTEM_NAME + '.pid'
 
