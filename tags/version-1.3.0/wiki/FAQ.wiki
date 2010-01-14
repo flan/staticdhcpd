@@ -1,0 +1,8 @@
+== Platform-specific questions ==
+=== On Ubuntu, I get these "non-fatal select() error" messages in my logs at startup. Why? ===
+Actually, we're not quite sure why, either. It seems as though Ubuntu's default configuration hits the process, when it starts, with a signal that generates an interrupt, which wakes the select() operations prematurely and causes them to throw an error because no handlers were invoked. No handlers were invoked because the nature of the interrupt is unknown, so to ensure normal operation, the error is semi-silently discarded and select() is invoked again, which is what would normally happen after each wakeup event. No requests can possibly be lost as a result of this error, so it's completely benign.
+
+That said, if you see this message appear _after_ the initial startup, then you should start investigating the cause.
+
+Further information:
+ This is actually more of a Python issue than an Ubuntu issue (it would have been fixed if it were reasonably easy): Python's select() receives SIGINT, as it should, but there's no clear way to actually handle the signal gracefully -- although handling it properly would require knowledge of why it's actually being sent.
