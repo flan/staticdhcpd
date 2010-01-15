@@ -235,6 +235,22 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 		finally:
 			self._stats_lock.release()
 			
+	def HandleDhcpDecline(self, packet, source_address):
+		"""
+		Informs the DHCP operator of a potential IP collision on the network.
+		
+		@type packet: L{pydhcplib.dhcp_packet.DhcpPacket}
+		@param packet: The DHCPDISCOVER to be evaluated.
+		@type source_address: tuple
+		@param source_address: The address (host, port) from which the request
+			was received.
+		"""
+		src.logging.writeLog('DHCPDECLINE(%(s_ip)s) for %(ip)s received from %(mac)s' % {
+		 's_ip': '.'.join(map(str, packet.GetOption("server_identifier"))),
+		 'ip': '.'.join(map(str, packet.GetOption("requested_ip_address"))),
+		 'mac': pydhcplib.type_hwmac.hwmac(packet.GetHardwareAddress()).str(),
+		})
+		
 	def HandleDhcpDiscover(self, packet, source_address):
 		"""
 		Evaluates a DHCPDISCOVER request from a client and determines whether a
@@ -337,7 +353,7 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 				self.LogDiscardedPacket()
 				return
 				
-			ip = packet.GetOption("request_ip_address")
+			ip = packet.GetOption("requested_ip_address")
 			sid = packet.GetOption("server_identifier")
 			ciaddr = packet.GetOption("ciaddr")
 			giaddr = packet.GetGiaddr()
@@ -538,6 +554,22 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 		else:
 			self.LogDiscardedPacket()
 		self.LogTimeTaken(time.time() - start_time)
+		
+	def HandleDhcpRelease(self, packet, source_address):
+		"""
+		Informs the DHCP operator that a client has terminated its "lease".
+		
+		@type packet: L{pydhcplib.dhcp_packet.DhcpPacket}
+		@param packet: The DHCPDISCOVER to be evaluated.
+		@type source_address: tuple
+		@param source_address: The address (host, port) from which the request
+			was received.
+		"""
+		src.logging.writeLog('DHCPRELEASE(%(s_ip)s) for %(ip)s received from %(mac)s' % {
+		 's_ip': '.'.join(map(str, packet.GetOption("server_identifier"))),
+		 'ip': '.'.join(map(str, packet.GetOption("ciaddr"))),
+		 'mac': pydhcplib.type_hwmac.hwmac(packet.GetHardwareAddress()).str(),
+		})
 		
 	def LoadDHCPPacket(self, packet, result, inform=False):
 		"""
