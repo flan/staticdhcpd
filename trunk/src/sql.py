@@ -42,13 +42,15 @@ class _SQLBroker(object):
 	_resource_lock = None #: A lock used to prevent the database from being overwhelmed.
 	_cache_lock = None #: A lock used to prevent multiple simultaneous cache updates.
 	_mac_cache = None #: A cache used to prevent unnecessary database hits.
+	_subnet_cache = None #: A cache used to prevent unnecessary database hits.
 	
 	def __init__(self):
 		"""
 		Sets up the SQL broker cache.
 		"""
 		self._cache_lock = threading.Lock()
-		self._cache = {}
+		self._mac_cache = {}
+		self._subnet_cache = {}
 		
 	def flushCache(self):
 		"""
@@ -58,7 +60,8 @@ class _SQLBroker(object):
 		if conf.USE_CACHE:
 			self._cache_lock.acquire()
 			try:
-				self._cache = {}
+				self._mac_cache = {}
+				self._subnet_cache = {}
 				src.logging.writeLog("Flushed DHCP cache")
 			finally:
 				self._cache_lock.release()
@@ -87,9 +90,10 @@ class _SQLBroker(object):
 		if conf.USE_CACHE:
 			self._cache_lock.acquire()
 			try:
-				data = self._cache.get(mac)
+				data = self._mac_cache.get(mac)
 				if data:
-					return data
+					(ip, hostname, subnet_id) = data
+					return (ip, hostname,) + self._subnet_cache[subnet_id] + subnet_id
 			finally:
 				self._cache_lock.release()
 				
@@ -97,11 +101,22 @@ class _SQLBroker(object):
 		try:
 			data = self._lookupMAC(mac)
 			if conf.USE_CACHE:
-				self._cache_lock.acquire()
-				try:
-					self._cache[mac] = data
-				finally:
-					self._cache_lock.release()
+				if data:
+					(ip, hostname,
+					 gateway, subnet_mask, broadcast_address,
+					 domain_name, domain_name_servers, ntp_servers,
+					 lease_time, subnet, serial) = data
+					subnet_id = (subnet, serial)
+					self._cache_lock.acquire()
+					try:
+						self._mac_cache[mac] = (ip, hostname, subnet_id,)
+						self._subnet_cache[subnet_id] = (
+						 gateway, subnet_mask, broadcast_address,
+						 domain_name, domain_name_servers, ntp_servers,
+						 lease_time,
+						)
+					finally:
+						self._cache_lock.release()
 			return data
 		finally:
 			self._resource_lock.release()
