@@ -124,7 +124,7 @@ DhcpOptions = {
  'nb_scope':47,'x_window_system_font_server':48,
  'x_window_system_display_manager':49,
  # DHCP extensions
- 'request_ip_address':50,
+ 'requested_ip_address':50,
  'ip_address_lease_time':51,
  'overload':52,
  'dhcp_message_type':53,
