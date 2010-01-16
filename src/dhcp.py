@@ -237,7 +237,7 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 			
 	def HandleDhcpDecline(self, packet, source_address):
 		"""
-		Informs the DHCP operator of a potential IP collision on the network.
+		Informs the operator of a potential IP collision on the network.
 		
 		@type packet: L{pydhcplib.dhcp_packet.DhcpPacket}
 		@param packet: The DHCPDISCOVER to be evaluated.
@@ -245,12 +245,20 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 		@param source_address: The address (host, port) from which the request
 			was received.
 		"""
-		src.logging.writeLog('DHCPDECLINE(%(s_ip)s) for %(ip)s received from %(mac)s' % {
-		 's_ip': '.'.join(map(str, packet.GetOption("server_identifier"))),
-		 'ip': '.'.join(map(str, packet.GetOption("requested_ip_address"))),
-		 'mac': pydhcplib.type_hwmac.hwmac(packet.GetHardwareAddress()).str(),
-		})
-		
+		mac = pydhcplib.type_hwmac.hwmac(packet.GetHardwareAddress()).str()
+		ip = '.'.join(map(str, packet.GetOption("requested_ip_address")))
+		s_ip = '.'.join(map(str, packet.GetOption("server_identifier")))
+		if s_sid == self._server_address: #Rejected!
+			result = self._sql_broker.lookupMAC(mac)
+			if result and result[0] == ip: #Known client.
+				src.logging.writeLog('DHCPDECLINE for %(ip)s received from %(mac)s on (%(subnet)s, %(serial)i)' % {
+				 'ip': ip,
+				 'mac': mac,
+				 'subnet': result[9],
+				 'serial': result[10],
+				})
+				src.logging.sendDeclineReport(mac, ip, result[9], result[10])
+				
 	def HandleDhcpDiscover(self, packet, source_address):
 		"""
 		Evaluates a DHCPDISCOVER request from a client and determines whether a
@@ -373,11 +381,10 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 				giaddr = tuple(giaddr)
 				
 			if sid and not ciaddr: #SELECTING
-				src.logging.writeLog('DHCPREQUEST:SELECTING(%(ip)s) received from %(mac)s' % {
-				 'ip': s_sid,
-				 'mac': mac,
-				})
 				if s_sid == self._server_address: #Chosen!
+					src.logging.writeLog('DHCPREQUEST:SELECTING received from %(mac)s' % {
+					 'mac': mac,
+					})
 					try:
 						result = self._sql_broker.lookupMAC(mac)
 						if result and (not ip or result[0] == s_ip):

@@ -175,6 +175,35 @@ def emailTimeoutCooldown():
 	_EMAIL_TIMEOUT = max(0, _EMAIL_TIMEOUT - conf.POLLING_INTERVAL)
 	_EMAIL_LOCK.release()
 	
+def _buildEmail(subject, report):
+	message = email.MIMEMultipart.MIMEMultipart()
+	message['From'] = conf.EMAIL_SOURCE
+	message['To'] = conf.EMAIL_DESTINATION
+	message['Date'] = email.Utils.formatdate(localtime=True)
+	message['Subject'] = subject
+	message.attach(email.MIMEText.MIMEText(report))
+	
+	return message
+	
+def _sendEmail(message):
+	"""
+	Sends the given message via the e-mail subsystem.
+	
+	@type message: C{email.MIMEMultipart.MIMEMultipart}
+	@param message: The message to be sent.
+	
+	@raise Exception: A problem occurred while sending the message.
+	"""
+	smtp_server = smtplib.SMTP(conf.EMAIL_SERVER)
+	if conf.EMAIL_USER:
+		smtp_server.login(conf.EMAIL_USER, conf.EMAIL_PASSWORD)
+	smtp_server.sendmail(
+	 conf.EMAIL_SOURCE,
+	 (conf.EMAIL_DESTINATION,),
+	 message.as_string()
+	)
+	smtp_server.close()
+	
 def sendErrorReport(summary, exception):
 	"""
 	Sends e-mail using the config options specified, if e-mail is enabled.
@@ -230,32 +259,81 @@ Exception traceback:
 	finally:
 		_EMAIL_LOCK.release()
 		
-	message = email.MIMEMultipart.MIMEMultipart()
-	message['From'] = conf.EMAIL_SOURCE
-	message['To'] = conf.EMAIL_DESTINATION
-	message['Date'] = email.Utils.formatdate(localtime=True)
-	message['Subject'] = 'Problem with the DHCP server'
-	
-	message.attach(email.MIMEText.MIMEText(report))
-	
 	try:
-		smtp_server = smtplib.SMTP(conf.EMAIL_SERVER)
-		if conf.EMAIL_USER:
-			smtp_server.login(conf.EMAIL_USER, conf.EMAIL_PASSWORD)
-		smtp_server.sendmail(
-		 conf.EMAIL_SOURCE,
-		 (conf.EMAIL_DESTINATION,),
-		 message.as_string()
+		_sendEmail(
+		 _buildEmail(
+		  'Problem with DHCP server',
+		  report
+		 )
 		)
-		smtp_server.close()
 		
 		writeLog("E-mail about '%(error)s' sent to %(destination)s" % {
 		 'error': exception,
 		 'destination': conf.EMAIL_DESTINATION,
 		})
 	except Exception, e:
-		writeLog("Unable to send e-mail about '%(e)s': %(error)s" % {
-		 'e': e,
+		writeLog("Unable to send e-mail about '%(error)s': %(e)s" % {
 		 'error': exception,
+		 'e': e,
+		})
+		
+def sendDeclineReport(mac, ip_4):
+	"""
+	Sends e-mail using the config options specified, if e-mail is enabled.
+	
+	@type mac: basestring
+	@param mac: The MAC of the host that identified the conflict.
+	@type ip_4: basestring
+	@param ip_4: The IPv4 that resulted in a DHCPDECLINE.
+	@type subnet: basestring
+	@param subnet: The subnet on which the conflict occurred.
+	@type subnet_serial: int
+	@param subnet_serial: The serial of the subnet on which the conflict
+		occurred.
+	"""
+	report ="""
+A duplicate IPv4 address assignment was attempted by the DHCP server running on
+%(server)s.
+
+Manual intervention may be required.
+
+Reporting MAC:
+	%(mac)s
+
+Affected IPv4:
+	%(ip_4)s
+
+Subnet:
+	(%(subnet)s, %(subnet_serial)i)
+""" % {
+	 'server': conf.DHCP_SERVER_IP,
+	 'mac': mac,
+	 'ip_4': ip_4,
+	 'subnet': subnet,
+	 'subnet_serial': subnet_serial,
+	}
+	
+	if conf.DEBUG:
+		print report
+		
+	if not conf.EMAIL_ENABLED:
+		return
+		
+	try:
+		_sendEmail(
+		 _buildEmail(
+		  'Duplicate IPv4 assignment detected by DHCP server',
+		  report
+		 )
+		)
+		
+		writeLog("E-mail about DHCPDECLINE from '%(mac)s' sent to %(destination)s" % {
+		 'mac': mac,
+		 'destination': conf.EMAIL_DESTINATION,
+		})
+	except Exception, e:
+		writeLog("Unable to send e-mail about DHCPDECLINE from '%(mac)s': %(e)s" % {
+		 'mac': mac,
+		 'e': e,
 		})
 		
