@@ -247,8 +247,8 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 		"""
 		mac = pydhcplib.type_hwmac.hwmac(packet.GetHardwareAddress()).str()
 		ip = '.'.join(map(str, packet.GetOption("requested_ip_address")))
-		s_ip = '.'.join(map(str, packet.GetOption("server_identifier")))
-		if s_sid == self._server_address: #Rejected!
+		
+		if '.'.join(map(str, packet.GetOption("server_identifier"))) == self._server_address: #Rejected!
 			result = self._sql_broker.lookupMAC(mac)
 			if result and result[0] == ip: #Known client.
 				src.logging.writeLog('DHCPDECLINE for %(ip)s received from %(mac)s on (%(subnet)s, %(serial)i)' % {
