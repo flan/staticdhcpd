@@ -1,3 +1,9 @@
+1.3.1
+ * Added reporting for <tt>DHCPRELEASE</tt> events, to make it easier to determine whether clients are behaving properly
+ * Added reporting for <tt>DHCPDECLINE</tt> events, complete with e-mail notification, to help operators find conflicts in their networks
+ * Improved log formatting
+ * Improved memory-efficiency of caching mode
+----
 1.3.0
  * Added <tt>AUTHORITATIVE</tt> mode, allowing staticDHCPd to be configured to NAK DISCOVERs for unknown MACs, rather than silently ignoring them
  * Added an option to have logfiles written to disk with the current timestamp as a suffix, simplifying the process of creating status snapshots
