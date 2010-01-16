@@ -175,7 +175,7 @@ class WebService(threading.Thread):
 		
 		self._web_server = BaseHTTPServer.HTTPServer(
 		 (
-		  '.'.join([int(o) for i in conf.WEB_IP.split('.')]),
+		  '.'.join([int(o) for o in conf.WEB_IP.split('.')]),
 		  int(conf.WEB_PORT)
 		 ),
 		 _WebServer

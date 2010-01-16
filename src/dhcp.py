@@ -747,7 +747,7 @@ class DHCPService(threading.Thread):
 		self.daemon = True
 		
 		self._dhcp_server = _DHCPServer(
-		 '.'.join([int(o) for i in conf.DHCP_SERVER_IP.split('.')]),
+		 '.'.join([int(o) for o in conf.DHCP_SERVER_IP.split('.')]),
 		 int(conf.DHCP_SERVER_PORT),
 		 int(conf.DHCP_CLIENT_PORT)
 		)
