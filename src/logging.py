@@ -277,7 +277,7 @@ Exception traceback:
 		 'e': e,
 		})
 		
-def sendDeclineReport(mac, ip_4):
+def sendDeclineReport(mac, ip_4, subnet, subnet_serial):
 	"""
 	Sends e-mail using the config options specified, if e-mail is enabled.
 	
