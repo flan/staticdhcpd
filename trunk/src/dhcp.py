@@ -44,7 +44,7 @@ def flushCache():
 	Flushes all cached DHCP data.
 	"""
 	for dhcp_server in _dhcp_servers:
-		dhcp_server.flushCache()
+		dhcp_server.FlushCache()
 		
 def _logInvalidValue(name, value, subnet, serial):
 	src.logging.writeLog("Invalid value for %(subnet)s:%(serial)i:%(name)s: %(value)s" % {
@@ -196,7 +196,7 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 			return False
 		return True
 		
-	def flushCache(self):
+	def FlushCache(self):
 		"""
 		Flushes the DHCP cache.
 		"""
@@ -747,9 +747,9 @@ class DHCPService(threading.Thread):
 		self.daemon = True
 		
 		self._dhcp_server = _DHCPServer(
-		 conf.DHCP_SERVER_IP,
-		 conf.DHCP_SERVER_PORT,
-		 conf.DHCP_CLIENT_PORT
+		 '.'.join([int(o) for i in conf.DHCP_SERVER_IP.split('.')],
+		 int(conf.DHCP_SERVER_PORT),
+		 int(conf.DHCP_CLIENT_PORT)
 		)
 		_dhcp_servers.append(self._dhcp_server) #Add this server to the global list.
 		
