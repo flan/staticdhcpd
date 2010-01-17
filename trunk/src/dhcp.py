@@ -239,26 +239,50 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 		"""
 		Informs the operator of a potential IP collision on the network.
 		
+		This function checks to make sure the MAC isn't ignored or acting
+		maliciously, then checks the database to see whether it has an assigned
+		IP. If it does, and the IP it thinks it has a right to matches this IP,
+		then a benign message is logged and the operator is informed; if not,
+		the decline is flagged as a malicious act.
+		
 		@type packet: L{pydhcplib.dhcp_packet.DhcpPacket}
 		@param packet: The DHCPDISCOVER to be evaluated.
 		@type source_address: tuple
 		@param source_address: The address (host, port) from which the request
 			was received.
 		"""
+		if not self.EvaluateRelay(packet):
+			return
+			
+		start_time = time.time()
 		mac = pydhcplib.type_hwmac.hwmac(packet.GetHardwareAddress()).str()
-		ip = '.'.join(map(str, packet.GetOption("requested_ip_address")))
-		
-		if '.'.join(map(str, packet.GetOption("server_identifier"))) == self._server_address: #Rejected!
-			result = self._sql_broker.lookupMAC(mac)
-			if result and result[0] == ip: #Known client.
-				src.logging.writeLog('DHCPDECLINE for %(ip)s received from %(mac)s on (%(subnet)s, %(serial)i)' % {
-				 'ip': ip,
-				 'mac': mac,
-				 'subnet': result[9],
-				 'serial': result[10],
-				})
-				src.logging.sendDeclineReport(mac, ip, result[9], result[10])
+		if not [None for (ignored_mac, timeout) in self._ignored_addresses if mac == ignored_mac]:
+			if not self.LogDHCPAccess(mac):
+				self.LogDiscardedPacket()
+				return
 				
+			if '.'.join(map(str, packet.GetOption("server_identifier"))) == self._server_address: #Rejected!
+				ip = '.'.join(map(str, packet.GetOption("requested_ip_address")))
+				result = self._sql_broker.lookupMAC(mac)
+				if result and result[0] == ip: #Known client.
+					src.logging.writeLog('DHCPDECLINE from %(mac)s for %(ip)s on (%(subnet)s, %(serial)i)' % {
+					 'ip': ip,
+					 'mac': mac,
+					 'subnet': result[9],
+					 'serial': result[10],
+					})
+					src.logging.sendDeclineReport(mac, ip, result[9], result[10])
+				else:
+					src.logging.writeLog('Misconfigured client %(mac)s sent DHCPDECLINE for %(ip)s' % {
+					 'ip': ip,
+					 'mac': mac,
+					})
+			else:
+				self.LogDiscardedPacket()
+		else:
+			self.LogDiscardedPacket()
+		self.LogTimeTaken(time.time() - start_time)
+		
 	def HandleDhcpDiscover(self, packet, source_address):
 		"""
 		Evaluates a DHCPDISCOVER request from a client and determines whether a
@@ -285,7 +309,7 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 				self.LogDiscardedPacket()
 				return
 				
-			src.logging.writeLog('DHCPDISCOVER received from %(mac)s' % {
+			src.logging.writeLog('DHCPDISCOVER from %(mac)s' % {
 			 'mac': mac,
 			})
 			
@@ -382,7 +406,7 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 				
 			if sid and not ciaddr: #SELECTING
 				if s_sid == self._server_address: #Chosen!
-					src.logging.writeLog('DHCPREQUEST:SELECTING received from %(mac)s' % {
+					src.logging.writeLog('DHCPREQUEST:SELECTING from %(mac)s' % {
 					 'mac': mac,
 					})
 					try:
@@ -406,8 +430,10 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 							self.SendDhcpPacket(packet, source_address, 'NAK', mac, 'NO-MATCH')
 					except Exception, e:
 						src.logging.sendErrorReport('Unable to respond to %(mac)s' % {'mac': mac,}, e)
+				else:
+					self.LogDiscardedPacket()
 			elif not sid and not ciaddr and ip: #INIT-REBOOT
-				src.logging.writeLog('DHCPREQUEST:INIT-REBOOT received from %(mac)s' % {
+				src.logging.writeLog('DHCPREQUEST:INIT-REBOOT from %(mac)s' % {
 				 'mac': mac,
 				})
 				try:
@@ -437,11 +463,11 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 					self.SendDhcpPacket(packet, source_address, 'NAK', mac, 'NAK_RENEWALS')
 				else:
 					if source_address[0] not in ('255.255.255.255', '0.0.0.0', ''):
-						src.logging.writeLog('DHCPREQUEST:RENEW received from %(mac)s' % {
+						src.logging.writeLog('DHCPREQUEST:RENEW from %(mac)s' % {
 						 'mac': mac,
 						})
 					else:
-						src.logging.writeLog('DHCPREQUEST:REBIND received from %(mac)s' % {
+						src.logging.writeLog('DHCPREQUEST:REBIND from %(mac)s' % {
 						 'mac': mac,
 						})
 						
@@ -468,7 +494,7 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 					except Exception, e:
 						src.logging.sendErrorReport('Unable to respond to %(mac)s' % {'mac': mac,}, e)
 			else:
-				src.logging.writeLog('DHCPREQUEST:UNKNOWN (%(sid)s %(ciaddr)s %(ip)s) received from %(mac)s' % {
+				src.logging.writeLog('DHCPREQUEST:UNKNOWN (%(sid)s %(ciaddr)s %(ip)s) from %(mac)s' % {
 				 'sid': str(sid),
 				 'ciaddr': str(ciaddr),
 				 'ip': str(ip),
@@ -487,8 +513,8 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 		The logic here is to make sure the MAC isn't ignored or acting
 		maliciously, then check the database to see whether it has an assigned
 		IP. If it does, and the IP it thinks it has a right to matches this IP,
-		then an ACK is sent, along with all relevant options; if not, the request
-		is ignored.
+		then an ACK is sent, along with all relevant options; if not, the
+		request is ignored.
 		
 		@type packet: L{pydhcplib.dhcp_packet.DhcpPacket}
 		@param packet: The DHCPREQUEST to be evaluated.
@@ -516,12 +542,12 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 			else:
 				giaddr = tuple(giaddr)
 				
-			src.logging.writeLog('DHCPINFORM received from %(mac)s' % {
+			src.logging.writeLog('DHCPINFORM from %(mac)s' % {
 			 'mac': mac,
 			})
 			
 			if not ciaddr:
-				src.logging.writeLog('Malformed packet from %(mac)s; ignoring for %(time)i seconds' % {
+				src.logging.writeLog('%(mac)s sent malformed packet; ignoring for %(time)i seconds' % {
 				 'mac': mac,
 				 'time': conf.UNAUTHORIZED_CLIENT_TIMEOUT,
 				})
@@ -566,17 +592,46 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 		"""
 		Informs the DHCP operator that a client has terminated its "lease".
 		
+		This function checks to make sure the MAC isn't ignored or acting
+		maliciously, then checks the database to see whether it has an assigned
+		IP. If it does, and the IP it thinks it has a right to matches this IP,
+		then a benign message is logged; if not, the release is flagged as
+		a malicious act.
+		
 		@type packet: L{pydhcplib.dhcp_packet.DhcpPacket}
 		@param packet: The DHCPDISCOVER to be evaluated.
 		@type source_address: tuple
 		@param source_address: The address (host, port) from which the request
 			was received.
 		"""
-		src.logging.writeLog('DHCPRELEASE(%(s_ip)s) for %(ip)s received from %(mac)s' % {
-		 's_ip': '.'.join(map(str, packet.GetOption("server_identifier"))),
-		 'ip': '.'.join(map(str, packet.GetOption("ciaddr"))),
-		 'mac': pydhcplib.type_hwmac.hwmac(packet.GetHardwareAddress()).str(),
-		})
+		if not self.EvaluateRelay(packet):
+			return
+			
+		start_time = time.time()
+		mac = pydhcplib.type_hwmac.hwmac(packet.GetHardwareAddress()).str()
+		if not [None for (ignored_mac, timeout) in self._ignored_addresses if mac == ignored_mac]:
+			if not self.LogDHCPAccess(mac):
+				self.LogDiscardedPacket()
+				return
+				
+			if '.'.join(map(str, packet.GetOption("server_identifier"))) == self._server_address: #Released!
+				ip = '.'.join(map(str, packet.GetOption("ciaddr")))
+				result = self._sql_broker.lookupMAC(mac)
+				if result and result[0] == ip: #Known client.
+					src.logging.writeLog('DHCPRELEASE from %(mac)s for %(ip)s' % {
+					 'ip': ip,
+					 'mac': mac,
+					})
+				else:
+					src.logging.writeLog('Misconfigured client %(mac)s sent DHCPRELEASE for %(ip)s' % {
+					 'ip': ip,
+					 'mac': mac,
+					})
+			else:
+				self.LogDiscardedPacket()
+		else:
+			self.LogDiscardedPacket()
+		self.LogTimeTaken(time.time() - start_time)
 		
 	def LoadDHCPPacket(self, packet, result, inform=False):
 		"""
@@ -648,7 +703,7 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 				else:
 					self._dhcp_assignments[mac] = assignments + 1
 					if assignments + 1 > conf.SUSPEND_THRESHOLD:
-						src.logging.writeLog('%(mac)s is issuing too many requests; ignoring for %(time)i seconds' % {
+						src.logging.writeLog('%(mac)s issuing too many requests; ignoring for %(time)i seconds' % {
 						 'mac': mac,
 						 'time': conf.MISBEHAVING_CLIENT_TIMEOUT,
 						})
