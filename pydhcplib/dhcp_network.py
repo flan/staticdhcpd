@@ -97,29 +97,29 @@ class DhcpNetwork:
 					threading.Thread(target=self.HandleDhcpDiscover, args=(packet, source_address)).start()
 				elif packet.IsDhcpInformPacket():
 					threading.Thread(target=self.HandleDhcpInform, args=(packet, source_address)).start()
-				elif packet.IsDhcpDeclinePacket():
-					self.HandleDhcpDecline(packet, source_address)
 				elif packet.IsDhcpReleasePacket():
-					self.HandleDhcpRelease(packet, source_address)
+					threading.Thread(target=self.HandleDhcpRelease, args=(packet, source_address)).start()
+				elif packet.IsDhcpDeclinePacket():
+					threading.Thread(target=self.HandleDhcpDecline, args=(packet, source_address)).start()
 				return packet
 			return None
 			
 	def SendDhcpPacketTo(self, packet, ip, port):
 		return self.response_socket.sendto(packet.EncodePacket(), (ip, port))
 		
-	# Server side Handle methods
-	def HandleDhcpDiscover(self, packet, source_address):
+	# Server-side Handle methods
+	def HandleDhcpDecline(self, packet, source_address):
 		pass
 		
-	def HandleDhcpRequest(self, packet, source_address):
+	def HandleDhcpDiscover(self, packet, source_address):
 		pass
 		
 	def HandleDhcpInform(self, packet, source_address):
 		pass
 		
-	def HandleDhcpDecline(self, packet, source_address):
+	def HandleDhcpRelease(self, packet, source_address):
 		pass
 		
-	def HandleDhcpRelease(self, packet, source_address):
+	def HandleDhcpRequest(self, packet, source_address):
 		pass
 		
