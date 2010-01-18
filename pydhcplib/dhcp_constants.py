@@ -41,7 +41,7 @@ DhcpFields = {
  'yiaddr': (16,4),
  'siaddr': (20,4),
  'giaddr': (24,4),
- 'chaddr': (28,16),
+ 'chaddr': (28,6),
  'sname': (44,64),
  'file': (108,128),
 }
