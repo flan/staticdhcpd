@@ -2,7 +2,6 @@
  * Fixed a typo that prevented NAKing of unknown MACs in <tt>AUTHORITATIVE</tt> mode
 ----
 1.3.2
-----
  * Improved concurrent efficiency of the <tt>DHCPDECLINE</tt> and <tt>DHCPRELEASE</tt> events
  * Added better reporting of misconfigured/malicious clients that would break dynamic DHCP servers
  * Added better handling for misconfigured/malicious clients
