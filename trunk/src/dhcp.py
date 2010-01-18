@@ -338,7 +338,7 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 				else:
 					if conf.AUTHORITATIVE:
 						packet.TransformToDhcpNackPacket()
-						self.SendDhcpPacket(packet, source_address, 'NAK', mac, 'unknown')
+						self.SendDhcpPacket(packet, source_address, 'NAK', mac, '?.?.?.?')
 					else:
 						src.logging.writeLog('%(mac)s unknown; ignoring for %(time)i seconds' % {
 						 'mac': mac,
