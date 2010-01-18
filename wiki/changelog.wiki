@@ -1,3 +1,6 @@
+1.3.3
+ * Fixed a typo that prevented NAKing of unknown MACs in <tt>AUTHORITATIVE</tt> mode
+----
 1.3.2
 ----
  * Improved concurrent efficiency of the <tt>DHCPDECLINE</tt> and <tt>DHCPRELEASE</tt> events
