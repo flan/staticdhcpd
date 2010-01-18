@@ -316,21 +316,20 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 			try:
 				result = self._sql_broker.lookupMAC(mac)
 				if result:
-					offer = pydhcplib.dhcp_packet.DhcpPacket()
-					offer.CreateDhcpOfferPacketFrom(packet)
+					packet.TransformToDhcpOfferPacket()
 					
-					self.LoadDHCPPacket(offer, result)
+					self.LoadDHCPPacket(packet, result)
 					giaddr = packet.GetGiaddr()
 					if not giaddr or giaddr == [0,0,0,0]:
 						giaddr = None
 					else:
 						giaddr = tuple(giaddr)
 					if conf.loadDHCPPacket(
-					 offer,
+					 packet,
 					 mac, tuple(ipToList(result[0])), giaddr,
 					 result[9], result[10]
 					):
-						self.SendDhcpPacket(offer, source_address, 'OFFER', mac, result[0])
+						self.SendDhcpPacket(packet, source_address, 'OFFER', mac, result[0])
 					else:
 						src.logging.writeLog('Ignoring %(mac)s per loadDHCPPacket()' % {
 						 'mac': mac,
@@ -338,8 +337,8 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 						self.LogDiscardedPacket()
 				else:
 					if conf.AUTHORITATIVE:
-						offer.TransformToDhcpNackPacket()
-						self.SendDhcpPacket(offer, source_address, 'NAK', mac, 'unknown')
+						packet.TransformToDhcpNackPacket()
+						self.SendDhcpPacket(packet, source_address, 'NAK', mac, 'unknown')
 					else:
 						src.logging.writeLog('%(mac)s unknown; ignoring for %(time)i seconds' % {
 						 'mac': mac,
