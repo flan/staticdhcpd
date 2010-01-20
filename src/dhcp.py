@@ -652,8 +652,7 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 		if not inform:
 			packet.SetOption('yiaddr', ipToList(ip))
 			packet.SetOption('ip_address_lease_time', longToList(lease_time))
-		packet.SetOption('server_identifier', ipToList(self._server_address))
-		
+			
 		#Default gateway, subnet mask, and broadcast address.
 		if gateway:
 			if not packet.SetOption('router', ipToList(gateway)):
@@ -771,6 +770,7 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 			ip = '255.255.255.255'
 			port = self.emit_port
 			
+		packet.SetOption('server_identifier', ipToList(self._server_address))
 		bytes = self.SendDhcpPacketTo(packet, ip, port)
 		src.logging.writeLog('DHCP%(type)s sent to %(mac)s for %(client)s via %(ip)s:%(port)i [%(bytes)i bytes]' % {
 			 'type': response_type,
