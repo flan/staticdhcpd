@@ -650,9 +650,11 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 		
 		#Core parameters.
 		if not inform:
-			packet.SetOption('yiaddr', ipToList(ip))
-			packet.SetOption('ip_address_lease_time', longToList(lease_time))
-			
+			if not packet.SetOption('yiaddr', ipToList(ip)):
+				_logInvalidValue('ip', ip, subnet, serial)
+			if not packet.SetOption('ip_address_lease_time', longToList(lease_time)):
+				_logInvalidValue('lease_time', lease_time, subnet, serial)
+				
 		#Default gateway, subnet mask, and broadcast address.
 		if gateway:
 			if not packet.SetOption('router', ipToList(gateway)):
