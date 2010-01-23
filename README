@@ -2,7 +2,7 @@ Five-minute "does this really work?" setup guide for busy administrators
 	Uses sqlite3 to avoid unnecessary installations
 
 (If you need more information, see the project page at
- http://uguu.ca/projects/puukusoft/staticDHCPd/ or
+ http://uguu.ca/puukusoft/staticDHCPd/ or
  http://code.google.com/p/staticdhcpd/)
 
 
