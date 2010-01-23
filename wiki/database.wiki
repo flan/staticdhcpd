@@ -1,11 +1,11 @@
 This article explains how to set values in the database to provide DHCP-handling for staticDHCPd's clients.
 
 ----
-== Background ==
+= Background =
 Knowledge of how to maintain databases using the engine you've chosen is a necessary pre-requisite.
 
 ----
-== <tt>subnets</tt> table ==
+= <tt>subnets</tt> table =
 At least one entry in this table is required before any values can be added to the maps table.
 
  * The <tt>subnet</tt> field may be a little misleading. While it's generally a good idea to use a value like <tt>192.168.0.0/24</tt> so you know, at a glance, what subnet its clients should be on, it is perfectly legal to set a value like <tt>my subnet</tt>.
@@ -19,7 +19,7 @@ At least one entry in this table is required before any values can be added to t
  * The <tt>domain_name</tt> value may be any arbitrary, FQDN-valid string or may be NULL to avoid setting the corresponding DHCP option.
 
 ----
-== <tt>maps</tt> table ==
+= <tt>maps</tt> table =
 Every entry in this table must be bound to a subnet/serial pair in the subnets table, from which options will be inherited.
 
  * The <tt>mac</tt> value must be a lower-case, colon-separated MAC address.
