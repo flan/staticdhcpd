@@ -25,7 +25,7 @@ This snippet sets the option associated with the symbolic, human-readable name <
 packet.SetOption('domain_name_servers', [127,0,0,1,192,168,0,1])
 }}}
 
-For a full list of all human-readable option-name values, see <tt>{{{pydhcplib/dhcp_constants.py:DhcpFields}}}</tt> and <tt>{{{pydhcplib/dhcp_constants.py:DhcpOptions}}}</tt>.
+For a full list of all human-readable option-name values, see <tt>{{{pydhcplib/dhcp_constants.py:DhcpFields}}}</tt> and <tt>{{{pydhcplib/dhcp_constants.py:DhcpOptions}}}</tt>. Alternatively, if you know the number of the option you want to set, you can just provide it as an unquoted value.
 
 == Tell all clients with an IP address ending in a multiple of 3 to use <tt>192.168.1.254</tt> as a default gateway ==
 {{{
@@ -71,7 +71,7 @@ if not packet.requested_options is None and 3 in packet.requested_options and no
     return False
 }}}
 
-This one's pretty complicated: <tt>packet.requested_options</tt> is a value that is <tt>None</tt> if the client did not provide option <tt>55</tt>, so any code that references it must first check for that. In the event that it has been set, the code looks for option <tt>3</tt> in the tuple constructed from the set of options requested by the client. If option <tt>3</tt> is set, then the value currently associated with <tt>router</tt> is checked; if not set, it will be <tt>[]</tt>; if set, it will be a list of four ints, 0 <= x <= 255, though the values associated with other options will vary.
+This one's pretty complicated: <tt>packet.requested_options</tt> is a value that is <tt>None</tt> if the client did not provide option <tt>55</tt>, so any code that references it must first check for that. In the event that it has been set, the code looks for option <tt>3</tt> in the tuple constructed from the set of options requested by the client. If option <tt>3</tt> is set, then the value currently associated with <tt>router</tt> is checked; if not set, it will be <tt>{{{[]}}}</tt>; if set, it will be a list of four ints, 0 <= x <= 255, though the values associated with other options will vary.
 
 If any of these conditions fail, the client's request is ignored or NAKed, depending on its nature.
 
