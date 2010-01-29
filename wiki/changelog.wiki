@@ -1,4 +1,4 @@
-= 1.3.6 =
+= 1.3.6 (not yet released) =
  * Added support for [http://www.rfc-archive.org/getrfc.php?rfc=3361 RFC3361]
  * Added support for specification of options by number
 ----
