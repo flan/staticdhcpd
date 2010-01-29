@@ -24,7 +24,7 @@ Legal
  along with this program. If not, see <http://www.gnu.org/licenses/>.
  
  (C) Mathieu Ignacio, 2008 <mignacio@april.org>
- (C) Neil Tallim, 2009
+ (C) Neil Tallim, 2009 <flan@uguu.ca>
 """
 import select
 import socket

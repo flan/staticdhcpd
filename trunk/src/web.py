@@ -22,7 +22,7 @@ Legal
  You should have received a copy of the GNU General Public License
  along with this program. If not, see <http://www.gnu.org/licenses/>.
  
- (C) Neil Tallim, 2009
+ (C) Neil Tallim, 2009 <flan@uguu.ca>
 """
 import BaseHTTPServer
 import cgi

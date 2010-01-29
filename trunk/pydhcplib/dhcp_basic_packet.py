@@ -24,12 +24,14 @@ Legal
  along with this program. If not, see <http://www.gnu.org/licenses/>.
  
  (C) Mathieu Ignacio, 2008 <mignacio@april.org>
+ (C) Neil Tallim, 2009 <flan@uguu.ca>
 """
 import operator
 from struct import unpack
 from struct import pack
 
 from dhcp_constants import *
+import type_rfc
 
 class DhcpBasicPacket(object):
 	def __init__(self):
@@ -89,6 +91,17 @@ class DhcpBasicPacket(object):
 			self.packet_data[begin:end] = value
 			return True
 		elif DhcpOptions.has_key(name):
+			if type(name) == int:
+				name = DhcpOptionsList.get(name)
+				if not name:
+					return False
+					
+			if dhcp_field_type == 'RFC3361':
+				if type(value) == type_rfc.rfc3361:
+					self.options_data[name] = value.getValue()
+				else:
+					return False
+					
 			(fixed_length, minimum_length, multiple) = DhcpFieldsSpecs[DhcpOptionsTypes[DhcpOptions[name]]]
 			length = len(value)
 			if fixed_length == length or (minimum_length <= length and length % multiple == 0):
