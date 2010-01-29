@@ -234,6 +234,8 @@ class DhcpPacket(DhcpBasicPacket):
 					result = ','.join(requested_options)
 				else:
 					result += str(data)
+			else:
+				result = str(data)
 			printable_data += "%(opt)s : %(result)s\n" % {'opt': opt, 'result': result,}
 		return printable_data
 		

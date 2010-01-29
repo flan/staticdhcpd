@@ -24,6 +24,7 @@ Legal
  along with this program. If not, see <http://www.gnu.org/licenses/>.
  
  (C) Mathieu Ignacio, 2008 <mignacio@april.org>
+ (C) Neil Tallim, 2009 <flan@uguu.ca>
 """
 MagicCookie = [99,130,83,99]
 PyDhcpLibVersion = '0.7-puukusoft'
@@ -219,8 +220,6 @@ DhcpOptions = {
  #Hole.
  'end': 255
 }
-for i in xrange(256):
-	DhcpOptions[i] = i
 	
 # DhcpOptionsList : reverse of DhcpOptions
 DhcpOptionsList = dict([(i, value) for (value, i) in DhcpOptions.iteritems() if not type(value) == int])
