@@ -59,17 +59,23 @@ class DhcpBasicPacket(object):
 			end = dhcp_field[0] + dhcp_field[1]
 			self.packet_data[begin:end] = [0]*dhcp_field[1]
 			return True
-		elif self.options_data.has_key(name):
-			del self.options_data[name]
-			return True
+		else:
+			if type(name) == int: #Translate int to string.
+				name = DhcpOptionsList.get(name)
+			if self.options_data.has_key(name):
+				del self.options_data[name]
+				return True
 		return False
 		
 	def GetOption(self, name):
 		if DhcpFields.has_key(name):
 			option_info = DhcpFields[name]
 			return self.packet_data[option_info[0]:option_info[0] + option_info[1]]
-		elif self.options_data.has_key(name):
-			return self.options_data[name]
+		else:
+			if type(name) == int: #Translate int to string.
+				name = DhcpOptionsList.get(name)
+			if self.options_data.has_key(name):
+				return self.options_data[name]
 		return []
 		
 	def SetOption(self, name, value):
@@ -86,14 +92,21 @@ class DhcpBasicPacket(object):
 			(fixed_length, minimum_length, multiple) = DhcpFieldsSpecs[DhcpOptionsTypes[DhcpOptions[name]]]
 			length = len(value)
 			if fixed_length == length or (minimum_length <= length and length % multiple == 0):
+				if type(name) == int: #Use the string name to avoid collisions.
+					name = DhcpOptionsList.get(name)
+					if not name:
+						return False
 				self.options_data[name] = value
 				return True
 			return False
 		raise ValueError("pydhcplib.dhcp_basic_packet.setoption error : unknown option: %(name)s" % {'name': name})
 		
 	def IsOption(self, name):
-		return self.options_data.has_key(name) or DhcpFields.has_key(name)
-		
+		if type(name) == int: #Translate int to string.
+			self.options_data.has_key(DhcpOptionsList.get(name))
+		else:
+			return self.options_data.has_key(name) or DhcpFields.has_key(name)
+			
 	def EncodePacket(self):
 		#MUST set options in ascending order to respect RFC2131 (see 'router')
 		options = {}
