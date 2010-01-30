@@ -88,6 +88,7 @@ DhcpFieldsSpecs = {
  "16-bits": (2, 0, 1), "32-bits":(4, 0, 1),
  "identifier": (0, 2, 1),
  "none": (0, 0, 1),
+ "RFC2937": (0, 2, 2),
  "RFC3397": (0, 4, 1),
 }
 # DhcpFieldsSpecs : {'option_code': (fixed_length,minimum_length,multiple)}
@@ -329,10 +330,10 @@ DhcpOptionsTypes = {
  111: "Unassigned", 112: "Unassigned", 113: "Unassigned", 114: "Unassigned",
  115: "Unassigned",
  116: "char",
- 117: "RFC2937",
+ 117: "RFC2937", #Implemented
  118: "ipv4",
- 119: "RFC3397",
- 120: "RFC3361",
+ 119: "RFC3397", #Implemented
+ 120: "RFC3361", #Implemented
  #TODO
  121: "Unassigned", 122: "Unassigned", 123: "Unassigned", 124: "Unassigned",
  125: "Unassigned", 126: "Unassigned", 127: "Unassigned", 128: "Unassigned",
