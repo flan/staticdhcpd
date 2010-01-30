@@ -90,12 +90,12 @@ class DhcpBasicPacket(object):
 			end = dhcp_field[0] + dhcp_field[1]
 			self.packet_data[begin:end] = value
 			return True
-		elif DhcpOptions.has_key(name):
+		else:
 			if type(name) == int:
 				name = DhcpOptionsList.get(name)
-				if not name:
-					return False
-					
+			if not DhcpOptions.has_key(name):
+				return False
+				
 			if dhcp_field_type == 'RFC3361':
 				if type(value) == type_rfc.rfc3361:
 					self.options_data[name] = value.getValue()
