@@ -27,33 +27,9 @@ Legal
 """
 import type_ipv4
 
-class rfc3361(object):
-	def __init__(self, data):
-		ip_4_mode = False
-		dns_mode = False
-		
-		tokens = [token for token in [t.strip() for t in data.split(',')] if token]
-		bytes = []
-		
-		for token in tokens:
-			try:
-				ip_4 = type_ipv4.ipv4(token)
-				bytes += ip_4.list()
-				
-				ip_4_mode = True
-			except ValueError:
-				for fragment in token.split('.'):
-					bytes += [len(fragment)] + [ord(c) for c in fragment]
-				bytes.append(0)
-				dns_mode = True
-				
-		if not ip_4_mode ^ dns_mode:
-			raise ValueError("RFC3361 argument '%(data)s is not valid: contains both IPv4 and DNS-based entries" % {
-			 'data': data,
-			})
-			
-		self._value = [int(ip_4_mode)] + bytes
-		
+class _rfc(object):
+	_value = None
+	
 	def getValue(self):
 		return self._value
 		
@@ -70,4 +46,70 @@ class rfc3361(object):
 		if self._value == other:
 			return 0
 		return 1
+		
+		
+def _rfc1035Parse(domain_name, terminator=[0]):
+	bytes = []
+	for fragment in domain_name.split('.'):
+		bytes += [len(fragment)] + [ord(c) for c in fragment]
+	return bytes + terminator
+	
+class rfc3361(_rfc):
+	def __init__(self, data):
+		ip_4_mode = False
+		dns_mode = False
+		
+		tokens = [token for token in [t.strip() for t in data.split(',')] if token]
+		bytes = []
+		
+		for token in tokens:
+			try:
+				ip_4 = type_ipv4.ipv4(token)
+				bytes += ip_4.list()
+				
+				ip_4_mode = True
+			except ValueError:
+				bytes += _rfc1035Parse(token)
+				dns_mode = True
+				
+		if not ip_4_mode ^ dns_mode:
+			raise ValueError("RFC3361 argument '%(data)s is not valid: contains both IPv4 and DNS-based entries" % {
+			 'data': data,
+			})
+			
+		self._value = [int(ip_4_mode)] + bytes
+		
+class rfc3397(_rfc):
+	def __init__(self, data):
+		tokens = [token for token in [t.strip() for t in data.split(',')] if token]
+		bytes = []
+		
+		preceding_tokens = []
+		for token in tokens:
+			longest_match = 0
+			longest_match_pos = 0
+			longest_match_offset = 0
+			fragments = reversed(token.split('.'))
+			for (i, (old_fragments, old_bytes)) in enumerate(preceding_tokens):
+				match = 0
+				offset = 0
+				for (new, old) in zip(fragments, reversed(old_fragments)):
+					if new == old:
+						match += 1
+						offset += len(old)
+					else:
+						break
+				if match > longest_match:
+					longest_match = match
+					longest_match_pos = i
+					longest_match_offset = sum([len(f) for f in old_fragments]) - offset
+					
+			if longest_match:
+				offset = longest_match_offset + sum([len(old_bytes) for (old_fragments, old_bytes) in preceding_tokens[:longest_match_pos]])
+				bytes += _rfc1035Parse(token, [(offset / 256) % 256, offset % 256])
+			else:
+				bytes += _rfc1035Parse(token)
+			preceding_tokens.append((fragments, new_bytes))
+			
+		self._value = bytes
 		
