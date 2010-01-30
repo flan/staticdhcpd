@@ -37,7 +37,7 @@ class _rfc(object):
 		return self._value.__hash__()
 		
 	def __repr__(self):
-		return self._value
+		return repr(self._value)
 		
 	def __nonzero__(self) :
 		return 1
@@ -106,10 +106,11 @@ class rfc3397(_rfc):
 					
 			if longest_match:
 				offset = longest_match_offset + sum([len(old_bytes) for (old_fragments, old_bytes) in preceding_tokens[:longest_match_pos]])
-				bytes += _rfc1035Parse(token, [(offset / 256) % 256, offset % 256])
+				new_bytes = _rfc1035Parse(token, [(offset / 256) % 256, offset % 256])
 			else:
-				bytes += _rfc1035Parse(token)
+				new_bytes = _rfc1035Parse(token)
 			preceding_tokens.append((fragments, new_bytes))
+			bytes += new_bytes
 			
 		self._value = bytes
 		
