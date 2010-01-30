@@ -85,11 +85,10 @@ DhcpFieldsSpecs = {
  "char": (1, 0, 1), "char+": (0, 1, 1),
  "string": (0, 0, 1),
  "bool": (1, 0, 1),
- "16-bits": (2, 0, 1), "32-bits":(4, 0, 1),
+ "16-bits": (2, 0, 1), "16-bits+": (0, 2, 2),
+ "32-bits": (4, 0, 1),
  "identifier": (0, 2, 1),
  "none": (0, 0, 1),
- "RFC2937": (0, 2, 2),
- "RFC3397": (0, 4, 1),
 }
 # DhcpFieldsSpecs : {'option_code': (fixed_length,minimum_length,multiple)}
 # if fixed_length == 0 : minimum_length and multiple apply
@@ -307,7 +306,7 @@ DhcpOptionsTypes = {
  76: "ipv4+",
  77: "RFC3004",
  78: "RFC2610",
- 79: "RFC2610", 
+ 79: "RFC2610",
  80: "null",
  81: "string",
  82: "RFC3046",
@@ -330,7 +329,7 @@ DhcpOptionsTypes = {
  111: "Unassigned", 112: "Unassigned", 113: "Unassigned", 114: "Unassigned",
  115: "Unassigned",
  116: "char",
- 117: "RFC2937", #Implemented
+ 117: "16-bits+",
  118: "ipv4",
  119: "RFC3397", #Implemented
  120: "RFC3361", #Implemented
