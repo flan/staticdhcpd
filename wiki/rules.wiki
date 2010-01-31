@@ -123,7 +123,7 @@ There are a few class definitions imported from pydhcplib.type_rfc that can be u
 == RFC2610 ==
 Set option 78 with <tt>{{{packet.SetOption('directory_agent', rfc2610_78('192.168.1.1,192.168.1.2'))}}}</tt>. There are no limits on the number of comma-delimited values you may specify.
 
-Set option 79 with <tt>{{{packet.SetOption('service_scope', rfc2610_79(u'slp-scope-string'))}}}</tt>.
+Set option 79 with <tt>{{{packet.SetOption('service_scope', rfc2610_79(u'slp-scope-string'))}}}</tt>, where <tt>slp-scope-string</tt> is the scope you want to set.
 
 == RFC3361 ==
 Set option 120 with <tt>{{{packet.SetOption('sip_servers', rfc3361_120('example.org,uguu.ca'))}}}</tt> or <tt>{{{packet.SetOption('sip_servers', rfc3361_120('192.168.1.1'))}}}</tt>. There are no limits on the number of comma-delimited values you may specify. The only restriction is that either names xor IPs may be used, never both.
