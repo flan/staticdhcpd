@@ -27,7 +27,7 @@ Legal
  (C) Neil Tallim, 2009 <flan@uguu.ca>
 """
 MagicCookie = [99,130,83,99]
-PyDhcpLibVersion = '0.7-puukusoft'
+PyDhcpLibVersion = '0.8-puukusoft'
 
 # DhcpBaseOptions = '{fieldname':[location,length]}
 DhcpFields = {
@@ -54,6 +54,8 @@ DhcpFieldsName = {
   '3': 'DHCP_REQUEST', '4':'DHCP_DECLINE',
   '5': 'DHCP_ACK', '6': 'DHCP_NACK',
   '7': 'DHCP_RELEASE', '8': 'DHCP_INFORM',
+  '10': 'DHCP_LEASEQUERY', '11': 'DHCP_LEASEUNASSIGNED',
+  '12': 'DHCP_LEASEUNKNOWN', '13': 'DHCP_LEASEACTIVE',
  }
 }
 DhcpNames = {
@@ -63,6 +65,8 @@ DhcpNames = {
  'DHCP_REQUEST': 3, 'DHCP_DECLINE': 4,
  'DHCP_ACK': 5, 'DHCP_NACK': 6,
  'DHCP_RELEASE': 7, 'DHCP_INFORM': 8,
+ 'DHCP_LEASEQUERY': 10, 'DHCP_LEASEUNASSIGNED': 11,
+ 'DHCP_LEASEUNKNOWN': 12, 'DHCP_LEASEACTIVE': 13,
 }
 DhcpFieldsTypes = {
  'op': "int",
@@ -305,20 +309,20 @@ DhcpOptionsTypes = {
  74: "ipv4+",
  75: "ipv4+",
  76: "ipv4+",
- 77: "RFC3004",
- 78: "RFC2610",
- 79: "RFC2610",
+ 77: "RFC3004", #Not implemented; not necessary for static model
+ 78: "RFC2610", #Implemented
+ 79: "RFC2610", #Implemented
  80: "null",
  81: "string",
- 82: "RFC3046",
+ 82: "byte+",
  83: "RFC4174",
  84: "Unassigned",
  85: "ipv4+",
- 86: "RFC2241",
- 87: "RFC2241",
+ 86: "byte+",
+ 87: "byte+",
  88: "Unassigned", 89: "Unassigned",
- 90: "RFC3118",
- 91: "RFC4388",
+ 90: "RFC3118", #Not implemented; not necessary for static model
+ 91: "32-bits",
  92: "ipv4+",
  93: "Unassigned", 94: "Unassigned", 95: "Unassigned", 96: "Unassigned",
  97: "Unassigned",
