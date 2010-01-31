@@ -99,9 +99,14 @@ class DhcpBasicPacket(object):
 			if dhcp_field_type == 'RFC3361':
 				if type(value) == type_rfc.rfc3361:
 					self.options_data[name] = value.getValue()
-				else:
-					return False
-					
+					return True
+				return False
+			elif dhcp_field_type == 'RFC3397':
+				if type(value) == type_rfc.rfc3397:
+					self.options_data[name] = value.getValue()
+					return True
+				return False
+				
 			(fixed_length, minimum_length, multiple) = DhcpFieldsSpecs[DhcpOptionsTypes[DhcpOptions[name]]]
 			length = len(value)
 			if fixed_length == length or (minimum_length <= length and length % multiple == 0):

@@ -101,6 +101,8 @@ class DhcpNetwork:
 					threading.Thread(target=self.HandleDhcpRelease, args=(packet, source_address)).start()
 				elif packet.IsDhcpDeclinePacket():
 					threading.Thread(target=self.HandleDhcpDecline, args=(packet, source_address)).start()
+				elif packet.IsDhcpLeaseQueryPacket():
+					threading.Thread(target=self.HandleDhcpLeaseQuery, args=(packet, source_address)).start()
 				return packet
 			return None
 			
@@ -115,6 +117,9 @@ class DhcpNetwork:
 		pass
 		
 	def HandleDhcpInform(self, packet, source_address):
+		pass
+		
+	def HandleDhcpLeaseQuery(self, packet, source_address):
 		pass
 		
 	def HandleDhcpRelease(self, packet, source_address):

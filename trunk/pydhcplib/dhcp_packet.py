@@ -70,21 +70,24 @@ class DhcpPacket(DhcpBasicPacket):
 	def IsDhcpInformPacket(self):
 		return self.IsDhcpSomethingPacket([8])
 		
-	#OFFER section
-	def CreateDhcpOfferPacketFrom(self, src): # src = discover packet
-		self.requested_options = src.requested_options
-		self.SetOption("htype", src.GetOption("htype"))
-		self.SetOption("xid", src.GetOption("xid"))
-		self.SetOption("flags", src.GetOption("flags"))
-		self.SetOption("giaddr", src.GetOption("giaddr"))
-		self.SetOption("chaddr", src.GetOption("chaddr"))
-		self.SetOption("ip_address_lease_time", src.GetOption("ip_address_lease_time"))
-		self.TransformToDhcpOfferPacket()
+	def IsDhcpLeaseQueryPacket(self):
+		return self.IsDhcpSomethingPacket([10])
 		
+	def IsDhcpLeaseUnassignedPacket(self):
+		return self.IsDhcpSomethingPacket([11])
+		
+	def IsDhcpLeaseUnknownPacket(self):
+		return self.IsDhcpSomethingPacket([12])
+		
+	def IsDhcpLeaseActivePacket(self):
+		return self.IsDhcpSomethingPacket([13])
+		
+			
+	#OFFER section
 	def TransformToDhcpOfferPacket(self):
-		self.SetOption("dhcp_message_type", [2])
 		self.SetOption("op", [2])
 		self.SetOption("hlen", [6])
+		self.SetOption("dhcp_message_type", [2])
 		
 		self.DeleteOption("secs")
 		self.DeleteOption("ciaddr")
@@ -94,20 +97,9 @@ class DhcpPacket(DhcpBasicPacket):
 		self.DeleteOption("maximum_message_size")
 		
 	#ACK section
-	def CreateDhcpAckPacketFrom(self, src): # src = request or inform packet
-		self.requested_options = src.requested_options
-		self.SetOption("htype", src.GetOption("htype"))
-		self.SetOption("xid", src.GetOption("xid"))
-		self.SetOption("ciaddr", src.GetOption("ciaddr"))
-		self.SetOption("flags", src.GetOption("flags"))
-		self.SetOption("giaddr", src.GetOption("giaddr"))
-		self.SetOption("chaddr", src.GetOption("chaddr"))
-		self.SetOption("ip_address_lease_time_option", src.GetOption("ip_address_lease_time_option"))
-		self.TransformToDhcpAckPacket()
-		
 	def TransformToDhcpAckPacket(self): # src = request or inform packet
 		self.SetOption("op", [2])
-		self.SetOption("hlen", [6]) 
+		self.SetOption("hlen", [6])
 		self.SetOption("dhcp_message_type", [5])
 		
 		self.DeleteOption("secs")
@@ -117,18 +109,11 @@ class DhcpPacket(DhcpBasicPacket):
 		self.DeleteOption("maximum_message_size")
 		
 	#NAK section
-	def CreateDhcpNackPacketFrom(self, src): # src = request or inform packet
-		self.requested_options = src.requested_options
-		self.SetOption("htype", src.GetOption("htype"))
-		self.SetOption("xid", src.GetOption("xid"))
-		self.SetOption("flags", src.GetOption("flags"))
-		self.SetOption("giaddr", src.GetOption("giaddr"))
-		self.SetOption("chaddr", src.GetOption("chaddr"))
-		self.TransformToDhcpNackPacket()
-		
 	def TransformToDhcpNackPacket(self):
 		self.SetOption("op", [2])
-		self.SetOption("hlen", [6]) 
+		self.SetOption("hlen", [6])
+		self.SetOption("dhcp_message_type", [6])
+		
 		self.DeleteOption("secs")
 		self.DeleteOption("ciaddr")
 		self.DeleteOption("yiaddr")
@@ -140,7 +125,35 @@ class DhcpPacket(DhcpBasicPacket):
 		self.DeleteOption("parameter_request_list")
 		self.DeleteOption("client_identifier")
 		self.DeleteOption("maximum_message_size")
-		self.SetOption("dhcp_message_type", [6])
+		
+	#LEASE section
+	def TransformToDhcpLeaseActivePacket(self):
+		self.SetOption("op", [2])
+		self.SetOption("hlen", [6])
+		self.SetOption("dhcp_message_type", [13])
+		
+		self.DeleteOption("secs")
+		self.DeleteOption("ciaddr")
+		self.DeleteOption("request_ip_address")
+		self.DeleteOption("parameter_request_list")
+		self.DeleteOption("client_identifier")
+		self.DeleteOption("maximum_message_size")
+		self.DeleteOption("file")
+		self.DeleteOption("sname")
+		
+	def TransformToDhcpLeaseUnknownPacket(self):
+		self.SetOption("op", [2])
+		self.SetOption("hlen", [6])
+		self.SetOption("dhcp_message_type", [12])
+		
+		self.DeleteOption("secs")
+		self.DeleteOption("ciaddr")
+		self.DeleteOption("request_ip_address")
+		self.DeleteOption("parameter_request_list")
+		self.DeleteOption("client_identifier")
+		self.DeleteOption("maximum_message_size")
+		self.DeleteOption("file")
+		self.DeleteOption("sname")
 		
 	#ID section
 	def GetClientIdentifier(self):
@@ -208,7 +221,7 @@ class DhcpPacket(DhcpBasicPacket):
 			optnum  = DhcpOptions[opt]
 			if opt == 'dhcp_message_type':
 				result = DhcpFieldsName['dhcp_message_type'][str(data[0])]
-			elif DhcpOptionsTypes[optnum] == "char":
+			elif DhcpOptionsTypes[optnum] in ("char", "byte"):
 				result = str(data[0])
 			elif DhcpOptionsTypes[optnum] == "16-bits":
 				result = str(data[0] * 256 + data[0])
@@ -234,6 +247,8 @@ class DhcpPacket(DhcpBasicPacket):
 					result = ','.join(requested_options)
 				else:
 					result += str(data)
+			elif DhcpOptionsTypes[optnum] == "byte+":
+				result += str(data)
 			else:
 				result = str(data)
 			printable_data += "%(opt)s : %(result)s\n" % {'opt': opt, 'result': result,}

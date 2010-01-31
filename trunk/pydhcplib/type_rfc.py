@@ -54,7 +54,19 @@ def _rfc1035Parse(domain_name):
 		bytes += [len(fragment)] + [ord(c) for c in fragment]
 	return bytes + [0]
 	
-class rfc3361(_rfc):
+	
+class rfc2610_78(_rfc):
+	def __init__(self, mandatory, data):
+		self._value = [int(mandatory)]
+		for token in [token for token in [t.strip() for t in data.split(',')] if token]:
+			self._value += type_ipv4.ipv4(token).list()
+			
+class rfc2610_79(_rfc):
+	def __init__(self, mandatory, data):
+		self._value = [int(mandatory)] + [ord(c) for c in data.encode('utf-8')]
+		
+		
+class rfc3361_120(_rfc):
 	def __init__(self, data):
 		ip_4_mode = False
 		dns_mode = False
@@ -62,8 +74,7 @@ class rfc3361(_rfc):
 		self._value = []
 		for token in [token for token in [t.strip() for t in data.split(',')] if token]:
 			try:
-				ip_4 = type_ipv4.ipv4(token)
-				self._value += ip_4.list()
+				self._value += type_ipv4.ipv4(token).list()
 				ip_4_mode = True
 			except ValueError:
 				self._value += _rfc1035Parse(token)
@@ -76,7 +87,8 @@ class rfc3361(_rfc):
 			
 		self._value.insert(0, int(ip_4_mode))
 		
-class rfc3397(_rfc):
+		
+class rfc3397_119(_rfc):
 	def __init__(self, data):
 		self._value = []
 		for token in [token for token in [t.strip() for t in data.split(',')] if token]:
