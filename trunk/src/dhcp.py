@@ -425,7 +425,9 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 		mac = None
 		try:
 			mac = pydhcplib.type_hwmac.hwmac(packet.GetHardwareAddress()).str()
-		except: #IP/client-ID-based lookup; not supported.
+		except:
+			pass
+		if not mac: #IP/client-ID-based lookup; not supported.
 			self.LogDiscardedPacket()
 			return
 			
@@ -450,7 +452,7 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 					packet.TransformToDhcpLeaseUnknownPacket()
 					self.SendDhcpPacket(packet, source_address, 'LEASEUNKNOWN', mac, '?.?.?.?')
 			except Exception, e:
-				src.logging.sendErrorReport('Unable to respond to %(mac)s' % {'mac': mac,}, e)
+				src.logging.sendErrorReport('Unable to respond for %(mac)s' % {'mac': mac,}, e)
 		else:
 			self.LogDiscardedPacket()
 		self.LogTimeTaken(time.time() - start_time)
