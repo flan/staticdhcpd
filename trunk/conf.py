@@ -131,6 +131,8 @@ EMAIL_TIMEOUT = 600
 #PERFORM ANY REQUIRED IMPORTS WITHIN init()
 def init():
 	from src.dhcp import ipToList, ipsToList, intToList, longToList, strToList
+	from src.dhcp import rfc3046_decode
+	from pydhcplib.type_rfc import rfc3361, rfc3397
 #DEFINE ANY REQUIRED FUNCTIONS OR VARIABLES BELOW THIS LINE
 
 def loadDHCPPacket(packet, mac, client_ip, relay_ip, subnet, serial):

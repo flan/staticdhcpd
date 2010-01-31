@@ -124,6 +124,24 @@ def strToList(s):
 	"""
 	return pydhcplib.type_strlist.strlist(str(s)).list()
 	
+def rfc3046_decode(l):
+	"""
+	Extracts sub-options from an RFC3046 option (82).
+	
+	@type l: list
+	@param l: The option's raw data.
+	
+	@rtype: dict
+	@return: The sub-options, as byte-lists, keyed by ID.
+	"""
+	sub_options = {}
+	while l:
+		id = l.pop(0)
+		length = l.pop(0)
+		sub_options[id] = l[:length]
+		l = l[length:]
+	return sub_options
+	
 class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 	"""
 	The handler that responds to all received DHCP requests.
@@ -353,6 +371,59 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 			self.LogDiscardedPacket()
 		self.LogTimeTaken(time.time() - start_time)
 		
+	def HandleDhcpLeaseQuery(self, packet, source_address):
+		"""
+		Evaluates a DHCPLEASEQUERY request from a relay and determines whether
+		a DHCPLEASEACTIVE or DHCPLEASEUNKNOWN should be sent.
+		
+		The logic here is to make sure the MAC isn't ignored or acting
+		maliciously, then check the database to see whether it has an assigned
+		IP. If it does, DHCPLEASEACTIVE is sent. Otherwise, DHCPLEASEUNKNOWN is
+		sent.
+		
+		@type packet: L{pydhcplib.dhcp_packet.DhcpPacket}
+		@param packet: The DHCPREQUEST to be evaluated.
+		@type source_address: tuple
+		@param source_address: The address (host, port) from which the request
+			was received.
+		"""
+		if not self.EvaluateRelay(packet):
+			return
+			
+		start_time = time.time()
+		mac = None
+		try:
+			mac = pydhcplib.type_hwmac.hwmac(packet.GetHardwareAddress()).str()
+		except: #IP/client-ID-based lookup; not supported.
+			self.LogDiscardedPacket()
+			return
+			
+		if not [None for (ignored_mac, timeout) in self._ignored_addresses if mac == ignored_mac]:
+			if not self.LogDHCPAccess(mac):
+				self.LogDiscardedPacket()
+				return
+				
+			src.logging.writeLog('DHCPLEASEQUERY for %(mac)s' % {
+			 'mac': mac,
+			})
+			
+			try:
+				result = self._sql_broker.lookupMAC(mac)
+				if result:
+					packet.TransformToDhcpLeaseActivePacket()
+					if packet.SetOption('yiaddr', ipToList(result[0])):
+						self.SendDhcpPacket(packet, source_address, 'LEASEACTIVE', mac, result[0])
+					else:
+						_logInvalidValue('ip', result[0], result[-2], result[-1])
+				else:
+					packet.TransformToDhcpLeaseUnknownPacket()
+					self.SendDhcpPacket(packet, source_address, 'LEASEUNKNOWN', mac, '?.?.?.?')
+			except Exception, e:
+				src.logging.sendErrorReport('Unable to respond to %(mac)s' % {'mac': mac,}, e)
+		else:
+			self.LogDiscardedPacket()
+		self.LogTimeTaken(time.time() - start_time)
+		
 	def HandleDhcpRequest(self, packet, source_address):
 		"""
 		Evaluates a DHCPREQUEST request from a client and determines whether a
@@ -366,7 +437,7 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 		IP, forcing it to DISCOVER a new one.
 		
 		If policy forbids RENEW and REBIND operations, perhaps to prepare for a
-		new configuration reollout, all such requests are NAKed immediately.
+		new configuration rollout, all such requests are NAKed immediately.
 		
 		@type packet: L{pydhcplib.dhcp_packet.DhcpPacket}
 		@param packet: The DHCPREQUEST to be evaluated.
