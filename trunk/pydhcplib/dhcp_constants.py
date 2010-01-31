@@ -82,6 +82,7 @@ DhcpFieldsTypes = {
 }
 DhcpFieldsSpecs = {
  "ipv4": (4, 0, 1), "ipv4+": (0, 4, 4),
+ "byte": (1, 0, 1), "byte+": (0, 1, 1),
  "char": (1, 0, 1), "char+": (0, 1, 1),
  "string": (0, 0, 1),
  "bool": (1, 0, 1),
@@ -290,7 +291,7 @@ DhcpOptionsTypes = {
  60: "string",
  61: "identifier",
  62: "string",
- 63: "RFC2242",
+ 63: "byte+",
  64: "string",
  65: "ipv4+",
  66: "string",
@@ -315,8 +316,7 @@ DhcpOptionsTypes = {
  85: "ipv4+",
  86: "RFC2241",
  87: "RFC2241",
- 88: "Unassigned",
- 89: "Unassigned",
+ 88: "Unassigned", 89: "Unassigned",
  90: "RFC3118",
  91: "RFC4388",
  92: "ipv4+",
