@@ -77,6 +77,18 @@ If any of these conditions fail, the client's request is ignored or NAKed, depen
 
 Note that, because <tt>packet.requested_options</tt> is referenced in computationally expensive routines, it would be highly inefficient to use human-readable strings here; to find the name/number pair you need to use, look at <tt>{{{pydhcplib/dhcp_constants.py:DhcpOptions}}}</tt>, which you can import to make this function more readable for maintainability purposes.
 
+== Refuse relays without option <tt>82</tt>, <tt>relay_agent</tt>, with an agent-ID of <tt>{{{[1, 2, 3]}}}</tt> ==
+{{{
+if relay_ip:
+    relay_agent = packet.GetOption('relay_agent')
+    if relay_agent and not rfc3046_decode(relay_agent)[1] == [1, 2, 3]:
+        return False
+}}}
+
+This allows any non-relayed requests to pass through. Any relayed requests missing option 82 will be allowed (more on this below); any instances of option 82 with an invalid agent-ID (sub-option 1) will be ignored. Any instances of option 82 missing sub-option 1 will generate an error (described in the next example).
+
+Even relay agents configured to set option <tt>82</tt> will omit it if the resulting DHCP packet would be too large. For this reason, it's important to limit the relay IPs allowed in the config settings.
+
 == Do something stupid to generate an error for testing purposes ==
 {{{
 if not packet.SetOption('router', [192])):
@@ -86,3 +98,18 @@ if not packet.SetOption('router', [192])):
 The reason why this fails should be self-explanatory. What's important is noting that raising any sort of exception in this function prevents the DHCP response from being sent, but it will help to debug problems by printing or e-mailing a thorough description of the problem that occurred.
 
 Note that if <tt>{{{packet.SetOption()}}}</tt> returns <tt>False</tt>, which is what was tested, it's because the option was not set due to a format error. It is safe to ignore these problems, but it will lead to a lot of confusion, so it's always a good idea to use an <tt>if</tt>-statement like this.
+
+= Additional information =
+There are a few class definitions imported from pydhcplib.type_rfc that can be used to set the complex options with which they are associated. They can be passed directly into the <tt>{{{SetOption()}}}</tt> function.
+
+== RFC2610 ==
+Instantiate option-78 objects with <tt>{{{rfc2610_78('192.168.1.1,192.168.1.2')}}}</tt>. There are no limits on the number of comma-delimited values you may specify.
+
+Instantiate option-79 objects with <tt>{{{rfc2610_79(u'slp-scope-string')}}}</tt>.
+
+== RFC3361 ==
+Instantiate these objects with <tt>{{{rfc3361_120('example.org,uguu.ca')}}}</tt> or <tt>{{{rfc3361_120('192.168.1.1')}}}</tt>. There are no limits on the number of comma-delimited values you may specify. The only restriction is that either names or IPs may be used, never both.
+
+== RFC3397 ==
+Instantiate these objects with <tt>{{{rfc3397_119('127.0.0.1,192.168.1.1')}}}</tt>. There are no limits on the number of comma-delimited values you may specify.
+
