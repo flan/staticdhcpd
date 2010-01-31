@@ -27,7 +27,7 @@ Legal
  (C) Neil Tallim, 2009 <flan@uguu.ca>
 """
 MagicCookie = [99,130,83,99]
-PyDhcpLibVersion = '0.8-puukusoft'
+PyDhcpLibVersion = '0.9-puukusoft'
 
 # DhcpBaseOptions = '{fieldname':[location,length]}
 DhcpFields = {
@@ -309,19 +309,19 @@ DhcpOptionsTypes = {
  74: "ipv4+",
  75: "ipv4+",
  76: "ipv4+",
- 77: "RFC3004", #Not implemented; not necessary for static model
- 78: "RFC2610", #Implemented
- 79: "RFC2610", #Implemented
+ 77: "RFC3004_77", #Not implemented; not necessary for static model
+ 78: "RFC2610_78", #Implemented
+ 79: "RFC2610_79", #Implemented
  80: "null",
  81: "string",
  82: "byte+",
- 83: "RFC4174",
+ 83: "byte+",
  84: "Unassigned",
  85: "ipv4+",
  86: "byte+",
  87: "byte+",
  88: "Unassigned", 89: "Unassigned",
- 90: "RFC3118", #Not implemented; not necessary for static model
+ 90: "RFC3118_90", #Not implemented; not necessary for static model
  91: "32-bits",
  92: "ipv4+",
  93: "Unassigned", 94: "Unassigned", 95: "Unassigned", 96: "Unassigned",
@@ -335,8 +335,8 @@ DhcpOptionsTypes = {
  116: "char",
  117: "16-bits+",
  118: "ipv4",
- 119: "RFC3397", #Implemented
- 120: "RFC3361", #Implemented
+ 119: "RFC3397_119", #Implemented
+ 120: "RFC3361_120", #Implemented
  #TODO
  121: "Unassigned", 122: "Unassigned", 123: "Unassigned", 124: "Unassigned",
  125: "Unassigned", 126: "Unassigned", 127: "Unassigned", 128: "Unassigned",

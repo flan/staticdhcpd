@@ -96,13 +96,23 @@ class DhcpBasicPacket(object):
 			if not DhcpOptions.has_key(name):
 				return False
 				
-			if dhcp_field_type == 'RFC3361':
-				if type(value) == type_rfc.rfc3361:
+			if dhcp_field_type == 'RFC2610_78':
+				if type(value) == type_rfc.rfc2610_78:
 					self.options_data[name] = value.getValue()
 					return True
 				return False
-			elif dhcp_field_type == 'RFC3397':
-				if type(value) == type_rfc.rfc3397:
+			elif dhcp_field_type == 'RFC2610_79':
+				if type(value) == type_rfc.rfc2610_79:
+					self.options_data[name] = value.getValue()
+					return True
+				return False
+			elif dhcp_field_type == 'RFC3361_120':
+				if type(value) == type_rfc.rfc3361_120:
+					self.options_data[name] = value.getValue()
+					return True
+				return False
+			elif dhcp_field_type == 'RFC3397_119':
+				if type(value) == type_rfc.rfc3397_119:
 					self.options_data[name] = value.getValue()
 					return True
 				return False
@@ -131,12 +141,17 @@ class DhcpBasicPacket(object):
 		for each in self.options_data.keys():
 			option_id = DhcpOptions[each]
 			if self.requested_options is None or option_id in self.requested_options:
-				options[option_id] = option = []
-				option.append(option_id)
-				
 				option_value = self.options_data[each]
-				option.append(len(option_value))
-				option += option_value
+				
+				options[option_id] = option = []
+				
+				while True:
+					if len(option_value) > 255:
+						option += [option_id, 255] + option_value[:255])
+						option_value = option_value[255:]
+					else:
+						option += [option_id, len(option_value)] + option_value)
+						break
 		ordered_options = []
 		for (option_id, value) in sorted(options.iteritems()):
 			ordered_options += value
