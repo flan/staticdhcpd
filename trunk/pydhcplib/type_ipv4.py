@@ -98,7 +98,7 @@ class ipv4(object):
 		for each in tmp:
 			if not each.isdigit():
 				return False
-			if not 0 <= each <= 255:
+			if not 0 <= int(each) <= 255:
 				return False
 		return True
 		
