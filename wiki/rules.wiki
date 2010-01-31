@@ -26,7 +26,7 @@ With a few exceptions for special RFC requirements, all DHCP options configured 
  * {{{32-bits+}}}: A series of 32-bit values, assignable using <tt>{{{packet.SetOption(x, longsToList((65535, 2, 1000000)))}}}</tt>
  * {{{string}}}: A series of characters, assignable using <tt>{{{packet.SetOption(x, strToList('hello'))}}}</tt>
 
-Note: All integers may be specified using hex notation, using {{{0xF0}}}, or in binary, using {{{int('00010111', 2)}}}.
+Note: All integers may be specified using hex notation, {{{0xF0}}}, or in binary, {{{int('00010111', 2)}}}.
 
 ----
 = Examples =
@@ -146,4 +146,3 @@ packet.SetOption('internet_storage_name_service', rfc4174_83(
 }}}
 
 There are no limits on the number of comma-delimited values you may specify.
-
