@@ -27,7 +27,7 @@ Legal
  (C) Neil Tallim, 2009 <flan@uguu.ca>
 """
 MagicCookie = [99,130,83,99]
-PyDhcpLibVersion = '0.9-puukusoft'
+PyDhcpLibVersion = '0.9.1-puukusoft'
 
 # DhcpBaseOptions = '{fieldname':[location,length]}
 DhcpFields = {
@@ -91,7 +91,7 @@ DhcpFieldsSpecs = {
  "string": (0, 0, 1),
  "bool": (1, 0, 1),
  "16-bits": (2, 0, 1), "16-bits+": (0, 2, 2),
- "32-bits": (4, 0, 1),
+ "32-bits": (4, 0, 1), "32-bits+": (0, 4, 4),
  "identifier": (0, 2, 1),
  "none": (0, 0, 1),
 }
@@ -315,7 +315,7 @@ DhcpOptionsTypes = {
  80: "null",
  81: "string",
  82: "byte+",
- 83: "byte+",
+ 83: "RFC4174_83",
  84: "Unassigned",
  85: "ipv4+",
  86: "byte+",

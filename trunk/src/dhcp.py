@@ -86,12 +86,27 @@ def intToList(i):
 	A convenience function that converts an int into a pair of bytes.
 	
 	@type i: int
-	@param i: The long value to convert.
+	@param i: The int value to convert.
 	
 	@rtype: list
 	@return: The converted bytes.
 	"""
 	return [(i / 256) % 256, i % 256]
+	
+def intsToList(l):
+	"""
+	A convenience function that converts a sequence of ints into pairs of bytes.
+	
+	@type l: sequence
+	@param l: The int values to convert.
+	
+	@rtype: list
+	@return: The converted bytes.
+	"""
+	pairs = []
+	for i in l:
+		pairs += intToList(i)
+	return pairs
 	
 def longToList(l):
 	"""
@@ -111,6 +126,22 @@ def longToList(l):
 	l /= 256
 	q.insert(0, l % 256)
 	return q
+	
+def longsToList(l):
+	"""
+	A convenience function that converts a sequence of longs into quads of
+	bytes.
+	
+	@type l: sequence
+	@param l: The long values to convert.
+	
+	@rtype: list
+	@return: The converted bytes.
+	"""
+	quads = []
+	for i in l:
+		quads += longToList(i)
+	return quads
 	
 def strToList(s):
 	"""

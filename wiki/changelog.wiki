@@ -4,7 +4,7 @@
  * Added support for [http://www.rfc-archive.org/getrfc.php?rfc=3046 RFC3046] (option 82)
  * Added support for [http://www.rfc-archive.org/getrfc.php?rfc=3361 RFC3361]
  * Added support for [http://www.rfc-archive.org/getrfc.php?rfc=3396 RFC3396]
- * Added support for [http://www.rfc-archive.org/getrfc.php?rfc=4174 RFC4174], specification by raw bytes only, due to vagueness in the RFC
+ * Added support for [http://www.rfc-archive.org/getrfc.php?rfc=4174 RFC4174]
  * Added support for [http://www.rfc-archive.org/getrfc.php?rfc=4388 RFC4388] (LEASEQUERY)
  * Added support for specification of options by number
  * Rebuilt support for [http://www.rfc-archive.org/getrfc.php?rfc=3396 RFC3397]

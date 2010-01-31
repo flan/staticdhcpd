@@ -11,6 +11,24 @@ Python is whitespace-sensitive and [http://uguu.ca/ Neil Tallim] likes to go aga
 As for DHCP options, don't worry about whether the client is configured to handle them or not; when the response is sent, all options the client did not ask to receive will be omitted, to ensure that nothing gets confused. Exception: in the (non-standard) event that a client does not provide a list in option 55, all set options will be returned.
 
 ----
+= Formats and convenience functions =
+With a few exceptions for special RFC requirements, all DHCP options configured by staticDHCPd are encoded using one of the following formats:
+ * {{{bool}}}: A single bit, assignable using <tt>{{{packet.SetOption(x, [int(True)])}}}</tt>
+ * {{{byte}}}: A single byte, assignable using <tt>{{{packet.SetOption(x, [127])}}}</tt>
+ * {{{byte+}}}: A series of bytes, assignable using <tt>{{{packet.SetOption(x, [127, 255, 100, 2])}}}</tt>
+ * {{{char}}}: A single character, assignable using <tt>{{{packet.SetOption(x, [ord('c')])}}}</tt>
+ * {{{char+}}}: A series of characters, assignable using <tt>{{{packet.SetOption(x, strToList('hello'))}}}</tt>
+ * {{{ipv4}}}: A single IPv4 address, assignable using <tt>{{{packet.SetOption(x, ipToList('127.0.0.1'))}}}</tt>
+ * {{{ipv4+}}}: A series of IPv4 addresses, assignable using <tt>{{{packet.SetOption(x, ipsToList('127.0.0.1,192.168.1.1'))}}}</tt>
+ * {{{16-bits}}}: A single 16-bit value, assignable using <tt>{{{packet.SetOption(x, intToList(65535))}}}</tt>
+ * {{{16-bits+}}}: A series of 16-bit values, assignable using <tt>{{{packet.SetOption(x, intsToList((65535, 2, 10)))}}}</tt>
+ * {{{32-bits}}}: A single 32-bit value, assignable using <tt>{{{packet.SetOption(x, longToList(1000000))}}}</tt>
+ * {{{32-bits+}}}: A series of 32-bit values, assignable using <tt>{{{packet.SetOption(x, longsToList((65535, 2, 1000000)))}}}</tt>
+ * {{{string}}}: A series of characters, assignable using <tt>{{{packet.SetOption(x, strToList('hello'))}}}</tt>
+
+Note: All integers may be specified using hex notation, using {{{0xF0}}}, or in binary, using {{{int('00010111', 2)}}}.
+
+----
 = Examples =
 == Tell every client to use <tt>127.0.0.1</tt> and <tt>192.168.0.1</tt> as DNS servers ==
 This example is not representative of the best way to do things; DNS servers may, and should, be set in the [database].
@@ -100,16 +118,32 @@ The reason why this fails should be self-explanatory. What's important is noting
 Note that if <tt>{{{packet.SetOption()}}}</tt> returns <tt>False</tt>, which is what was tested, it's because the option was not set due to a format error. It is safe to ignore these problems, but it will lead to a lot of confusion, so it's always a good idea to use an <tt>if</tt>-statement like this.
 
 = Additional information =
-There are a few class definitions imported from pydhcplib.type_rfc that can be used to set the complex options with which they are associated. They can be passed directly into the <tt>{{{SetOption()}}}</tt> function.
+There are a few class definitions imported from pydhcplib.type_rfc that can be used to set the complex options with which they are associated.
 
 == RFC2610 ==
-Instantiate option-78 objects with <tt>{{{rfc2610_78('192.168.1.1,192.168.1.2')}}}</tt>. There are no limits on the number of comma-delimited values you may specify.
+Set option 78 with <tt>{{{packet.SetOption('directory_agent', rfc2610_78('192.168.1.1,192.168.1.2'))}}}</tt>. There are no limits on the number of comma-delimited values you may specify.
 
-Instantiate option-79 objects with <tt>{{{rfc2610_79(u'slp-scope-string')}}}</tt>.
+Set option 79 with <tt>{{{packet.SetOption('service_scope', rfc2610_79(u'slp-scope-string'))}}}</tt>.
 
 == RFC3361 ==
-Instantiate these objects with <tt>{{{rfc3361_120('example.org,uguu.ca')}}}</tt> or <tt>{{{rfc3361_120('192.168.1.1')}}}</tt>. There are no limits on the number of comma-delimited values you may specify. The only restriction is that either names or IPs may be used, never both.
+Set option 120 with <tt>{{{packet.SetOption('sip_servers', rfc3361_120('example.org,uguu.ca'))}}}</tt> or <tt>{{{packet.SetOption('sip_servers', rfc3361_120('192.168.1.1'))}}}</tt>. There are no limits on the number of comma-delimited values you may specify. The only restriction is that either names xor IPs may be used, never both.
 
 == RFC3397 ==
-Instantiate these objects with <tt>{{{rfc3397_119('127.0.0.1,192.168.1.1')}}}</tt>. There are no limits on the number of comma-delimited values you may specify.
+Set option 119 with <tt>{{{packet.SetOption('domain_search', rfc3397_119('example.org,uguu.ca'))}}}</tt>. There are no limits on the number of comma-delimited values you may specify.
+
+== RFC4174 ==
+Set option 83 with the following pattern:
+{{{
+isns_functions = int('0000000000000111', 2)
+dd_access = int('0000000000111111', 2)
+admin_flags = int('0000000000001111', 2)
+isns_security = int('00000000000000000000000001111111', 2)
+
+packet.SetOption('internet_storage_name_service', rfc4174_83(
+ isns_functions, dd_access, admin_flags, isns_security,
+ '192.168.1.1,192.168.1.2,192.168.1.3'
+))
+}}}
+
+There are no limits on the number of comma-delimited values you may specify.
 
