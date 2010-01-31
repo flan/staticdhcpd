@@ -152,10 +152,10 @@ class DhcpBasicPacket(object):
 				
 				while True:
 					if len(option_value) > 255:
-						option += [option_id, 255] + option_value[:255])
+						option += [option_id, 255] + option_value[:255]
 						option_value = option_value[255:]
 					else:
-						option += [option_id, len(option_value)] + option_value)
+						option += [option_id, len(option_value)] + option_value
 						break
 		ordered_options = []
 		for (option_id, value) in sorted(options.iteritems()):
