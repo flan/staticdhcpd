@@ -34,7 +34,7 @@ Note: All integers may be specified using hex notation, {{{0xF0}}}, or in binary
 This example is not representative of the best way to do things; DNS servers may, and should, be set in the [database].
 
 {{{
-packet.SetOption('domain_name_servers', ipsToQuads('127.0.0.1,192.168.0.1'))
+packet.SetOption('domain_name_servers', ipsToList('127.0.0.1,192.168.0.1'))
 }}}
 
 This snippet sets the option associated with the symbolic, human-readable name <tt>domain_name_servers</tt> to <tt>{{{[127,0,0,1,192,168,0,1]}}}</tt>, eight bytes that constitute the two IP addresses. For efficiency's sake, you would probably want to write this as follows, although it is less readable:
@@ -48,10 +48,10 @@ For a full list of all human-readable option-name values, see <tt>{{{pydhcplib/d
 == Tell all clients with an IP address ending in a multiple of 3 to use <tt>192.168.1.254</tt> as a default gateway ==
 {{{
 if client_ip[3] % 3 == 0:
-    packet.SetOption('router', ipToQuad('192.168.1.254'))
+    packet.SetOption('router', ipToList('192.168.1.254'))
 }}}
 
-Here, the modulus-by-3 of the last octet (zero-based array) of <tt>client_ip</tt>, the IP address assigned to the client, is checked to see if it is zero. If so, the <tt>router</tt> option is set to <tt>{{{[192,168,1,254]}}}</tt>. Note that the function used this time is <tt>ipToQuad()</tt>. This is because only one IP needs to be translated; it's just more efficient this way. Of course, it would be more efficient still to use the same alternative format as before:
+Here, the modulus-by-3 of the last octet (zero-based array) of <tt>client_ip</tt>, the IP address assigned to the client, is checked to see if it is zero. If so, the <tt>router</tt> option is set to <tt>{{{[192,168,1,254]}}}</tt>. Note that the function used this time is <tt>ipToList()</tt>. This is because only one IP needs to be translated; it's just more efficient this way. Of course, it would be more efficient still to use the same alternative format as before:
 
 {{{
 if client_ip[3] % 3 == 0:
@@ -60,17 +60,17 @@ if client_ip[3] % 3 == 0:
 
 == Set T1 to <tt>60</tt> seconds ==
 {{{
-packet.SetOption('renewal_time_value', longToQuad(60))
+packet.SetOption('renewal_time_value', longToList(60))
 }}}
 
-In this case, <tt>longToQuad()</tt> was used to translate the value <tt>60</tt> into <tt>{{{[0,0,0,60]}}}</tt>, <tt>60</tt> as a four-byte value. It's probably best to always use this function to avoid an endian mishap.
+In this case, <tt>longToList()</tt> was used to translate the value <tt>60</tt> into <tt>{{{[0,0,0,60]}}}</tt>, <tt>60</tt> as a four-byte value. It's probably best to always use this function to avoid an endian mishap.
 
 == Set the client's domain name to <tt>example.com</tt> if the request was relayed, but refuse to respond if it was relayed from <tt>10.0.0.1</tt> ==
 {{{
 if relay_ip:
     if relay_ip == (10,0,0,1):
         return False
-    packet.SetOption('domain_name', strToStrList('example.com'))
+    packet.SetOption('domain_name', strToList('example.com'))
 }}}
 
 Here, <tt>relay_ip</tt>, <tt>giaddr</tt>, is checked to see if it was set (always do this before working with <tt>relay_ip</tt>, to avoid an error), indicating that this request was relayed. The IP of the relay server is then checked and, if it matches, <tt>domain_name</tt> is set to <tt>example.com</tt> using the <tt>strToStrList()</tt> convenience function.
