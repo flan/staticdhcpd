@@ -27,6 +27,8 @@ Legal
 """
 import type_ipv4
 
+import src.dhcp
+
 class _rfc(object):
 	_value = None
 	
@@ -58,7 +60,7 @@ def _rfc1035Parse(domain_name):
 class rfc2610_78(_rfc):
 	def __init__(self, mandatory, data):
 		self._value = [int(mandatory)]
-		for token in [token for token in [t.strip() for t in data.split(',')] if token]:
+		for token in [tok for tok in [t.strip() for t in data.split(',')] if tok]:
 			self._value += type_ipv4.ipv4(token).list()
 			
 class rfc2610_79(_rfc):
@@ -72,7 +74,7 @@ class rfc3361_120(_rfc):
 		dns_mode = False
 		
 		self._value = []
-		for token in [token for token in [t.strip() for t in data.split(',')] if token]:
+		for token in [tok for tok in [t.strip() for t in data.split(',')] if tok]:
 			try:
 				self._value += type_ipv4.ipv4(token).list()
 				ip_4_mode = True
@@ -91,6 +93,17 @@ class rfc3361_120(_rfc):
 class rfc3397_119(_rfc):
 	def __init__(self, data):
 		self._value = []
-		for token in [token for token in [t.strip() for t in data.split(',')] if token]:
+		for token in [tok for tok in [t.strip() for t in data.split(',')] if tok]:
 			self._value += _rfc1035Parse(token)
+			
+class rfc4174_83(_rfc):
+	def __init__(self, isns_functions, dd_access, admin_flags, isns_security, ips):
+		isns_functions = src.dhcp.intToList(isns_functions)
+		dd_access = src.dhcp.intToList(dd_access)
+		admin_flags = src.dhcp.intToList(admin_flags)
+		isns_security = src.dhcp.longToList(isns_security)
+		
+		self._value = isns_functions + dd_access + admin_flags + isns_security
+		for token in [tok for tok in [t.strip() for t in ips.split(',')] if tok]:
+			self._value += type_ipv4.ipv4(token).list()
 			

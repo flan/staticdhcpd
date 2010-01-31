@@ -116,6 +116,11 @@ class DhcpBasicPacket(object):
 					self.options_data[name] = value.getValue()
 					return True
 				return False
+			elif dhcp_field_type == 'RFC4174_83':
+				if type(value) == type_rfc.rfc4174_83:
+					self.options_data[name] = value.getValue()
+					return True
+				return False
 				
 			(fixed_length, minimum_length, multiple) = DhcpFieldsSpecs[DhcpOptionsTypes[DhcpOptions[name]]]
 			length = len(value)
