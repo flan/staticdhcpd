@@ -1,13 +1,13 @@
 = 1.4.0 (not yet released) =
  * Added support for [http://www.rfc-archive.org/getrfc.php?rfc=2610 RFC2610]
- * Added support for [http://www.rfc-archive.org/getrfc.php?rfc=2937 RFC2937], with the caveat that the compression algorithm it describes was omitted
+ * Added support for [http://www.rfc-archive.org/getrfc.php?rfc=2937 RFC2937]
  * Added support for [http://www.rfc-archive.org/getrfc.php?rfc=3046 RFC3046] (option 82)
  * Added support for [http://www.rfc-archive.org/getrfc.php?rfc=3361 RFC3361]
  * Added support for [http://www.rfc-archive.org/getrfc.php?rfc=3396 RFC3396]
  * Added support for [http://www.rfc-archive.org/getrfc.php?rfc=4174 RFC4174]
  * Added support for [http://www.rfc-archive.org/getrfc.php?rfc=4388 RFC4388] (LEASEQUERY)
  * Added support for specification of options by number
- * Rebuilt support for [http://www.rfc-archive.org/getrfc.php?rfc=3396 RFC3397]
+ * Rebuilt support for [http://www.rfc-archive.org/getrfc.php?rfc=3397 RFC3397], with the caveat that the compression algorithm it describes was omitted
 ----
 = 1.3.5 =
  * Updated support and resource URLs
