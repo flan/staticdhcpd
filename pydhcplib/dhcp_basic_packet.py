@@ -93,7 +93,8 @@ class DhcpBasicPacket(object):
 		else:
 			if type(name) == int:
 				name = DhcpOptionsList.get(name)
-			if not DhcpOptions.has_key(name):
+			dhcp_field_type = DhcpOptionsTypes.get(DhcpOptions.get(name))
+			if not dhcp_field_type:
 				return False
 				
 			if dhcp_field_type == 'RFC2610_78':
@@ -122,7 +123,7 @@ class DhcpBasicPacket(object):
 					return True
 				return False
 				
-			(fixed_length, minimum_length, multiple) = DhcpFieldsSpecs[DhcpOptionsTypes[DhcpOptions[name]]]
+			(fixed_length, minimum_length, multiple) = DhcpFieldsSpecs[dhcp_field_type]
 			length = len(value)
 			if fixed_length == length or (minimum_length <= length and length % multiple == 0):
 				if type(name) == int: #Use the string name to avoid collisions.
