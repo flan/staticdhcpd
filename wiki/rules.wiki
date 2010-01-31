@@ -120,18 +120,36 @@ Note that if <tt>{{{packet.SetOption()}}}</tt> returns <tt>False</tt>, which is 
 = Additional information =
 There are a few class definitions imported from pydhcplib.type_rfc that can be used to set the complex options with which they are associated.
 
-== RFC2610 ==
-Set option 78 with <tt>{{{packet.SetOption('directory_agent', rfc2610_78('192.168.1.1,192.168.1.2'))}}}</tt>. There are no limits on the number of comma-delimited values you may specify.
+== [http://www.rfc-archive.org/getrfc.php?rfc=2610 RFC2610] ==
+Set option 78 with the following pattern:
+{{{
+packet.SetOption('directory_agent', rfc2610_78('192.168.1.1,192.168.1.2'))
+}}}
+
+There are no limits on the number of comma-delimited values you may specify.
 
 Set option 79 with <tt>{{{packet.SetOption('service_scope', rfc2610_79(u'slp-scope-string'))}}}</tt>, where <tt>slp-scope-string</tt> is the scope you want to set.
 
-== RFC3361 ==
-Set option 120 with <tt>{{{packet.SetOption('sip_servers', rfc3361_120('example.org,uguu.ca'))}}}</tt> or <tt>{{{packet.SetOption('sip_servers', rfc3361_120('192.168.1.1'))}}}</tt>. There are no limits on the number of comma-delimited values you may specify. The only restriction is that either names xor IPs may be used, never both.
+== [http://www.rfc-archive.org/getrfc.php?rfc=3361 RFC3361] ==
+Set option 120 with either of the following patterns:
+{{{
+packet.SetOption('sip_servers', rfc3361_120('example.org,uguu.ca'))
+}}}
+{{{
+packet.SetOption('sip_servers', rfc3361_120('192.168.1.1'))
+}}}
 
-== RFC3397 ==
-Set option 119 with <tt>{{{packet.SetOption('domain_search', rfc3397_119('example.org,uguu.ca'))}}}</tt>. There are no limits on the number of comma-delimited values you may specify.
+There are no limits on the number of comma-delimited values you may specify. The only restriction is that either names xor IPs may be used, never both.
 
-== RFC4174 ==
+== [http://www.rfc-archive.org/getrfc.php?rfc=3397 RFC3397] ==
+Set option 119 with the following pattern:
+{{{
+packet.SetOption('domain_search', rfc3397_119('example.org,uguu.ca'))
+}}}
+
+There are no limits on the number of comma-delimited values you may specify.
+
+== [http://www.rfc-archive.org/getrfc.php?rfc=4174 RFC4174] ==
 Set option 83 with the following pattern:
 {{{
 isns_functions = int('0000000000000111', 2)
@@ -145,4 +163,4 @@ packet.SetOption('internet_storage_name_service', rfc4174_83(
 ))
 }}}
 
-There are no limits on the number of comma-delimited values you may specify.
+There are no limits on the number of comma-delimited values you may specify, but you may require at least two, depending on the rest of your configuration.
