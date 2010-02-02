@@ -106,29 +106,31 @@ class DhcpBasicPacket(object):
 			if not dhcp_field_type:
 				return False
 				
-			#Process special RFC options.
-			if dhcp_field_type == 'RFC2610_78':
-				return self._SetRfcOption(name, value, type_rfc.rfc2610_78)
-			elif dhcp_field_type == 'RFC2610_79':
-				return self._SetRfcOption(name, value, type_rfc.rfc2610_79)
-			elif dhcp_field_type == 'RFC3361_120':
-				return self._SetRfcOption(name, value, type_rfc.rfc3361_120)
-			elif dhcp_field_type == 'RFC3397_119':
-				return self._SetRfcOption(name, value, type_rfc.rfc3397_119)
-			elif dhcp_field_type == 'RFC4174_83':
-				return self._SetRfcOption(name, value, type_rfc.rfc4174_83)
-				
 			#Process normal options.
-			(fixed_length, minimum_length, multiple) = DhcpFieldsSpecs[dhcp_field_type]
-			length = len(value)
-			if fixed_length == length or (minimum_length <= length and length % multiple == 0):
-				if type(name) == int: #Use the string name to avoid collisions.
-					name = DhcpOptionsList.get(name)
-					if not name:
-						return False
-				self.options_data[name] = value
-				return True
-			return False
+			dhcp_field_specs = DhcpFieldsSpecs[dhcp_field_type]
+			if dhcp_field_specs:
+				(fixed_length, minimum_length, multiple) = dhcp_field_specs
+				length = len(value)
+				if fixed_length == length or (minimum_length <= length and length % multiple == 0):
+					if type(name) == int: #Use the string name to avoid collisions.
+						name = DhcpOptionsList.get(name)
+						if not name:
+							return False
+					self.options_data[name] = value
+					return True
+				return False
+			else:
+				#Process special RFC options.
+				if dhcp_field_type == 'RFC2610_78':
+					return self._SetRfcOption(name, value, type_rfc.rfc2610_78)
+				elif dhcp_field_type == 'RFC2610_79':
+					return self._SetRfcOption(name, value, type_rfc.rfc2610_79)
+				elif dhcp_field_type == 'RFC3361_120':
+					return self._SetRfcOption(name, value, type_rfc.rfc3361_120)
+				elif dhcp_field_type == 'RFC3397_119':
+					return self._SetRfcOption(name, value, type_rfc.rfc3397_119)
+				elif dhcp_field_type == 'RFC4174_83':
+					return self._SetRfcOption(name, value, type_rfc.rfc4174_83)
 		raise ValueError("pydhcplib.dhcp_basic_packet.setoption error : unknown option: %(name)s" % {'name': name})
 		
 	def IsOption(self, name):
