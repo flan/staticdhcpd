@@ -42,7 +42,7 @@ class _WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
 	"""
 	The handler that responds to all received HTTP requests.
 	"""
-	_allowed_pages = ('/', '/index.html') #: A collection of all paths that will be allowed.
+	_allowed_pages = ('/', '/index.html',) #: A collection of all paths that will be allowed.
 	
 	def do_GET(self):
 		"""

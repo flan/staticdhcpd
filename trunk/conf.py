@@ -28,8 +28,7 @@ UID = 999
 GID = 999
 
 #The IP of the interface on which DHCP responses should be sent.
-#This may be None to assume all interfaces, but this is not a good idea on a
-#multihomed server.
+#This value must be set to a real IP.
 DHCP_SERVER_IP = '192.168.1.100'
 #The port on which DHCP requests are to be received; 67 is the standard.
 DHCP_SERVER_PORT = 67
