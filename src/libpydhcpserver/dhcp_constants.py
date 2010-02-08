@@ -1,16 +1,15 @@
 # -*- encoding: utf-8 -*-
 """
-pydhcplib module: dhcp_constants
+libpydhcpserver module: dhcp_constants
 
 Purpose
 =======
- Contains constants needed by pydhcplib.
+ Contains constants needed by libpydhcpserver.
  
 Legal
 =====
- This file is part of pydhcplib, but it has been altered for use with
- staticDHCPd.
- pydhcplib is free software; you can redistribute it and/or modify
+ This file is part of libpydhcpserver.
+ libpydhcpserver is free software; you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
  the Free Software Foundation; either version 3 of the License, or
  (at your option) any later version.
@@ -23,13 +22,13 @@ Legal
  You should have received a copy of the GNU General Public License
  along with this program. If not, see <http://www.gnu.org/licenses/>.
  
+ (C) Neil Tallim, 2010 <flan@uguu.ca>
  (C) Mathieu Ignacio, 2008 <mignacio@april.org>
- (C) Neil Tallim, 2009 <flan@uguu.ca>
 """
 MAGIC_COOKIE = [99,130,83,99]
 VERSION = '0.9.9'
 
-# DhcpBaseOptions = '{fieldname':[location,length]}
+# DhcpBaseOptions = {'fieldname': (location, length),}
 DHCP_FIELDS = {
  'op': (0, 1),
  'htype': (1, 1),
@@ -85,7 +84,7 @@ DHCP_FIELDS_TYPES = {
  'file': "str",
 }
 DHCP_FIELDS_SPECS = {
- "ipv4": (4, 0, 1), "ipv4+": (0, 4, 4),
+ "ipv4": (4, 0, 1), "ipv4+": (0, 4, 4), "ipv4*": (0, 0, 4),
  "byte": (1, 0, 1), "byte+": (0, 1, 1),
  "char": (1, 0, 1), "char+": (0, 1, 1),
  "string": (0, 0, 1),
@@ -95,7 +94,7 @@ DHCP_FIELDS_SPECS = {
  "identifier": (0, 2, 1),
  "none": (0, 0, 1),
 }
-# DHCP_FIELDS_SPECS : {'option_code': (fixed_length,minimum_length,multiple)}
+# DHCP_FIELDS_SPECS : {'option_code': (fixed_length, minimum_length, multiple)}
 # if fixed_length == 0 : minimum_length and multiple apply
 # else : forget minimum_length and multiple 
 # multiple : length MUST be a multiple of 'multiple'
@@ -229,17 +228,16 @@ DHCP_OPTIONS = {
 # DHCP_OPTIONS_REVERSE : reverse of DHCP_OPTIONS
 DHCP_OPTIONS_REVERSE = dict([(v, k) for (k, v) in DHCP_OPTIONS.iteritems()])
 
-# See http://www.iana.org/assignments/bootp-dhcp-parameters
-# FIXME : verify all ipv4+ options, some are 32 bits...
+# Derived from http://www.iana.org/assignments/bootp-dhcp-parameters
 DHCP_OPTIONS_TYPES = {
  0: "none",
  1: "ipv4",
- 2: "ipv4",
- 3: "ipv4+", 
+ 2: "32-bits",
+ 3: "ipv4+",
  4: "ipv4+",
  5: "ipv4+",
  6: "ipv4+",
- 7: "ipv4+", 
+ 7: "ipv4+",
  8: "ipv4+",
  9: "ipv4+",
  10: "ipv4+",
@@ -247,7 +245,7 @@ DHCP_OPTIONS_TYPES = {
  12: "string",
  13: "16-bits",
  14: "string",
- 15: "string", 
+ 15: "string",
  16: "ipv4",
  17: "string",
  18: "string",
@@ -255,9 +253,9 @@ DHCP_OPTIONS_TYPES = {
  20: "bool",
  21: "ipv4+",
  22: "16-bits",
- 23: "char",
- 24: "ipv4",
- 25: "16-bits",
+ 23: "byte",
+ 24: "32-bits",
+ 25: "16-bits+",
  26: "16-bits",
  27: "bool",
  28: "ipv4",
@@ -267,27 +265,27 @@ DHCP_OPTIONS_TYPES = {
  32: "ipv4",
  33: "ipv4+",
  34: "bool",
- 35: "32-bits", 
+ 35: "32-bits",
  36: "bool",
- 37: "char",
+ 37: "byte",
  38: "32-bits",
  39: "bool",
  40: "string",
  41: "ipv4+",
  42: "ipv4+",
- 43: "string",
+ 43: "byte+",
  44: "ipv4+",
  45: "ipv4+",
- 46: "char",
+ 46: "byte",
  47: "string",
  48: "ipv4+",
  49: "ipv4+",
  50: "ipv4",
- 51: "32-bits", 
- 52: "char",
- 53: "char",
- 54: "32-bits",
- 55: "char+",
+ 51: "32-bits",
+ 52: "byte",
+ 53: "byte",
+ 54: "ipv4",
+ 55: "byte+",
  56: "string",
  57: "16-bits",
  58: "32-bits",
@@ -300,7 +298,7 @@ DHCP_OPTIONS_TYPES = {
  65: "ipv4+",
  66: "string",
  67: "string",
- 68: "ipv4",
+ 68: "ipv4*",
  69: "ipv4+",
  70: "ipv4+",
  71: "ipv4+",
@@ -312,27 +310,29 @@ DHCP_OPTIONS_TYPES = {
  77: "RFC3004_77", #Not implemented; not necessary for static model
  78: "RFC2610_78", #Implemented
  79: "RFC2610_79", #Implemented
- 80: "null",
+ 80: "none",
  81: "string",
  82: "byte+",
- 83: "RFC4174_83",
+ 83: "RFC4174_83", #Implemented
  84: "Unassigned",
  85: "ipv4+",
  86: "byte+",
  87: "byte+",
- 88: "Unassigned", 89: "Unassigned",
+ 88: "Unassigned", 89: "Unassigned", #FIXME
  90: "RFC3118_90", #Not implemented; not necessary for static model
  91: "32-bits",
  92: "ipv4+",
- 93: "Unassigned", 94: "Unassigned", 95: "Unassigned", 96: "Unassigned",
- 97: "Unassigned",
+ 93: "Unassigned", 94: "Unassigned", 95: "Unassigned", #FIXME
+ 96: "Unassigned",
+ 97: "Unassigned", #FIXME
  98: "string",
- 99: "Unassigned", 100: "Unassigned", 101: "Unassigned", 102: "Unassigned",
- 103: "Unassigned", 104: "Unassigned", 105: "Unassigned", 106: "Unassigned",
- 107: "Unassigned", 108: "Unassigned", 109: "Unassigned", 110: "Unassigned",
- 111: "Unassigned", 112: "Unassigned", 113: "Unassigned", 114: "Unassigned",
+ 99: "Unassigned", 100: "Unassigned", 101: "Unassigned", #FIXME
+ 102: "Unassigned", 103: "Unassigned", 104: "Unassigned", 105: "Unassigned",
+ 106: "Unassigned", 107: "Unassigned", 108: "Unassigned", 109: "Unassigned",
+ 110: "Unassigned", 111: "Unassigned",
+ 112: "Unassigned", 113: "Unassigned", 114: "Unassigned", #FIXME
  115: "Unassigned",
- 116: "char",
+ 116: "bool",
  117: "16-bits+",
  118: "ipv4",
  119: "RFC3397_119", #Implemented
@@ -360,15 +360,19 @@ DHCP_OPTIONS_TYPES = {
  197: "Unassigned", 198: "Unassigned", 199: "Unassigned", 200: "Unassigned",
  201: "Unassigned", 202: "Unassigned", 203: "Unassigned", 204: "Unassigned",
  205: "Unassigned", 206: "Unassigned", 207: "Unassigned", 208: "Unassigned",
- 209: "Unassigned", 210: "Unassigned", 211: "Unassigned", 212: "Unassigned",
- 213: "Unassigned", 214: "Unassigned", 215: "Unassigned", 216: "Unassigned",
- 217: "Unassigned", 218: "Unassigned", 219: "Unassigned", 220: "Unassigned",
- 221: "Unassigned", 222: "Unassigned", 223: "Unassigned", 224: "Unassigned",
- 225: "Unassigned", 226: "Unassigned", 227: "Unassigned", 228: "Unassigned",
- 229: "Unassigned", 230: "Unassigned", 231: "Unassigned", 232: "Unassigned",
- 233: "Unassigned", 234: "Unassigned", 235: "Unassigned", 236: "Unassigned",
- 237: "Unassigned", 238: "Unassigned", 239: "Unassigned", 240: "Unassigned",
- 241: "Unassigned", 242: "Unassigned", 243: "Unassigned", 244: "Unassigned",
- 245: "Unassigned",
+ 209: "Unassigned", 210: "Unassigned", 211: "Unassigned",
+ 212: "Unassigned", 213: "Unassigned", 214: "Unassigned", 215: "Unassigned",
+ 216: "Unassigned", 217: "Unassigned", 218: "Unassigned", 219: "Unassigned",
+ 220: "Unassigned", #Subnet Allocation Option
+ 221: "Unassigned", #Virtual Subnet Selection Option
+ 222: "Unassigned", 223: "Unassigned",
+ 224: "Reserved", 225: "Reserved", 226: "Reserved", 227: "Reserved",
+ 228: "Reserved", 229: "Reserved", 230: "Reserved", 231: "Reserved",
+ 232: "Reserved", 233: "Reserved", 234: "Reserved", 235: "Reserved",
+ 236: "Reserved", 237: "Reserved", 238: "Reserved", 239: "Reserved",
+ 240: "Reserved", 241: "Reserved", 242: "Reserved", 243: "Reserved",
+ 244: "Reserved", 245: "Reserved", 246: "Reserved", 247: "Reserved",
+ 248: "Reserved", 249: "Reserved", 250: "Reserved", 251: "Reserved",
+ 252: "Reserved", 253: "Reserved", 254: "Reserved",
+ 255: "none",
 }
-

@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
-pydhcplib module: dhcp_packet
+libpydhcpserver module: dhcp_packet
 
 Purpose
 =======
@@ -8,9 +8,8 @@ Purpose
  
 Legal
 =====
- This file is part of pydhcplib, but it has been altered for use with
- staticDHCPd.
- pydhcplib is free software; you can redistribute it and/or modify
+ This file is part of libpydhcpserver.
+ libpydhcpserver is free software; you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
  the Free Software Foundation; either version 3 of the License, or
  (at your option) any later version.
@@ -23,6 +22,7 @@ Legal
  You should have received a copy of the GNU General Public License
  along with this program. If not, see <http://www.gnu.org/licenses/>.
  
+ (C) Neil Tallim, 2010 <flan@uguu.ca>
  (C) Mathieu Ignacio, 2008 <mignacio@april.org>
 """
 import operator
@@ -121,7 +121,7 @@ class DHCPPacket(object):
 				name = DHCP_OPTIONS_REVERSE.get(name)
 			if self._options_data.has_key(name):
 				return self._options_data[name]
-		return []
+		return None
 		
 	def _setRfcOption(self, name, value, expected_type):
 		if type(value) == expected_type:
@@ -172,6 +172,22 @@ class DHCPPacket(object):
 					return self._setRfcOption(name, value, type_rfc.rfc4174_83)
 		raise ValueError("pydhcplib.dhcp_basic_packet.setoption error : unknown option: %(name)s" % {'name': name})
 		
+	def forceOption(self, option, value):
+		name, id = None
+		if type(option) == int: #Translate int to string.
+			name = DHCP_OPTIONS_REVERSE.get(option)
+			id = option
+		else: #Translate string into int.
+			id = DHCP_OPTIONS.get(option)
+			name = option
+			
+		if name and id:
+			if self._requested_options:
+				self._requested_options += (option,)
+			self._options_data[name] = value
+		else:
+			raise ValueError("pydhcplib.dhcp_basic_packet.forceoption error : unknown option: %(option)s" % {'option': option})
+			
 	def isOption(self, name):
 		if type(name) == int: #Translate int to string.
 			self._options_data.has_key(DHCP_OPTIONS_REVERSE.get(name))
@@ -266,7 +282,7 @@ class DHCPPacket(object):
 		self.deleteOption("maximum_message_size")
 		
 	#ACK section
-	def transformToDHCPAckPacket(self): # src = request or inform packet
+	def transformToDHCPAckPacket(self):
 		self.setOption("op", [2])
 		self.setOption("hlen", [6])
 		self.setOption("dhcp_message_type", [5])

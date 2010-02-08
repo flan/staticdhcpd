@@ -357,8 +357,13 @@ class _DHCPServer(pydhcplib.dhcp_network.DHCPNetwork):
 			try:
 				result = self._sql_broker.lookupMAC(mac)
 				if result:
-					packet.transformToDHCPOfferPacket()
-					
+					rapid_commit = not packet.getOption('rapid_commit') is None
+					if rapid_commit:
+						packet.transformToDHCPAckPacket()
+						packet.forceOption('rapid_commit', [])
+					else:
+						packet.transformToDHCPOfferPacket()
+						
 					self._loadDHCPPacket(packet, result)
 					giaddr = packet.getGiaddr()
 					if not giaddr or giaddr == [0,0,0,0]:
@@ -370,7 +375,10 @@ class _DHCPServer(pydhcplib.dhcp_network.DHCPNetwork):
 					 mac, tuple(ipToList(result[0])), giaddr,
 					 result[9], result[10]
 					):
-						self._sendDHCPPacket(packet, source_address, 'OFFER', mac, result[0])
+						if rapid_commit:
+							self._sendDHCPPacket(packet, source_address, 'ACK-rapid', mac, result[0])
+						else:
+							self._sendDHCPPacket(packet, source_address, 'OFFER', mac, result[0])
 					else:
 						src.logging.writeLog('Ignoring %(mac)s per loadDHCPPacket()' % {
 						 'mac': mac,
