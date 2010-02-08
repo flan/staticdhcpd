@@ -9,11 +9,12 @@ Knowledge of how to maintain databases using the engine you've chosen is a neces
 At least one entry in this table is required before any values can be added to the maps table.
 
  * <tt>subnet</tt>
-  * This field's name may be a little misleading. While it's generally a good idea to use a value like <tt>192.168.0.0/24</tt> so you know, at a glance, what subnet its clients should be on, it is perfectly legal to set a value like <tt>my subnet</tt>.
+  * While it's generally a good idea to use a value like <tt>192.168.0.0/24</tt> so you know, at a glance, what subnet its clients should be on, it is perfectly legal to set a value like <tt>my subnet</tt>.
+  * This field is just free-form text.
  * <tt>serial</tt>
   * This field may be used to separate a subnet into partitions to do things like set different default gateways to reduce load on servers.
  * <tt>lease_time</tt>
-  * Contains the number of seconds for which clients will believe their "leases" to be valid; by default, <tt>T1</tt> is half of this, so the staticDHCPd server will be hit twice as often as you may think.
+  * Contains the number of seconds for which clients will believe their "leases" to be valid; by default, <tt>T1</tt> is half of this, so stable clients may update their information in as little as half this time.
  * <tt>gateway</tt>
   * May be an IPv4 or may be NULL to avoid setting the corresponding DHCP option.
  * <tt>subnet_mask</tt>
