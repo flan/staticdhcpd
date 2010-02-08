@@ -1,16 +1,15 @@
 # -*- encoding: utf-8 -*-
 """
-pydhcplib module: type_rfc
+libpydhcpserver module: type_rfc
 
 Purpose
 =======
- Defines the pydhcplib-specific RFC types.
+ Defines the libpydhcpserver-specific RFC types.
  
 Legal
 =====
- This file is new to pydhcplib, designed as a necessary requirement of
- staticDHCPd.
- pydhcplib is free software; you can redistribute it and/or modify
+ This file is part of libpydhcpserver.
+ libpydhcpserver is free software; you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
  the Free Software Foundation; either version 3 of the License, or
  (at your option) any later version.
@@ -24,6 +23,7 @@ Legal
  along with this program. If not, see <http://www.gnu.org/licenses/>.
  
  (C) Neil Tallim, 2010 <flan@uguu.ca>
+ (C) Mathieu Ignacio, 2008 <mignacio@april.org>
 """
 import type_ipv4
 

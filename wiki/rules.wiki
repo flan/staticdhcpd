@@ -20,6 +20,7 @@ With a few exceptions for special RFC requirements, all DHCP options configured 
  * {{{char+}}}: A series of characters, assignable using <tt>{{{packet.SetOption(x, strToList('hello'))}}}</tt>
  * {{{ipv4}}}: A single IPv4 address, assignable using <tt>{{{packet.SetOption(x, ipToList('127.0.0.1'))}}}</tt>
  * {{{ipv4+}}}: A series of IPv4 addresses, assignable using <tt>{{{packet.SetOption(x, ipsToList('127.0.0.1,192.168.1.1'))}}}</tt>
+ * {{{ipv4*}}}: A series of IPv4 addresses, assignable using <tt>{{{packet.SetOption(x, [])}}}</tt>
  * {{{16-bits}}}: A single 16-bit value, assignable using <tt>{{{packet.SetOption(x, intToList(65535))}}}</tt>
  * {{{16-bits+}}}: A series of 16-bit values, assignable using <tt>{{{packet.SetOption(x, intsToList((65535, 2, 10)))}}}</tt>
  * {{{32-bits}}}: A single 32-bit value, assignable using <tt>{{{packet.SetOption(x, longToList(1000000))}}}</tt>

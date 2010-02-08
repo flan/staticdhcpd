@@ -1,3 +1,7 @@
+= 1.5.0 (not yet released) =
+ * Refactored pydhcplib into libpydhcpserver
+ * Added support for rapid-commit (option 80)
+----
 = 1.4.1 =
  * 1.4.0's new RFC options can now be set using lists of bytes
 ----
