@@ -34,17 +34,17 @@ class hwmac(object):
 		if hw_type == str:
 			value = value.strip()
 			self._hw_string = value
-			self._StringToNumlist(value)
-			self._CheckNumList()
+			self._stringToNumlist(value)
+			self._checkNumList()
 		elif hw_type in (list, tuple):
 			self._hw_numlist = value
-			self._CheckNumList()
-			self._NumlistToString()
+			self._checkNumList()
+			self._numlistToString()
 		else:
 			raise TypeError('hwmac init : expected str or list; got %(type)s' % {'type': hw_type,})
 			
 	# Check if _hw_numlist is valid and raise error if not.
-	def _CheckNumList(self):
+	def _checkNumList(self):
 		if not len(self._hw_numlist) == 6:
 			raise ValueError("hwmac : expected six octets; received %(count)i" % {'count': len(self._hw_numlist),})
 		for part in self._hw_numlist:
@@ -54,14 +54,14 @@ class hwmac(object):
 				raise ValueError("hwmac : expected 0 <= x <= 255; received %(x)i" % {'x': part,})
 		return True
 		
-	def _StringToNumlist(self, value):
+	def _stringToNumlist(self, value):
 		self._hw_string = self._hw_string.replace("-", ":").replace(".", ":")
 		self._hw_string = self._hw_string.lower()
 		
 		self._hw_numlist = [ord(unhexlify(twochar)) for twochar in self._hw_string.split(":")]
 		
 	# Convert NumList type to String type
-	def _NumlistToString(self):
+	def _numlistToString(self):
 		self._hw_string = ":".join(map(hexlify, map(chr, self._hw_numlist)))
 		
 	# Convert String type to NumList type

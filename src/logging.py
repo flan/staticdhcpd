@@ -226,13 +226,13 @@ def sendErrorReport(summary, exception):
 A problem occurred with the DHCP server running on %(server)s.
 
 Given description:
-	%(summary)s
+\t%(summary)s
 
 Exception type:
-	%(type)s
+\t%(type)s
 
 Exception details:
-	%(details)s
+\t%(details)s
 
 Exception traceback:
 %(traceback)s
@@ -298,13 +298,13 @@ A duplicate IPv4 address assignment was attempted by the DHCP server running on
 Manual intervention may be required.
 
 Reporting MAC:
-	%(mac)s
+\t%(mac)s
 
 Affected IPv4:
-	%(ip_4)s
+\t%(ip_4)s
 
 Subnet:
-	(%(subnet)s, %(subnet_serial)i)
+\t(%(subnet)s, %(subnet_serial)i)
 """ % {
 	 'server': conf.DHCP_SERVER_IP,
 	 'mac': mac,

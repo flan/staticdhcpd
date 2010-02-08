@@ -25,10 +25,10 @@ Legal
  
  (C) Neil Tallim, 2009 <flan@uguu.ca>
 """
-###############################################################################
-#   The decision of which engine to use occurs at the bottom of this module   #
-# The chosen class is made accessible via the module-level SQL_BROKER variable#
-###############################################################################
+################################################################################
+#   The decision of which engine to use occurs at the bottom of this module    #
+# The chosen class is made accessible via the module-level SQL_BROKER variable #
+################################################################################
 import threading
 
 import conf

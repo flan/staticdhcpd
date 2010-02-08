@@ -44,7 +44,7 @@ def flushCache():
 	Flushes all cached DHCP data.
 	"""
 	for dhcp_server in _dhcp_servers:
-		dhcp_server.FlushCache()
+		dhcp_server.flushCache()
 		
 def _logInvalidValue(name, value, subnet, serial):
 	src.logging.writeLog("Invalid value for %(subnet)s:%(serial)i:%(name)s: %(value)s" % {
@@ -173,14 +173,10 @@ def rfc3046_decode(l):
 		l = l[length:]
 	return sub_options
 	
-class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
+class _DHCPServer(pydhcplib.dhcp_network.DHCPNetwork):
 	"""
 	The handler that responds to all received DHCP requests.
 	"""
-	_server_address = None #: The IP of the interface from which DHCP responses should be sent.
-	_server_port = None #: The port on which DHCP requests are expected to arrive.
-	_client_port = None #: The port on which clients expect DHCP responses to be sent.
-	
 	_sql_broker = None #: The SQL broker to be used when handling MAC lookups.
 	
 	_stats_lock = None #: A lock used to ensure synchronous access to performance statistics.
@@ -211,20 +207,16 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 		self._dhcp_assignments = {}
 		self._ignored_addresses = []
 		
-		self._server_address = server_address
-		self._server_port = server_port
-		self._client_port = client_port
-		
-		pydhcplib.dhcp_network.DhcpNetwork.__init__(
+		pydhcplib.dhcp_network.DHCPNetwork.__init__(
 		 self, server_address, server_port, client_port
 		)
 		
-		self.CreateSocket()
-		self.BindToAddress()
+		self._createSocket()
+		self._bindToAddress()
 		
 		self._sql_broker = src.sql.SQL_BROKER()
 		
-	def EvaluateRelay(self, packet):
+	def _evaluateRelay(self, packet):
 		"""
 		Determines whether the received packet belongs to a relayed request or
 		not and decides whether it should be allowed based on policy.
@@ -232,8 +224,8 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 		@type packet: L{pydhcplib.dhcp_packet.DhcpPacket}
 		@param packet: The packet to be evaluated.
 		"""
-		giaddr = packet.GetGiaddr()
-		if not giaddr == [0, 0, 0, 0]: #Relayed request.
+		giaddr = packet.getGiaddr()
+		if not giaddr == [0,0,0,0]: #Relayed request.
 			if not conf.ALLOW_DHCP_RELAYS: #Ignore it.
 				return False
 			elif conf.ALLOWED_DHCP_RELAYS and not '.'.join(map(str, giaddr)) in conf.ALLOWED_DHCP_RELAYS:
@@ -245,22 +237,22 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 			return False
 		return True
 		
-	def FlushCache(self):
+	def flushCache(self):
 		"""
 		Flushes the DHCP cache.
 		"""
 		self._sql_broker.flushCache()
 		
-	def GetNextDhcpPacket(self):
+	def getNextDHCPPacket(self):
 		"""
 		Listens for a DHCP packet and initiates processing upon receipt.
 		"""
-		if pydhcplib.dhcp_network.DhcpNetwork.GetNextDhcpPacket(self):
+		if self._getNextDHCPPacket():
 			self._stats_lock.acquire()
 			self._packets_processed += 1
 			self._stats_lock.release()
 			
-	def GetStats(self):
+	def getStats(self):
 		"""
 		Returns the performance statistics of all operations performed since the
 		last polling event, resets all counters, and updates the time left before
@@ -284,7 +276,7 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 		finally:
 			self._stats_lock.release()
 			
-	def HandleDhcpDecline(self, packet, source_address):
+	def _handleDHCPDecline(self, packet, source_address):
 		"""
 		Informs the operator of a potential IP collision on the network.
 		
@@ -300,18 +292,18 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 		@param source_address: The address (host, port) from which the request
 			was received.
 		"""
-		if not self.EvaluateRelay(packet):
+		if not self._evaluateRelay(packet):
 			return
 			
 		start_time = time.time()
-		mac = pydhcplib.type_hwmac.hwmac(packet.GetHardwareAddress()).str()
+		mac = pydhcplib.type_hwmac.hwmac(packet.getHardwareAddress()).str()
 		if not [None for (ignored_mac, timeout) in self._ignored_addresses if mac == ignored_mac]:
-			if not self.LogDHCPAccess(mac):
-				self.LogDiscardedPacket()
+			if not self._logDHCPAccess(mac):
+				self._logDiscardedPacket()
 				return
 				
-			if '.'.join(map(str, packet.GetOption("server_identifier"))) == self._server_address: #Rejected!
-				ip = '.'.join(map(str, packet.GetOption("requested_ip_address")))
+			if '.'.join(map(str, packet.getOption("server_identifier"))) == self._server_address: #Rejected!
+				ip = '.'.join(map(str, packet.getOption("requested_ip_address")))
 				result = self._sql_broker.lookupMAC(mac)
 				if result and result[0] == ip: #Known client.
 					src.logging.writeLog('DHCPDECLINE from %(mac)s for %(ip)s on (%(subnet)s, %(serial)i)' % {
@@ -327,12 +319,12 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 					 'mac': mac,
 					})
 			else:
-				self.LogDiscardedPacket()
+				self._logDiscardedPacket()
 		else:
-			self.LogDiscardedPacket()
-		self.LogTimeTaken(time.time() - start_time)
+			self._logDiscardedPacket()
+		self._logTimeTaken(time.time() - start_time)
 		
-	def HandleDhcpDiscover(self, packet, source_address):
+	def _handleDHCPDiscover(self, packet, source_address):
 		"""
 		Evaluates a DHCPDISCOVER request from a client and determines whether a
 		DHCPOFFER should be sent.
@@ -348,14 +340,14 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 		@param source_address: The address (host, port) from which the request
 			was received.
 		"""
-		if not self.EvaluateRelay(packet):
+		if not self._evaluateRelay(packet):
 			return
 			
 		start_time = time.time()
-		mac = pydhcplib.type_hwmac.hwmac(packet.GetHardwareAddress()).str()
+		mac = pydhcplib.type_hwmac.hwmac(packet.getHardwareAddress()).str()
 		if not [None for (ignored_mac, timeout) in self._ignored_addresses if mac == ignored_mac]:
-			if not self.LogDHCPAccess(mac):
-				self.LogDiscardedPacket()
+			if not self._logDHCPAccess(mac):
+				self._logDiscardedPacket()
 				return
 				
 			src.logging.writeLog('DHCPDISCOVER from %(mac)s' % {
@@ -365,10 +357,10 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 			try:
 				result = self._sql_broker.lookupMAC(mac)
 				if result:
-					packet.TransformToDhcpOfferPacket()
+					packet.transformToDHCPOfferPacket()
 					
-					self.LoadDHCPPacket(packet, result)
-					giaddr = packet.GetGiaddr()
+					self._loadDHCPPacket(packet, result)
+					giaddr = packet.getGiaddr()
 					if not giaddr or giaddr == [0,0,0,0]:
 						giaddr = None
 					else:
@@ -378,16 +370,16 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 					 mac, tuple(ipToList(result[0])), giaddr,
 					 result[9], result[10]
 					):
-						self.SendDhcpPacket(packet, source_address, 'OFFER', mac, result[0])
+						self._sendDHCPPacket(packet, source_address, 'OFFER', mac, result[0])
 					else:
 						src.logging.writeLog('Ignoring %(mac)s per loadDHCPPacket()' % {
 						 'mac': mac,
 						})
-						self.LogDiscardedPacket()
+						self._logDiscardedPacket()
 				else:
 					if conf.AUTHORITATIVE:
-						packet.TransformToDhcpNackPacket()
-						self.SendDhcpPacket(packet, source_address, 'NAK', mac, '?.?.?.?')
+						packet.transformToDHCPNackPacket()
+						self._sendDHCPPacket(packet, source_address, 'NAK', mac, '?.?.?.?')
 					else:
 						src.logging.writeLog('%(mac)s unknown; ignoring for %(time)i seconds' % {
 						 'mac': mac,
@@ -399,10 +391,10 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 			except Exception, e:
 				src.logging.sendErrorReport('Unable to respond to %(mac)s' % {'mac': mac,}, e)
 		else:
-			self.LogDiscardedPacket()
-		self.LogTimeTaken(time.time() - start_time)
+			self._logDiscardedPacket()
+		self._logTimeTaken(time.time() - start_time)
 		
-	def HandleDhcpLeaseQuery(self, packet, source_address):
+	def _handleDHCPLeaseQuery(self, packet, source_address):
 		"""
 		Evaluates a DHCPLEASEQUERY request from a relay and determines whether
 		a DHCPLEASEACTIVE or DHCPLEASEUNKNOWN should be sent.
@@ -418,22 +410,22 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 		@param source_address: The address (host, port) from which the request
 			was received.
 		"""
-		if not self.EvaluateRelay(packet):
+		if not self._evaluateRelay(packet):
 			return
 			
 		start_time = time.time()
 		mac = None
 		try:
-			mac = pydhcplib.type_hwmac.hwmac(packet.GetHardwareAddress()).str()
+			mac = pydhcplib.type_hwmac.hwmac(packet.getHardwareAddress()).str()
 		except:
 			pass
 		if not mac: #IP/client-ID-based lookup; not supported.
-			self.LogDiscardedPacket()
+			self._logDiscardedPacket()
 			return
 			
 		if not [None for (ignored_mac, timeout) in self._ignored_addresses if mac == ignored_mac]:
-			if not self.LogDHCPAccess(mac):
-				self.LogDiscardedPacket()
+			if not self._logDHCPAccess(mac):
+				self._logDiscardedPacket()
 				return
 				
 			src.logging.writeLog('DHCPLEASEQUERY for %(mac)s' % {
@@ -443,21 +435,21 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 			try:
 				result = self._sql_broker.lookupMAC(mac)
 				if result:
-					packet.TransformToDhcpLeaseActivePacket()
-					if packet.SetOption('yiaddr', ipToList(result[0])):
-						self.SendDhcpPacket(packet, source_address, 'LEASEACTIVE', mac, result[0])
+					packet.transformToDHCPLeaseActivePacket()
+					if packet.setOption('yiaddr', ipToList(result[0])):
+						self._sendDHCPPacket(packet, source_address, 'LEASEACTIVE', mac, result[0])
 					else:
 						_logInvalidValue('ip', result[0], result[-2], result[-1])
 				else:
-					packet.TransformToDhcpLeaseUnknownPacket()
-					self.SendDhcpPacket(packet, source_address, 'LEASEUNKNOWN', mac, '?.?.?.?')
+					packet.transformToDHCPLeaseUnknownPacket()
+					self._sendDHCPPacket(packet, source_address, 'LEASEUNKNOWN', mac, '?.?.?.?')
 			except Exception, e:
 				src.logging.sendErrorReport('Unable to respond for %(mac)s' % {'mac': mac,}, e)
 		else:
-			self.LogDiscardedPacket()
-		self.LogTimeTaken(time.time() - start_time)
+			self._logDiscardedPacket()
+		self._logTimeTaken(time.time() - start_time)
 		
-	def HandleDhcpRequest(self, packet, source_address):
+	def _handleDHCPRequest(self, packet, source_address):
 		"""
 		Evaluates a DHCPREQUEST request from a client and determines whether a
 		DHCPACK should be sent.
@@ -478,20 +470,20 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 		@param source_address: The address (host, port) from which the request
 			was received.
 		"""
-		if not self.EvaluateRelay(packet):
+		if not self._evaluateRelay(packet):
 			return
 			
 		start_time = time.time()
-		mac = pydhcplib.type_hwmac.hwmac(packet.GetHardwareAddress()).str()
+		mac = pydhcplib.type_hwmac.hwmac(packet.getHardwareAddress()).str()
 		if not [None for (ignored_mac, timeout) in self._ignored_addresses if mac == ignored_mac]:
-			if not self.LogDHCPAccess(mac):
-				self.LogDiscardedPacket()
+			if not self._logDHCPAccess(mac):
+				self._logDiscardedPacket()
 				return
 				
-			ip = packet.GetOption("requested_ip_address")
-			sid = packet.GetOption("server_identifier")
-			ciaddr = packet.GetOption("ciaddr")
-			giaddr = packet.GetGiaddr()
+			ip = packet.getOption("requested_ip_address")
+			sid = packet.getOption("server_identifier")
+			ciaddr = packet.getOption("ciaddr")
+			giaddr = packet.getGiaddr()
 			s_ip = '.'.join(map(str, ip))
 			s_sid = '.'.join(map(str, sid))
 			s_ciaddr = '.'.join(map(str, ciaddr))
@@ -515,26 +507,26 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 					try:
 						result = self._sql_broker.lookupMAC(mac)
 						if result and (not ip or result[0] == s_ip):
-							packet.TransformToDhcpAckPacket()
-							self.LoadDHCPPacket(packet, result)
+							packet.transformToDHCPAckPacket()
+							self._loadDHCPPacket(packet, result)
 							if conf.loadDHCPPacket(
 							 packet,
 							 mac, tuple(ipToList(result[0])), giaddr,
 							 result[9], result[10]
 							):
-								self.SendDhcpPacket(packet, source_address, 'ACK', mac, s_ip)
+								self._sendDHCPPacket(packet, source_address, 'ACK', mac, s_ip)
 							else:
 								src.logging.writeLog('Ignoring %(mac)s per loadDHCPPacket()' % {
 								 'mac': mac,
 								})
-								self.LogDiscardedPacket()
+								self._logDiscardedPacket()
 						else:
-							packet.TransformToDhcpNackPacket()
-							self.SendDhcpPacket(packet, source_address, 'NAK', mac, 'NO-MATCH')
+							packet.transformToDHCPNackPacket()
+							self._sendDHCPPacket(packet, source_address, 'NAK', mac, 'NO-MATCH')
 					except Exception, e:
 						src.logging.sendErrorReport('Unable to respond to %(mac)s' % {'mac': mac,}, e)
 				else:
-					self.LogDiscardedPacket()
+					self._logDiscardedPacket()
 			elif not sid and not ciaddr and ip: #INIT-REBOOT
 				src.logging.writeLog('DHCPREQUEST:INIT-REBOOT from %(mac)s' % {
 				 'mac': mac,
@@ -542,28 +534,28 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 				try:
 					result = self._sql_broker.lookupMAC(mac)
 					if result and result[0] == s_ip:
-						packet.TransformToDhcpAckPacket()
-						self.LoadDHCPPacket(packet, result)
+						packet.transformToDHCPAckPacket()
+						self._loadDHCPPacket(packet, result)
 						if conf.loadDHCPPacket(
 						 packet,
 						 mac, tuple(ip), giaddr,
 						 result[9], result[10]
 						):
-							self.SendDhcpPacket(packet, source_address, 'ACK', mac, s_ip)
+							self._sendDhcpPacket(packet, source_address, 'ACK', mac, s_ip)
 						else:
 							src.logging.writeLog('Ignoring %(mac)s per loadDHCPPacket()' % {
 							 'mac': mac,
 							})
-							self.LogDiscardedPacket()
+							self._logDiscardedPacket()
 					else:
-						packet.TransformToDhcpNackPacket()
-						self.SendDhcpPacket(packet, source_address, 'NAK', mac, s_ip)
+						packet.transformToDHCPNackPacket()
+						self._sendDHCPPacket(packet, source_address, 'NAK', mac, s_ip)
 				except Exception, e:
 					src.logging.sendErrorReport('Unable to respond to %(mac)s' % {'mac': mac,}, e)
 			elif not sid and ciaddr and not ip: #RENEWING or REBINDING
 				if conf.NAK_RENEWALS:
-					packet.TransformToDhcpNackPacket()
-					self.SendDhcpPacket(packet, source_address, 'NAK', mac, 'NAK_RENEWALS')
+					packet.transformToDHCPNackPacket()
+					self._sendDHCPPacket(packet, source_address, 'NAK', mac, 'NAK_RENEWALS')
 				else:
 					if source_address[0] not in ('255.255.255.255', '0.0.0.0', ''):
 						src.logging.writeLog('DHCPREQUEST:RENEW from %(mac)s' % {
@@ -577,23 +569,23 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 					try:
 						result = self._sql_broker.lookupMAC(mac)
 						if result and result[0] == s_ciaddr:
-							packet.TransformToDhcpAckPacket()
-							packet.SetOption('yiaddr', ciaddr)
-							self.LoadDHCPPacket(packet, result)
+							packet.transformToDHCPAckPacket()
+							packet.setOption('yiaddr', ciaddr)
+							self._loadDHCPPacket(packet, result)
 							if conf.loadDHCPPacket(
 							 packet,
 							 mac, tuple(ciaddr), giaddr,
 							 result[9], result[10]
 							):
-								self.SendDhcpPacket(packet, (s_ciaddr, 0), 'ACK', mac, s_ciaddr)
+								self._sendDHCPPacket(packet, (s_ciaddr, 0), 'ACK', mac, s_ciaddr)
 							else:
 								src.logging.writeLog('Ignoring %(mac)s per loadDHCPPacket()' % {
 								 'mac': mac,
 								})
-								self.LogDiscardedPacket()
+								self._logDiscardedPacket()
 						else:
-							packet.TransformToDhcpNackPacket()
-							self.SendDhcpPacket(packet, (s_ciaddr, 0), 'NAK', mac, s_ciaddr)
+							packet.transformToDHCPNackPacket()
+							self._sendDHCPPacket(packet, (s_ciaddr, 0), 'NAK', mac, s_ciaddr)
 					except Exception, e:
 						src.logging.sendErrorReport('Unable to respond to %(mac)s' % {'mac': mac,}, e)
 			else:
@@ -603,12 +595,12 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 				 'ip': str(ip),
 				 'mac': mac,
 				})
-				self.LogDiscardedPacket()
+				self._logDiscardedPacket()
 		else:
-			self.LogDiscardedPacket()
-		self.LogTimeTaken(time.time() - start_time)
+			self._logDiscardedPacket()
+		self._logTimeTaken(time.time() - start_time)
 		
-	def HandleDhcpInform(self, packet, source_address):
+	def _handleDHCPInform(self, packet, source_address):
 		"""
 		Evaluates a DHCPINFORM request from a client and determines whether a
 		DHCPACK should be sent.
@@ -625,18 +617,18 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 		@param source_address: The address (host, port) from which the request
 			was received.
 		"""
-		if not self.EvaluateRelay(packet):
+		if not self._evaluateRelay(packet):
 			return
 			
 		start_time = time.time()
-		mac = pydhcplib.type_hwmac.hwmac(packet.GetHardwareAddress()).str()
+		mac = pydhcplib.type_hwmac.hwmac(packet.getHardwareAddress()).str()
 		if not [None for (ignored_mac, timeout) in self._ignored_addresses if mac == ignored_mac]:
-			if not self.LogDHCPAccess(mac):
-				self.LogDiscardedPacket()
+			if not self._logDHCPAccess(mac):
+				self._logDiscardedPacket()
 				return
 				
-			ciaddr = packet.GetOption("ciaddr")
-			giaddr = packet.GetGiaddr()
+			ciaddr = packet.getOption("ciaddr")
+			giaddr = packet.getGiaddr()
 			s_ciaddr = '.'.join(map(str, ciaddr))
 			if not ciaddr or ciaddr == [0,0,0,0]:
 				ciaddr = None
@@ -657,25 +649,25 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 				self._stats_lock.acquire()
 				self._ignored_addresses.append([mac, conf.UNAUTHORIZED_CLIENT_TIMEOUT])
 				self._stats_lock.release()
-				self.LogDiscardedPacket()
+				self._logDiscardedPacket()
 				return
 				
 			try:
 				result = self._sql_broker.lookupMAC(mac)
 				if result:
-					packet.TransformToDhcpAckPacket()
-					self.LoadDHCPPacket(packet, result, True)
+					packet.transformToDHCPAckPacket()
+					self._loadDHCPPacket(packet, result, True)
 					if conf.loadDHCPPacket(
 					 packet,
 					 mac, tuple(ipToList(result[0])), giaddr,
 					 result[9], result[10]
 					):
-						self.SendDhcpPacket(packet, source_address, 'ACK', mac, s_ciaddr)
+						self._sendDHCPPacket(packet, source_address, 'ACK', mac, s_ciaddr)
 					else:
 						src.logging.writeLog('Ignoring %(mac)s per loadDHCPPacket()' % {
 						 'mac': mac,
 						})
-						self.LogDiscardedPacket()
+						self._logDiscardedPacket()
 				else:
 					src.logging.writeLog('%(mac)s unknown; ignoring for %(time)i seconds' % {
 					 'mac': mac,
@@ -684,14 +676,14 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 					self._stats_lock.acquire()
 					self._ignored_addresses.append([mac, conf.UNAUTHORIZED_CLIENT_TIMEOUT])
 					self._stats_lock.release()
-					self.LogDiscardedPacket()
+					self._logDiscardedPacket()
 			except Exception, e:
 				src.logging.sendErrorReport('Unable to respond to %(mac)s' % {'mac': mac,}, e)
 		else:
-			self.LogDiscardedPacket()
-		self.LogTimeTaken(time.time() - start_time)
+			self._logDiscardedPacket()
+		self._logTimeTaken(time.time() - start_time)
 		
-	def HandleDhcpRelease(self, packet, source_address):
+	def _handleDHCPRelease(self, packet, source_address):
 		"""
 		Informs the DHCP operator that a client has terminated its "lease".
 		
@@ -707,18 +699,18 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 		@param source_address: The address (host, port) from which the request
 			was received.
 		"""
-		if not self.EvaluateRelay(packet):
+		if not self._evaluateRelay(packet):
 			return
 			
 		start_time = time.time()
-		mac = pydhcplib.type_hwmac.hwmac(packet.GetHardwareAddress()).str()
+		mac = pydhcplib.type_hwmac.hwmac(packet.getHardwareAddress()).str()
 		if not [None for (ignored_mac, timeout) in self._ignored_addresses if mac == ignored_mac]:
-			if not self.LogDHCPAccess(mac):
-				self.LogDiscardedPacket()
+			if not self._logDHCPAccess(mac):
+				self._logDiscardedPacket()
 				return
 				
-			if '.'.join(map(str, packet.GetOption("server_identifier"))) == self._server_address: #Released!
-				ip = '.'.join(map(str, packet.GetOption("ciaddr")))
+			if '.'.join(map(str, packet.getOption("server_identifier"))) == self._server_address: #Released!
+				ip = '.'.join(map(str, packet.getOption("ciaddr")))
 				result = self._sql_broker.lookupMAC(mac)
 				if result and result[0] == ip: #Known client.
 					src.logging.writeLog('DHCPRELEASE from %(mac)s for %(ip)s' % {
@@ -731,12 +723,12 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 					 'mac': mac,
 					})
 			else:
-				self.LogDiscardedPacket()
+				self._logDiscardedPacket()
 		else:
-			self.LogDiscardedPacket()
-		self.LogTimeTaken(time.time() - start_time)
+			self._logDiscardedPacket()
+		self._logTimeTaken(time.time() - start_time)
 		
-	def LoadDHCPPacket(self, packet, result, inform=False):
+	def _loadDHCPPacket(self, packet, result, inform=False):
 		"""
 		Sets DHCP option fields based on values returned from the database.
 		
@@ -754,39 +746,39 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 		
 		#Core parameters.
 		if not inform:
-			if not packet.SetOption('yiaddr', ipToList(ip)):
+			if not packet.setOption('yiaddr', ipToList(ip)):
 				_logInvalidValue('ip', ip, subnet, serial)
-			if not packet.SetOption('ip_address_lease_time', longToList(lease_time)):
+			if not packet.setOption('ip_address_lease_time', longToList(lease_time)):
 				_logInvalidValue('lease_time', lease_time, subnet, serial)
 				
 		#Default gateway, subnet mask, and broadcast address.
 		if gateway:
-			if not packet.SetOption('router', ipToList(gateway)):
+			if not packet.setOption('router', ipToList(gateway)):
 				_logInvalidValue('gateway', gateway, subnet, serial)
 		if subnet_mask:
-			if not packet.SetOption('subnet_mask', ipToList(subnet_mask)):
+			if not packet.setOption('subnet_mask', ipToList(subnet_mask)):
 				_logInvalidValue('subnet_mask', subnet_mask, subnet, serial)
 		if broadcast_address:
-			if not packet.SetOption('broadcast_address', ipToList(broadcast_address)):
+			if not packet.setOption('broadcast_address', ipToList(broadcast_address)):
 				_logInvalidValue('broadcast_address', broadcast_address, subnet, serial)
 				
 		#Domain details.
 		if hostname:
-			if not packet.SetOption('hostname', strToList(hostname)):
+			if not packet.setOption('hostname', strToList(hostname)):
 				_logInvalidValue('hostname', hostname, subnet, serial)
 		if domain_name:
-			if not packet.SetOption('domain_name', strToList(domain_name)):
+			if not packet.setOption('domain_name', strToList(domain_name)):
 				_logInvalidValue('domain_name', domain_name, subnet, serial)
 		if domain_name_servers:
-			if not packet.SetOption('domain_name_servers', ipsToList(domain_name_servers)):
+			if not packet.setOption('domain_name_servers', ipsToList(domain_name_servers)):
 				_logInvalidValue('domain_name_servers', domain_name_servers, subnet, serial)
 				
 		#NTP servers.
 		if ntp_servers:
-			if not packet.SetOption('ntp_servers', ipsToList(ntp_servers)):
+			if not packet.setOption('ntp_servers', ipsToList(ntp_servers)):
 				_logInvalidValue('ntp_servers', ntp_servers, subnet, serial)
 				
-	def LogDHCPAccess(self, mac):
+	def _logDHCPAccess(self, mac):
 		"""
 		Increments the number of times the given MAC address has accessed this
 		server. If the value exceeds the policy threshold, the MAC is ignored as
@@ -817,7 +809,7 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 				self._stats_lock.release()
 		return True
 		
-	def LogDiscardedPacket(self):
+	def _logDiscardedPacket(self):
 		"""
 		Increments the number of packets discarded.
 		"""
@@ -825,7 +817,7 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 		self._packets_discarded += 1
 		self._stats_lock.release()
 		
-	def LogTimeTaken(self, time_taken):
+	def _logTimeTaken(self, time_taken):
 		"""
 		Records the time taken to process a packet.
 		
@@ -836,7 +828,7 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 		self._time_taken += time_taken
 		self._stats_lock.release()
 		
-	def SendDhcpPacket(self, packet, address, response_type, mac, client_ip):
+	def _sendDhcpPacket(self, packet, address, response_type, mac, client_ip):
 		"""
 		Sends the given packet to the right destination based on its properties.
 		
@@ -865,19 +857,19 @@ class _DHCPServer(pydhcplib.dhcp_network.DhcpNetwork):
 		"""
 		ip = port = None
 		if address[0] not in ('255.255.255.255', '0.0.0.0', ''): #Unicast.
-			giaddr = packet.GetGiaddr()
+			giaddr = packet.getGiaddr()
 			if giaddr and not giaddr == [0,0,0,0]: #Relayed request.
 				ip = '.'.join(map(str, giaddr))
-				port = conf.DHCP_SERVER_PORT
+				port = self._server_port
 			else: #Request directly from client, routed or otherwise.
 				ip = address[0]
-				port = conf.DHCP_CLIENT_PORT
+				port = self._client_port
 		else: #Broadcast.
 			ip = '255.255.255.255'
 			port = self.emit_port
 			
-		packet.SetOption('server_identifier', ipToList(self._server_address))
-		bytes = self.SendDhcpPacketTo(packet, ip, port)
+		packet.setOption('server_identifier', ipToList(self._server_address))
+		bytes = self._sendDHCPPacketTo(packet, ip, port)
 		src.logging.writeLog('DHCP%(type)s sent to %(mac)s for %(client)s via %(ip)s:%(port)i [%(bytes)i bytes]' % {
 			 'type': response_type,
 			 'mac': mac,
@@ -925,7 +917,7 @@ class DHCPService(threading.Thread):
 		src.logging.writeLog('Running DHCP server')
 		while True:
 			try:
-				self._dhcp_server.GetNextDhcpPacket()
+				self._dhcp_server.getNextDHCPPacket()
 			except select.error:
 				src.logging.writeLog('Suppressed non-fatal select() error in DHCP module')
 			except Exception, e:
@@ -936,6 +928,6 @@ class DHCPService(threading.Thread):
 		Updates the performance statistics in the in-memory stats-log and
 		implicitly updates the ignored MACs values.
 		"""
-		(processed, discarded, time_taken, ignored_macs) = self._dhcp_server.GetStats()
+		(processed, discarded, time_taken, ignored_macs) = self._dhcp_server.getStats()
 		src.logging.writePollRecord(processed, discarded, time_taken, ignored_macs)
 		

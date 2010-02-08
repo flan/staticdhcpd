@@ -26,11 +26,11 @@ Legal
  (C) Mathieu Ignacio, 2008 <mignacio@april.org>
  (C) Neil Tallim, 2009 <flan@uguu.ca>
 """
-MagicCookie = [99,130,83,99]
-PyDhcpLibVersion = '0.9.1-puukusoft'
+MAGIC_COOKIE = [99,130,83,99]
+VERSION = '0.9.9'
 
 # DhcpBaseOptions = '{fieldname':[location,length]}
-DhcpFields = {
+DHCP_FIELDS = {
  'op': (0, 1),
  'htype': (1, 1),
  'hlen': (2, 1),
@@ -46,7 +46,7 @@ DhcpFields = {
  'sname': (44, 64),
  'file': (108, 128),
 }
-DhcpFieldsName = {
+DHCP_FIELDS_NAMES = {
  'op': {'0': 'ERROR_UNDEF', '1': 'BOOTREQUEST', '2': 'BOOTREPLY',},
  'dhcp_message_type': {
   '0': 'ERROR_UNDEF',
@@ -58,7 +58,7 @@ DhcpFieldsName = {
   '12': 'DHCP_LEASEUNKNOWN', '13': 'DHCP_LEASEACTIVE',
  }
 }
-DhcpNames = {
+DHCP_NAMES = {
  'ERROR_UNDEF': 0,
  'BOOTREQUEST': 1, 'BOOTREPLY': 2,
  'DHCP_DISCOVER': 1, 'DHCP_OFFER': 2,
@@ -68,7 +68,7 @@ DhcpNames = {
  'DHCP_LEASEQUERY': 10, 'DHCP_LEASEUNASSIGNED': 11,
  'DHCP_LEASEUNKNOWN': 12, 'DHCP_LEASEACTIVE': 13,
 }
-DhcpFieldsTypes = {
+DHCP_FIELDS_TYPES = {
  'op': "int",
  'htype': "int",
  'hlen': "int",
@@ -84,7 +84,7 @@ DhcpFieldsTypes = {
  'sname': "str",
  'file': "str",
 }
-DhcpFieldsSpecs = {
+DHCP_FIELDS_SPECS = {
  "ipv4": (4, 0, 1), "ipv4+": (0, 4, 4),
  "byte": (1, 0, 1), "byte+": (0, 1, 1),
  "char": (1, 0, 1), "char+": (0, 1, 1),
@@ -95,13 +95,13 @@ DhcpFieldsSpecs = {
  "identifier": (0, 2, 1),
  "none": (0, 0, 1),
 }
-# DhcpFieldsSpecs : {'option_code': (fixed_length,minimum_length,multiple)}
+# DHCP_FIELDS_SPECS : {'option_code': (fixed_length,minimum_length,multiple)}
 # if fixed_length == 0 : minimum_length and multiple apply
 # else : forget minimum_length and multiple 
 # multiple : length MUST be a multiple of 'multiple'
 
-# DhcpOptions = {'option_name': option_code,}
-DhcpOptions = {
+# DHCP_OPTIONS = {'option_name': option_code,}
+DHCP_OPTIONS = {
  'pad': 0,
  # Vendor Extension
  'subnet_mask': 1,
@@ -226,12 +226,12 @@ DhcpOptions = {
  'end': 255
 }
 	
-# DhcpOptionsList : reverse of DhcpOptions
-DhcpOptionsList = dict([(i, value) for (value, i) in DhcpOptions.iteritems() if not type(value) == int])
+# DHCP_OPTIONS_REVERSE : reverse of DHCP_OPTIONS
+DHCP_OPTIONS_REVERSE = dict([(v, k) for (k, v) in DHCP_OPTIONS.iteritems()])
 
 # See http://www.iana.org/assignments/bootp-dhcp-parameters
 # FIXME : verify all ipv4+ options, some are 32 bits...
-DhcpOptionsTypes = {
+DHCP_OPTIONS_TYPES = {
  0: "none",
  1: "ipv4",
  2: "ipv4",
