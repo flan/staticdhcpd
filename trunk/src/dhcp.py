@@ -206,7 +206,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
 		self._dhcp_assignments = {}
 		self._ignored_addresses = []
 		
-		dhcp_network.DHCPNetwork.__init__(
+		libpydhcpserver.dhcp_network.DHCPNetwork.__init__(
 		 self, server_address, server_port, client_port
 		)
 		
