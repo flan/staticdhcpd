@@ -169,6 +169,14 @@ class DHCPPacket(object):
 					return self._setRfcOption(name, value, rfc3397_119)
 				elif dhcp_field_type == 'RFC4174_83':
 					return self._setRfcOption(name, value, rfc4174_83)
+				elif dhcp_field_type == 'RFC4280_88':
+					return self._setRfcOption(name, value, rfc4280_88)
+				elif dhcp_field_type == 'RFC5223_137':
+					return self._setRfcOption(name, value, rfc5223_137)
+				elif dhcp_field_type == 'RFC5678_139':
+					return self._setRfcOption(name, value, rfc5678_139)
+				elif dhcp_field_type == 'RFC5678_140':
+					return self._setRfcOption(name, value, rfc5678_140)
 		raise ValueError("pydhcplib.dhcp_basic_packet.setoption error : unknown option: %(name)s" % {'name': name})
 		
 	def forceOption(self, option, value):
@@ -266,78 +274,63 @@ class DHCPPacket(object):
 	def isDHCPLeaseActivePacket(self):
 		return self.isDHCPSomethingPacket([13])
 		
-			
-	#OFFER section
-	def transformToDHCPOfferPacket(self):
+		
+	def _transformBase(self):
 		self.setOption("op", [2])
 		self.setOption("hlen", [6])
-		self.setOption("dhcp_message_type", [2])
 		
-		self.deleteOption("secs")
-		self.deleteOption("ciaddr")
-		self.deleteOption("request_ip_address")
-		self.deleteOption("parameter_request_list")
 		self.deleteOption("client_identifier")
 		self.deleteOption("maximum_message_size")
+		self.deleteOption("parameter_request_list")
+		self.deleteOption("request_ip_address")
+		self.deleteOption("secs")
+		self.deleteOption("subnet_selection")
+		
+	#OFFER section
+	def transformToDHCPOfferPacket(self):
+		self._transformBase()
+		self.setOption("dhcp_message_type", [2])
+		
+		self.deleteOption("ciaddr")
 		
 	#ACK section
 	def transformToDHCPAckPacket(self):
-		self.setOption("op", [2])
-		self.setOption("hlen", [6])
+		self._transformBase()
 		self.setOption("dhcp_message_type", [5])
-		
-		self.deleteOption("secs")
-		self.deleteOption("request_ip_address")
-		self.deleteOption("parameter_request_list")
-		self.deleteOption("client_identifier")
-		self.deleteOption("maximum_message_size")
 		
 	#NAK section
 	def transformToDHCPNackPacket(self):
-		self.setOption("op", [2])
-		self.setOption("hlen", [6])
+		self._transformBase()
 		self.setOption("dhcp_message_type", [6])
 		
-		self.deleteOption("secs")
 		self.deleteOption("ciaddr")
-		self.deleteOption("yiaddr")
 		self.deleteOption("siaddr")
-		self.deleteOption("sname")
+		self.deleteOption("yiaddr")
+		
 		self.deleteOption("file")
-		self.deleteOption("request_ip_address")
+		self.deleteOption("sname")
+		
 		self.deleteOption("ip_address_lease_time_option")
-		self.deleteOption("parameter_request_list")
-		self.deleteOption("client_identifier")
-		self.deleteOption("maximum_message_size")
 		
 	#LEASE section
 	def transformToDHCPLeaseActivePacket(self):
-		self.setOption("op", [2])
-		self.setOption("hlen", [6])
+		self._transformBase()
 		self.setOption("dhcp_message_type", [13])
 		
-		self.deleteOption("secs")
 		self.deleteOption("ciaddr")
-		self.deleteOption("request_ip_address")
-		self.deleteOption("parameter_request_list")
-		self.deleteOption("client_identifier")
-		self.deleteOption("maximum_message_size")
+		
 		self.deleteOption("file")
 		self.deleteOption("sname")
 		
 	def transformToDHCPLeaseUnknownPacket(self):
-		self.setOption("op", [2])
-		self.setOption("hlen", [6])
+		self._transformBase()
 		self.setOption("dhcp_message_type", [12])
 		
-		self.deleteOption("secs")
 		self.deleteOption("ciaddr")
-		self.deleteOption("request_ip_address")
-		self.deleteOption("parameter_request_list")
-		self.deleteOption("client_identifier")
-		self.deleteOption("maximum_message_size")
+		
 		self.deleteOption("file")
 		self.deleteOption("sname")
+		
 		
 	#ID section
 	def getClientIdentifier(self):
