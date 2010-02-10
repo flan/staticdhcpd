@@ -491,9 +491,9 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
 			sid = packet.getOption("server_identifier")
 			ciaddr = packet.getOption("ciaddr")
 			giaddr = packet.getGiaddr()
-			s_ip = '.'.join(map(str, ip))
-			s_sid = '.'.join(map(str, sid))
-			s_ciaddr = '.'.join(map(str, ciaddr))
+			s_ip = ip and '.'.join(map(str, ip))
+			s_sid = sid and '.'.join(map(str, sid))
+			s_ciaddr = ciaddr and '.'.join(map(str, ciaddr))
 			
 			if not ip or ip == [0,0,0,0]:
 				ip = None
