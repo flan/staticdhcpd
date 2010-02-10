@@ -246,7 +246,7 @@ DHCP_OPTIONS = {
  'fqdn_mos': 140,
  #Hole.
  'pxelinux_magic': 208,
- 'configuration_file': 209
+ 'configuration_file': 209,
  'path_prefix': 210,
  'reboot_time': 211,
  #Hole.
