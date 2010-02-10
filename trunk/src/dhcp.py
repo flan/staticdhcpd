@@ -548,7 +548,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
 						 mac, tuple(ip), giaddr,
 						 result[9], result[10]
 						):
-							self._sendDhcpPacket(packet, source_address, 'ACK', mac, s_ip)
+							self._sendDHCPPacket(packet, source_address, 'ACK', mac, s_ip)
 						else:
 							src.logging.writeLog('Ignoring %(mac)s per loadDHCPPacket()' % {
 							 'mac': mac,
