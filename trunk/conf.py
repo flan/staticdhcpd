@@ -136,8 +136,10 @@ def init():
 	from src.dhcp import strToList
 	from src.dhcp import rfc3046_decode
 	from src.libpydhcpserver.type_rfc import rfc2610_78, rfc2610_79
-	from src.libpydhcpserver.type_rfc import rfc3361_120, rfc3397_119
-	from src.libpydhcpserver.type_rfc import rfc4174_83, rfc4280_88
+	from src.libpydhcpserver.type_rfc import rfc3361_120
+	from src.libpydhcpserver.type_rfc import rfc3397_119
+	from src.libpydhcpserver.type_rfc import rfc4174_83
+	from src.libpydhcpserver.type_rfc import rfc4280_88
 	from src.libpydhcpserver.type_rfc import rfc5223_137
 	from src.libpydhcpserver.type_rfc import rfc5678_139, rfc5678_140
 	#DO NOT ALTER LINES ABOVE THIS POINT.
