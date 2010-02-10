@@ -87,7 +87,7 @@ class DHCPPacket(object):
 		self._packet_data = self._packet_data[:240] # base packet length with magic cookie
 		
 	def isDHCPPacket(self):
-		return self.packet_data[236:240] == MAGIC_COOKIE
+		return self._packet_data[236:240] == MAGIC_COOKIE
 		
 	def checkType(self, variable):
 		# Check if variable is a list of ints between 0 and 255
