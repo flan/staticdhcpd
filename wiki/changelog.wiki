@@ -1,7 +1,5 @@
 = 1.5.0 (not yet released) =
  * Refactored pydhcplib into libpydhcpserver
-  * The data must be crafted by hand, due to the complexity of the option.
-  * If there is sufficient demand, a special class may be created.
  * Added support for [http://www.rfc-archive.org/getrfc.php?rfc=3442 RFC3442] (option 121)
   * The data to be sent must be crafted by hand.
   * If there is any demand, a special class will be created.
@@ -16,6 +14,8 @@
  * Added support for [http://www.rfc-archive.org/getrfc.php?rfc=4280 RFC4280] (options 88 and 89)
  * Added support for [http://www.rfc-archive.org/getrfc.php?rfc=4578 RFC4578] (options 93, 94, and 97)
  * Added support for [http://www.rfc-archive.org/getrfc.php?rfc=4776 RFC4776] (option 99)
+  * The data must be crafted by hand, due to the complexity of the option.
+  * If there is sufficient demand, a special class may be created.
  * Added support for [http://www.rfc-archive.org/getrfc.php?rfc=4833 RFC4833] (options 100 and 101)
  * Added support for [http://www.rfc-archive.org/getrfc.php?rfc=5071 RFC5071] (options 208-211)
  * Added support for [http://www.rfc-archive.org/getrfc.php?rfc=5192 RFC5192] (option 136)
