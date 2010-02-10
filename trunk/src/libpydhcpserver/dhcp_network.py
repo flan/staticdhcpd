@@ -110,7 +110,7 @@ class DHCPNetwork(object):
 			return None
 			
 	def _sendDHCPPacketTo(self, packet, ip, port):
-		return self._response_socket.sendto(packet.EncodePacket(), (ip, port))
+		return self._response_socket.sendto(packet.encodePacket(), (ip, port))
 		
 	# Server-side Handle methods
 	def _handleDHCPDecline(self, packet, source_address):
