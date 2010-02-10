@@ -139,7 +139,7 @@ class _WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
 			self.wfile.write('<small>Summary generated %(time)s</small><br/>' % {
 			 'time': time.asctime(),
 			})
-			self.wfile.write('<small>PID: %(pid)i | Server: %(server)s:%(port)i | v%(core_version)s | <a href="http://uguu.ca/" onclick="window.open(this.href); return false;">uguu.ca</a></small><br/>' % {
+			self.wfile.write('<small>%(server)s:%(port)i | PID: %(pid)i | v%(core_version)s | <a href="http://uguu.ca/" onclick="window.open(this.href); return false;">uguu.ca</a></small><br/>' % {
 			 'pid': os.getpid(),
 			 'server': conf.DHCP_SERVER_IP,
 			 'port': conf.DHCP_SERVER_PORT,
