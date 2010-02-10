@@ -873,7 +873,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
 				port = self._client_port
 		else: #Broadcast.
 			ip = '255.255.255.255'
-			port = self.emit_port
+			port = self._client_port
 			
 		packet.setOption('server_identifier', ipToList(self._server_address))
 		bytes = self._sendDHCPPacketTo(packet, ip, port)
