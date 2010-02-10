@@ -31,7 +31,7 @@ import threading
 
 import dhcp_packet
 
-class DHCPNetwork:
+class DHCPNetwork(object):
 	_server_address = None
 	_server_port = None
 	_client_port = None

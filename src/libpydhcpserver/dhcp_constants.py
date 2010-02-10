@@ -25,8 +25,8 @@ Legal
  (C) Neil Tallim, 2010 <flan@uguu.ca>
  (C) Mathieu Ignacio, 2008 <mignacio@april.org>
 """
-MAGIC_COOKIE = [99,130,83,99]
 VERSION = '0.9.9'
+MAGIC_COOKIE = [99,130,83,99]
 
 # DhcpBaseOptions = {'fieldname': (location, length),}
 DHCP_FIELDS = {
@@ -52,7 +52,8 @@ DHCP_FIELDS_NAMES = {
   '1': 'DHCP_DISCOVER', '2': 'DHCP_OFFER',
   '3': 'DHCP_REQUEST', '4':'DHCP_DECLINE',
   '5': 'DHCP_ACK', '6': 'DHCP_NACK',
-  '7': 'DHCP_RELEASE', '8': 'DHCP_INFORM',
+  '7': 'DHCP_RELEASE',
+  '8': 'DHCP_INFORM',
   '10': 'DHCP_LEASEQUERY', '11': 'DHCP_LEASEUNASSIGNED',
   '12': 'DHCP_LEASEUNKNOWN', '13': 'DHCP_LEASEACTIVE',
  }
@@ -63,7 +64,8 @@ DHCP_NAMES = {
  'DHCP_DISCOVER': 1, 'DHCP_OFFER': 2,
  'DHCP_REQUEST': 3, 'DHCP_DECLINE': 4,
  'DHCP_ACK': 5, 'DHCP_NACK': 6,
- 'DHCP_RELEASE': 7, 'DHCP_INFORM': 8,
+ 'DHCP_RELEASE': 7,
+ 'DHCP_INFORM': 8,
  'DHCP_LEASEQUERY': 10, 'DHCP_LEASEUNASSIGNED': 11,
  'DHCP_LEASEUNKNOWN': 12, 'DHCP_LEASEACTIVE': 13,
 }

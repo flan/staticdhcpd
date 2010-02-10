@@ -34,7 +34,7 @@ from dhcp_constants import *
 from type_hwmac import hwmac
 from type_ipv4 import ipv4
 from type_strlist import strlist
-import type_rfc
+from type_rfc import *
 
 class DHCPPacket(object):
 	_packet_data = None
@@ -161,15 +161,15 @@ class DHCPPacket(object):
 			else:
 				#Process special RFC options.
 				if dhcp_field_type == 'RFC2610_78':
-					return self._setRfcOption(name, value, type_rfc.rfc2610_78)
+					return self._setRfcOption(name, value, rfc2610_78)
 				elif dhcp_field_type == 'RFC2610_79':
-					return self._setRfcOption(name, value, type_rfc.rfc2610_79)
+					return self._setRfcOption(name, value, rfc2610_79)
 				elif dhcp_field_type == 'RFC3361_120':
-					return self._setRfcOption(name, value, type_rfc.rfc3361_120)
+					return self._setRfcOption(name, value, rfc3361_120)
 				elif dhcp_field_type == 'RFC3397_119':
-					return self._setRfcOption(name, value, type_rfc.rfc3397_119)
+					return self._setRfcOption(name, value, rfc3397_119)
 				elif dhcp_field_type == 'RFC4174_83':
-					return self._setRfcOption(name, value, type_rfc.rfc4174_83)
+					return self._setRfcOption(name, value, rfc4174_83)
 		raise ValueError("pydhcplib.dhcp_basic_packet.setoption error : unknown option: %(name)s" % {'name': name})
 		
 	def forceOption(self, option, value):
