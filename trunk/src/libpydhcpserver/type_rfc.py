@@ -56,7 +56,13 @@ def _rfc1035Parse(domain_name):
 		bytes += [len(fragment)] + [ord(c) for c in fragment]
 	return bytes + [0]
 	
-	
+class _rfc1035_plus(_rfc):
+	def __init__(self, data):
+		self._value = []
+		for token in [tok for tok in [t.strip() for t in data.split(',')] if tok]:
+			self._value += _rfc1035Parse(token)
+			
+			
 class rfc2610_78(_rfc):
 	def __init__(self, mandatory, data):
 		self._value = [int(mandatory)]
@@ -82,7 +88,7 @@ class rfc3361_120(_rfc):
 				self._value += _rfc1035Parse(token)
 				dns_mode = True
 				
-		if not ip_4_mode ^ dns_mode:
+		if ip_4_mode == dns_mode:
 			raise ValueError("RFC3361 argument '%(data)s is not valid: contains both IPv4 and DNS-based entries" % {
 			 'data': data,
 			})
@@ -90,12 +96,9 @@ class rfc3361_120(_rfc):
 		self._value.insert(0, int(ip_4_mode))
 		
 		
-class rfc3397_119(_rfc):
-	def __init__(self, data):
-		self._value = []
-		for token in [tok for tok in [t.strip() for t in data.split(',')] if tok]:
-			self._value += _rfc1035Parse(token)
-			
+class rfc3397_119(_rfc1035_plus):
+	pass
+	
 class rfc4174_83(_rfc):
 	def __init__(self, isns_functions, dd_access, admin_flags, isns_security, ips):
 		isns_functions = src.dhcp.intToList(isns_functions)
@@ -107,3 +110,25 @@ class rfc4174_83(_rfc):
 		for token in [tok for tok in [t.strip() for t in ips.split(',')] if tok]:
 			self._value += type_ipv4.ipv4(token).list()
 			
+class rfc4280_88(_rfc1035_plus):
+	pass
+	
+class rfc5223_137(_rfc1035_plus):
+	pass
+	
+class rfc5678_139(_rfc):
+	def __init__(self, values):
+		self._value = []
+		for (code, addresses) in values:
+			self._value.append(code)
+			for token in [tok for tok in [address.strip() for address in addresses.split(',')] if tok]:
+				self._value += type_ipv4.ipv4(token).list()
+				
+class rfc5678_140(_rfc):
+	def __init__(self, values):
+		self._value = []
+		for (code, addresses) in values:
+			self._value.append(code)
+			for token in [tok for tok in [address.strip() for address in addresses.split(',')] if tok]:
+				self._value += _rfc1035Parse(token)
+				

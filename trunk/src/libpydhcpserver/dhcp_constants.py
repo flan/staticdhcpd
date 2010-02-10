@@ -97,6 +97,7 @@ DHCP_FIELDS_SPECS = {
  "32-bits": (4, 0, 1), "32-bits+": (0, 4, 4),
  "identifier": (0, 2, 1),
  "none": (0, 0, 1),
+ "Reserved": (0, 0, 1), "Unassigned": (0, 0, 1),
 }
 # DHCP_FIELDS_SPECS : {'option_code': (fixed_length, minimum_length, multiple)}
 # if fixed_length == 0 : minimum_length and multiple apply
@@ -200,7 +201,8 @@ DHCP_OPTIONS = {
  'nds_server': 85,
  'nds_tree_name': 86,
  'nds_context': 87,
- #Hole.
+ 'bcmcs_domain_list': 88,
+ 'bcmcs_ipv4_list': 89,
  'authentication': 90,
  'client_last_transaction_time': 91,
  'associated_ip': 92,
@@ -210,6 +212,9 @@ DHCP_OPTIONS = {
  #Hole
  'uuid_guid': 97,
  'open_group_user_auth': 98,
+ 'geoconf_civic': 99,
+ 'pcode': 100,
+ 'tcode': 101,
  #Hole.
  'netinfo_address': 112,
  'netinfo_tag': 113,
@@ -225,6 +230,25 @@ DHCP_OPTIONS = {
  'geoconf': 123,
  'vendor_class': 124,
  'vendor_specific': 125,
+ #Hole.
+ 'pxe_128': 128,
+ 'pxe_129': 129,
+ 'pxe_130': 130,
+ 'pxe_131': 131,
+ 'pxe_132': 132,
+ 'pxe_133': 133,
+ 'pxe_134': 134,
+ 'pxe_135': 135,
+ 'pana_agent': 136,
+ 'v4_lost': 137,
+ 'capwap_ac_v4': 138,
+ 'ipv4_mos': 139,
+ 'fqdn_mos': 140,
+ #Hole.
+ 'pxelinux_magic': 208,
+ 'configuration_file': 209
+ 'path_prefix': 210,
+ 'reboot_time': 211,
  #Hole.
  'end': 255
 }
@@ -322,19 +346,26 @@ DHCP_OPTIONS_TYPES = {
  85: "ipv4+",
  86: "byte+",
  87: "byte+",
- 88: "Unassigned", 89: "Unassigned", #FIXME
+ 88: "RFC4280_88", #Implemented
+ 89: "ipv4+",
  90: "RFC3118_90", #Not implemented; not necessary for static model
  91: "32-bits",
  92: "ipv4+",
- 93: "Unassigned", 94: "Unassigned", 95: "Unassigned", #FIXME
+ 93: "16-bits",
+ 94: "byte+",
+ 95: "string", #Specifications not published
  96: "Unassigned",
- 97: "Unassigned", #FIXME
+ 97: "byte+",
  98: "string",
- 99: "Unassigned", 100: "Unassigned", 101: "Unassigned", #FIXME
+ 99: "byte+",
+ 100: "string",
+ 101: "string",
  102: "Unassigned", 103: "Unassigned", 104: "Unassigned", 105: "Unassigned",
  106: "Unassigned", 107: "Unassigned", 108: "Unassigned", 109: "Unassigned",
  110: "Unassigned", 111: "Unassigned",
- 112: "Unassigned", 113: "Unassigned", 114: "Unassigned", #FIXME
+ 112: "string", #Specifications not published
+ 113: "string", #Specifications not published
+ 114: "string", #Specifications not published
  115: "Unassigned",
  116: "bool",
  117: "16-bits+",
@@ -342,29 +373,50 @@ DHCP_OPTIONS_TYPES = {
  119: "RFC3397_119", #Implemented
  120: "RFC3361_120", #Implemented
  #TODO
- 121: "Unassigned", 122: "Unassigned", 123: "Unassigned", 124: "Unassigned",
- 125: "Unassigned", 126: "Unassigned", 127: "Unassigned", 128: "Unassigned",
- 129: "Unassigned", 130: "Unassigned", 131: "Unassigned", 132: "Unassigned",
- 133: "Unassigned", 134: "Unassigned", 135: "Unassigned", 136: "Unassigned",
- 137: "Unassigned", 138: "Unassigned", 139: "Unassigned", 140: "Unassigned",
+ 121: "byte+",
+ 122: "string",
+ 123: "byte+",
+ 124: "string",
+ 125: "string",
+ 126: "Unassigned", 127: "Unassigned",
+ 128: "string",
+ 129: "string",
+ 130: "string",
+ 131: "string",
+ 132: "string",
+ 133: "string",
+ 134: "string",
+ 135: "string",
+ 136: "ipv4+",
+ 137: "RFC5223_137", #Implemented
+ 138: "ipv4+",
+ 139: "RFC5678_139", #Implemented
+ 140: "RFC5678_140", #Implemented
  141: "Unassigned", 142: "Unassigned", 143: "Unassigned", 144: "Unassigned",
  145: "Unassigned", 146: "Unassigned", 147: "Unassigned", 148: "Unassigned",
- 149: "Unassigned", 150: "Unassigned", 151: "Unassigned", 152: "Unassigned",
- 153: "Unassigned", 154: "Unassigned", 155: "Unassigned", 156: "Unassigned",
- 157: "Unassigned", 158: "Unassigned", 159: "Unassigned", 160: "Unassigned",
- 161: "Unassigned", 162: "Unassigned", 163: "Unassigned", 164: "Unassigned",
- 165: "Unassigned", 166: "Unassigned", 167: "Unassigned", 168: "Unassigned",
- 169: "Unassigned", 170: "Unassigned", 171: "Unassigned", 172: "Unassigned",
- 173: "Unassigned", 174: "Unassigned", 175: "Unassigned", 176: "Unassigned",
- 177: "Unassigned", 178: "Unassigned", 179: "Unassigned", 180: "Unassigned",
- 181: "Unassigned", 182: "Unassigned", 183: "Unassigned", 184: "Unassigned",
- 185: "Unassigned", 186: "Unassigned", 187: "Unassigned", 188: "Unassigned",
- 189: "Unassigned", 190: "Unassigned", 191: "Unassigned", 192: "Unassigned",
- 193: "Unassigned", 194: "Unassigned", 195: "Unassigned", 196: "Unassigned",
- 197: "Unassigned", 198: "Unassigned", 199: "Unassigned", 200: "Unassigned",
- 201: "Unassigned", 202: "Unassigned", 203: "Unassigned", 204: "Unassigned",
- 205: "Unassigned", 206: "Unassigned", 207: "Unassigned", 208: "Unassigned",
- 209: "Unassigned", 210: "Unassigned", 211: "Unassigned",
+ 149: "Unassigned",
+ 150: "Unassigned", #TFTP server address
+ 151: "Unassigned", 152: "Unassigned", 153: "Unassigned", 154: "Unassigned",
+ 155: "Unassigned", 156: "Unassigned", 157: "Unassigned", 158: "Unassigned",
+ 159: "Unassigned", 160: "Unassigned", 161: "Unassigned", 162: "Unassigned",
+ 163: "Unassigned", 164: "Unassigned", 165: "Unassigned", 166: "Unassigned",
+ 167: "Unassigned", 168: "Unassigned", 169: "Unassigned", 170: "Unassigned",
+ 171: "Unassigned", 172: "Unassigned", 173: "Unassigned", 174: "Unassigned",
+ 175: "Unassigned", #Etherboot
+ 176: "Unassigned", #IP Telephone
+ 177: "Unassigned", #Etherboot
+ 178: "Unassigned", 179: "Unassigned", 180: "Unassigned", 181: "Unassigned",
+ 182: "Unassigned", 183: "Unassigned", 184: "Unassigned", 185: "Unassigned",
+ 186: "Unassigned", 187: "Unassigned", 188: "Unassigned", 189: "Unassigned",
+ 190: "Unassigned", 191: "Unassigned", 192: "Unassigned", 193: "Unassigned",
+ 194: "Unassigned", 195: "Unassigned", 196: "Unassigned", 197: "Unassigned",
+ 198: "Unassigned", 199: "Unassigned", 200: "Unassigned", 201: "Unassigned",
+ 202: "Unassigned", 203: "Unassigned", 204: "Unassigned", 205: "Unassigned",
+ 206: "Unassigned", 207: "Unassigned",
+ 208: "32-bits",
+ 209: "string",
+ 210: "string",
+ 211: "32-bits",
  212: "Unassigned", 213: "Unassigned", 214: "Unassigned", 215: "Unassigned",
  216: "Unassigned", 217: "Unassigned", 218: "Unassigned", 219: "Unassigned",
  220: "Unassigned", #Subnet Allocation Option

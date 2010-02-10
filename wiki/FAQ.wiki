@@ -8,6 +8,8 @@ Further information:
  This is actually more of a Python issue than an Ubuntu issue (it would have been fixed if it were reasonably easy): Python's select() receives SIGINT, as it should, but there's no clear way to actually handle the signal gracefully -- although handling it properly would require knowledge of why it's actually being sent.
 
 = Unsupported features =
+ * [http://www.rfc-archive.org/getrfc.php?rfc=3011 RFC 3011] (Subnet selection)
+  * This feature is not required in a purely static environment.
  * [http://www.rfc-archive.org/getrfc.php?rfc=3004 RFC 3004] (User class)
   * staticDHCPd requires that each client be known ahead of time, precuding any need for thenotion of dynamic assignment from pools based on clases.
  * [http://www.rfc-archive.org/getrfc.php?rfc=3118 RFC 3118] (DHCP Authentication)

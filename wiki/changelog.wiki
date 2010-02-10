@@ -1,6 +1,26 @@
 = 1.5.0 (not yet released) =
  * Refactored pydhcplib into libpydhcpserver
- * Added support for rapid-commit (option 80)
+  * The data must be crafted by hand, due to the complexity of the option.
+  * If there is sufficient demand, a special class may be created.
+ * Added support for [http://www.rfc-archive.org/getrfc.php?rfc=3442 RFC3442] (option 121)
+  * The data to be sent must be crafted by hand.
+  * If there is any demand, a special class will be created.
+ * Added support for [http://www.rfc-archive.org/getrfc.php?rfc=3495 RFC3495] (option 122)
+  * The data to be sent must be crafted by hand.
+ * Added support for [http://www.rfc-archive.org/getrfc.php?rfc=3825 RFC3825] (option 123)
+  * The data to be sent must be crafted by hand.
+  * A special class will be handled to ease this process in a later version.
+ * Added support for [http://www.rfc-archive.org/getrfc.php?rfc=3925 RFC3925] (options 124 and 125)
+  * The data to be sent must be crafted by hand.
+ * Added support for [http://www.rfc-archive.org/getrfc.php?rfc=4039 RFC4039] (option 80)
+ * Added support for [http://www.rfc-archive.org/getrfc.php?rfc=4280 RFC4280] (options 88 and 89)
+ * Added support for [http://www.rfc-archive.org/getrfc.php?rfc=4578 RFC4578] (options 93, 94, and 97)
+ * Added support for [http://www.rfc-archive.org/getrfc.php?rfc=4776 RFC4776] (option 99)
+ * Added support for [http://www.rfc-archive.org/getrfc.php?rfc=4833 RFC4833] (options 100 and 101)
+ * Added support for [http://www.rfc-archive.org/getrfc.php?rfc=5071 RFC5071] (options 208-211)
+ * Added support for [http://www.rfc-archive.org/getrfc.php?rfc=5192 RFC5192] (option 136)
+ * Added support for [http://www.rfc-archive.org/getrfc.php?rfc=5223 RFC5223] (option 137)
+ * Added support for [http://www.rfc-archive.org/getrfc.php?rfc=5417 RFC5417] (option 138)
 ----
 = 1.4.1 =
  * 1.4.0's new RFC options can now be set using lists of bytes
