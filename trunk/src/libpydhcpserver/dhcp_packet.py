@@ -29,7 +29,6 @@ import operator
 from struct import unpack
 from struct import pack
 
-from dhcp_basic_packet import *
 from dhcp_constants import *
 from type_hwmac import hwmac
 from type_ipv4 import ipv4
