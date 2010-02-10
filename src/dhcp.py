@@ -835,7 +835,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
 		self._time_taken += time_taken
 		self._stats_lock.release()
 		
-	def _sendDhcpPacket(self, packet, address, response_type, mac, client_ip):
+	def _sendDHCPPacket(self, packet, address, response_type, mac, client_ip):
 		"""
 		Sends the given packet to the right destination based on its properties.
 		
