@@ -24,3 +24,4 @@ Legal
  
  (C) Neil Tallim, 2009 <flan@uguu.ca>
 """
+VERSION = '1.5.0-pre'

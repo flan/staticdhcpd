@@ -25,3 +25,4 @@ Legal
  (C) Neil Tallim, 2010 <flan@uguu.ca>
  (C) Mathieu Ignacio, 2008 <mignacio@april.org>
 """
+VERSION = '0.9.9'

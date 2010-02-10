@@ -25,7 +25,6 @@ Legal
  (C) Neil Tallim, 2010 <flan@uguu.ca>
  (C) Mathieu Ignacio, 2008 <mignacio@april.org>
 """
-VERSION = '0.9.9'
 MAGIC_COOKIE = [99,130,83,99]
 
 # DhcpBaseOptions = {'fieldname': (location, length),}
