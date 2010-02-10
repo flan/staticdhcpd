@@ -86,7 +86,7 @@ class DHCPPacket(object):
 		# cut packet_data to remove options
 		self._packet_data = self._packet_data[:240] # base packet length with magic cookie
 		
-	def isDhcpPacket(self):
+	def isDHCPPacket(self):
 		return self.packet_data[236:240] == MAGIC_COOKIE
 		
 	def checkType(self, variable):
