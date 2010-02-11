@@ -560,7 +560,7 @@ class DHCPPacket(object):
 				for i in xrange(0, len(data), 4):
 					result.append(str(ipv4(data[i:i+4]).int()))
 				result = ', '.join(result)
-			elif DHCP_OPTIONS_TYPES[optnum] in ("ipv4", "ipv4+", "ipv4*):
+			elif DHCP_OPTIONS_TYPES[optnum] in ("ipv4", "ipv4+", "ipv4*"):
 				result = []
 				for i in xrange(0, len(data), 4):
 					result.append(ipv4(data[i:i+4]).str())
