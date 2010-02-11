@@ -166,9 +166,10 @@ def rfc3046_decode(l):
 	sub_options = {}
 	while l:
 		id = l.pop(0)
-		length = l.pop(0)
-		sub_options[id] = l[:length]
-		l = l[length:]
+		if not id == 0xFF:
+			length = l.pop(0)
+			sub_options[id] = l[:length]
+			l = l[length:]
 	return sub_options
 	
 class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
