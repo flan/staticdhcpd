@@ -168,8 +168,8 @@ class DHCPPacket(object):
 		If the value is part of the DHCP core, it is set to zero. Otherwise, it
 		is removed from the option-pool.
 		
-		@type name: basestring
-		@param name: The option's name.
+		@type name: basestring|int
+		@param name: The option's name or numeric value.
 		
 		@rtype: bool
 		@return: True if the deletion succeeded.
@@ -194,8 +194,8 @@ class DHCPPacket(object):
 		request-list. Useful to force poorly designed clients to perform
 		specific tasks.
 		
-		@type name: basestring
-		@param name: The option's name.
+		@type name: basestring|int
+		@param name: The option's name or numeric value.
 		@type value: list|tuple
 		@param value: The bytes to assign to this option.
 		
@@ -222,8 +222,8 @@ class DHCPPacket(object):
 		"""
 		Retrieves the value of an option in the packet's data.
 		
-		@type name: basestring
-		@param name: The option's name.
+		@type name: basestring|int
+		@param name: The option's name or numeric value.
 		
 		@rtype: list|None
 		@return: The value of the specified option or None if it hasn't been
@@ -243,8 +243,8 @@ class DHCPPacket(object):
 		"""
 		Indicates whether an option is currently set within the packet.
 		
-		@type name: basestring
-		@param name: The option's name.
+		@type name: basestring|int
+		@param name: The option's name or numeric value.
 		
 		@rtype: bool
 		@return: True if the option has been set.
@@ -258,8 +258,8 @@ class DHCPPacket(object):
 		Validates and sets the value of a DHCP option associated with this
 		packet.
 		
-		@type name: basestring
-		@param name: The option's name.
+		@type name: basestring|int
+		@param name: The option's name or numeric value.
 		@type value: list|tuple|L{RFC}
 		@param value: The bytes to assign to this option or the special RFC
 			object from which they are to be derived.
@@ -476,6 +476,36 @@ class DHCPPacket(object):
 		if length and length < len(full_hw):
 			return hwmac(full_hw[0:length]).str()
 		return hwmac(full_hw).str()
+		
+	def getRequestedOptions(self):
+		"""
+		Returns the options requested by the client from which this packet
+		was sent.
+		
+		@rtype: tuple|None
+		@return: The options requested by the client or None if option 55 was
+			omitted.
+		"""
+		return self._requested_options
+		
+	def isRequestedOption(self, name):
+		"""
+		Indicates whether the specified option was requested by the client or
+		the client omitted option 55, necessitating delivery of all values.
+		
+		@type name: basestring|int
+		@param name: The name (or numeric value) of the DHCP option being
+			tested.
+		
+		@rtype: bool
+		@return: True if the option was requested by the client.
+		"""
+		if self._requested_options is None:
+			return True
+			
+		if not type(name) == int:
+			return DHCP_OPTIONS.get(name) in self._requested_options
+		return name in self._requested_options
 		
 	def __str__(self):
 		"""
