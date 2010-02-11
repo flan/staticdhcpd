@@ -81,7 +81,8 @@ DHCP_FIELDS_SPECS = {
  "32-bits": (4, 0, 1), "32-bits+": (0, 4, 4),
  "identifier": (0, 2, 1),
  "none": (0, 0, 1),
-}"""
+}
+"""
 Provides information about how to validate each basic DHCP option type.
 
 The human-readable format-name is mapped against a
@@ -110,7 +111,6 @@ DHCP_FIELDS_TYPES = {
  'sname': "str",
  'file': "str",
 } #: Maps human-readable field-names to DHCP fields specs.
-
 DHCP_OPTIONS_TYPES = {
  0: "none",
  1: "ipv4",
@@ -284,7 +284,8 @@ DHCP_OPTIONS_TYPES = {
  248: "Reserved", 249: "Reserved", 250: "Reserved", 251: "Reserved",
  252: "Reserved", 253: "Reserved", 254: "Reserved",
  255: "none",
-}"""
+}
+"""
 Maps DHCP option-numbers to DHCP fields specs.
 
 All values derived from http://www.iana.org/assignments/bootp-dhcp-parameters
