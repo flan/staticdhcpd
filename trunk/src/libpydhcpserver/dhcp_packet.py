@@ -144,9 +144,9 @@ class DHCPPacket(object):
 		
 		@type name: basestring
 		@param name: The option's name.
-		@type value: L{type_rfc.RFC}|list
+		@type value: L{RFC}|list
 		@param value: The value to be assigned.
-		@type expected_type: L{type_rfc.RFC}
+		@type expected_type: L{RFC}
 		@param expected_type: The type of special RFC object associated with
 			the given option name.
 		
@@ -260,7 +260,7 @@ class DHCPPacket(object):
 		
 		@type name: basestring
 		@param name: The option's name.
-		@type value: list|tuple|L{type_rfc.RFC}
+		@type value: list|tuple|L{RFC}
 		@param value: The bytes to assign to this option or the special RFC
 			object from which they are to be derived.
 		
@@ -269,7 +269,7 @@ class DHCPPacket(object):
 		
 		@raise ValueError: The specified option does not exist.
 		"""
-		if not isinstance(value, type_rfc.RFC):
+		if not isinstance(value, RFC):
 			if not type(value) in (list, tuple):
 				return False
 			if [None for v in value if not type(v) == int or not 0 <= v <= 255]:
