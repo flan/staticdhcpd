@@ -1,5 +1,6 @@
-= 1.5.0 (not yet released) =
+= 1.5.0 (preview) =
  * Refactored pydhcplib into libpydhcpserver
+  * All code thoroughly commented.
  * Added support for [http://www.rfc-archive.org/getrfc.php?rfc=3442 RFC3442] (option 121)
   * The data to be sent must be crafted by hand.
   * If there is any demand, a special class will be created.
