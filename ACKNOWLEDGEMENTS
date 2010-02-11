@@ -12,6 +12,6 @@ pydhcplib : http://pydhcplib.tuxfamily.org/pmwiki/
 	the DHCP protocol, plus a simple handler for receiving and sending packets
 	via UDP.
 	
-	staticDHCPd incorporates a stripped-down, optimized variant of version 6 of
-	this library.
+	staticDHCPd features a completely overhauled, fully updated, and
+	stripped-down version of this library, rebranded 'libpydhcpserver'.
 	

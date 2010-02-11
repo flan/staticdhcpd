@@ -22,7 +22,7 @@ Legal
  You should have received a copy of the GNU General Public License
  along with this program. If not, see <http://www.gnu.org/licenses/>.
  
- (C) Neil Tallim, 2009 <flan@uguu.ca>
+ (C) Neil Tallim, 2009 <red.hamsterx@gmail.com>
 """
 import select
 import threading
@@ -34,7 +34,6 @@ import src.logging
 import src.sql
 
 import libpydhcpserver.dhcp_network
-from libpydhcpserver.type_hwmac import hwmac
 from libpydhcpserver.type_strlist import strlist
 
 _dhcp_servers = [] #: A collection of all instantiated DHCP servers; this should only ever be one element long.
@@ -210,9 +209,6 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
 		 self, server_address, server_port, client_port
 		)
 		
-		self._createSocket()
-		self._bindToAddress()
-		
 		self._sql_broker = src.sql.SQL_BROKER()
 		
 	def _evaluateRelay(self, packet):
@@ -220,10 +216,10 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
 		Determines whether the received packet belongs to a relayed request or
 		not and decides whether it should be allowed based on policy.
 		
-		@type packet: L{libpydhcpserver.dhcp_packet.DhcpPacket}
+		@type packet: L{libpydhcpserver.dhcp_packet.DHCPPacket}
 		@param packet: The packet to be evaluated.
 		"""
-		giaddr = packet.getGiaddr()
+		giaddr = packet.getOption("giaddr")
 		if not giaddr == [0,0,0,0]: #Relayed request.
 			if not conf.ALLOW_DHCP_RELAYS: #Ignore it.
 				return False
@@ -246,7 +242,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
 		then a benign message is logged and the operator is informed; if not,
 		the decline is flagged as a malicious act.
 		
-		@type packet: L{libpydhcpserver.dhcp_packet.DhcpPacket}
+		@type packet: L{libpydhcpserver.dhcp_packet.DHCPPacket}
 		@param packet: The DHCPDISCOVER to be evaluated.
 		@type source_address: tuple
 		@param source_address: The address (host, port) from which the request
@@ -256,7 +252,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
 			return
 			
 		start_time = time.time()
-		mac = hwmac(packet.getHardwareAddress()).str()
+		mac = packet.getHardwareAddress()
 		if not [None for (ignored_mac, timeout) in self._ignored_addresses if mac == ignored_mac]:
 			if not self._logDHCPAccess(mac):
 				self._logDiscardedPacket()
@@ -294,7 +290,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
 		IP. If it does, that IP is offered, along with all relevant options; if
 		not, the MAC is ignored to mitigate spam from follow-up DHCPDISCOVERS.
 		
-		@type packet: L{libpydhcpserver.dhcp_packet.DhcpPacket}
+		@type packet: L{libpydhcpserver.dhcp_packet.DHCPPacket}
 		@param packet: The DHCPDISCOVER to be evaluated.
 		@type source_address: tuple
 		@param source_address: The address (host, port) from which the request
@@ -304,7 +300,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
 			return
 			
 		start_time = time.time()
-		mac = hwmac(packet.getHardwareAddress()).str()
+		mac = packet.getHardwareAddress()
 		if not [None for (ignored_mac, timeout) in self._ignored_addresses if mac == ignored_mac]:
 			if not self._logDHCPAccess(mac):
 				self._logDiscardedPacket()
@@ -325,7 +321,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
 						packet.transformToDHCPOfferPacket()
 						
 					self._loadDHCPPacket(packet, result)
-					giaddr = packet.getGiaddr()
+					giaddr = packet.getOption("giaddr")
 					if not giaddr or giaddr == [0,0,0,0]:
 						giaddr = None
 					else:
@@ -372,7 +368,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
 		IP. If it does, DHCPLEASEACTIVE is sent. Otherwise, DHCPLEASEUNKNOWN is
 		sent.
 		
-		@type packet: L{libpydhcpserver.dhcp_packet.DhcpPacket}
+		@type packet: L{libpydhcpserver.dhcp_packet.DHCPPacket}
 		@param packet: The DHCPREQUEST to be evaluated.
 		@type source_address: tuple
 		@param source_address: The address (host, port) from which the request
@@ -384,7 +380,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
 		start_time = time.time()
 		mac = None
 		try:
-			mac = hwmac(packet.getHardwareAddress()).str()
+			mac = packet.getHardwareAddress()
 		except:
 			pass
 		if not mac: #IP/client-ID-based lookup; not supported.
@@ -432,7 +428,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
 		If policy forbids RENEW and REBIND operations, perhaps to prepare for a
 		new configuration rollout, all such requests are NAKed immediately.
 		
-		@type packet: L{libpydhcpserver.dhcp_packet.DhcpPacket}
+		@type packet: L{libpydhcpserver.dhcp_packet.DHCPPacket}
 		@param packet: The DHCPREQUEST to be evaluated.
 		@type source_address: tuple
 		@param source_address: The address (host, port) from which the request
@@ -442,7 +438,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
 			return
 			
 		start_time = time.time()
-		mac = hwmac(packet.getHardwareAddress()).str()
+		mac = packet.getHardwareAddress()
 		if not [None for (ignored_mac, timeout) in self._ignored_addresses if mac == ignored_mac]:
 			if not self._logDHCPAccess(mac):
 				self._logDiscardedPacket()
@@ -451,7 +447,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
 			ip = packet.getOption("requested_ip_address")
 			sid = packet.getOption("server_identifier")
 			ciaddr = packet.getOption("ciaddr")
-			giaddr = packet.getGiaddr()
+			giaddr = packet.getOption("giaddr")
 			s_ip = ip and '.'.join(map(str, ip))
 			s_sid = sid and '.'.join(map(str, sid))
 			s_ciaddr = ciaddr and '.'.join(map(str, ciaddr))
@@ -579,7 +575,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
 		then an ACK is sent, along with all relevant options; if not, the
 		request is ignored.
 		
-		@type packet: L{libpydhcpserver.dhcp_packet.DhcpPacket}
+		@type packet: L{libpydhcpserver.dhcp_packet.DHCPPacket}
 		@param packet: The DHCPREQUEST to be evaluated.
 		@type source_address: tuple
 		@param source_address: The address (host, port) from which the request
@@ -589,14 +585,14 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
 			return
 			
 		start_time = time.time()
-		mac = hwmac(packet.getHardwareAddress()).str()
+		mac = packet.getHardwareAddress()
 		if not [None for (ignored_mac, timeout) in self._ignored_addresses if mac == ignored_mac]:
 			if not self._logDHCPAccess(mac):
 				self._logDiscardedPacket()
 				return
 				
 			ciaddr = packet.getOption("ciaddr")
-			giaddr = packet.getGiaddr()
+			giaddr = packet.getOption("giaddr")
 			s_ciaddr = '.'.join(map(str, ciaddr))
 			if not ciaddr or ciaddr == [0,0,0,0]:
 				ciaddr = None
@@ -661,7 +657,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
 		then a benign message is logged; if not, the release is flagged as
 		a malicious act.
 		
-		@type packet: L{libpydhcpserver.dhcp_packet.DhcpPacket}
+		@type packet: L{libpydhcpserver.dhcp_packet.DHCPPacket}
 		@param packet: The DHCPDISCOVER to be evaluated.
 		@type source_address: tuple
 		@param source_address: The address (host, port) from which the request
@@ -671,7 +667,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
 			return
 			
 		start_time = time.time()
-		mac = hwmac(packet.getHardwareAddress()).str()
+		mac = packet.getHardwareAddress()
 		if not [None for (ignored_mac, timeout) in self._ignored_addresses if mac == ignored_mac]:
 			if not self._logDHCPAccess(mac):
 				self._logDiscardedPacket()
@@ -700,7 +696,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
 		"""
 		Sets DHCP option fields based on values returned from the database.
 		
-		@type packet: L{libpydhcpserver.dhcp_packet.DhcpPacket}
+		@type packet: L{libpydhcpserver.dhcp_packet.DHCPPacket}
 		@param packet: The packet being updated.
 		@type result: tuple(11)
 		@param result: The value returned from the SQL broker.
@@ -807,7 +803,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
 		If it was picked up as a broadcast packet, it is sent to the local subnet
 		via the same mechanism, but to the 'client port'.
 		
-		@type packet: L{libpydhcpserver.dhcp_packet.DhcpPacket}
+		@type packet: L{libpydhcpserver.dhcp_packet.DHCPPacket}
 		@param packet: The packet to be transmitted.
 		@type address: tuple
 		@param address: The address from which the packet was received:
@@ -825,7 +821,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
 		"""
 		ip = port = None
 		if address[0] not in ('255.255.255.255', '0.0.0.0', ''): #Unicast.
-			giaddr = packet.getGiaddr()
+			giaddr = packet.getOption("giaddr")
 			if giaddr and not giaddr == [0,0,0,0]: #Relayed request.
 				ip = '.'.join(map(str, giaddr))
 				port = self._server_port
@@ -897,7 +893,6 @@ class DHCPService(threading.Thread):
 	def __init__(self):
 		"""
 		Sets up the DHCP server.
-		
 		
 		@raise Exception: If a problem occurs while binding the sockets needed
 			to handle DHCP traffic.

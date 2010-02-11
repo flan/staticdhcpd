@@ -22,7 +22,7 @@ Legal
  You should have received a copy of the GNU General Public License
  along with this program. If not, see <http://www.gnu.org/licenses/>.
  
- (C) Neil Tallim, 2010 <flan@uguu.ca>
+ (C) Neil Tallim, 2010 <red.hamsterx@gmail.com>
  (C) Mathieu Ignacio, 2008 <mignacio@april.org>
 """
 import operator
@@ -36,67 +36,144 @@ from type_strlist import strlist
 from type_rfc import *
 
 class DHCPPacket(object):
-	_packet_data = None
-	_options_data = None
-	_requested_options = None
+	"""
+	Handles the construction, management, and export of DHCP packets.
+	"""
+	_packet_data = None #: The core 240 bytes that make up a DHCP packet.
+	_options_data = None #: Any additional options attached to this packet.
+	_requested_options = None #: Any options explicitly requested by the client.
 	
 	def __init__(self, data=None):
+		"""
+		Initializes a DHCP packet, using real data, if possible.
+		
+		@type data: str|None
+		@param data: The raw packet from which this object should be instantiated or None if a
+			blank packet should be created.
+		"""
 		self._options_data = {}
-		if not data:
+		if not data: #Just create a blank packet and bail.
 			self._packet_data = [0]*240
 			self._packet_data[236:240] = MAGIC_COOKIE
 			return
 			
-		# we transform all data to int list
+		#Transform all data to a list of bytes by unpacking it as C-chars.
 		unpack_fmt = str(len(data)) + "c"
 		self._packet_data = [ord(i) for i in unpack(unpack_fmt, data)]
 		
-		# Some servers or clients don't place magic cookie immediately
-		# after headers and begin options fields only after magic.
-		# These 4 lines search magic cookie and begin iterator after.
-		iterator = 236
-		end_iterator = len(self._packet_data)
-		while not self._packet_data[iterator:iterator + 4] == MAGIC_COOKIE and iterator < end_iterator:
-			iterator += 1
-		iterator += 4
+		#Some servers or clients don't place the magic cookie immediately
+		#after the end of the headers block, adding unnecessary padding.
+		#It's necessary to find the magic cookie before proceding.
+		position = 236
+		end_position = len(self._packet_data)
+		while not self._packet_data[position:position + 4] == MAGIC_COOKIE and position < end_position:
+			position += 1
+		position += 4 #Jump to the point immediately after the cookie.
 		
-		# parse extended options
-		while iterator < end_iterator:
-			if self._packet_data[iterator] == 0: # pad option
-				opt_first = iterator + 1
-				iterator += 1
-			elif self._packet_data[iterator] == 255:
-				self._packet_data = self._packet_data[:240] # base packet length without magic cookie
-				return
-			elif DHCP_OPTIONS_TYPES.has_key(self._packet_data[iterator]) and not self._packet_data[iterator] == 255:
-				opt_len = self._packet_data[iterator + 1]
-				opt_first = iterator + 1
-				opt_id = self._packet_data[iterator]
+		#Extract extended options from the payload.
+		while position < end_position:
+			if self._packet_data[position] == 0: #Pad option; skip byte.
+				opt_first = position + 1
+				position += 1
+			elif self._packet_data[position] == 255: #End option; stop processing.
+				break
+			elif DHCP_OPTIONS_TYPES.has_key(self._packet_data[position]) and not self._packet_data[position] == 255:
+				opt_len = self._packet_data[position + 1]
+				opt_first = position + 1
+				opt_id = self._packet_data[position]
 				opt_val = self._packet_data[opt_first + 1:opt_len + opt_first + 1]
 				self._options_data[DHCP_OPTIONS_REVERSE[opt_id]] = opt_val
-				if opt_id == 55:
+				if opt_id == 55: #Handle requested options.
 					self._requested_options = tuple(set(
 					 [int(i) for i in opt_val] + [1, 3, 6, 15, 51, 53, 54, 58, 59]
 					))
-				iterator += self._packet_data[opt_first] + 2
+				position += self._packet_data[opt_first] + 2
 			else:
-				opt_first = iterator+1
-				iterator += self._packet_data[opt_first] + 2
+				opt_first = position + 1
+				position += self._packet_data[opt_first] + 2
 				
-		# cut packet_data to remove options
-		self._packet_data = self._packet_data[:240] # base packet length with magic cookie
+		#Cut the packet data down to 240 bytes.
+		self._packet_data = self._packet_data[:236] + MAGIC_COOKIE
 		
-	def isDHCPPacket(self):
-		return self._packet_data[236:240] == MAGIC_COOKIE
+	def encodePacket(self):
+		"""
+		Assembles all data into a single, C-char-packed struct.
 		
-	def checkType(self, variable):
-		# Check if variable is a list of ints between 0 and 255
-		if not type(variable) == list:
-			return False
-		return bool([None for byte in variable if not type(byte) == int or not 0 <= byte <= 255])
+		All options are arranged in order, per RFC2131 (details under 'router').
+		
+		@rtype: str
+		@return: The encoded packet.
+		"""
+		#Pull options out of the payload, excluding options not specifically
+		#requested, assuming any specific requests were made.
+		options = {}
+		for key in self._options_data.keys():
+			option_id = DHCP_OPTIONS[key]
+			if self._requested_options is None or option_id in self._requested_options:
+				option_value = self._options_data[key]
+				
+				options[option_id] = option = []
+				
+				while True:
+					if len(option_value) > 255:
+						option += [option_id, 255] + option_value[:255]
+						option_value = option_value[255:]
+					else:
+						option += [option_id, len(option_value)] + option_value
+						break
+		#Order options by number and add them to the output data.
+		ordered_options = []
+		for (option_id, value) in sorted(options.iteritems()):
+			ordered_options += value
+			
+		#Assemble data.
+		packet = self._packet_data[:240] + ordered_options
+		packet.append(255) #Add End option.
+		
+		#Encode packet.
+		pack_fmt = str(len(packet)) + "c"
+		packet = map(chr, packet)
+		
+		return pack(pack_fmt, *packet)
+		
+	def _setRfcOption(self, name, value, expected_type):
+		"""
+		Handles the process of setting RFC options, digesting the object's
+		contents if an object of the appropriate type is provided, or directly
+		assigning the list otherwise.
+		
+		@type name: basestring
+		@param name: The option's name.
+		@type value: L{type_rfc.RFC}|list
+		@param value: The value to be assigned.
+		@type expected_type: L{type_rfc.RFC}
+		@param expected_type: The type of special RFC object associated with
+			the given option name.
+		
+		@rtype: bool
+		@return: True if assignment succeeded.
+		"""
+		if type(value) == expected_type:
+			self._options_data[name] = value.getValue()
+			return True
+		else:
+			self._options_data[name] = value
+			return True
+		return False
 		
 	def deleteOption(self, name):
-		#zero-out the value if it is core to the DHCP packet, else just drop it
+		"""
+		Drops a value from the DHCP data-set.
+		
+		If the value is part of the DHCP core, it is set to zero. Otherwise, it
+		is removed from the option-pool.
+		
+		@type name: basestring
+		@param name: The option's name.
+		
+		@rtype: bool
+		@return: True if the deletion succeeded.
+		"""
 		if DHCP_FIELDS.has_key(name):
 			dhcp_field = DHCP_FIELDS[name]
 			begin = dhcp_field[0]
@@ -111,7 +188,47 @@ class DHCPPacket(object):
 				return True
 		return False
 		
+	def forceOption(self, option, value):
+		"""
+		Bypasses validation checks and adds the option number to the
+		request-list. Useful to force poorly designed clients to perform
+		specific tasks.
+		
+		@type name: basestring
+		@param name: The option's name.
+		@type value: list|tuple
+		@param value: The bytes to assign to this option.
+		
+		@raise ValueError: The specified option does not exist.
+		"""
+		name = id = None
+		if type(option) == int: #Translate int to string.
+			name = DHCP_OPTIONS_REVERSE.get(option)
+			id = option
+		else: #Translate string into int.
+			id = DHCP_OPTIONS.get(option)
+			name = option
+			
+		if name and id:
+			if self._requested_options:
+				self._requested_options += (option,)
+			self._options_data[name] = list(value)
+		else:
+			raise ValueError("Unknown option: %(option)s" % {
+			 'option': option,
+			})
+			
 	def getOption(self, name):
+		"""
+		Retrieves the value of an option in the packet's data.
+		
+		@type name: basestring
+		@param name: The option's name.
+		
+		@rtype: list|None
+		@return: The value of the specified option or None if it hasn't been
+			set.
+		"""
 		if DHCP_FIELDS.has_key(name):
 			option_info = DHCP_FIELDS[name]
 			return self._packet_data[option_info[0]:option_info[0] + option_info[1]]
@@ -122,17 +239,44 @@ class DHCPPacket(object):
 				return self._options_data[name]
 		return None
 		
-	def _setRfcOption(self, name, value, expected_type):
-		if type(value) == expected_type:
-			self._options_data[name] = value.getValue()
-			return True
-		elif type(value) in (list, tuple):
-			self._options_data[name] = list(value)
-			return True
-		return False
+	def isOption(self, name):
+		"""
+		Indicates whether an option is currently set within the packet.
+		
+		@type name: basestring
+		@param name: The option's name.
+		
+		@rtype: bool
+		@return: True if the option has been set.
+		"""
+		if type(name) == int: #Translate int to string.
+			self._options_data.has_key(DHCP_OPTIONS_REVERSE.get(name))
+		return self._options_data.has_key(name) or DHCP_FIELDS.has_key(name)
 		
 	def setOption(self, name, value):
-		#Basic value checking: does the value list have a valid length?
+		"""
+		Validates and sets the value of a DHCP option associated with this
+		packet.
+		
+		@type name: basestring
+		@param name: The option's name.
+		@type value: list|tuple|L{type_rfc.RFC}
+		@param value: The bytes to assign to this option or the special RFC
+			object from which they are to be derived.
+		
+		@rtype: bool
+		@return: True if the value was set successfully.
+		
+		@raise ValueError: The specified option does not exist.
+		"""
+		if not isinstance(value, type_rfc.RFC):
+			if not type(value) in (list, tuple):
+				return False
+			if [None for v in value if not type(v) == int or not 0 <= v <= 255]:
+				return False
+			value = list(value)
+			
+		#Basic checking: is the length of the value valid?
 		if DHCP_FIELDS.has_key(name):
 			dhcp_field = DHCP_FIELDS[name]
 			if not len(value) == dhcp_field[1]:
@@ -177,105 +321,78 @@ class DHCPPacket(object):
 					return self._setRfcOption(name, value, rfc5678_139)
 				elif dhcp_field_type == 'RFC5678_140':
 					return self._setRfcOption(name, value, rfc5678_140)
-		raise ValueError("pydhcplib.dhcp_basic_packet.setoption error : unknown option: %(name)s" % {'name': name})
+		raise ValueError("Unknown option: %(name)s" % {
+		 'name': name,
+		})
 		
-	def forceOption(self, option, value):
-		name, id = None
-		if type(option) == int: #Translate int to string.
-			name = DHCP_OPTIONS_REVERSE.get(option)
-			id = option
-		else: #Translate string into int.
-			id = DHCP_OPTIONS.get(option)
-			name = option
-			
-		if name and id:
-			if self._requested_options:
-				self._requested_options += (option,)
-			self._options_data[name] = value
-		else:
-			raise ValueError("pydhcplib.dhcp_basic_packet.forceoption error : unknown option: %(option)s" % {'option': option})
-			
-	def isOption(self, name):
-		if type(name) == int: #Translate int to string.
-			self._options_data.has_key(DHCP_OPTIONS_REVERSE.get(name))
-		return self._options_data.has_key(name) or DHCP_FIELDS.has_key(name)
+	def isDHCPPacket(self):
+		"""
+		Indicates whether this packet is a DHCP packet or not.
 		
-	def encodePacket(self):
-		#MUST set options in ascending order to respect RFC2131 (see 'router')
-		options = {}
-		for key in self._options_data.keys():
-			option_id = DHCP_OPTIONS[key]
-			if self._requested_options is None or option_id in self._requested_options:
-				option_value = self._options_data[key]
-				
-				options[option_id] = option = []
-				
-				while True:
-					if len(option_value) > 255:
-						option += [option_id, 255] + option_value[:255]
-						option_value = option_value[255:]
-					else:
-						option += [option_id, len(option_value)] + option_value
-						break
-		ordered_options = []
-		for (option_id, value) in sorted(options.iteritems()):
-			ordered_options += value
-			
-		packet = self._packet_data[:240] + ordered_options
-		packet.append(255) # add end option
-		pack_fmt = str(len(packet)) + "c"
-		packet = map(chr, packet)
-		
-		return pack(pack_fmt, *packet)
-		
-	#Packet type resolution
-	def isDHCPSomethingPacket(self, type):
-		if not self.isDHCPPacket():
-			return False
-		if not self.isOption("dhcp_message_type"):
-			return False
-		if not self.getOption("dhcp_message_type") == type:
-			return False
-		return True
-		
-	def isDHCPDiscoverPacket(self):
-		return self.isDHCPSomethingPacket([1])
-		
-	def isDHCPOfferPacket(self):
-		return self.isDHCPSomethingPacket([2])
-		
-	def isDHCPRequestPacket(self):
-		return self.isDHCPSomethingPacket([3])
+		@rtype: bool
+		@return: True if this packet is a DHCP packet.
+		"""
+		return self._packet_data[236:240] == MAGIC_COOKIE
 		
 	def isDHCPDeclinePacket(self):
-		return self.isDHCPSomethingPacket([4])
+		"""
+		Indicates whether this is a DECLINE packet.
 		
-	def isDHCPAckPacket(self):
-		return self.isDHCPSomethingPacket([5])
+		@rtype: bool
+		@return: True if this is a DECLINE packet.
+		"""
+		return self.getOption('dhcp_message_type')[0] == 4
 		
-	def isDHCPNackPacket(self):
-		return self.isDHCPSomethingPacket([6])
+	def isDHCPDiscoverPacket(self):
+		"""
+		Indicates whether this is a DISCOVER packet.
 		
-	def isDHCPReleasePacket(self):
-		return self.isDHCPSomethingPacket([7])
+		@rtype: bool
+		@return: True if this is a DISCOVER packet.
+		"""
+		return self.getOption('dhcp_message_type')[0] == 1
 		
 	def isDHCPInformPacket(self):
-		return self.isDHCPSomethingPacket([8])
+		"""
+		Indicates whether this is an INFORM packet.
+		
+		@rtype: bool
+		@return: True if this is an INFORM packet.
+		"""
+		return self.getOption('dhcp_message_type')[0] == 8
 		
 	def isDHCPLeaseQueryPacket(self):
-		return self.isDHCPSomethingPacket([10])
+		"""
+		Indicates whether this is a LEASEQUERY packet.
 		
-	def isDHCPLeaseUnassignedPacket(self):
-		return self.isDHCPSomethingPacket([11])
+		@rtype: bool
+		@return: True if this is a LEASEQUERY packet.
+		"""
+		return self.getOption('dhcp_message_type')[0] == 10
 		
-	def isDHCPLeaseUnknownPacket(self):
-		return self.isDHCPSomethingPacket([12])
+	def isDHCPReleasePacket(self):
+		"""
+		Indicates whether this is a RELEASE packet.
 		
-	def isDHCPLeaseActivePacket(self):
-		return self.isDHCPSomethingPacket([13])
+		@rtype: bool
+		@return: True if this is a RELEASE packet.
+		"""
+		return self.getOption('dhcp_message_type')[0] == 7
 		
+	def isDHCPRequestPacket(self):
+		"""
+		Indicates whether this is a REQUEST packet.
+		
+		@rtype: bool
+		@return: True if this is a REQUEST packet.
+		"""
+		return self.getOption('dhcp_message_type')[0] == 3
 		
 	def _transformBase(self):
+		"""
+		Sets and removes options from the DHCP packet to make it suitable for
+		returning to the client.
+		"""
 		self.setOption("op", [2])
 		self.setOption("hlen", [6])
 		
@@ -286,20 +403,55 @@ class DHCPPacket(object):
 		self.deleteOption("secs")
 		self.deleteOption("subnet_selection")
 		
-	#OFFER section
+	def transformToDHCPAckPacket(self):
+		"""
+		Transforms a DHCP packet received from a client into an ACK
+		packet to be returned to the client.
+		"""
+		self._transformBase()
+		self.setOption("dhcp_message_type", [5])
+		
+	def transformToDHCPLeaseActivePacket(self):
+		"""
+		Transforms a DHCP packet received from a client into a LEASEACTIVE
+		packet to be returned to the client.
+		"""
+		self._transformBase()
+		self.setOption("dhcp_message_type", [13])
+		
+		self.deleteOption("ciaddr")
+		
+		self.deleteOption("file")
+		self.deleteOption("sname")
+		
+	def transformToDHCPLeaseUnknownPacket(self):
+		"""
+		Transforms a DHCP packet received from a client into a LEASEUNKNOWN
+		packet to be returned to the client.
+		"""
+		self._transformBase()
+		self.setOption("dhcp_message_type", [12])
+		
+		self.deleteOption("ciaddr")
+		
+		self.deleteOption("file")
+		self.deleteOption("sname")
+		
 	def transformToDHCPOfferPacket(self):
+		"""
+		Transforms a DHCP packet received from a client into an OFFER
+		packet to be returned to the client.
+		"""
 		self._transformBase()
 		self.setOption("dhcp_message_type", [2])
 		
 		self.deleteOption("ciaddr")
 		
-	#ACK section
-	def transformToDHCPAckPacket(self):
-		self._transformBase()
-		self.setOption("dhcp_message_type", [5])
-		
-	#NAK section
 	def transformToDHCPNackPacket(self):
+		"""
+		Transforms a DHCP packet received from a client into a NAK
+		packet to be returned to the client.
+		"""
 		self._transformBase()
 		self.setOption("dhcp_message_type", [6])
 		
@@ -312,51 +464,31 @@ class DHCPPacket(object):
 		
 		self.deleteOption("ip_address_lease_time_option")
 		
-	#LEASE section
-	def transformToDHCPLeaseActivePacket(self):
-		self._transformBase()
-		self.setOption("dhcp_message_type", [13])
-		
-		self.deleteOption("ciaddr")
-		
-		self.deleteOption("file")
-		self.deleteOption("sname")
-		
-	def transformToDHCPLeaseUnknownPacket(self):
-		self._transformBase()
-		self.setOption("dhcp_message_type", [12])
-		
-		self.deleteOption("ciaddr")
-		
-		self.deleteOption("file")
-		self.deleteOption("sname")
-		
-		
-	#ID section
-	def getClientIdentifier(self):
-		if self.isOption("client_identifier"):
-			return self.getOption("client_identifier")
-		return []
-		
-	def getGiaddr(self):
-		return self.getOption("giaddr")
-		
 	def getHardwareAddress(self):
+		"""
+		Extracts the client's MAC address from the DHCP packet.
+		
+		@rtype: str
+		@return: The client's MAC address.
+		"""
 		length = self.getOption("hlen")[0]
 		full_hw = self.getOption("chaddr")
 		if length and length < len(full_hw):
-			return full_hw[0:length]
-		return full_hw
+			return hwmac(full_hw[0:length]).str()
+		return hwmac(full_hw).str()
 		
-	#Python functions
 	def __str__(self):
 		"""
 		Renders this packet's data in human-readable form.
+		
+		@rtype: str
+		@return: A human-readable summary of this packet.
 		"""
-		# Process headers
 		output = ['#Header fields']
 		op = self._packet_data[DHCP_FIELDS['op'][0]:DHCP_FIELDS['op'][0] + DHCP_FIELDS['op'][1]]
-		output.append("op : %(type)s" % {'type': DHCP_FIELDS_NAME['op'][op[0]],})
+		output.append("op: %(type)s" % {
+		 'type': DHCP_FIELDS_NAME['op'][op[0]],
+		})
 		
 		for opt in (
 		 'htype','hlen','hops','xid','secs','flags',
@@ -367,17 +499,17 @@ class DHCPPacket(object):
 			end = DHCP_FIELDS[opt][0] + DHCP_FIELDS[opt][1]
 			data = self._packet_data[begin:end]
 			result = None
-			if DHCP_FIELDS_TYPES[opt] == "int":
+			if DHCP_FIELDS_TYPES[opt] == "byte":
 				result = str(data[0])
-			elif DHCP_FIELDS_TYPES[opt] == "int2":
+			elif DHCP_FIELDS_TYPES[opt] == "16-bits":
 				result = str(data[0] * 256 + data[1])
-			elif DHCP_FIELDS_TYPES[opt] == "int4":
+			elif DHCP_FIELDS_TYPES[opt] == "32-bits":
 				result = str(ipv4(data).int())
-			elif DHCP_FIELDS_TYPES[opt] == "str":
+			elif DHCP_FIELDS_TYPES[opt] == "string":
 				result = []
-				for each in data:
-					if not each == 0:
-						result.append(chr(each))
+				for c in data:
+					if c:
+						result.append(chr(c))
 					else:
 						break
 				result = ''.join(result)
@@ -389,51 +521,55 @@ class DHCPPacket(object):
 				for iterator in xrange(6):
 					result.append(str(hexsym[data[iterator] / 16] + hexsym[data[iterator] % 16]))
 				result = ':'.join(result)
-			output.append("%(opt)s : %(result)s" % {'opt': opt, 'result': result,})
+			output.append("%(opt)s: %(result)s" % {
+			 'opt': opt,
+			 'result': result,
+			})
 			
-		# Process options
-		output.append("# Options fields")
-		
+		output.append('')
+		output.append("#Options fields")
 		for opt in self._options_data.keys():
 			data = self._options_data[opt]
 			result = None
 			optnum  = DHCP_OPTIONS[opt]
 			if opt == 'dhcp_message_type':
 				result = DHCP_FIELDS_NAMES['dhcp_message_type'][data[0]]
-			elif DHCP_OPTIONS_TYPES[optnum] in ("char", "byte"):
-				result = str(data[0])
-			elif DHCP_OPTIONS_TYPES[optnum] == "16-bits":
-				result = str(data[0] * 256 + data[0])
-			elif DHCP_OPTIONS_TYPES[optnum] == "32-bits":
-				result = str(ipv4(data).int())
-			elif DHCP_OPTIONS_TYPES[optnum] == "string":
-				result = []
-				for each in data :
-					if not each == 0:
-						result.append(chr(each))
-					else:
-						break
-				result = ''.join(result)
-			elif DHCP_OPTIONS_TYPES[optnum] == "ipv4":
-				result = ipv4(data).str()
-			elif DHCP_OPTIONS_TYPES[optnum] == "ipv4+":
-				result = []
-				for i in xrange(0, len(data), 4):
-					if len(data[i:i+4]) == 4:
-						result.append(ipv4(data[i:i+4]).str())
-				result = ' - '.join(result)
-			elif DHCP_OPTIONS_TYPES[optnum] == "char+":
+			elif DHCP_OPTIONS_TYPES[optnum] in ("byte", "byte+", "string"):
+				result = str(data)
+			elif DHCP_OPTIONS_TYPES[optnum] in ("char", "char+"):
 				if optnum == 55: # parameter_request_list
 					requested_options = []
-					for each in data:
-						requested_options.append(DHCP_OPTIONS_REVERSE[int(each)])
+					for d in data:
+						requested_options.append(DHCP_OPTIONS_REVERSE[int(d)])
 					result = ', '.join(requested_options)
 				else:
-					result = str(data)
-			elif DHCP_OPTIONS_TYPES[optnum] == "byte+":
-				result = str(data)
+					result = []
+					for c in data:
+						if 32 <= c <= 126:
+							result.append(chr(c))
+						else:
+							result.append(str(c))
+					result = ', '.join(result)
+			elif DHCP_OPTIONS_TYPES[optnum] in ("16-bits", "16-bits+"):
+				result = []
+				for i in xrange(0, len(data), 2):
+					result.append(str(data[i] * 256 + data[i + 1]))
+				result = ', '.join(result)
+			elif DHCP_OPTIONS_TYPES[optnum] in ("32-bits", "32-bits+"):
+				result = []
+				for i in xrange(0, len(data), 4):
+					result.append(str(ipv4(data[i:i+4]).int()))
+				result = ', '.join(result)
+			elif DHCP_OPTIONS_TYPES[optnum] in ("ipv4", "ipv4+", "ipv4*):
+				result = []
+				for i in xrange(0, len(data), 4):
+					result.append(ipv4(data[i:i+4]).str())
+				result = ', '.join(result)
 			else:
 				result = str(data)
-			output.append("%(opt)s : %(result)s" % {'opt': opt, 'result': result,})
+			output.append("%(opt)s: %(result)s" % {
+			 'opt': opt,
+			 'result': result,
+			})
 		return '\n'.join(output)
 		

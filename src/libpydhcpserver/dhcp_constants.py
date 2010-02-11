@@ -22,7 +22,7 @@ Legal
  You should have received a copy of the GNU General Public License
  along with this program. If not, see <http://www.gnu.org/licenses/>.
  
- (C) Neil Tallim, 2010 <flan@uguu.ca>
+ (C) Neil Tallim, 2010 <red.hamsterx@gmail.com>
  (C) Mathieu Ignacio, 2008 <mignacio@april.org>
 """
 MAGIC_COOKIE = [99,130,83,99] #: The DHCP magic cookie value, defined in RFC 1048.
@@ -96,21 +96,22 @@ following algorithm:
 """
 
 DHCP_FIELDS_TYPES = {
- 'op': "int",
- 'htype': "int",
- 'hlen': "int",
- 'hops': "int",
- 'xid': "int4",
- 'secs': "int2",
- 'flags': "int2",
+ 'op': "byte",
+ 'htype': "byte",
+ 'hlen': "byte",
+ 'hops': "byte",
+ 'xid': "32-bits",
+ 'secs': "16-bits",
+ 'flags': "16-bits",
  'ciaddr': "ipv4",
  'yiaddr': "ipv4",
  'siaddr': "ipv4",
  'giaddr': "ipv4",
  'chaddr': "hwmac",
- 'sname': "str",
- 'file': "str",
+ 'sname': "string",
+ 'file': "string",
 } #: Maps human-readable field-names to DHCP fields specs.
+
 DHCP_OPTIONS_TYPES = {
  0: "none",
  1: "ipv4",
@@ -440,4 +441,3 @@ DHCP_OPTIONS = {
 } #: Maps human-readable DHCP option names to integer values.
 
 DHCP_OPTIONS_REVERSE = dict([(v, k) for (k, v) in DHCP_OPTIONS.iteritems()]) #: Maps integer values to human-readable DHCP option names.
-
