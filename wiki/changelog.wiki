@@ -33,6 +33,7 @@
  * Added support for [http://www.rfc-archive.org/getrfc.php?rfc=3396 RFC3396] (long options)
  * Added support for [http://www.rfc-archive.org/getrfc.php?rfc=4174 RFC4174] (option 83)
  * Added BETA support for [http://www.rfc-archive.org/getrfc.php?rfc=4388 RFC4388] (LEASEQUERY)
+  * Caveat: only MAC-based lookups are supported; anything else will be served a <tt>DHCPLEASEUNKNOWN</tt> out of necessity
  * Added support for specification of options by number
  * Rebuilt support for [http://www.rfc-archive.org/getrfc.php?rfc=3397 RFC3397] (option 119), with the caveat that the compression algorithm it describes was omitted
 ----
