@@ -23,7 +23,6 @@ Legal
  along with this program. If not, see <http://www.gnu.org/licenses/>.
  
  (C) Neil Tallim, 2010 <flan@uguu.ca>
- (C) Mathieu Ignacio, 2008 <mignacio@april.org>
 """
 import type_ipv4
 
