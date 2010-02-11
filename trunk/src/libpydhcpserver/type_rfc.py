@@ -89,7 +89,7 @@ class rfc3361_120(_rfc):
 				dns_mode = True
 				
 		if ip_4_mode == dns_mode:
-			raise ValueError("RFC3361 argument '%(data)s is not valid: contains both IPv4 and DNS-based entries" % {
+			raise ValueError("'%(data)s is not valid: contains both IPv4 and DNS-based entries" % {
 			 'data': data,
 			})
 			

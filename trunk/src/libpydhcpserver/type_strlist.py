@@ -26,42 +26,65 @@ Legal
  (C) Mathieu Ignacio, 2008 <mignacio@april.org>
 """
 class strlist(object):
+	"""
+	Evaluates and encodes a string for use as part of a DHCP packet. 
+	"""
+	_list = None #: An encoded list of characters.
+	_str = None #: A human-reaable string.
+	
 	def __init__(self, data=""):
-		str_type = type(data)
-		if str_type == str:
-			self._str = data
-			self._list = map(ord, self._str)
-		elif str_type in (list, tuple):
-			self._list = data
-			self._str = "".join(map(chr, self._list))
-		else:
-			raise TypeError('strlist init : expected str or [int]; got %(type)s' % {'type': str_type,})
-			
-	# return string
-	def str(self):
-		return self._str
+		"""
+		Accepts data and ensures that both human-readable and packet-encodable
+		values are made available.
 		
-	# return list (useful for DhcpPacket class)
+		@type data: str|list|tuple
+		@param data: The data to be processed.
+		
+		@raise TypeError: Unsupported data-type was supplied.
+		@raise ValueError: Invalid data supplied.
+		"""
+		if type(data) == str:
+			self._list = map(ord, self._str)
+			self._str = data
+		elif type(data) in (list, tuple):
+			self._list = list(data)
+			self._str = ''.join(map(chr, self._list))
+		else:
+			raise TypeError('Expected str or [int]; got %(type)s' % {
+			 'type': type(data),
+			})
+			
 	def list(self):
+		"""
+		Returns the packet-encodable data contained within this object.
+		
+		@rtype: list
+		@return: A collection of bytes.
+		"""
 		return self._list
 		
-	# return int
-	def int(self):
-		return 0
+	def str(self):
+		"""
+		Returns the human-readable data contained within this object.
+		
+		@rtype: str
+		@return: A human-readable value.
+		"""
+		return self._str
+		
+	def __cmp__(self, other):
+		if self._str == other:
+			return 0
+		return 1
 		
 	def __hash__(self):
 		return self._str.__hash__()
-		
-	def __repr__(self):
-		return self._str
 		
 	def __nonzero__(self) :
 		if self._str:
 			return 1
 		return 0
 		
-	def __cmp__(self, other):
-		if self._str == other:
-			return 0
-		return 1
+	def __repr__(self):
+		return self._str
 		

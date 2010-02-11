@@ -179,11 +179,11 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
 	_sql_broker = None #: The SQL broker to be used when handling MAC lookups.
 	
 	_stats_lock = None #: A lock used to ensure synchronous access to performance statistics.
-	_packets_processed = 0 #: The number of packets processed since the last polling interval.
-	_packets_discarded = 0 #: The number of packets discarded since the last polling interval.
-	_time_taken = 0.0 #: The amount of time taken since the last polling interval.
 	_dhcp_assignments = None #: The MACs and the number of DHCP "leases" granted to each since the last polling interval.
 	_ignored_addresses = None #: A list of all MACs currently ignored, plus the time remaining until requests will be honoured again.
+	_packets_discarded = 0 #: The number of packets discarded since the last polling interval.
+	_packets_processed = 0 #: The number of packets processed since the last polling interval.
+	_time_taken = 0.0 #: The amount of time taken since the last polling interval.
 	
 	def __init__(self, server_address, server_port, client_port):
 		"""
@@ -236,45 +236,6 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
 			return False
 		return True
 		
-	def flushCache(self):
-		"""
-		Flushes the DHCP cache.
-		"""
-		self._sql_broker.flushCache()
-		
-	def getNextDHCPPacket(self):
-		"""
-		Listens for a DHCP packet and initiates processing upon receipt.
-		"""
-		if self._getNextDHCPPacket():
-			self._stats_lock.acquire()
-			self._packets_processed += 1
-			self._stats_lock.release()
-			
-	def getStats(self):
-		"""
-		Returns the performance statistics of all operations performed since the
-		last polling event, resets all counters, and updates the time left before
-		ignored MACs' requests will be processed again.
-		"""
-		self._stats_lock.acquire()
-		try:
-			for i in range(len(self._ignored_addresses)):
-				self._ignored_addresses[i][1] -= conf.POLLING_INTERVAL
-			self._ignored_addresses = [address for address in self._ignored_addresses if address[1] > 0]
-			
-			stats = (self._packets_processed, self._packets_discarded, self._time_taken, len(self._ignored_addresses))
-			
-			self._packets_processed = 0
-			self._packets_discarded = 0
-			self._time_taken = 0.0
-			if conf.ENABLE_SUSPEND:
-				self._dhcp_assignments = {}
-				
-			return stats
-		finally:
-			self._stats_lock.release()
-			
 	def _handleDHCPDecline(self, packet, source_address):
 		"""
 		Informs the operator of a potential IP collision on the network.
@@ -887,7 +848,46 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
 		})
 		return bytes
 		
+	def flushCache(self):
+		"""
+		Flushes the DHCP cache.
+		"""
+		self._sql_broker.flushCache()
 		
+	def getNextDHCPPacket(self):
+		"""
+		Listens for a DHCP packet and initiates processing upon receipt.
+		"""
+		if self._getNextDHCPPacket():
+			self._stats_lock.acquire()
+			self._packets_processed += 1
+			self._stats_lock.release()
+			
+	def getStats(self):
+		"""
+		Returns the performance statistics of all operations performed since the
+		last polling event, resets all counters, and updates the time left before
+		ignored MACs' requests will be processed again.
+		"""
+		self._stats_lock.acquire()
+		try:
+			for i in range(len(self._ignored_addresses)):
+				self._ignored_addresses[i][1] -= conf.POLLING_INTERVAL
+			self._ignored_addresses = [address for address in self._ignored_addresses if address[1] > 0]
+			
+			stats = (self._packets_processed, self._packets_discarded, self._time_taken, len(self._ignored_addresses))
+			
+			self._packets_processed = 0
+			self._packets_discarded = 0
+			self._time_taken = 0.0
+			if conf.ENABLE_SUSPEND:
+				self._dhcp_assignments = {}
+				
+			return stats
+		finally:
+			self._stats_lock.release()
+			
+			
 class DHCPService(threading.Thread):
 	"""
 	A thread that handles DHCP requests indefinitely, daemonically.
