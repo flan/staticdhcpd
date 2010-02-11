@@ -44,8 +44,8 @@ class strlist(object):
 		@raise ValueError: Invalid data supplied.
 		"""
 		if type(data) == str:
-			self._list = map(ord, self._str)
 			self._str = data
+			self._list = map(ord, self._str)
 		elif type(data) in (list, tuple):
 			self._list = list(data)
 			self._str = ''.join(map(chr, self._list))
