@@ -356,7 +356,7 @@ class DHCPPacket(object):
 		# Process headers
 		output = ['#Header fields']
 		op = self._packet_data[DHCP_FIELDS['op'][0]:DHCP_FIELDS['op'][0] + DHCP_FIELDS['op'][1]]
-		output.append("op : %(type)s" % {'type': DHCP_FIELDS_NAME['op'][str(op[0])],})
+		output.append("op : %(type)s" % {'type': DHCP_FIELDS_NAME['op'][op[0]],})
 		
 		for opt in (
 		 'htype','hlen','hops','xid','secs','flags',
@@ -399,7 +399,7 @@ class DHCPPacket(object):
 			result = None
 			optnum  = DHCP_OPTIONS[opt]
 			if opt == 'dhcp_message_type':
-				result = DHCP_FIELDS_NAMES['dhcp_message_type'][str(data[0])]
+				result = DHCP_FIELDS_NAMES['dhcp_message_type'][data[0]]
 			elif DHCP_OPTIONS_TYPES[optnum] in ("char", "byte"):
 				result = str(data[0])
 			elif DHCP_OPTIONS_TYPES[optnum] == "16-bits":
