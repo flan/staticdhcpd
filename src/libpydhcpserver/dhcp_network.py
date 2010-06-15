@@ -113,9 +113,9 @@ class DHCPNetwork(object):
 		@rtype: bool
 		@return: True if something was received; False otherwise.
 		"""
-		data = select.select([self._dhcp_socket], [], [], timeout)[0]
-		if data:
-			(data, source_address) = self._dhcp_socket.recvfrom(4096)
+		active_sockets = select.select([self._dhcp_socket], [], [], timeout)[0]
+		if active_sockets:
+			(data, source_address) = active_sockets[0].recvfrom(4096)
 			if data:
 				packet = dhcp_packet.DHCPPacket(data)
 				if packet.isDHCPPacket():
