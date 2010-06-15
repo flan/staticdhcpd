@@ -63,7 +63,7 @@ class DHCPNetwork(object):
 		
 	def _bindToAddress(self):
 		"""
-		Binds the server and response sockets to they may be used.
+		Binds the server and response sockets so they may be used.
 		
 		@raise Exception: A problem occurred while binding the sockets.
 		"""
