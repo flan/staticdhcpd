@@ -72,7 +72,7 @@ class DHCPNetwork(object):
 				self._response_socket.bind((self._server_address, 0))
 			self._dhcp_socket.bind(('', self._server_port))
 		except socket.error, e:
-			raise Exception('Unable to bind to address: %(error)s' % {
+			raise Exception('Unable to bind sockets: %(error)s' % {
 			 'error': str(e),
 			})
 			
