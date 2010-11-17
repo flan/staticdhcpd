@@ -139,106 +139,6 @@ class _SQLBroker(object):
         finally:
             self._resource_lock.release()
             
-class _MySQL(_SQLBroker):
-    """
-    Implements a MySQL broker.
-    """
-    _host = None #: The address of the database's host.
-    _port = None #: The port on which the database process is listening.
-    _username = None #: The username with which to authenticate.
-    _password = None #: The password with which to authenticate.
-    _database = None #: The name of the database to be consulted.
-    
-    def __init__(self):
-        """
-        Constructs the broker.
-        """
-        _SQLBroker.__init__(self)
-        self._resource_lock = threading.BoundedSemaphore(conf.MYSQL_MAXIMUM_CONNECTIONS)
-        
-        if conf.MYSQL_HOST is None:
-            self._host = 'localhost'
-        else:
-            self._host = conf.MYSQL_HOST
-            self._port = cont.MYSQL_PORT
-        self._username = conf.MYSQL_USERNAME
-        self._password = conf.MYSQL_PASSWORD
-        self._database = conf.MYSQL_DATABASE
-
-    def _closeConnection(self, connection):
-        """
-        Disposes of a connection.
-
-        @param connection: The connection object to be disposed of.
-        """
-        try:
-            connection.close()
-        except Exception:
-            pass
-            
-    def _getConnection(self):
-        """
-        Provides a connection to the database.
-
-        @return: The connection object to be used.
-
-        @raise Exception: If a problem occurs while accessing the database.
-        """
-        if not self._port is None:
-            return MySQLdb.connect(
-             host=self._host, port=self._port, db=self._database,
-             user=self._username, passwd=self._password,
-            )
-        else:
-            return MySQLdb.connect(
-             host=self._host, db=self._database,
-             user=self._username, passwd=self._password
-            )
-
-    def _lookupMAC(self, mac):
-        """
-        Queries the database for the given MAC address and returns the IP and
-        associated details if the MAC is known.
-        
-        @type mac: basestring
-        @param mac: The MAC address to lookup.
-        
-        @rtype: tuple(11)|None
-        @return: (ip:basestring, hostname:basestring|None,
-            gateway:basestring|None, subnet_mask:basestring|None,
-            broadcast_address:basestring|None,
-            domain_name:basestring|None, domain_name_servers:basestring|None,
-            ntp_servers:basestring|None, lease_time:int,
-            subnet:basestring, serial:int) or None if no match was
-            found.
-        
-        @raise Exception: If a problem occurs while accessing the database.
-        """
-        try:
-            mysql_db = self._getConnection()
-            mysql_cur = mysql_db.cursor()
-            
-            mysql_cur.execute("""
-             SELECT
-              m.ip, m.hostname,
-              s.gateway, s.subnet_mask, s.broadcast_address, s.domain_name, s.domain_name_servers,
-              s.ntp_servers, s.lease_time, s.subnet, s.serial
-             FROM maps m, subnets s
-             WHERE
-              m.mac = %s AND m.subnet = s.subnet AND m.serial = s.serial
-             LIMIT 1
-            """)), (mac,))
-            result = mysql_cur.fetchone()
-            if result:
-                return result
-            return None
-        finally:
-            try:
-                mysql_cur.close()
-            except Exception:
-                pass
-            self._closeConnection(mysql_db)
-
 class _DB20Broker(_SQLBroker):
     """
     Defines bevahiour for a DB API 2.0-compatible broker.
@@ -290,6 +190,62 @@ class _DB20Broker(_SQLBroker):
             except Exception:
                 pass
             self._closeConnection(db)
+            
+class _MySQL(_DB20Broker):
+    """
+    Implements a MySQL broker.
+    """
+    _host = None #: The address of the database's host.
+    _port = None #: The port on which the database process is listening.
+    _username = None #: The username with which to authenticate.
+    _password = None #: The password with which to authenticate.
+    _database = None #: The name of the database to be consulted.
+    
+    _query_mac = """
+     SELECT
+      m.ip, m.hostname,
+      s.gateway, s.subnet_mask, s.broadcast_address, s.domain_name, s.domain_name_servers,
+      s.ntp_servers, s.lease_time, s.subnet, s.serial
+     FROM maps m, subnets s
+     WHERE
+      m.mac = %s AND m.subnet = s.subnet AND m.serial = s.serial
+     LIMIT 1
+    """
+    
+    def __init__(self):
+        """
+        Constructs the broker.
+        """
+        _SQLBroker.__init__(self)
+        self._resource_lock = threading.BoundedSemaphore(conf.MYSQL_MAXIMUM_CONNECTIONS)
+        
+        if conf.MYSQL_HOST is None:
+            self._host = 'localhost'
+        else:
+            self._host = conf.MYSQL_HOST
+            self._port = cont.MYSQL_PORT
+        self._username = conf.MYSQL_USERNAME
+        self._password = conf.MYSQL_PASSWORD
+        self._database = conf.MYSQL_DATABASE
+
+    def _getConnection(self):
+        """
+        Provides a connection to the database.
+
+        @return: The connection object to be used.
+
+        @raise Exception: If a problem occurs while accessing the database.
+        """
+        if not self._port is None:
+            return MySQLdb.connect(
+             host=self._host, port=self._port, db=self._database,
+             user=self._username, passwd=self._password,
+            )
+        else:
+            return MySQLdb.connect(
+             host=self._host, db=self._database,
+             user=self._username, passwd=self._password
+            )
             
 class _PostgreSQL(_DB20Broker):
     """
@@ -385,7 +341,9 @@ class _SQLite(_DB20Broker):
         """
         return sqlite3.connect(self._file)
         
-#Decide which SQL engine to use and store the class in SQL_BROKER.
+        
+#Decide which SQL engine to use and store the class in SQL_BROKER
+#################################################################
 SQL_BROKER = None #: The class of the SQL engine to use for looking up MACs.
 if conf.DATABASE_ENGINE == 'MySQL':
     import MySQLdb
