@@ -120,8 +120,6 @@ POSTGRESQL_MAXIMUM_CONNECTIONS = 4
 #SQLITE_* values used only with 'SQLite' engine.
 #The file that contains your SQLite database.
 SQLITE_FILE = '/etc/staticDHCPd/dhcp.sqlite3'
-#The number of threads that may read the database at once.
-SQLITE_MAXIMUM_CONNECTIONS = 5
 
 #E-mail settings
 #######################################

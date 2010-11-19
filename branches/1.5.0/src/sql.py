@@ -365,7 +365,7 @@ class _SQLite(_NonPoolingBroker):
          'database': conf.SQLITE_FILE,
         }
         
-        self._setupBroker(conf.SQLITE_MAXIMUM_CONNECTIONS)
+        self._setupBroker(1)
         
 #Decide which SQL engine to use and store the class in SQL_BROKER
 #################################################################
