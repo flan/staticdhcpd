@@ -28,6 +28,7 @@ Legal
 ################################################################################
 #   The decision of which engine to use occurs at the bottom of this module    #
 # The chosen class is made accessible via the module-level SQL_BROKER variable #
+#   The chosen module is accessible via the module-level SQL_MODULE variable   #
 ################################################################################
 import threading
 
@@ -44,14 +45,6 @@ class _SQLBroker(object):
     _mac_cache = None #: A cache used to prevent unnecessary database hits.
     _subnet_cache = None #: A cache used to prevent unnecessary database hits.
     
-    def __init__(self):
-        """
-        Sets up the SQL broker cache.
-        """
-        self._cache_lock = threading.Lock()
-        self._mac_cache = {}
-        self._subnet_cache = {}
-
     def _closeConnection(self, connection):
         """
         Disposes of a connection.
@@ -69,6 +62,25 @@ class _SQLBroker(object):
         @raise Exception: If a problem occurs while accessing the database.
         """
         raise NotImplementedError("_getConnection must be overridden")
+        
+    def _setupBroker(self, concurrency_limit):
+        """
+        Sets up common attributes of broker objects.
+        
+        @type concurrency_limit: int
+        @param concurrent_limit: The number of concurrent database hits to
+            permit.
+        """
+        self._resource_lock = threading.BoundedSemaphore(concurrency_limit)
+        self._setupCache()
+        
+    def _setupCache(self):
+        """
+        Sets up the SQL broker cache.
+        """
+        self._cache_lock = threading.Lock()
+        self._mac_cache = {}
+        self._subnet_cache = {}
         
     def flushCache(self):
         """
@@ -143,19 +155,10 @@ class _DB20Broker(_SQLBroker):
     """
     Defines bevahiour for a DB API 2.0-compatible broker.
     """
+    _module = None #: The db2api-compliant module to use.
+    _connection_details = None #: The module-specific details needed to connect to a database.
     _query_mac = None #: The string used to look up a MAC's binding.
     
-    def _closeConnection(self, connection):
-        """
-        Disposes of a connection.
-
-        @param connection: The connection object to be disposed of.
-        """
-        try:
-            connection.close()
-        except Exception:
-            pass
-            
     def _lookupMAC(self, mac):
         """
         Queries the database for the given MAC address and returns the IP and
@@ -191,16 +194,95 @@ class _DB20Broker(_SQLBroker):
                 pass
             self._closeConnection(db)
             
-class _MySQL(_DB20Broker):
+class _PoolingBroker(_DB20Broker):
+    """
+    Defines bevahiour for a connection-pooling-capable DB API 2.0-compatible
+    broker.
+    """
+    _pool = None #: The database connection pool.
+    
+    def _setupBroker(self, concurrency_limit):
+        """
+        Sets up connection-pooling, if it's supported by the environment.
+        
+        Also completes the broker-setup process.
+        
+        L{_connection_details} must be defined before calling this function.
+        
+        @type concurrency_limit: int
+        @param concurrent_limit: The number of concurrent database hits to
+            permit.
+        """
+        _DB20Broker._setupBroker(concurrency_limit)
+        
+        try:
+            import eventlet.db_pool
+        except ImportError:
+            return
+        else:
+            self._pool = eventlet.db_pool.ConnectionPool(
+             SQL_MODULE,
+             max_size=concurrency_limit, max_idle=30, max_age=600, connect_timeout=10,
+             **self._connection_details
+            )
+            
+    def _closeConnection(self, connection):
+        """
+        Disposes of a connection.
+
+        @param connection: The connection object to be disposed of.
+        """
+        try:
+            if not self._pool is None:
+                self._pool.put(connection)
+            else:
+                connection.close()
+        except Exception:
+            pass
+            
+    def _getConnection(self):
+        """
+        Provides a connection to the database.
+
+        @return: The connection object to be used.
+        
+        @raise Exception: If a problem occurs while accessing the database.
+        """
+        if not self._pool is None:
+            return self._pool.get()
+        else:
+            return SQL_MODULE.connect(**self._connection_details)
+            
+class _NonPoolingBroker(_DB20Broker):
+    """
+    Defines bevahiour for a non-connection-pooling-capable DB API 2.0-compatible
+    broker.
+    """
+    def _closeConnection(self, connection):
+        """
+        Disposes of a connection.
+
+        @param connection: The connection object to be disposed of.
+        """
+        try:
+            connection.close()
+        except Exception:
+            pass
+            
+    def _getConnection(self):
+        """
+        Provides a connection to the database.
+
+        @return: The connection object to be used.
+        
+        @raise Exception: If a problem occurs while accessing the database.
+        """
+        return SQL_MODULE.connect(**self._connection_details)
+        
+class _MySQL(_PoolingBroker):
     """
     Implements a MySQL broker.
     """
-    _host = None #: The address of the database's host.
-    _port = None #: The port on which the database process is listening.
-    _username = None #: The username with which to authenticate.
-    _password = None #: The password with which to authenticate.
-    _database = None #: The name of the database to be consulted.
-    
     _query_mac = """
      SELECT
       m.ip, m.hostname,
@@ -216,48 +298,23 @@ class _MySQL(_DB20Broker):
         """
         Constructs the broker.
         """
-        _SQLBroker.__init__(self)
-        self._resource_lock = threading.BoundedSemaphore(conf.MYSQL_MAXIMUM_CONNECTIONS)
-        
+        self._connection_details = {
+         'db': conf.MYSQL_DATABASE,
+         'user': conf.MYSQL_USERNAME,
+         'passwd': conf.MYSQL_PASSWORD,
+        }
         if conf.MYSQL_HOST is None:
-            self._host = 'localhost'
+            self._connection_details['host'] = 'localhost'
         else:
-            self._host = conf.MYSQL_HOST
-            self._port = cont.MYSQL_PORT
-        self._username = conf.MYSQL_USERNAME
-        self._password = conf.MYSQL_PASSWORD
-        self._database = conf.MYSQL_DATABASE
-
-    def _getConnection(self):
-        """
-        Provides a connection to the database.
-
-        @return: The connection object to be used.
-
-        @raise Exception: If a problem occurs while accessing the database.
-        """
-        if not self._port is None:
-            return MySQLdb.connect(
-             host=self._host, port=self._port, db=self._database,
-             user=self._username, passwd=self._password,
-            )
-        else:
-            return MySQLdb.connect(
-             host=self._host, db=self._database,
-             user=self._username, passwd=self._password
-            )
+            self._connection_details['host'] = conf.MYSQL_HOST
+            self._connection_details['port'] = conf.MYSQL_PORT
             
-class _PostgreSQL(_DB20Broker):
+        self._setupBroker(conf.MYSQL_MAXIMUM_CONNECTIONS)
+        
+class _PostgreSQL(_PoolingBroker):
     """
     Implements a PostgreSQL broker.
     """
-    _host = None #: The address of the database's host.
-    _port = None #: The port on which the database process is listening.
-    _username = None #: The username with which to authenticate.
-    _password = None #: The password with which to authenticate.
-    _database = None #: The name of the database to be consulted.
-    _sslmode = None #: The SSL negotiation mode.
-
     _query_mac = """
      SELECT
       m.ip, m.hostname,
@@ -273,44 +330,22 @@ class _PostgreSQL(_DB20Broker):
         """
         Constructs the broker.
         """
-        _SQLBroker.__init__(self)
-        self._resource_lock = threading.BoundedSemaphore(conf.POSTGRESQL_MAXIMUM_CONNECTIONS)
+        self._connection_details = {
+         'database': conf.POSTGRESQL_DATABASE,
+         'user': conf.POSTGRESQL_USERNAME,
+         'password': conf.POSTGRESQL_PASSWORD,
+        }
+        if not conf.MYSQL_HOST is None:
+            self._connection_details['host'] = conf.POSTGRESQL_HOST
+            self._connection_details['port'] = conf.POSTGRESQL_PORT
+            self._connection_details['sslmode'] = conf.POSTGRESQL_SSLMODE
+            
+        self._setupBroker(conf.POSTGRESQL_MAXIMUM_CONNECTIONS)
         
-        if conf.POSTGRESQL_HOST is None:
-            self._host = 'localhost'
-        else:
-            self._host = conf.POSTGRESQL_HOST
-            self._port = cont.POSTGRESQL_PORT
-        self._username = conf.POSTGRESQL_USERNAME
-        self._password = conf.POSTGRESQL_PASSWORD
-        self._database = conf.POSTGRESQL_DATABASE
-        self._sslmode = conf.POSTGRESQL_SSLMODE
-
-    def _getConnection(self):
-        """
-        Provides a connection to the database.
-
-        @return: The connection object to be used.
-        
-        @raise Exception: If a problem occurs while accessing the database.
-        """
-        if not self._port is None:
-            return psycopg2.connect(
-             host=self._host, port=self._port, database=self._database, sslmode=self._sslmode,
-             user=self._username, password=self._password,
-            )
-        else:
-            return psycopg2.connect(
-             database=self._database,
-             user=self._username, password=self._password,
-            )
-
-class _SQLite(_DB20Broker):
+class _SQLite(_NonPoolingBroker):
     """
     Implements a SQLite broker.
     """
-    _file = None #: The path to the file containing the SQLite3 database to be used.
-
     _query_mac = """
      SELECT
       m.ip, m.hostname,
@@ -326,33 +361,24 @@ class _SQLite(_DB20Broker):
         """
         Constructs the broker.
         """
-        _SQLBroker.__init__(self)
-        self._resource_lock = threading.BoundedSemaphore(conf.SQLITE_MAXIMUM_CONNECTIONS)
+        self._connection_details = {
+         'database': conf.SQLITE_FILE,
+        }
         
-        self._file = conf.SQLITE_FILE
-
-    def _getConnection(self):
-        """
-        Provides a connection to the database.
-
-        @return: The connection object to be used.
-        
-        @raise Exception: If a problem occurs while accessing the database.
-        """
-        return sqlite3.connect(self._file)
-        
+        self._setupBroker(conf.SQLITE_MAXIMUM_CONNECTIONS)
         
 #Decide which SQL engine to use and store the class in SQL_BROKER
 #################################################################
-SQL_BROKER = None #: The class of the SQL engine to use for looking up MACs.
+SQL_BROKER = None #: The class of the SQL engine to use.
+SQL_MODULE = None #: The module of the SQL engine to use.
 if conf.DATABASE_ENGINE == 'MySQL':
-    import MySQLdb
+    import MySQLdb as SQL_MODULE
     SQL_BROKER = _MySQL
 elif conf.DATABASE_ENGINE == 'PostgreSQL':
-    import psycopg2
+    import psycopg2 as SQL_MODULE
     SQL_BROKER = _PostgreSQL
 elif conf.DATABASE_ENGINE == 'SQLite':
-    import sqlite3
+    import sqlite3 as SQL_MODULE
     SQL_BROKER = _SQLite
 else:
     raise ValueError("Unknown database engine: %(engine)s" % {
