@@ -45,14 +45,6 @@ class _SQLBroker(object):
     _mac_cache = None #: A cache used to prevent unnecessary database hits.
     _subnet_cache = None #: A cache used to prevent unnecessary database hits.
     
-    def _closeConnection(self, connection):
-        """
-        Disposes of a connection.
-
-        @param connection: The connection object to be disposed of.
-        """
-        raise NotImplementedError("_closeConnection must be overridden")
-        
     def _getConnection(self):
         """
         Provides a connection to the database.
@@ -192,8 +184,11 @@ class _DB20Broker(_SQLBroker):
                 cur.close()
             except Exception:
                 pass
-            self._closeConnection(db)
-            
+            try:
+                db.close()
+            except Exception:
+                pass
+                
 class _PoolingBroker(_DB20Broker):
     """
     Defines bevahiour for a connection-pooling-capable DB API 2.0-compatible
@@ -222,23 +217,9 @@ class _PoolingBroker(_DB20Broker):
         else:
             self._pool = eventlet.db_pool.ConnectionPool(
              SQL_MODULE,
-             max_size=concurrency_limit, max_idle=30, max_age=600, connect_timeout=10,
+             max_size=concurrency_limit, max_idle=30, max_age=600, connect_timeout=5,
              **self._connection_details
             )
-            
-    def _closeConnection(self, connection):
-        """
-        Disposes of a connection.
-
-        @param connection: The connection object to be disposed of.
-        """
-        try:
-            if not self._pool is None:
-                self._pool.put(connection)
-            else:
-                connection.close()
-        except Exception:
-            pass
             
     def _getConnection(self):
         """
@@ -249,7 +230,7 @@ class _PoolingBroker(_DB20Broker):
         @raise Exception: If a problem occurs while accessing the database.
         """
         if not self._pool is None:
-            return self._pool.get()
+            return eventlet.db_pool.PooledConnectionWrapper(self._pool.get(), self._pool)
         else:
             return SQL_MODULE.connect(**self._connection_details)
             
@@ -258,17 +239,7 @@ class _NonPoolingBroker(_DB20Broker):
     Defines bevahiour for a non-connection-pooling-capable DB API 2.0-compatible
     broker.
     """
-    def _closeConnection(self, connection):
-        """
-        Disposes of a connection.
-
-        @param connection: The connection object to be disposed of.
-        """
-        try:
-            connection.close()
-        except Exception:
-            pass
-            
+    
     def _getConnection(self):
         """
         Provides a connection to the database.
