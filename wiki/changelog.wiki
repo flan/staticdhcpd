@@ -1,3 +1,8 @@
+= 1.5.0 (in-progress) =
+ * Added support for Postgres
+ * Added connection pooling
+ * Removed concurrency support from SQLite, since it was redundant
+----
 = 1.5.0 (preview) =
  * Refactored pydhcplib into libpydhcpserver
   * All code thoroughly commented.
