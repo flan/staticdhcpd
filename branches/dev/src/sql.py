@@ -174,7 +174,7 @@ class _DB20Broker(_SQLBroker):
             db = self._getConnection()
             cur = db.cursor()
             
-            cur.execute(self._query_mac), (mac,))
+            cur.execute(self._query_mac, (mac,))
             result = cur.fetchone()
             if result:
                 return result
