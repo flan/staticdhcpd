@@ -172,10 +172,12 @@ class _DB20Broker(_SQLBroker):
         """
         try:
             db = self._getConnection()
+            print db
             cur = db.cursor()
             
             cur.execute(self._query_mac, (mac,))
             result = cur.fetchone()
+            print result
             if result:
                 return result
             return None
