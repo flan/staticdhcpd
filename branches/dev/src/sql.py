@@ -172,12 +172,10 @@ class _DB20Broker(_SQLBroker):
         """
         try:
             db = self._getConnection()
-            print db
             cur = db.cursor()
             
             cur.execute(self._query_mac, (mac,))
             result = cur.fetchone()
-            print result
             if result:
                 return result
             return None
@@ -197,6 +195,7 @@ class _PoolingBroker(_DB20Broker):
     broker.
     """
     _pool = None #: The database connection pool.
+    _eventlet__db_pool = None #: A reference to the eventlet.db_pool module.
     
     def _setupBroker(self, concurrency_limit):
         """
@@ -215,10 +214,11 @@ class _PoolingBroker(_DB20Broker):
         if conf.USE_POOL:
             try:
                 import eventlet.db_pool
+                self._eventlet__db_pool = eventlet.db_pool
             except ImportError:
                 return
             else:
-                self._pool = eventlet.db_pool.ConnectionPool(
+                self._pool = self._eventlet__db_pool.ConnectionPool(
                  SQL_MODULE,
                  max_size=concurrency_limit, max_idle=30, max_age=600, connect_timeout=5,
                  **self._connection_details
@@ -233,7 +233,7 @@ class _PoolingBroker(_DB20Broker):
         @raise Exception: If a problem occurs while accessing the database.
         """
         if not self._pool is None:
-            return eventlet.db_pool.PooledConnectionWrapper(self._pool.get(), self._pool)
+            return self._eventlet__db_pool.PooledConnectionWrapper(self._pool.get(), self._pool)
         else:
             return SQL_MODULE.connect(**self._connection_details)
             
