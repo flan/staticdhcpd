@@ -11,30 +11,30 @@
 
 case "$1" in
 start)
-	echo -n "Starting staticDHCPd"
-	/usr/bin/env python -OO /opt/puukusoft/staticDHCPd/main.py &
-	echo "."
-	;;
+    echo -n "Starting staticDHCPd"
+    /usr/bin/env python -OO /opt/puukusoft/staticDHCPd/main.py &
+    echo "."
+    ;;
 
 stop)
-	echo -n "Stopping staticDHCPd"
-	kill -15 `cat /var/run/staticDHCPd.pid`
-	echo "."
-	;;
+    echo -n "Stopping staticDHCPd"
+    kill -15 `cat /var/run/staticDHCPd.pid`
+    echo "."
+    ;;
 
 force-reload|restart)
-	echo -n "Stopping staticDHCPd"
-	kill -15 `cat /var/run/staticDHCPd.pid`
-	echo "."
-	echo -n "Starting staticDHCPd"
-	/usr/bin/env python -OO /opt/puukusoft/staticDHCPd/main.py &
-	echo "."
-	;;
+    echo -n "Stopping staticDHCPd"
+    kill -15 `cat /var/run/staticDHCPd.pid`
+    echo "."
+    echo -n "Starting staticDHCPd"
+    /usr/bin/env python -OO /opt/puukusoft/staticDHCPd/main.py &
+    echo "."
+    ;;
 
 *)
-	echo "Usage: /etc/init.d/staticDHCPd {start|stop|restart|force-reload}"
-	exit 1
-	;;
+    echo "Usage: /etc/init.d/staticDHCPd {start|stop|restart|force-reload}"
+    exit 1
+    ;;
 esac
 
 exit 0
