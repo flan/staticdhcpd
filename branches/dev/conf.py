@@ -149,37 +149,37 @@ EMAIL_TIMEOUT = 600
 #######################################
 #PERFORM ANY REQUIRED IMPORTS WITHIN init()
 def init():
-	#DO NOT ALTER LINES BELOW THIS POINT.
-	from src.dhcp import ipToList, ipsToList
-	from src.dhcp import intToList, intsToList
-	from src.dhcp import longToList, longsToList
-	from src.dhcp import strToList
-	from src.dhcp import rfc3046_decode
-	from src.libpydhcpserver.type_rfc import rfc2610_78, rfc2610_79
-	from src.libpydhcpserver.type_rfc import rfc3361_120
-	from src.libpydhcpserver.type_rfc import rfc3397_119
-	from src.libpydhcpserver.type_rfc import rfc4174_83
-	from src.libpydhcpserver.type_rfc import rfc4280_88
-	from src.libpydhcpserver.type_rfc import rfc5223_137
-	from src.libpydhcpserver.type_rfc import rfc5678_139, rfc5678_140
-	#DO NOT ALTER LINES ABOVE THIS POINT.
+    #DO NOT ALTER LINES BELOW THIS POINT.
+    from src.dhcp import ipToList, ipsToList
+    from src.dhcp import intToList, intsToList
+    from src.dhcp import longToList, longsToList
+    from src.dhcp import strToList
+    from src.dhcp import rfc3046_decode
+    from src.libpydhcpserver.type_rfc import rfc2610_78, rfc2610_79
+    from src.libpydhcpserver.type_rfc import rfc3361_120
+    from src.libpydhcpserver.type_rfc import rfc3397_119
+    from src.libpydhcpserver.type_rfc import rfc4174_83
+    from src.libpydhcpserver.type_rfc import rfc4280_88
+    from src.libpydhcpserver.type_rfc import rfc5223_137
+    from src.libpydhcpserver.type_rfc import rfc5678_139, rfc5678_140
+    #DO NOT ALTER LINES ABOVE THIS POINT.
 #DEFINE ANY REQUIRED FUNCTIONS OR VARIABLES BELOW THIS LINE
 
 def loadDHCPPacket(packet, mac, client_ip, relay_ip, subnet, serial):
-	#This is a custom function, called before each packet is sent, that
-	#allows you to tweak the options attached to a DHCP response.
-	#
-	#If, for any reason, you want to abort sending the packet, return False.
-	#
-	#If you need to add, test for, or delete an option, consult staticDHCPd's
-	#rule-writing guide.
-	#
-	##### PARAMETERS #####
-	#mac is a human-readable MAC string, lower-case, separated by colons.
-	#client_ip is a quadruple of octets: (192, 168, 1, 1)
-	#relay_ip is either None or an address as a quadruple of octets,
-	#	depending on whether this is a response to a relay request.
-	#subnet and serial are values passed through from the database, as a
-	#	basestring and int, respectively.
-	return True
-	
+    #This is a custom function, called before each packet is sent, that
+    #allows you to tweak the options attached to a DHCP response.
+    #
+    #If, for any reason, you want to abort sending the packet, return False.
+    #
+    #If you need to add, test for, or delete an option, consult staticDHCPd's
+    #rule-writing guide.
+    #
+    ##### PARAMETERS #####
+    #mac is a human-readable MAC string, lower-case, separated by colons.
+    #client_ip is a quadruple of octets: (192, 168, 1, 1)
+    #relay_ip is either None or an address as a quadruple of octets,
+    #    depending on whether this is a response to a relay request.
+    #subnet and serial are values passed through from the database, as a
+    #    basestring and int, respectively.
+    return True
+    

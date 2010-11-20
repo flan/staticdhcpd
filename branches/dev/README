@@ -1,5 +1,5 @@
 Five-minute "does this really work?" setup guide for busy administrators
-	Uses sqlite3 to avoid unnecessary installations
+    Uses sqlite3 to avoid unnecessary installations
 
 (If you need more information, see the project page at
  http://uguu.ca/puukusoft/staticDHCPd/ or
@@ -7,112 +7,112 @@ Five-minute "does this really work?" setup guide for busy administrators
 
 
 Step 1: Gather resources
-	You need the code, which came with this lovely text file, and a computer
-	on which to run it. Since this is a Unix-formatted file, you've probably
-	already got that, too. You'll also need sqlite3 to manage the DHCP
-	database. Chances are it's already installed, but check anyway. (Also
-	Python 2.5+, but no modern Unix system is without that)
-	
-	The last thing you need is enough access to bind to the DHCP ports.
-	Since there's no way you're going to just run this server on a production
-	box, you've almost certainly satisfied this requirement, too.
-	
-	So you're done. That was easy.
-	
+    You need the code, which came with this lovely text file, and a computer
+    on which to run it. Since this is a Unix-formatted file, you've probably
+    already got that, too. You'll also need sqlite3 to manage the DHCP
+    database. Chances are it's already installed, but check anyway. (Also
+    Python 2.5+, but no modern Unix system is without that)
+    
+    The last thing you need is enough access to bind to the DHCP ports.
+    Since there's no way you're going to just run this server on a production
+    box, you've almost certainly satisfied this requirement, too.
+    
+    So you're done. That was easy.
+    
 Step 2: Set up the DHCP database
-	Open a terminal and run `sqlite3 dhcp.sqlite3`
-	
-	Copy and paste the contents of samples/sqlite.sql into the prompt.
-	
-	Now that your database is ready to go (SQLite is so easy!), add some rules.
-		(This example assumes your network is similar to that of a typical home
-		user. If this is not the case, you will need to adjust some settings)
-		
-		INSERT INTO subnets (
-			subnet,
-			serial,
-			lease_time,
-			gateway,
-			subnet_mask,
-			broadcast_address,
-			ntp_servers,
-			domain_name_servers,
-			domain_name
-		) VALUES (
-			'192.168.0.0/24',
-			0,
-			14400,
-			'192.168.0.1',
-			'192.168.0.255',
-			NULL,
-			NULL,
-			NULL
-		);
-		
-		This creates the subnet entry with some very basic parameters. Clients
-		won't receive DNS information using this configuration, but that's fine
-		for testing purposes.
-		
-		INSERT INTO maps (
-			mac,
-			ip,
-			hostname,
-			subnet,
-			serial
-		) VALUES (
-			'aa:bb:cc:dd:ee:ff',
-			'192.168.0.197',
-			NULL,
-			'192.168.0.0/24',
-			0
-		);
-		
-		This gives the MAC 'aa:bb:cc:dd:ee:ff' the IP '192.168.0.197' and no
-		hostname. It inherits other settings from the subnet group.
-		
+    Open a terminal and run `sqlite3 dhcp.sqlite3`
+    
+    Copy and paste the contents of samples/sqlite.sql into the prompt.
+    
+    Now that your database is ready to go (SQLite is so easy!), add some rules.
+        (This example assumes your network is similar to that of a typical home
+        user. If this is not the case, you will need to adjust some settings)
+        
+        INSERT INTO subnets (
+            subnet,
+            serial,
+            lease_time,
+            gateway,
+            subnet_mask,
+            broadcast_address,
+            ntp_servers,
+            domain_name_servers,
+            domain_name
+        ) VALUES (
+            '192.168.0.0/24',
+            0,
+            14400,
+            '192.168.0.1',
+            '192.168.0.255',
+            NULL,
+            NULL,
+            NULL
+        );
+        
+        This creates the subnet entry with some very basic parameters. Clients
+        won't receive DNS information using this configuration, but that's fine
+        for testing purposes.
+        
+        INSERT INTO maps (
+            mac,
+            ip,
+            hostname,
+            subnet,
+            serial
+        ) VALUES (
+            'aa:bb:cc:dd:ee:ff',
+            '192.168.0.197',
+            NULL,
+            '192.168.0.0/24',
+            0
+        );
+        
+        This gives the MAC 'aa:bb:cc:dd:ee:ff' the IP '192.168.0.197' and no
+        hostname. It inherits other settings from the subnet group.
+        
 Step 3: Edit conf.py
-	You may want to make a backup of this file, but it's hardly necessary. If
-	you mess up, just grab another copy of the soruce.
-	
-	For now, since you'll want to see everything that goes on, set DEBUG to
-	True on line 4; 'True' must be capitalized. (In production, DEBUG should
-	be False, since it adds a little bit of overhead and it may fill system
-	logs very quickly)
-	
-	Then set LOG_FILE to point at your home directory. We'll be running this
-	test using your privileges so you don't have to create a special role
-	account to save time. (In production, though, you'll definitely want to
-	lock this thing down, just like every daemon. Long-running root processes
-	are bad)
-	
-	Set PID_FILE to point at the same directory as LOG_FILE.
-	
-	Run `id` in a terminal; this will tell you what your uid and gid are; enter
-	these values under UID and GID to restrict staticDHCPd's privileges.
-	
-	Run `ifconfig` and make note of your IPs; set DHCP_SERVER_IP and WEB_IP
-	accordingly. If you only have one IP, enter it in both fields.
-	
-	After that, set DATABASE_ENGINE to 'SQLite'; capitalization matters.
-	
-	Lastly, set SQLITE_FILE to point at the file you created in step 2.
-	
+    You may want to make a backup of this file, but it's hardly necessary. If
+    you mess up, just grab another copy of the soruce.
+    
+    For now, since you'll want to see everything that goes on, set DEBUG to
+    True on line 4; 'True' must be capitalized. (In production, DEBUG should
+    be False, since it adds a little bit of overhead and it may fill system
+    logs very quickly)
+    
+    Then set LOG_FILE to point at your home directory. We'll be running this
+    test using your privileges so you don't have to create a special role
+    account to save time. (In production, though, you'll definitely want to
+    lock this thing down, just like every daemon. Long-running root processes
+    are bad)
+    
+    Set PID_FILE to point at the same directory as LOG_FILE.
+    
+    Run `id` in a terminal; this will tell you what your uid and gid are; enter
+    these values under UID and GID to restrict staticDHCPd's privileges.
+    
+    Run `ifconfig` and make note of your IPs; set DHCP_SERVER_IP and WEB_IP
+    accordingly. If you only have one IP, enter it in both fields.
+    
+    After that, set DATABASE_ENGINE to 'SQLite'; capitalization matters.
+    
+    Lastly, set SQLITE_FILE to point at the file you created in step 2.
+    
 Step 4: Start the server
-	Run `sudo python main.py`.
-	
-	You should see a few lines appear detailing the fact that the server is now
-	running.
-	
-	Tell the device with the MAC given in step 3 to request an address and
-	everything should Just Work(tm).
-	
-	Go to http://<WEB_IP>:30880/ to see what the server's been doing.
-	
+    Run `sudo python main.py`.
+    
+    You should see a few lines appear detailing the fact that the server is now
+    running.
+    
+    Tell the device with the MAC given in step 3 to request an address and
+    everything should Just Work(tm).
+    
+    Go to http://<WEB_IP>:30880/ to see what the server's been doing.
+    
 Step 5: Kill the process
-	When satisifed that the system works, hit ^C or send SIGTERM (15) to the
-	process.
-	
-	
+    When satisifed that the system works, hit ^C or send SIGTERM (15) to the
+    process.
+    
+    
 You now have proof that what you have in your proverbial hands is a functional,
 fully static DHCP server.
 

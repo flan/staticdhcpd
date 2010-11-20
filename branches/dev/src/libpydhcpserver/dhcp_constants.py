@@ -88,11 +88,11 @@ Provides information about how to validate each basic DHCP option type.
 The human-readable format-name is mapped against a
 (fixed_length, minimum_length, multiple) tuple, which is handled by the
 following algorithm:
-	if C{fixed_length} == 0:
-		C{minimum_length} and C{multiple} apply
-		resulting length must be a multiple of C{multiple}
-	else:
-		only C{fixed_length} is considered
+    if C{fixed_length} == 0:
+        C{minimum_length} and C{multiple} apply
+        resulting length must be a multiple of C{multiple}
+    else:
+        only C{fixed_length} is considered
 """
 
 DHCP_FIELDS_TYPES = {

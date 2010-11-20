@@ -26,65 +26,65 @@ Legal
  (C) Mathieu Ignacio, 2008 <mignacio@april.org>
 """
 class strlist(object):
-	"""
-	Evaluates and encodes a string for use as part of a DHCP packet. 
-	"""
-	_list = None #: An encoded list of characters.
-	_str = None #: A human-reaable string.
-	
-	def __init__(self, data=""):
-		"""
-		Accepts data and ensures that both human-readable and packet-encodable
-		values are made available.
-		
-		@type data: str|list|tuple
-		@param data: The data to be processed.
-		
-		@raise TypeError: Unsupported data-type was supplied.
-		@raise ValueError: Invalid data supplied.
-		"""
-		if type(data) == str:
-			self._str = data
-			self._list = map(ord, self._str)
-		elif type(data) in (list, tuple):
-			self._list = list(data)
-			self._str = ''.join(map(chr, self._list))
-		else:
-			raise TypeError('Expected str or [int]; got %(type)s' % {
-			 'type': type(data),
-			})
-			
-	def list(self):
-		"""
-		Returns the packet-encodable data contained within this object.
-		
-		@rtype: list
-		@return: A collection of bytes.
-		"""
-		return self._list
-		
-	def str(self):
-		"""
-		Returns the human-readable data contained within this object.
-		
-		@rtype: str
-		@return: A human-readable value.
-		"""
-		return self._str
-		
-	def __cmp__(self, other):
-		if self._str == other:
-			return 0
-		return 1
-		
-	def __hash__(self):
-		return self._str.__hash__()
-		
-	def __nonzero__(self) :
-		if self._str:
-			return 1
-		return 0
-		
-	def __repr__(self):
-		return self._str
-		
+    """
+    Evaluates and encodes a string for use as part of a DHCP packet. 
+    """
+    _list = None #: An encoded list of characters.
+    _str = None #: A human-reaable string.
+    
+    def __init__(self, data=""):
+        """
+        Accepts data and ensures that both human-readable and packet-encodable
+        values are made available.
+        
+        @type data: str|list|tuple
+        @param data: The data to be processed.
+        
+        @raise TypeError: Unsupported data-type was supplied.
+        @raise ValueError: Invalid data supplied.
+        """
+        if type(data) == str:
+            self._str = data
+            self._list = map(ord, self._str)
+        elif type(data) in (list, tuple):
+            self._list = list(data)
+            self._str = ''.join(map(chr, self._list))
+        else:
+            raise TypeError('Expected str or [int]; got %(type)s' % {
+             'type': type(data),
+            })
+            
+    def list(self):
+        """
+        Returns the packet-encodable data contained within this object.
+        
+        @rtype: list
+        @return: A collection of bytes.
+        """
+        return self._list
+        
+    def str(self):
+        """
+        Returns the human-readable data contained within this object.
+        
+        @rtype: str
+        @return: A human-readable value.
+        """
+        return self._str
+        
+    def __cmp__(self, other):
+        if self._str == other:
+            return 0
+        return 1
+        
+    def __hash__(self):
+        return self._str.__hash__()
+        
+    def __nonzero__(self) :
+        if self._str:
+            return 1
+        return 0
+        
+    def __repr__(self):
+        return self._str
+        
