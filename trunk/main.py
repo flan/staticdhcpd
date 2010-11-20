@@ -36,93 +36,93 @@ import src.logging
 import src.web
 
 if not conf.DEBUG: #Suppress all unnecessary prints. 
-	sys.stdout = sys.stderr = open('/dev/null', 'w')
+    sys.stdout = sys.stderr = open('/dev/null', 'w')
 else:
-	sys.stdout = sys.stderr
-	
+    sys.stdout = sys.stderr
+    
 def _quitHandler(signum, frame):
-	"""
-	Cleanly shuts down this daemon upon receipt of a SIGTERM.
-	
-	@type signum: int
-	@param signum: The kill-signal constant received. This will always be
-		SIGTERM.
-	@type frame: int
-	@param frame: The stack-frame in which the kill-signal was received.
-		This is not used.
-	"""
-	#Remove PID.
-	try:
-		os.unlink(conf.PID_FILE)
-	except:
-		pass
-		
-	src.logging.logToDisk()
-	
-	exit(0)
-	
+    """
+    Cleanly shuts down this daemon upon receipt of a SIGTERM.
+    
+    @type signum: int
+    @param signum: The kill-signal constant received. This will always be
+        SIGTERM.
+    @type frame: int
+    @param frame: The stack-frame in which the kill-signal was received.
+        This is not used.
+    """
+    #Remove PID.
+    try:
+        os.unlink(conf.PID_FILE)
+    except:
+        pass
+        
+    src.logging.logToDisk()
+    
+    exit(0)
+    
 def _logHandler(signum, frame):
-	"""
-	Flushes DHCP cache and writes log to disk upon receipt of a SIGHUP.
-	
-	@type signum: int
-	@param signum: The kill-signal constant received. This will always be
-		SIGHUP.
-	@type frame: int
-	@param frame: The stack-frame in which the kill-signal was received.
-		This is not used.
-	"""
-	src.dhcp.flushCache()
-	if not src.logging.logToDisk():
-		src.logging.writeLog("Unable to write logfile: %(log)s" % {'log': conf.LOG_FILE,})
-	else:
-		src.logging.writeLog("Wrote log to '%(log)s'" % {'log': conf.LOG_FILE,})
-		
+    """
+    Flushes DHCP cache and writes log to disk upon receipt of a SIGHUP.
+    
+    @type signum: int
+    @param signum: The kill-signal constant received. This will always be
+        SIGHUP.
+    @type frame: int
+    @param frame: The stack-frame in which the kill-signal was received.
+        This is not used.
+    """
+    src.dhcp.flushCache()
+    if not src.logging.logToDisk():
+        src.logging.writeLog("Unable to write logfile: %(log)s" % {'log': conf.LOG_FILE,})
+    else:
+        src.logging.writeLog("Wrote log to '%(log)s'" % {'log': conf.LOG_FILE,})
+        
 if __name__ == '__main__':
-	#Ensure that pre-setup tasks are taken care of.
-	conf.init()
-	
-	#Start Web server.
-	if conf.WEB_ENABLED:
-		web_thread = src.web.WebService()
-		web_thread.start()
-		
-	#Start DHCP server.
-	dhcp_thread = src.dhcp.DHCPService()
-	dhcp_thread.start()
-	
-	#Record PID.
-	try:
-		pidfile = open(conf.PID_FILE, 'w')
-		pidfile.write(str(os.getpid()) + '\n')
-		pidfile.close()
-		os.chown(conf.PID_FILE, conf.UID, conf.GID)
-	except:
-		src.logging.writeLog("Unable to write pidfile: %(file)s" % {'file': conf.PID_FILE,})
-		
-	#Touch logfile.
-	try:
-		open(conf.LOG_FILE, 'a').close()
-		os.chown(conf.LOG_FILE, conf.UID, conf.GID)
-	except:
-		src.logging.writeLog("Unable to write pidfile: %(file)s" % {'file': conf.PID_FILE,})
-		
-	#Set signal-handlers.
-	signal.signal(signal.SIGHUP, _logHandler)
-	signal.signal(signal.SIGTERM, _quitHandler)
-	
-	#Set proper permissions for execution
-	os.setregid(conf.GID, conf.GID)
-	os.setreuid(conf.UID, conf.UID)
-	
-	#Serve until interrupted.
-	tick = 0
-	while True:
-		time.sleep(1)
-		
-		tick += 1
-		if tick >= conf.POLLING_INTERVAL: #Perform periodic cleanup.
-			dhcp_thread.pollStats()
-			src.logging.emailTimeoutCooldown()
-			tick = 0
-			
+    #Ensure that pre-setup tasks are taken care of.
+    conf.init()
+    
+    #Start Web server.
+    if conf.WEB_ENABLED:
+        web_thread = src.web.WebService()
+        web_thread.start()
+        
+    #Start DHCP server.
+    dhcp_thread = src.dhcp.DHCPService()
+    dhcp_thread.start()
+    
+    #Record PID.
+    try:
+        pidfile = open(conf.PID_FILE, 'w')
+        pidfile.write(str(os.getpid()) + '\n')
+        pidfile.close()
+        os.chown(conf.PID_FILE, conf.UID, conf.GID)
+    except:
+        src.logging.writeLog("Unable to write pidfile: %(file)s" % {'file': conf.PID_FILE,})
+        
+    #Touch logfile.
+    try:
+        open(conf.LOG_FILE, 'a').close()
+        os.chown(conf.LOG_FILE, conf.UID, conf.GID)
+    except:
+        src.logging.writeLog("Unable to write pidfile: %(file)s" % {'file': conf.PID_FILE,})
+        
+    #Set signal-handlers.
+    signal.signal(signal.SIGHUP, _logHandler)
+    signal.signal(signal.SIGTERM, _quitHandler)
+    
+    #Set proper permissions for execution
+    os.setregid(conf.GID, conf.GID)
+    os.setreuid(conf.UID, conf.UID)
+    
+    #Serve until interrupted.
+    tick = 0
+    while True:
+        time.sleep(1)
+        
+        tick += 1
+        if tick >= conf.POLLING_INTERVAL: #Perform periodic cleanup.
+            dhcp_thread.pollStats()
+            src.logging.emailTimeoutCooldown()
+            tick = 0
+            

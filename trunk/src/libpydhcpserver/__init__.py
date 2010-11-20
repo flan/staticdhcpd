@@ -25,4 +25,5 @@ Legal
  (C) Neil Tallim, 2010 <red.hamsterx@gmail.com>
  (C) Mathieu Ignacio, 2008 <mignacio@april.org>
 """
-VERSION = '1.0.0-preview'
+VERSION = '1.0.0'
+
