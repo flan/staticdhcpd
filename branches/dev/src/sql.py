@@ -208,19 +208,20 @@ class _PoolingBroker(_DB20Broker):
         @param concurrent_limit: The number of concurrent database hits to
             permit.
         """
-        _DB20Broker._setupBroker(concurrency_limit)
-        
-        try:
-            import eventlet.db_pool
-        except ImportError:
-            return
-        else:
-            self._pool = eventlet.db_pool.ConnectionPool(
-             SQL_MODULE,
-             max_size=concurrency_limit, max_idle=30, max_age=600, connect_timeout=5,
-             **self._connection_details
-            )
-            
+        _DB20Broker._setupBroker(self, concurrency_limit)
+
+        if conf.USE_POOL:
+            try:
+                import eventlet.db_pool
+            except ImportError:
+                return
+            else:
+                self._pool = eventlet.db_pool.ConnectionPool(
+                 SQL_MODULE,
+                 max_size=concurrency_limit, max_idle=30, max_age=600, connect_timeout=5,
+                 **self._connection_details
+                )
+                
     def _getConnection(self):
         """
         Provides a connection to the database.

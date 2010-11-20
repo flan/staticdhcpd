@@ -86,6 +86,11 @@ DATABASE_ENGINE = 'MySQL'
 #performance under heavy loads.
 USE_CACHE = False
 
+#Controls whether SQL daemon connections are pooled. This only works if the
+#eventlet library has been installed and you've chosen a pooling-friendly
+#engine, which excludes SQLite.
+USE_POOL = True
+
 #MYSQL_* values used only with 'MySQL' engine.
 #The name of your database.
 MYSQL_DATABASE = 'dhcp'
