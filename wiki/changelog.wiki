@@ -1,3 +1,7 @@
+= 1.5.1 =
+ * Fixed a bug with Postgres's configuration, preventing it from being used unless MySQL was configured, too
+ * Fixed a documentation error in the README: no netmask was defined
+----
 = 1.5.0 =
  * Database-flow overhaul
   * Added support for Postgres
