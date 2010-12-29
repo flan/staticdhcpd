@@ -309,7 +309,7 @@ class _PostgreSQL(_PoolingBroker):
          'user': conf.POSTGRESQL_USERNAME,
          'password': conf.POSTGRESQL_PASSWORD,
         }
-        if not conf.MYSQL_HOST is None:
+        if not conf.POSTGRESQL_HOST is None:
             self._connection_details['host'] = conf.POSTGRESQL_HOST
             self._connection_details['port'] = conf.POSTGRESQL_PORT
             self._connection_details['sslmode'] = conf.POSTGRESQL_SSLMODE
