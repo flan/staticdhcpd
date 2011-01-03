@@ -1,7 +1,7 @@
 = 1.5.2 (development) =
  * Vendor options are automatically stripped from received packets and exposed to users through a `vendor` parameter
  * Support for a PXE port has been added; see the FAQ for more details
-  * This should address an issue reported by andrew.xuan
+  * This should address an issue reported by Andrew Xuan
 ----
 = 1.5.1 =
  * Fixed a bug with Postgres's configuration, preventing it from being used unless MySQL was configured, too
