@@ -161,6 +161,7 @@ def init():
     from src.libpydhcpserver.type_rfc import rfc2610_78, rfc2610_79
     from src.libpydhcpserver.type_rfc import rfc3361_120
     from src.libpydhcpserver.type_rfc import rfc3397_119
+    from src.libpydhcpserver.type_rfc import rfc3925_124, rfc3925_125
     from src.libpydhcpserver.type_rfc import rfc4174_83
     from src.libpydhcpserver.type_rfc import rfc4280_88
     from src.libpydhcpserver.type_rfc import rfc5223_137
