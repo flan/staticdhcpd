@@ -166,6 +166,7 @@ def init():
     from src.libpydhcpserver.type_rfc import rfc4280_88
     from src.libpydhcpserver.type_rfc import rfc5223_137
     from src.libpydhcpserver.type_rfc import rfc5678_139, rfc5678_140
+    from src.logging import writeLog
     #DO NOT ALTER LINES ABOVE THIS POINT.
 #DEFINE ANY REQUIRED FUNCTIONS OR VARIABLES BELOW THIS LINE
 
