@@ -157,7 +157,7 @@ packet.setOption('vendor_class', rfc3925_124([(0x00000001, 'hello')]))
 
 Set option 125 with the following pattern:
 {{{
-packet.setOption('vendor_specific', rfc3925_124([(0x00000001, [(45, 'hello')])]))
+packet.setOption('vendor_specific', rfc3925_125([(0x00000001, [(45, 'hello')])]))
 }}}
 
 == [http://www.rfc-archive.org/getrfc.php?rfc=4174 RFC4174] ==
