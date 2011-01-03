@@ -12,7 +12,7 @@ You'll just get e-mail about a problem with the server, which is what we need to
 There are no known issues at this time.
 
 ----
-= Configuration questions =
+= Configuration =
 == I need to boot clients over my network. How can I set up PXE? ==
 Starting with 1.5.2, two methods are provided for setting up PXE and the main hurdle to getting it running (the fact that staticDHCPd was blindly passing vendor options back to the client out of ignorance) is gone.
 
@@ -44,6 +44,11 @@ That said, if you see this message appear _after_ the initial startup, then you 
 
 Further information:
  This is actually more of a Python issue than an Ubuntu issue (it would have been fixed if it were reasonably easy): Python's select() receives SIGINT, as it should, but there's no clear way to actually handle the signal gracefully -- although handling it properly would require knowledge of why it's actually being sent.
+
+----
+= Troubleshooting =
+== How do I quickly identify issues and peek into the state of the system? ==
+Starting with 1.5.2, a simple `writeLog("Hello!")` function has been exposed to the context of `conf.py:loadDHCPPacket()`, allowing you to log anything you want to the web interface.
 
 ----
 = Unsupported features =
