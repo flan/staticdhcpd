@@ -12,6 +12,30 @@ You'll just get e-mail about a problem with the server, which is what we need to
 There are no known issues at this time.
 
 ----
+= Configuration questions =
+== I need to boot clients over my network. How can I set up PXE? ==
+Starting with 1.5.2, two methods are provided for setting up PXE and the main hurdle to getting it running (the fact that staticDHCPd was blindly passing vendor options back to the client out of ignorance) is gone.
+
+In general, it should be sufficient to test for option 60 (vendor_class_identifier) in `conf.py:loadDHCPPacket()` to see if it matches the device-type you want to net-boot and set options 60, 66 (tftp_server_name), and 67 (bootfile_name) accordingly, as demonstrated in the following example:
+
+{{{
+if vendor[1] == 'Aastra 57i': #Note: these phones may not actually announce themselves this way; this is a guess
+    packet.setOption('vendor_class_identifier', strToList('PXEClient'))
+    packet.setOption('tftp_server_name', strToList('bootserver.example.org')) #IPs are valid, too
+    packet.setOption('bootfile_name', strToList(mac.replace(':', '').upper() + '.cfg')) #Have the device ask for its own MAC, stripped of colons and uppercased
+}}}
+
+Of course, you can use other criteria (or none at all, if you're sure all served clients will need the same TFTP settings) to evaluate whether the options should be set.
+
+
+In the event that the client tries to hit a DHCP proxy port (4011, by convention), you'll need to edit `conf.py` and assign the port number to `PXE_PORT`. This will cause staticDHCPd to bind another port on the same interface(s) as the main DHCP port. Because devices that disregard PXE convention are likely to be a little temperamental, staticDHCPd will provide full DHCP service on that port, including IP assignment.
+
+The `pxe` parameter in `conf.py:loadDHCPPacket()` will be set to `True` when a packet is received on this port, meaning you can test it to engage special handling logic. You may need to make use of functions like `packet.isDHCPDiscoverPacket()`, `packet.isDHCPRequestPacket()`, and `packet.isDHCPInformPacket()` to decide when to strip options when working on this port (chances are, in most cases, the client will have been assigned an IP over port 67 already, testable with `packet.getOption('ciaddr')`, and though it's highly unlikely, the device may complain if the response contains an IP offer; `packet.deleteOption('yiaddr')` takes care of this).
+
+
+Unfortunately, staticDHCPd's maintainer does not have a functional PXE setup, so corrections and feedback are quite welcome. If you have questions or problems, please open an issue against the project and you should get help quickly.
+
+----
 = Platform-specific questions =
 == On Ubuntu, I get these "non-fatal select() error" messages in my logs at startup. Why? ==
 Actually, we're not quite sure why, either. It seems as though Ubuntu's default configuration hits the process, when it starts, with a signal that generates an interrupt, which wakes the select() operations prematurely and causes them to throw an error because no handlers were invoked. No handlers were invoked because the nature of the interrupt is unknown, so to ensure normal operation, the error is semi-silently discarded and select() is invoked again, which is what would normally happen after each wakeup event. No requests can possibly be lost as a result of this error, so it's completely benign.
