@@ -48,7 +48,7 @@ Further information:
 ----
 = Troubleshooting =
 == How do I quickly identify issues and peek into the state of the system? ==
-Starting with 1.5.2, a simple `writeLog("Hello!")` function has been exposed to the context of `conf.py:loadDHCPPacket()`, allowing you to log anything you want to the web interface.
+Starting with 1.5.2, a simple `writeLog("Hello!")` function has been exposed to the context of `conf.py:loadDHCPPacket()`, allowing you to write anything you want to the web interface.
 
 ----
 = Unsupported features =
