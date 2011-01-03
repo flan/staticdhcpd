@@ -168,7 +168,7 @@ def init():
     #DO NOT ALTER LINES ABOVE THIS POINT.
 #DEFINE ANY REQUIRED FUNCTIONS OR VARIABLES BELOW THIS LINE
 
-def loadDHCPPacket(packet, mac, client_ip, relay_ip, subnet, serial, pxe):
+def loadDHCPPacket(packet, mac, client_ip, relay_ip, subnet, serial, pxe, vendor):
     #This is a custom function, called before each packet is sent, that
     #allows you to tweak the options attached to a DHCP response.
     #
@@ -186,5 +186,12 @@ def loadDHCPPacket(packet, mac, client_ip, relay_ip, subnet, serial, pxe):
     #    string and int, respectively.
     #pxe is a boolean indicating whether the request was received on the PXE
     #    port (True) or not (False).
+    #vendor is a four-tuple containing, in order, option 43
+    #    (vendor_specific_information) as a string of bytes, option 60
+    #    (vendor_class_identifier) as a string, and both option 124
+    #    (vendor_class) and option 125 (vendor_specific) as digested data:
+    #    [(enterprise_number:int, data:string)] and
+    #    [(enterprise_number:int, [(subopt_code:byte, data:string)])],
+    #    respectively. Any unset options are presented as None.
     return True
     
