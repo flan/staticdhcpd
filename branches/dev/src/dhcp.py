@@ -184,7 +184,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
     _packets_processed = 0 #: The number of packets processed since the last polling interval.
     _time_taken = 0.0 #: The amount of time taken since the last polling interval.
     
-    def __init__(self, server_address, server_port, client_port):
+    def __init__(self, server_address, server_port, client_port, pxe_port):
         """
         Constructs the DHCP handler.
         
@@ -195,8 +195,11 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         @param server_port: The port on which DHCP requests are expected to
             arrive.
         @type client_port: int
-        @param client_port: The port on which clients expect DHCP responses to be
-            sent.
+        @param client_port: The port on which clients expect DHCP responses to
+            be sent.
+        @type pxe_port: int|NoneType
+        @param pxe_port: The port on which to listen for PXE requests, or a
+            NoneType if PXE support is disabled.
         
         @raise Exception: If a problem occurs while initializing the sockets
             required to process DHCP messages.
@@ -206,7 +209,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         self._ignored_addresses = []
         
         libpydhcpserver.dhcp_network.DHCPNetwork.__init__(
-         self, server_address, server_port, client_port
+         self, server_address, server_port, client_port, pxe_port
         )
         
         self._sql_broker = src.sql.SQL_BROKER()
@@ -232,7 +235,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
             return False
         return True
         
-    def _handleDHCPDecline(self, packet, source_address):
+    def _handleDHCPDecline(self, packet, source_address, pxe):
         """
         Informs the operator of a potential IP collision on the network.
         
@@ -247,6 +250,8 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         @type source_address: tuple
         @param source_address: The address (host, port) from which the request
             was received.
+        @type pxe: bool
+        @param pxe: True if the packet was received on the PXE port.
         """
         if not self._evaluateRelay(packet):
             return
@@ -280,7 +285,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
             self._logDiscardedPacket()
         self._logTimeTaken(time.time() - start_time)
         
-    def _handleDHCPDiscover(self, packet, source_address):
+    def _handleDHCPDiscover(self, packet, source_address, pxe):
         """
         Evaluates a DHCPDISCOVER request from a client and determines whether a
         DHCPOFFER should be sent.
@@ -295,6 +300,8 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         @type source_address: tuple
         @param source_address: The address (host, port) from which the request
             was received.
+        @type pxe: bool
+        @param pxe: True if the packet was received on the PXE port.
         """
         if not self._evaluateRelay(packet):
             return
@@ -329,7 +336,8 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                     if conf.loadDHCPPacket(
                      packet,
                      mac, tuple(ipToList(result[0])), giaddr,
-                     result[9], result[10]
+                     result[9], result[10],
+                     pxe
                     ):
                         if rapid_commit:
                             self._sendDHCPPacket(packet, source_address, 'ACK-rapid', mac, result[0])
@@ -358,7 +366,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
             self._logDiscardedPacket()
         self._logTimeTaken(time.time() - start_time)
         
-    def _handleDHCPLeaseQuery(self, packet, source_address):
+    def _handleDHCPLeaseQuery(self, packet, source_address, pxe):
         """
         Evaluates a DHCPLEASEQUERY request from a relay and determines whether
         a DHCPLEASEACTIVE or DHCPLEASEUNKNOWN should be sent.
@@ -373,6 +381,8 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         @type source_address: tuple
         @param source_address: The address (host, port) from which the request
             was received.
+        @type pxe: bool
+        @param pxe: True if the packet was received on the PXE port.
         """
         if not self._evaluateRelay(packet):
             return
@@ -413,7 +423,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
             self._logDiscardedPacket()
         self._logTimeTaken(time.time() - start_time)
         
-    def _handleDHCPRequest(self, packet, source_address):
+    def _handleDHCPRequest(self, packet, source_address, pxe):
         """
         Evaluates a DHCPREQUEST request from a client and determines whether a
         DHCPACK should be sent.
@@ -433,6 +443,8 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         @type source_address: tuple
         @param source_address: The address (host, port) from which the request
             was received.
+        @type pxe: bool
+        @param pxe: True if the packet was received on the PXE port.
         """
         if not self._evaluateRelay(packet):
             return
@@ -476,7 +488,8 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                             if conf.loadDHCPPacket(
                              packet,
                              mac, tuple(ipToList(result[0])), giaddr,
-                             result[9], result[10]
+                             result[9], result[10],
+                             pxe
                             ):
                                 self._sendDHCPPacket(packet, source_address, 'ACK', mac, s_ip)
                             else:
@@ -503,7 +516,8 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                         if conf.loadDHCPPacket(
                          packet,
                          mac, tuple(ip), giaddr,
-                         result[9], result[10]
+                         result[9], result[10],
+                         pxe
                         ):
                             self._sendDHCPPacket(packet, source_address, 'ACK', mac, s_ip)
                         else:
@@ -539,7 +553,8 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                             if conf.loadDHCPPacket(
                              packet,
                              mac, tuple(ciaddr), giaddr,
-                             result[9], result[10]
+                             result[9], result[10],
+                             pxe
                             ):
                                 self._sendDHCPPacket(packet, (s_ciaddr, 0), 'ACK', mac, s_ciaddr)
                             else:
@@ -564,7 +579,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
             self._logDiscardedPacket()
         self._logTimeTaken(time.time() - start_time)
         
-    def _handleDHCPInform(self, packet, source_address):
+    def _handleDHCPInform(self, packet, source_address, pxe):
         """
         Evaluates a DHCPINFORM request from a client and determines whether a
         DHCPACK should be sent.
@@ -580,6 +595,8 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         @type source_address: tuple
         @param source_address: The address (host, port) from which the request
             was received.
+        @type pxe: bool
+        @param pxe: True if the packet was received on the PXE port.
         """
         if not self._evaluateRelay(packet):
             return
@@ -624,7 +641,8 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                     if conf.loadDHCPPacket(
                      packet,
                      mac, tuple(ipToList(result[0])), giaddr,
-                     result[9], result[10]
+                     result[9], result[10],
+                     pxe
                     ):
                         self._sendDHCPPacket(packet, source_address, 'ACK', mac, s_ciaddr)
                     else:
@@ -647,7 +665,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
             self._logDiscardedPacket()
         self._logTimeTaken(time.time() - start_time)
         
-    def _handleDHCPRelease(self, packet, source_address):
+    def _handleDHCPRelease(self, packet, source_address, pxe):
         """
         Informs the DHCP operator that a client has terminated its "lease".
         
@@ -662,6 +680,8 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         @type source_address: tuple
         @param source_address: The address (host, port) from which the request
             was received.
+        @type pxe: bool
+        @param pxe: True if the packet was received on the PXE port.
         """
         if not self._evaluateRelay(packet):
             return
@@ -903,7 +923,8 @@ class DHCPService(threading.Thread):
         self._dhcp_server = _DHCPServer(
          '.'.join([str(int(o)) for o in conf.DHCP_SERVER_IP.split('.')]),
          int(conf.DHCP_SERVER_PORT),
-         int(conf.DHCP_CLIENT_PORT)
+         int(conf.DHCP_CLIENT_PORT),
+         conf.PXE_PORT and int(conf.PXE_PORT)
         )
         _dhcp_servers.append(self._dhcp_server) #Add this server to the global list.
         

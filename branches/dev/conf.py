@@ -35,6 +35,9 @@ DHCP_SERVER_PORT = 67
 #The port on which clients wait for DHCP responses; 68 is the standard.
 DHCP_CLIENT_PORT = 68
 
+#Set this to a port-number (4011 is standard) to enable PXE-processing.
+PXE_PORT = None
+
 #True to enable access to server statistics and logs.
 WEB_ENABLED = True
 #The IP of the interface on which the HTTP interface should be served.
@@ -165,7 +168,7 @@ def init():
     #DO NOT ALTER LINES ABOVE THIS POINT.
 #DEFINE ANY REQUIRED FUNCTIONS OR VARIABLES BELOW THIS LINE
 
-def loadDHCPPacket(packet, mac, client_ip, relay_ip, subnet, serial):
+def loadDHCPPacket(packet, mac, client_ip, relay_ip, subnet, serial, pxe):
     #This is a custom function, called before each packet is sent, that
     #allows you to tweak the options attached to a DHCP response.
     #
@@ -180,6 +183,8 @@ def loadDHCPPacket(packet, mac, client_ip, relay_ip, subnet, serial):
     #relay_ip is either None or an address as a quadruple of octets,
     #    depending on whether this is a response to a relay request.
     #subnet and serial are values passed through from the database, as a
-    #    basestring and int, respectively.
+    #    string and int, respectively.
+    #pxe is a boolean indicating whether the request was received on the PXE
+    #    port (True) or not (False).
     return True
     
