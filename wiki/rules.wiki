@@ -152,12 +152,12 @@ There are no limits on the number of comma-delimited values you may specify.
 == [http://www.rfc-archive.org/getrfc.php?rfc=3925 RFC3925] ==
 Set option 124 with the following pattern:
 {{{
-packet.setOption('vendor_class', rfc3925_124([(0x00000001, 'hello')]))
+packet.setOption('vendor_class', rfc3925_124([(0x00000001, strToList('hello'))]))
 }}}
 
 Set option 125 with the following pattern:
 {{{
-packet.setOption('vendor_specific', rfc3925_125([(0x00000001, [(45, 'hello')])]))
+packet.setOption('vendor_specific', rfc3925_125([(0x00000001, [(45, strToList('hello'))])]))
 }}}
 
 == [http://www.rfc-archive.org/getrfc.php?rfc=4174 RFC4174] ==
