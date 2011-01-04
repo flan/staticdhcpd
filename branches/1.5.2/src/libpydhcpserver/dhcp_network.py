@@ -39,7 +39,6 @@ class DHCPNetwork(object):
     _server_port = None #: The port on which DHCP servers and relays listen in this network.
     _client_port = None #: The port on which DHCP clients listen in this network.
     _dhcp_socket = None #: The socket used to receive DHCP requests.
-    _response_socket = None #: The socket used to send DHCP responses. Necessary because of how Linux handles broadcast.
     
     def __init__(self, server_address, server_port, client_port):
         """
@@ -63,37 +62,31 @@ class DHCPNetwork(object):
         
     def _bindToAddress(self):
         """
-        Binds the server and response sockets so they may be used.
+        Binds the server socket so it may be used.
         
-        @raise Exception: A problem occurred while binding the sockets.
+        @raise Exception: A problem occurred while binding the socket.
         """
         try:
-            if self._server_address:
-                self._response_socket.bind((self._server_address, 0))
-            self._dhcp_socket.bind(('', self._server_port))
+            self._dhcp_socket.bind((self._server_address or '', self._server_port))
         except socket.error, e:
-            raise Exception('Unable to bind sockets: %(error)s' % {
+            raise Exception('Unable to bind socket: %(error)s' % {
              'error': str(e),
             })
             
     def _createSocket(self):
         """
-        Creates and configures the server and response sockets.
+        Creates and configures the server socket.
         
         @raise Exception: A socket was in use or the OS doesn't support proper
             broadcast or reuse flags.
         """
         try:
             self._dhcp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            if self._server_address:
-                self._response_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            else:
-                self._response_socket = self._dhcp_socket
         except socket.error, msg:
             raise Exception('Unable to create socket: %(err)s' % {'err': str(msg),})
             
         try:
-            self._response_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+            self._dhcp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         except socket.error, msg:
             raise Exception('Unable to set SO_BROADCAST: %(err)s' % {'err': str(msg),})
             
@@ -131,6 +124,9 @@ class DHCPNetwork(object):
                         threading.Thread(target=self._handleDHCPDecline, args=(packet, source_address)).start()
                     elif packet.isDHCPLeaseQueryPacket():
                         threading.Thread(target=self._handleDHCPLeaseQuery, args=(packet, source_address)).start()
+                    else:
+                        if '.'.join(map(str, packet.getOption("server_identifier"))) == self._server_address:
+                            return False #Ignore the packet, since it's a broadcast response sent from this server.
                     return True
         return False
         
@@ -217,5 +213,5 @@ class DHCPNetwork(object):
         @type port: int
         @param port: The port to which the packet is to be addressed.
         """
-        return self._response_socket.sendto(packet.encodePacket(), (ip, port))
+        return self._dhcp_socket.sendto(packet.encodePacket(), (ip, port))
         
