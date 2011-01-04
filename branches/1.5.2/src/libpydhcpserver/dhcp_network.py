@@ -38,7 +38,7 @@ class DHCPNetwork(object):
     _server_address = None #: The IP address of the DHCP service.
     _server_port = None #: The port on which DHCP servers and relays listen in this network.
     _client_port = None #: The port on which DHCP clients listen in this network.
-    _dhcp_socket = None #: The socket used to receive DHCP requests.
+    _dhcp_socket = None #: The socket used to send and receive DHCP requests.
     
     def __init__(self, server_address, server_port, client_port):
         """
