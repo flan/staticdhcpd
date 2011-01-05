@@ -124,9 +124,6 @@ class DHCPNetwork(object):
                         threading.Thread(target=self._handleDHCPDecline, args=(packet, source_address)).start()
                     elif packet.isDHCPLeaseQueryPacket():
                         threading.Thread(target=self._handleDHCPLeaseQuery, args=(packet, source_address)).start()
-                    else:
-                        if '.'.join(map(str, packet.getOption("server_identifier"))) == self._server_address:
-                            return False #Ignore the packet, since it's a broadcast response sent from this server.
                     return True
         return False
         
