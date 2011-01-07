@@ -380,12 +380,12 @@ if conf.DATABASE_ENGINE == 'MySQL':
 elif conf.DATABASE_ENGINE == 'PostgreSQL':
     import psycopg2 as SQL_MODULE
     SQL_BROKER = _PostgreSQL
-elif conf.DATABASE_ENGINE == 'SQLite':
-    import sqlite3 as SQL_MODULE
-    SQL_BROKER = _SQLite
 elif conf.DATABASE_ENGINE == 'Oracle':
     import cx_Oracle as SQL_MODULE
     SQL_BROKER = _Oracle
+elif conf.DATABASE_ENGINE == 'SQLite':
+    import sqlite3 as SQL_MODULE
+    SQL_BROKER = _SQLite
 else:
     raise ValueError("Unknown database engine: %(engine)s" % {
      'engine': conf.DATABASE_ENGINE
