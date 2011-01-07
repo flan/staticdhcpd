@@ -225,6 +225,10 @@ class DHCPNetwork(object):
         # will not relay when the source port is not 67.
         #
         # Otherwise use self._response_socket because it has SO_BROADCAST.
+        #
+        # If self._dhcp_socket is anonymously bound, the two sockets will
+        # actually be one and the same, so this change has no potentially
+        # damaging effects.
         if not ip == '255.255.255.255':
             return self._dhcp_socket.sendto(packet_encoded, (ip, port))
         else:
