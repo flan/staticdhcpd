@@ -341,6 +341,33 @@ class _SQLite(_NonPoolingBroker):
         
         self._setupBroker(1)
         
+class _Oracle(_PoolingBroker):
+    """
+    Implements an Oracle broker.
+    """
+    _query_mac = """
+     SELECT
+      m.ip, m.hostname,
+      s.gateway, s.subnet_mask, s.broadcast_address, s.domain_name, s.domain_name_servers,
+      s.ntp_servers, s.lease_time, s.subnet, s.serial
+     FROM maps m, subnets s
+     WHERE
+      m.mac = :1 AND m.subnet = s.subnet AND m.serial = s.serial
+     LIMIT 1
+    """
+
+    def __init__(self):
+        """
+        Constructs the broker.
+        """
+        self._connection_details = {
+         'user': conf.ORACLE_USERNAME,
+         'password': conf.ORACLE_PASSWORD,
+         'dsn': conf.ORACLE_DATABASE,
+        }
+
+        self._setupBroker(conf.ORACLE_MAXIMUM_CONNECTIONS)
+
 #Decide which SQL engine to use and store the class in SQL_BROKER
 #################################################################
 SQL_BROKER = None #: The class of the SQL engine to use.
@@ -354,6 +381,9 @@ elif conf.DATABASE_ENGINE == 'PostgreSQL':
 elif conf.DATABASE_ENGINE == 'SQLite':
     import sqlite3 as SQL_MODULE
     SQL_BROKER = _SQLite
+elif conf.DATABASE_ENGINE == 'Oracle':
+    import cx_Oracle as SQL_MODULE
+    SQL_BROKER = _Oracle
 else:
     raise ValueError("Unknown database engine: %(engine)s" % {
      'engine': conf.DATABASE_ENGINE

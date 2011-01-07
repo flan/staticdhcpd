@@ -126,6 +126,16 @@ POSTGRESQL_MAXIMUM_CONNECTIONS = 4
 #The file that contains your SQLite database.
 SQLITE_FILE = '/etc/staticDHCPd/dhcp.sqlite3'
 
+#ORACLE_* values used only with 'Oracle' engine.
+#The name of your database (from tnsnames.ora).
+ORACLE_DATABASE = 'dhcp'
+#The name of a user with SELECT access.
+ORACLE_USERNAME = 'dhcp_user'
+#The password of the user.
+ORACLE_PASSWORD = 'dhcp_pass'
+#The number of threads that may read the database at once.
+ORACLE_MAXIMUM_CONNECTIONS = 4
+
 #E-mail settings
 #######################################
 #True to allow staticDHCPd to inform you of any problems it cannot handle by
