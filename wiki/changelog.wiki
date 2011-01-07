@@ -5,9 +5,8 @@
  * Added support for easy logging from user-defined code
 ----
 = 1.5.2 (development) =
- * Restructured socket logic so everything goes through a single DHCP port (67 by default)
-  * Addresses an issue with Cisco relays not accepting packets from sockets other than 67
-  * Reduces staticDHCP's footprint on hosts
+ * Addressed an issue with Cisco relays not accepting packets from sockets other than 67
+ * Added support for Oracle
 ----
 = 1.5.1 =
  * Fixed a bug with Postgres's configuration, preventing it from being used unless MySQL was configured, too
