@@ -225,8 +225,8 @@ class DHCPNetwork(object):
         # will not relay when the source port is not 67.
         #
         # Otherwise use self._response_socket because it has SO_BROADCAST.
-        first_octet = int(ip.split('.')[0])
-        if not first_octet == 255 and not (224 <= first_octet < 240):
+        first_octet = 
+        if not ip == '255.255.255.255' and not (224 <= int(ip.split('.')[0]) < 240):
             return self._dhcp_socket.sendto(packet_encoded, (ip, port))
         else:
             return self._response_socket.sendto(packet_encoded, (ip, port))
