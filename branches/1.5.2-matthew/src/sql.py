@@ -24,6 +24,7 @@ Legal
  along with this program. If not, see <http://www.gnu.org/licenses/>.
  
  (C) Neil Tallim, 2009 <red.hamsterx@gmail.com>
+ (C) Matthew Boedicker <matthewm@boedicker.org>
 """
 ################################################################################
 #   The decision of which engine to use occurs at the bottom of this module    #
@@ -316,31 +317,6 @@ class _PostgreSQL(_PoolingBroker):
             
         self._setupBroker(conf.POSTGRESQL_MAXIMUM_CONNECTIONS)
         
-class _SQLite(_NonPoolingBroker):
-    """
-    Implements a SQLite broker.
-    """
-    _query_mac = """
-     SELECT
-      m.ip, m.hostname,
-      s.gateway, s.subnet_mask, s.broadcast_address, s.domain_name, s.domain_name_servers,
-      s.ntp_servers, s.lease_time, s.subnet, s.serial
-     FROM maps m, subnets s
-     WHERE
-      m.mac = ? AND m.subnet = s.subnet AND m.serial = s.serial
-     LIMIT 1
-    """
-    
-    def __init__(self):
-        """
-        Constructs the broker.
-        """
-        self._connection_details = {
-         'database': conf.SQLITE_FILE,
-        }
-        
-        self._setupBroker(1)
-        
 class _Oracle(_PoolingBroker):
     """
     Implements an Oracle broker.
@@ -368,6 +344,32 @@ class _Oracle(_PoolingBroker):
 
         self._setupBroker(conf.ORACLE_MAXIMUM_CONNECTIONS)
 
+class _SQLite(_NonPoolingBroker):
+    """
+    Implements a SQLite broker.
+    """
+    _query_mac = """
+     SELECT
+      m.ip, m.hostname,
+      s.gateway, s.subnet_mask, s.broadcast_address, s.domain_name, s.domain_name_servers,
+      s.ntp_servers, s.lease_time, s.subnet, s.serial
+     FROM maps m, subnets s
+     WHERE
+      m.mac = ? AND m.subnet = s.subnet AND m.serial = s.serial
+     LIMIT 1
+    """
+    
+    def __init__(self):
+        """
+        Constructs the broker.
+        """
+        self._connection_details = {
+         'database': conf.SQLITE_FILE,
+        }
+        
+        self._setupBroker(1)
+        
+        
 #Decide which SQL engine to use and store the class in SQL_BROKER
 #################################################################
 SQL_BROKER = None #: The class of the SQL engine to use.
