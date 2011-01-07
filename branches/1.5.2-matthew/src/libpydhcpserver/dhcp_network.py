@@ -29,6 +29,8 @@ import select
 import socket
 import threading
 
+import netaddr
+
 import dhcp_packet
 
 class DHCPNetwork(object):
@@ -217,5 +219,14 @@ class DHCPNetwork(object):
         @type port: int
         @param port: The port to which the packet is to be addressed.
         """
-        return self._response_socket.sendto(packet.encodePacket(), (ip, port))
-        
+        packet_encoded = packet.encodePacket()
+
+        # When responding to a relay, the packet will be unicast so use
+        # self._dhcp_socket so the source port will be 67. Some relays
+        # will not relay when the source port is not 67.
+        #
+        # Otherwise use self._response_socket because it has SO_BROADCAST.
+        if netaddr.IPAddress(ip).is_unicast():
+            return self._dhcp_socket.sendto(packet_encoded, (ip, port))
+        else:
+            return self._response_socket.sendto(packet_encoded, (ip, port))
