@@ -30,8 +30,6 @@ import select
 import socket
 import threading
 
-import netaddr
-
 import dhcp_packet
 
 class DHCPNetwork(object):
@@ -222,12 +220,13 @@ class DHCPNetwork(object):
         """
         packet_encoded = packet.encodePacket()
 
-        # When responding to a relay, the packet will be unicast so use
+        # When responding to a relay, the packet will be unicast, so use
         # self._dhcp_socket so the source port will be 67. Some relays
         # will not relay when the source port is not 67.
         #
         # Otherwise use self._response_socket because it has SO_BROADCAST.
-        if netaddr.IPAddress(ip).is_unicast():
+        first_octet = int(ip.split('.')[0])
+        if not first_octet == 255 and not (224 <= first_octet < 240):
             return self._dhcp_socket.sendto(packet_encoded, (ip, port))
         else:
             return self._response_socket.sendto(packet_encoded, (ip, port))
