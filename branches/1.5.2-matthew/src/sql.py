@@ -23,8 +23,8 @@ Legal
  You should have received a copy of the GNU General Public License
  along with this program. If not, see <http://www.gnu.org/licenses/>.
  
- (C) Neil Tallim, 2009 <red.hamsterx@gmail.com>
- (C) Matthew Boedicker <matthewm@boedicker.org>
+ (C) Neil Tallim, 2011 <red.hamsterx@gmail.com>
+ (C) Matthew Boedicker, 2011 <matthewm@boedicker.org>
 """
 ################################################################################
 #   The decision of which engine to use occurs at the bottom of this module    #

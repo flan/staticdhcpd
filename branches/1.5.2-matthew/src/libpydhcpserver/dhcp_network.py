@@ -22,7 +22,8 @@ Legal
  You should have received a copy of the GNU General Public License
  along with this program. If not, see <http://www.gnu.org/licenses/>.
  
- (C) Neil Tallim, 2010 <red.hamsterx@gmail.com>
+ (C) Neil Tallim, 2011 <red.hamsterx@gmail.com>
+ (C) Matthew Boedicker, 2011 <matthewm@boedicker.org>
  (C) Mathieu Ignacio, 2008 <mignacio@april.org>
 """
 import select
@@ -230,3 +231,4 @@ class DHCPNetwork(object):
             return self._dhcp_socket.sendto(packet_encoded, (ip, port))
         else:
             return self._response_socket.sendto(packet_encoded, (ip, port))
+            
