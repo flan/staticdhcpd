@@ -30,7 +30,7 @@ import traceback
 import threading
 import time
 
-import conf
+import src.conf_buffer as conf
 
 _LOG_LOCK = threading.Lock() #: A lock used to synchronize access to the memory-log.
 _LOG = [] #: The memory-log.

@@ -33,8 +33,7 @@ Legal
 ################################################################################
 import threading
 
-import conf
-
+import src.conf_buffer as conf
 import src.logging
 
 class _SQLBroker(object):

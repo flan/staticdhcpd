@@ -29,7 +29,7 @@ import signal
 import sys
 import time
 
-import conf
+import src.conf_buffer as conf
 
 import src.dhcp
 import src.logging

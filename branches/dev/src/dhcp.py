@@ -28,8 +28,7 @@ import select
 import threading
 import time
 
-import conf
-
+import src.conf_buffer as conf
 import src.logging
 import src.sql
 
