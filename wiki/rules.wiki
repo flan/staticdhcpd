@@ -6,7 +6,7 @@ No prior programming experience is required to use this feature of staticDHCPd, 
 
 ----
 = Foreword =
-Python is whitespace-sensitive and [http://uguu.ca/ Neil Tallim] likes to go against PEP-8 and use tabs for indentation. All code to be added to the `loadDHCPPacket()` function must be indented such that the outermost scope-line aligns with the comments and default {{{return True}}}. Failure to do so will result in a syntax error that will prevent staticDHCPd from starting. If this doesn't make sense, find a "Hello, world!" Python script and do some hacking.
+Python is whitespace-sensitive. All code to be added to the `loadDHCPPacket()` function must be indented such that the outermost scope-line aligns with the comments and default {{{return True}}}. Failure to do so will result in a syntax error that will prevent staticDHCPd from starting. If this doesn't make sense, find a "Hello, world!" Python script and do some hacking.
 
 As for DHCP options, don't worry about whether the client is configured to handle them or not; when the response is sent, all options the client did not ask to receive will be omitted, to ensure that nothing gets confused. Exception: in the (non-standard) event that a client does not provide a list in option 55, all set options will be returned.
 
@@ -28,6 +28,8 @@ With a few exceptions for special RFC requirements, all DHCP options configured 
  * {{{string}}}: A series of zero or more characters, assignable using {{{packet.setOption(x, strToList('hello'))}}}
 
 Note: All integers may be specified using hex notation, {{{0xF0}}}, or in binary, {{{int('00010111', 2)}}}.
+
+Note: If you need [http://www.rfc-archive.org/getrfc.php?rfc=1035 RFC1035] DNS formatting for a custom option, you can use `rfc1035_plus('www.google.ca,www.example.org').getValue()` to compute the byte-list. The RFC-specific handlers do this behind the scenes, though.
 
 ----
 = Examples =
