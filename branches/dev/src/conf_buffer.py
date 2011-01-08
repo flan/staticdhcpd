@@ -87,14 +87,14 @@ _defaults.update({
  'UID': 99,
  'GID': 99,
 
- 'DHCP_SERVER_IP': '192.168.1.100',
+ 'DHCP_SERVER_IP': '0.0.0.0',
  'DHCP_SERVER_PORT': 67,
  'DHCP_CLIENT_PORT': 68,
 
  'PXE_PORT': None,
  
  'WEB_ENABLED': True,
- 'WEB_IP': '192.168.1.100',
+ 'WEB_IP': '0.0.0.0',
  'WEB_PORT': 30880,
 })
 
