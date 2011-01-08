@@ -25,6 +25,7 @@ Legal
  (C) Neil Tallim, 2010 <red.hamsterx@gmail.com>
 """
 import type_ipv4
+import type_strlist
 
 def ipToList(ip):
     """
@@ -125,7 +126,7 @@ def strToList(s):
     @rtype: list
     @return: An encoded byte version of the given string.
     """
-    return strlist(str(s)).list()
+    return type_strlist.strlist(str(s)).list()
     
 def rfc3046_decode(l):
     """
@@ -188,7 +189,7 @@ class RFC(object):
         return 1
         
         
-class _rfc1035_plus(RFC):
+class rfc1035_plus(RFC):
     def __init__(self, data):
         """
         Parses the given data and stores multiple RFC1035-formatted strings.
@@ -259,7 +260,7 @@ class rfc3361_120(RFC):
         self._value.insert(0, int(ip_4_mode))
         
         
-class rfc3397_119(_rfc1035_plus): pass
+class rfc3397_119(rfc1035_plus): pass
 
 
 class rfc3925_124(RFC):
@@ -325,9 +326,9 @@ class rfc4174_83(RFC):
             self._value += type_ipv4.ipv4(token).list()
             
             
-class rfc4280_88(_rfc1035_plus): pass
+class rfc4280_88(rfc1035_plus): pass
 
-class rfc5223_137(_rfc1035_plus): pass
+class rfc5223_137(rfc1035_plus): pass
 
 
 class rfc5678_139(RFC):
@@ -357,6 +358,5 @@ class rfc5678_140(RFC):
         self._value = []
         for (code, addresses) in values:
             self._value.append(code)
-            for token in [tok for tok in [address.strip() for address in addresses.split(',')] if tok]:
-                self._value += _rfc1035Parse(token)
-                
+            self._value += rfc1035_plus(addresses).getValue()
+            

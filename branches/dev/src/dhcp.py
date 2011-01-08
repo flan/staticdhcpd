@@ -33,7 +33,6 @@ import src.logging
 import src.sql
 
 import libpydhcpserver.dhcp_network
-from libpydhcpserver.type_strlist import strlist
 from libpydhcpserver.type_rfc import (
  ipToList, ipsToList,
  intToList, intsToList,
