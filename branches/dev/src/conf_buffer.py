@@ -27,38 +27,6 @@ Legal
 """
 import conf
 
-#Inject namespace elements into conf.
-##############################################################################
-import libpydhcpserver.type_rfc as type_rfc
-conf.rfc3046_decode = type_rfc.rfc3046_decode
-conf.rfc1035_plus = type_rfc.rfc1035_plus
-
-conf.ipToList = type_rfc.ipToList
-conf.ipsToList = type_rfc.ipsToList
-conf.intToList = type_rfc.intToList
-conf.intsToList = type_rfc.intsToList
-conf.longToList = type_rfc.longToList
-conf.longsToList = type_rfc.longsToList
-conf.strToList = type_rfc.strToList
-
-conf.rfc2610_78 = type_rfc.rfc2610_78
-conf.rfc2610_79 = type_rfc.rfc2610_79
-conf.rfc3361_120 = type_rfc.rfc3361_120
-conf.rfc3397_119 = type_rfc.rfc3397_119
-conf.rfc3925_124 = type_rfc.rfc3925_124
-conf.rfc3925_125 = type_rfc.rfc3925_125
-conf.rfc4174_83 = type_rfc.rfc4174_83
-conf.rfc4280_88 = type_rfc.rfc4280_88
-conf.rfc5223_137 = type_rfc.rfc5223_137
-conf.rfc5678_139 = type_rfc.rfc5678_139
-conf.rfc5678_140 = type_rfc.rfc5678_140
-del type_rfc
-
-import logging
-conf.writeLog = logging.writeLog
-del logging
-
-
 #Options passed through from conf.py
 #For explanations, please consult that file.
 ##############################################################################
@@ -69,13 +37,6 @@ _defaults = {}
 _defaults.update({
  'DEBUG': False,
  
- 'SYSTEM_NAME': 'staticDHCPd',
-})
-_defaults.update({
- 'LOG_FILE': '/var/log/' + _defaults['SYSTEM_NAME'] + '.log',
- 'LOG_FILE_TIMESTAMP': False,
- 'PID_FILE': '/var/run/' + _defaults['SYSTEM_NAME'] + '.pid',
- 
  'POLLING_INTERVAL': 30,
  'LOG_CAPACITY': 1000,
  'POLL_INTERVALS_TO_TRACK': 20,
@@ -84,18 +45,7 @@ _defaults.update({
 #Server settings
 #######################################
 _defaults.update({
- 'UID': 99,
- 'GID': 99,
-
- 'DHCP_SERVER_IP': '0.0.0.0',
- 'DHCP_SERVER_PORT': 67,
- 'DHCP_CLIENT_PORT': 68,
-
  'PXE_PORT': None,
- 
- 'WEB_ENABLED': True,
- 'WEB_IP': '0.0.0.0',
- 'WEB_PORT': 30880,
 })
 
 #Server behaviour settings
@@ -120,8 +70,6 @@ _defaults.update({
 #Database settings
 #######################################
 _defaults.update({
- 'DATABASE_ENGINE': 'MySQL',
-
  'USE_CACHE': False,
 
  'USE_POOL': True,
@@ -164,13 +112,45 @@ _defaults.update({
 
 #Construct a unified namespace
 #######################################
+for key in [k for k in dir(conf) if k.isupper()]: #Copy everything that looks like a constant.
+    globals()[key] = getattr(conf, key)
+
 for (key, value) in _defaults.iteritems():
-    if hasattr(conf, key):
-        globals()[key] = getattr(conf, key)
-    else:
+    if not key in globals():
         globals()[key] = value
 del _defaults
 
 init = conf.init
 loadDHCPPacket = conf.loadDHCPPacket
+
+#Inject namespace elements into conf.
+##############################################################################
+import libpydhcpserver.type_rfc as type_rfc
+conf.rfc3046_decode = type_rfc.rfc3046_decode
+conf.rfc1035_plus = type_rfc.rfc1035_plus
+
+conf.ipToList = type_rfc.ipToList
+conf.ipsToList = type_rfc.ipsToList
+conf.intToList = type_rfc.intToList
+conf.intsToList = type_rfc.intsToList
+conf.longToList = type_rfc.longToList
+conf.longsToList = type_rfc.longsToList
+conf.strToList = type_rfc.strToList
+
+conf.rfc2610_78 = type_rfc.rfc2610_78
+conf.rfc2610_79 = type_rfc.rfc2610_79
+conf.rfc3361_120 = type_rfc.rfc3361_120
+conf.rfc3397_119 = type_rfc.rfc3397_119
+conf.rfc3925_124 = type_rfc.rfc3925_124
+conf.rfc3925_125 = type_rfc.rfc3925_125
+conf.rfc4174_83 = type_rfc.rfc4174_83
+conf.rfc4280_88 = type_rfc.rfc4280_88
+conf.rfc5223_137 = type_rfc.rfc5223_137
+conf.rfc5678_139 = type_rfc.rfc5678_139
+conf.rfc5678_140 = type_rfc.rfc5678_140
+del type_rfc
+
+import logging
+conf.writeLog = logging.writeLog
+del logging
 
