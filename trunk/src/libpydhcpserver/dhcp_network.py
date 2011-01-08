@@ -39,10 +39,12 @@ class DHCPNetwork(object):
     _server_address = None #: The IP address of the DHCP service.
     _server_port = None #: The port on which DHCP servers and relays listen in this network.
     _client_port = None #: The port on which DHCP clients listen in this network.
+    _pxe_port = None #: The port on which DHCP servers listen for PXE traffic in this network.
     _dhcp_socket = None #: The socket used to receive DHCP requests.
     _response_socket = None #: The socket used to send DHCP responses. Necessary because of how Linux handles broadcast.
+    _pxe_socket = None #: The socket used to receive PXE requests.
     
-    def __init__(self, server_address, server_port, client_port):
+    def __init__(self, server_address, server_port, client_port, pxe_port):
         """
         Sets up the DHCP network infrastructure.
         
@@ -52,12 +54,15 @@ class DHCPNetwork(object):
         @param server_port: The port on which DHCP servers and relays listen in this network.
         @type client_port: int
         @param client_port: The port on which DHCP clients listen in this network.
+        @type pxe_port: int|NoneType
+        @param pxe_port: The port on which DHCP servers listen for PXE traffic in this network.
         
         @raise Exception: A problem occurred during setup.
         """
         self._server_address = server_address
         self._server_port = server_port
         self._client_port = client_port
+        self._pxe_port = pxe_port
         
         self._createSocket()
         self._bindToAddress()
@@ -72,6 +77,8 @@ class DHCPNetwork(object):
             if self._server_address:
                 self._response_socket.bind((self._server_address, 0))
             self._dhcp_socket.bind(('', self._server_port))
+            if self._pxe_port:
+                self._pxe_socket.bind(('', self._pxe_port))
         except socket.error, e:
             raise Exception('Unable to bind sockets: %(error)s' % {
              'error': str(e),
@@ -90,6 +97,8 @@ class DHCPNetwork(object):
                 self._response_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             else:
                 self._response_socket = self._dhcp_socket
+            if self._pxe_port:
+                self._pxe_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         except socket.error, msg:
             raise Exception('Unable to create socket: %(err)s' % {'err': str(msg),})
             
@@ -100,6 +109,8 @@ class DHCPNetwork(object):
             
         try: 
             self._dhcp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            if self._pxe_socket:
+                self._pxe_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         except socket.error, msg :
             raise Exception('Unable to set SO_REUSEADDR: %(err)s' % {'err': str(msg),})
             
@@ -120,22 +131,23 @@ class DHCPNetwork(object):
             if data:
                 packet = dhcp_packet.DHCPPacket(data)
                 if packet.isDHCPPacket():
+                    pxe = source_address[1] == self._pxe_port
                     if packet.isDHCPRequestPacket():
-                        threading.Thread(target=self._handleDHCPRequest, args=(packet, source_address)).start()
+                        threading.Thread(target=self._handleDHCPRequest, args=(packet, source_address, pxe)).start()
                     elif packet.isDHCPDiscoverPacket():
-                        threading.Thread(target=self._handleDHCPDiscover, args=(packet, source_address)).start()
+                        threading.Thread(target=self._handleDHCPDiscover, args=(packet, source_address, pxe)).start()
                     elif packet.isDHCPInformPacket():
-                        threading.Thread(target=self._handleDHCPInform, args=(packet, source_address)).start()
+                        threading.Thread(target=self._handleDHCPInform, args=(packet, source_address, pxe)).start()
                     elif packet.isDHCPReleasePacket():
-                        threading.Thread(target=self._handleDHCPRelease, args=(packet, source_address)).start()
+                        threading.Thread(target=self._handleDHCPRelease, args=(packet, source_address, pxe)).start()
                     elif packet.isDHCPDeclinePacket():
-                        threading.Thread(target=self._handleDHCPDecline, args=(packet, source_address)).start()
+                        threading.Thread(target=self._handleDHCPDecline, args=(packet, source_address, pxe)).start()
                     elif packet.isDHCPLeaseQueryPacket():
-                        threading.Thread(target=self._handleDHCPLeaseQuery, args=(packet, source_address)).start()
+                        threading.Thread(target=self._handleDHCPLeaseQuery, args=(packet, source_address, pxe)).start()
                     return True
         return False
         
-    def _handleDHCPDecline(self, packet, source_address):
+    def _handleDHCPDecline(self, packet, source_address, pxe):
         """
         Processes a DECLINE packet.
         
@@ -144,10 +156,12 @@ class DHCPNetwork(object):
         @type source_address: tuple
         @param source_address: The address (host, port) from which the request
             was received.
+        @type pxe: bool
+        @param pxe: True if the packet was received on the PXE port.
         """
         pass
         
-    def _handleDHCPDiscover(self, packet, source_address):
+    def _handleDHCPDiscover(self, packet, source_address, pxe):
         """
         Processes a DISCOVER packet.
         
@@ -156,10 +170,12 @@ class DHCPNetwork(object):
         @type source_address: tuple
         @param source_address: The address (host, port) from which the request
             was received.
+        @type pxe: bool
+        @param pxe: True if the packet was received on the PXE port.
         """
         pass
         
-    def _handleDHCPInform(self, packet, source_address):
+    def _handleDHCPInform(self, packet, source_address, pxe):
         """
         Processes an INFORM packet.
         
@@ -168,10 +184,12 @@ class DHCPNetwork(object):
         @type source_address: tuple
         @param source_address: The address (host, port) from which the request
             was received.
+        @type pxe: bool
+        @param pxe: True if the packet was received on the PXE port.
         """
         pass
         
-    def _handleDHCPLeaseQuery(self, packet, source_address):
+    def _handleDHCPLeaseQuery(self, packet, source_address, pxe):
         """
         Processes a LEASEQUERY packet.
         
@@ -180,6 +198,8 @@ class DHCPNetwork(object):
         @type source_address: tuple
         @param source_address: The address (host, port) from which the request
             was received.
+        @type pxe: bool
+        @param pxe: True if the packet was received on the PXE port.
         """
         pass
         
@@ -195,7 +215,7 @@ class DHCPNetwork(object):
         """
         pass
         
-    def _handleDHCPRequest(self, packet, source_address):
+    def _handleDHCPRequest(self, packet, source_address, pxe):
         """
         Processes a REQUEST packet.
         
@@ -204,6 +224,8 @@ class DHCPNetwork(object):
         @type source_address: tuple
         @param source_address: The address (host, port) from which the request
             was received.
+        @type pxe: bool
+        @param pxe: True if the packet was received on the PXE port.
         """
         pass
         

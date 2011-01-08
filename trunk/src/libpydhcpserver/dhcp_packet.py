@@ -387,6 +387,67 @@ class DHCPPacket(object):
         @return: True if this is a REQUEST packet.
         """
         return self.getOption('dhcp_message_type')[0] == 3
+
+    def extractVendorOptions(self):
+        """
+        Strips out vendor-specific options from the packet, returning them
+        separately.
+        
+        This function is good for scrubbing information that needs to be sent
+        monodirectionally from the client.
+
+        @rtype: tuple(4)
+        @return: A four-tuple containing, in order, option 43
+            (vendor_specific_information) as a string of bytes, option 60
+            (vendor_class_identifier) as a string, and both option 124
+            (vendor_class) and option 125 (vendor_specific) as digested data:
+            [(enterprise_number:int, data:string)] and
+            [(enterprise_number:int, [(subopt_code:byte, data:string)])],
+            respectively. Any unset options are presented as None.
+        """
+        opt_43 = self.getOption("vendor_specific_information")
+        opt_60 = self.getOption("vendor_class_identifier")
+        opt_124 = self.getOption("vendor_class")
+        opt_125 = self.getOption("vendor_specific")
+        
+        if opt_124:
+            data = []
+            while opt_124:
+                enterprise_number = ipv4(opt_124[:4]).int()
+                opt_124 = opt_124[4:]
+                payload_size = ord(opt_124[0])
+                payload = opt_124[1:1 + payload_size]
+                opt_124 = opt_124[1 + payload_size:]
+                
+                data.append(enterprise_number, payload)
+            opt_124 = data
+            
+        if opt_125:
+            data = []
+            while opt_125:
+                enterprise_number = ipv4(opt_125[:4]).int()
+                opt_125 = opt_125[4:]
+                payload_size = ord(opt_125[0])
+                payload = opt_125[1:1 + payload_size]
+                opt_125 = opt_125[1 + payload_size:]
+                
+                subdata = []
+                while payload:
+                    subopt = ord(payload[0])
+                    subopt_size = ord(payload[1])
+                    subpayload = payload[2:2 + subopt_size]
+                    payload = payload[2 + subopt_size:]
+                    subdata.append(subopt, subpayload)
+                    
+                data.append(enterprise_number, subdata)
+            opt_125 = data
+            
+        self.deleteOption("vendor_specific_information")
+        self.deleteOption("vendor_class_identifier")
+        self.deleteOption("vendor_class")
+        self.deleteOption("vendor_specific")
+        
+        return (opt_43, opt_60, opt_124, opt_125)
         
     def _transformBase(self):
         """
