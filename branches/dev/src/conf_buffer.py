@@ -166,8 +166,8 @@ _defaults.update({
 #######################################
 for (key, value) in _defaults.iteritems():
     if hasattr(conf, key):
-        globals[key] = getattr(conf, key)
+        globals()[key] = getattr(conf, key)
     else:
-        globals[key] = value
+        globals()[key] = value
 del _defaults
 
