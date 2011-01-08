@@ -22,7 +22,8 @@ Legal
  You should have received a copy of the GNU General Public License
  along with this program. If not, see <http://www.gnu.org/licenses/>.
  
- (C) Neil Tallim, 2010 <red.hamsterx@gmail.com>
+ (C) Neil Tallim, 2011 <red.hamsterx@gmail.com>
+ (C) Matthew Boedicker, 2011 <matthewm@boedicker.org>
  (C) Mathieu Ignacio, 2008 <mignacio@april.org>
 """
 import select
@@ -217,5 +218,19 @@ class DHCPNetwork(object):
         @type port: int
         @param port: The port to which the packet is to be addressed.
         """
-        return self._response_socket.sendto(packet.encodePacket(), (ip, port))
-        
+        packet_encoded = packet.encodePacket()
+
+        # When responding to a relay, the packet will be unicast, so use
+        # self._dhcp_socket so the source port will be 67. Some relays
+        # will not relay when the source port is not 67.
+        #
+        # Otherwise use self._response_socket because it has SO_BROADCAST.
+        #
+        # If self._dhcp_socket is anonymously bound, the two sockets will
+        # actually be one and the same, so this change has no potentially
+        # damaging effects.
+        if not ip == '255.255.255.255':
+            return self._dhcp_socket.sendto(packet_encoded, (ip, port))
+        else:
+            return self._response_socket.sendto(packet_encoded, (ip, port))
+            
