@@ -77,7 +77,7 @@ WEB_RELOAD_KEY = '5f4dcc3b5aa765d61d8327deb882cf99'
 
 #Database settings
 #######################################
-#Allowed values: MySQL, PostgreSQL, SQLite
+#Allowed values: MySQL, PostgreSQL, Oracle, SQLite
 DATABASE_ENGINE = 'MySQL'
 
 #Controls whether DHCP data gleaned from database lookups should be cached until
@@ -121,6 +121,16 @@ POSTGRESQL_PORT = 5432
 POSTGRESQL_SSLMODE = 'disabled'
 #The number of threads that may read the database at once.
 POSTGRESQL_MAXIMUM_CONNECTIONS = 4
+
+#ORACLE_* values used only with 'Oracle' engine.
+#The name of your database (from tnsnames.ora).
+ORACLE_DATABASE = 'dhcp'
+#The name of a user with SELECT access.
+ORACLE_USERNAME = 'dhcp_user'
+#The password of the user.
+ORACLE_PASSWORD = 'dhcp_pass'
+#The number of threads that may read the database at once.
+ORACLE_MAXIMUM_CONNECTIONS = 4
 
 #SQLITE_* values used only with 'SQLite' engine.
 #The file that contains your SQLite database.
