@@ -33,10 +33,10 @@ import threading
 import time
 import urlparse
 
-import src
 import src.conf_buffer as conf
 import src.dhcp
 import src.logging
+import src
 
 class _WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
     """
