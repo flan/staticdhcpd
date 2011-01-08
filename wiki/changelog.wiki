@@ -1,10 +1,15 @@
-= 1.5.3 (development) =
+= 1.5.4 =
+ * Made it easy to upgrade by introducing a buffering setting-default system
+ * Refactored some code out of places it didn't need to be
+ * Severed a reverse-dependency between libpydhcpserver and staticDHCPd
+----
+= 1.5.3 (svn-only) =
  * Vendor options are automatically stripped from received packets and exposed to users through a `vendor` parameter
  * Support for a PXE port has been added; see the FAQ for more details
   * Addresses an issue reported by Andrew Xuan
  * Added support for easy logging from user-defined code
 ----
-= 1.5.2 (development) =
+= 1.5.2 (svn-only) =
  * Addressed an issue with Cisco relays not accepting packets from sockets other than 67
  * Added support for Oracle
 ----
