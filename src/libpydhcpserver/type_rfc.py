@@ -145,6 +145,43 @@ class rfc3361_120(RFC):
 class rfc3397_119(_rfc1035_plus): pass
 
 
+class rfc3925_124(RFC):
+    def __init__(self, data):
+        """
+        Sets vendor_class data.
+
+        @type data: list
+        @param data: A list of the form [(enterprise_number:int, data:string)].
+        """
+        self._value = []
+        for (enterprise_number, payload) in data:
+            self._value += src.dhcp.longToList(enterprise_number)
+            self._value.append(chr(len(payload)))
+            self._value += payload
+
+class rfc3925_125(RFC):
+    def __init__(self, data):
+        """
+        Sets vendor_specific data.
+
+        @type data: list
+        @param data: A list of the form
+            [(enterprise_number:int, [(subopt_code:byte, data:string)])].
+        """
+        self._value = []
+        for (enterprise_number, payload) in data:
+            self._value += src.dhcp.longToList(enterprise_number)
+            
+            subdata = []
+            for (subopt_code, subpayload) in payload:
+                subdata.append(chr(subopt_code))
+                subdata.append(chr(len(subpayload)))
+                subdata += subpayload
+                
+            self._value.append(chr(len(subdata)))
+            self._value += subdata
+            
+            
 class rfc4174_83(RFC):
     def __init__(self, isns_functions, dd_access, admin_flags, isns_security, ips):
         """

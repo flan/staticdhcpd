@@ -35,6 +35,9 @@ DHCP_SERVER_PORT = 67
 #The port on which clients wait for DHCP responses; 68 is the standard.
 DHCP_CLIENT_PORT = 68
 
+#Set this to a port-number (4011 is standard) to enable PXE-processing.
+PXE_PORT = None
+
 #True to enable access to server statistics and logs.
 WEB_ENABLED = True
 #The IP of the interface on which the HTTP interface should be served.
@@ -168,14 +171,16 @@ def init():
     from src.libpydhcpserver.type_rfc import rfc2610_78, rfc2610_79
     from src.libpydhcpserver.type_rfc import rfc3361_120
     from src.libpydhcpserver.type_rfc import rfc3397_119
+    from src.libpydhcpserver.type_rfc import rfc3925_124, rfc3925_125
     from src.libpydhcpserver.type_rfc import rfc4174_83
     from src.libpydhcpserver.type_rfc import rfc4280_88
     from src.libpydhcpserver.type_rfc import rfc5223_137
     from src.libpydhcpserver.type_rfc import rfc5678_139, rfc5678_140
+    from src.logging import writeLog
     #DO NOT ALTER LINES ABOVE THIS POINT.
 #DEFINE ANY REQUIRED FUNCTIONS OR VARIABLES BELOW THIS LINE
 
-def loadDHCPPacket(packet, mac, client_ip, relay_ip, subnet, serial):
+def loadDHCPPacket(packet, mac, client_ip, relay_ip, subnet, serial, pxe, vendor):
     #This is a custom function, called before each packet is sent, that
     #allows you to tweak the options attached to a DHCP response.
     #
@@ -190,6 +195,15 @@ def loadDHCPPacket(packet, mac, client_ip, relay_ip, subnet, serial):
     #relay_ip is either None or an address as a quadruple of octets,
     #    depending on whether this is a response to a relay request.
     #subnet and serial are values passed through from the database, as a
-    #    basestring and int, respectively.
+    #    string and int, respectively.
+    #pxe is a boolean indicating whether the request was received on the PXE
+    #    port (True) or not (False).
+    #vendor is a four-tuple containing, in order, option 43
+    #    (vendor_specific_information) as a string of bytes, option 60
+    #    (vendor_class_identifier) as a string, and both option 124
+    #    (vendor_class) and option 125 (vendor_specific) as digested data:
+    #    [(enterprise_number:int, data:string)] and
+    #    [(enterprise_number:int, [(subopt_code:byte, data:string)])],
+    #    respectively. Any unset options are presented as None.
     return True
     
