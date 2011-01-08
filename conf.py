@@ -1,3 +1,6 @@
+#This file is interpreted by Python and it may be extended with any Python code
+#you wish, allowing you to do things like query web services to get values.
+
 #General settings
 #######################################
 #If True, all events will be printed to console.
@@ -23,9 +26,9 @@ POLL_INTERVALS_TO_TRACK = 20
 #Server settings
 #######################################
 #The UID that will run this daemon.
-UID = 999
+UID = 99
 #The GID that will run this daemon.
-GID = 999
+GID = 99
 
 #The IP of the interface on which DHCP responses should be sent.
 #This value must be set to a real IP.
@@ -53,8 +56,7 @@ ALLOW_LOCAL_DHCP = True
 #If False, relayed DHCP requests will be ignored.
 ALLOW_DHCP_RELAYS = False
 #A list of all IPs allowed to relay requests; if empty, all are allowed.
-#(End with trailing comma)
-ALLOWED_DHCP_RELAYS = ()
+ALLOWED_DHCP_RELAYS = []
 
 #If True, any unknown MACs will be NAKed instead of ignored. If you may have
 #more than one DHCP server serving a single LAN, this is NOT something you
@@ -160,26 +162,10 @@ EMAIL_TIMEOUT = 600
 
 #DHCP-processing functions
 #######################################
-#PERFORM ANY REQUIRED IMPORTS WITHIN init()
 def init():
-    #DO NOT ALTER LINES BELOW THIS POINT.
-    from src.dhcp import ipToList, ipsToList
-    from src.dhcp import intToList, intsToList
-    from src.dhcp import longToList, longsToList
-    from src.dhcp import strToList
-    from src.dhcp import rfc3046_decode
-    from src.libpydhcpserver.type_rfc import rfc2610_78, rfc2610_79
-    from src.libpydhcpserver.type_rfc import rfc3361_120
-    from src.libpydhcpserver.type_rfc import rfc3397_119
-    from src.libpydhcpserver.type_rfc import rfc3925_124, rfc3925_125
-    from src.libpydhcpserver.type_rfc import rfc4174_83
-    from src.libpydhcpserver.type_rfc import rfc4280_88
-    from src.libpydhcpserver.type_rfc import rfc5223_137
-    from src.libpydhcpserver.type_rfc import rfc5678_139, rfc5678_140
-    from src.logging import writeLog
-    #DO NOT ALTER LINES ABOVE THIS POINT.
-#DEFINE ANY REQUIRED FUNCTIONS OR VARIABLES BELOW THIS LINE
-
+    #Perform any required imports or setup operations within this function.
+    pass
+    
 def loadDHCPPacket(packet, mac, client_ip, relay_ip, subnet, serial, pxe, vendor):
     #This is a custom function, called before each packet is sent, that
     #allows you to tweak the options attached to a DHCP response.

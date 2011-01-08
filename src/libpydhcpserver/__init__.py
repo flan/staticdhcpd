@@ -22,7 +22,7 @@ Legal
  You should have received a copy of the GNU General Public License
  along with this program. If not, see <http://www.gnu.org/licenses/>.
  
- (C) Neil Tallim, 2010 <red.hamsterx@gmail.com>
+ (C) Neil Tallim, 2011 <red.hamsterx@gmail.com>
  (C) Mathieu Ignacio, 2008 <mignacio@april.org>
 """
-VERSION = '1.1.0'
+VERSION = '1.1.1'

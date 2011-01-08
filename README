@@ -1,3 +1,22 @@
+Thirty-second upgrade guide for people who hate using diff
+
+Upgrading important pieces of software can be a scary process, and not just
+because new versions introduce new behaviours and the possibility of new bugs.
+No, perhaps the greatest threat (assuming you can trust the project's
+maintainers to not be clueless and you've done your research on what's changed)
+is that you'll miss copying that magical config file value that made your
+network actually work.
+
+Fortunately, staticDHCPd makes that easy: just copy your old conf.py file into
+the new version and you're good to go. Any omitted options are supplemented by
+sane defaults, new scriptable features are defined passively (you only use what
+you need), and you can add references to new options when you actually need
+them. It really couldn't be any more friendly.
+
+
+-------------------------------------------------------------------------------
+
+
 Five-minute "does this really work?" setup guide for busy administrators
     Uses sqlite3 to avoid unnecessary installations
 
