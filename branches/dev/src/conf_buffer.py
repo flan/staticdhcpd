@@ -29,19 +29,18 @@ import conf
 
 #Inject namespace elements into conf.
 ##############################################################################
-import dhcp
-conf.ipToList = dhcp.ipToList
-conf.ipsToList = dhcp.ipsToList
-conf.intToList = dhcp.intToList
-conf.intsToList = dhcp.intsToList
-conf.longToList = dhcp.longToList
-conf.longsToList = dhcp.longsToList
-conf.strToList = dhcp.strToList
-del dhcp
-
 import libpydhcpserver.type_rfc as type_rfc
 conf.rfc3046_decode = type_rfc.rfc3046_decode
 conf.rfc1035_plus = type_rfc.rfc1035_plus
+
+conf.ipToList = type_rfc.ipToList
+conf.ipsToList = type_rfc.ipsToList
+conf.intToList = type_rfc.intToList
+conf.intsToList = type_rfc.intsToList
+conf.longToList = type_rfc.longToList
+conf.longsToList = type_rfc.longsToList
+conf.strToList = type_rfc.strToList
+
 conf.rfc2610_78 = type_rfc.rfc2610_78
 conf.rfc2610_79 = type_rfc.rfc2610_79
 conf.rfc3361_120 = type_rfc.rfc3361_120
