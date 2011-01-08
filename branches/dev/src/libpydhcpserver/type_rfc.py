@@ -26,8 +26,125 @@ Legal
 """
 import type_ipv4
 
-import src.dhcp
-
+def ipToList(ip):
+    """
+    Converts an IPv4 address into a collection of four bytes.
+    
+    @type ip: basestring
+    @param ip: The IPv4 to process.
+    
+    @rtype: list
+    @return: The IPv4 expressed as bytes.
+    """
+    return [int(i) for i in ip.split('.')]
+    
+def ipsToList(ips):
+    """
+    Converts a comma-delimited list of IPv4s into bytes.
+    
+    @type ips: basestring
+    @param ips: The list of IPv4s to process.
+    
+    @rtype: list
+    @return: A collection of bytes corresponding to the given IPv4s.
+    """
+    quads = []
+    for ip in ips.split(','):
+        quads += ipToList(ip.strip())
+    return quads
+    
+def intToList(i):
+    """
+    A convenience function that converts an int into a pair of bytes.
+    
+    @type i: int
+    @param i: The int value to convert.
+    
+    @rtype: list
+    @return: The converted bytes.
+    """
+    return [(i / 256) % 256, i % 256]
+    
+def intsToList(l):
+    """
+    A convenience function that converts a sequence of ints into pairs of bytes.
+    
+    @type l: sequence
+    @param l: The int values to convert.
+    
+    @rtype: list
+    @return: The converted bytes.
+    """
+    pairs = []
+    for i in l:
+        pairs += intToList(i)
+    return pairs
+    
+def longToList(l):
+    """
+    A convenience function that converts a long into a set of four bytes.
+    
+    @type l: int
+    @param l: The long value to convert.
+    
+    @rtype: list
+    @return: The converted bytes.
+    """
+    q = [l % 256]
+    l /= 256
+    q.insert(0, l % 256)
+    l /= 256
+    q.insert(0, l % 256)
+    l /= 256
+    q.insert(0, l % 256)
+    return q
+    
+def longsToList(l):
+    """
+    A convenience function that converts a sequence of longs into quads of
+    bytes.
+    
+    @type l: sequence
+    @param l: The long values to convert.
+    
+    @rtype: list
+    @return: The converted bytes.
+    """
+    quads = []
+    for i in l:
+        quads += longToList(i)
+    return quads
+    
+def strToList(s):
+    """
+    Converts the given string into an encoded byte format.
+    
+    @type s: basestring
+    @param s: The string to be converted.
+    
+    @rtype: list
+    @return: An encoded byte version of the given string.
+    """
+    return strlist(str(s)).list()
+    
+def rfc3046_decode(l):
+    """
+    Extracts sub-options from an RFC3046 option (82).
+    
+    @type l: list
+    @param l: The option's raw data.
+    
+    @rtype: dict
+    @return: The sub-options, as byte-lists, keyed by ID.
+    """
+    sub_options = {}
+    while l:
+        id = l.pop(0)
+        length = l.pop(0)
+        sub_options[id] = l[:length]
+        l = l[length:]
+    return sub_options
+    
 def _rfc1035Parse(domain_name):
     """
     Splits an FQDN on dots, outputting data like
@@ -155,7 +272,7 @@ class rfc3925_124(RFC):
         """
         self._value = []
         for (enterprise_number, payload) in data:
-            self._value += src.dhcp.longToList(enterprise_number)
+            self._value += longToList(enterprise_number)
             self._value.append(chr(len(payload)))
             self._value += payload
 
@@ -170,7 +287,7 @@ class rfc3925_125(RFC):
         """
         self._value = []
         for (enterprise_number, payload) in data:
-            self._value += src.dhcp.longToList(enterprise_number)
+            self._value += longToList(enterprise_number)
             
             subdata = []
             for (subopt_code, subpayload) in payload:
@@ -198,10 +315,10 @@ class rfc4174_83(RFC):
         @type ips: basestring
         @param ips: The comma-delimited IPv4s to process.
         """
-        isns_functions = src.dhcp.intToList(isns_functions)
-        dd_access = src.dhcp.intToList(dd_access)
-        admin_flags = src.dhcp.intToList(admin_flags)
-        isns_security = src.dhcp.longToList(isns_security)
+        isns_functions = intToList(isns_functions)
+        dd_access = intToList(dd_access)
+        admin_flags = intToList(admin_flags)
+        isns_security = longToList(isns_security)
         
         self._value = isns_functions + dd_access + admin_flags + isns_security
         for token in [tok for tok in [t.strip() for t in ips.split(',')] if tok]:
