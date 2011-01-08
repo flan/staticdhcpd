@@ -171,3 +171,6 @@ for (key, value) in _defaults.iteritems():
         globals()[key] = value
 del _defaults
 
+init = conf.init
+loadDHCPPacket = conf.loadDHCPPacket
+
