@@ -334,6 +334,19 @@ class DHCPPacket(object):
         """
         return self._packet_data[236:240] == MAGIC_COOKIE
         
+    def _getDHCPMessageType(self):
+        """
+        Returns the DHCP message-type of this packet.
+        
+        @rtype: int
+        @return: The DHCP message type of this packet or -1 if the
+            message-type is undefined.
+        """
+        dhcp_message_type = self.getOption('dhcp_message_type')
+        if dhcp_meessage_type is None:
+            return -1
+        return dhcp_message_type[0]
+
     def isDHCPDeclinePacket(self):
         """
         Indicates whether this is a DECLINE packet.
@@ -341,7 +354,7 @@ class DHCPPacket(object):
         @rtype: bool
         @return: True if this is a DECLINE packet.
         """
-        return self.getOption('dhcp_message_type')[0] == 4
+        return self._getDHCPMessageType() == 4
         
     def isDHCPDiscoverPacket(self):
         """
@@ -350,7 +363,7 @@ class DHCPPacket(object):
         @rtype: bool
         @return: True if this is a DISCOVER packet.
         """
-        return self.getOption('dhcp_message_type')[0] == 1
+        return self._getDHCPMessageType() == 1
         
     def isDHCPInformPacket(self):
         """
@@ -359,7 +372,7 @@ class DHCPPacket(object):
         @rtype: bool
         @return: True if this is an INFORM packet.
         """
-        return self.getOption('dhcp_message_type')[0] == 8
+        return self._getDHCPMessageType() == 8
         
     def isDHCPLeaseQueryPacket(self):
         """
@@ -368,7 +381,7 @@ class DHCPPacket(object):
         @rtype: bool
         @return: True if this is a LEASEQUERY packet.
         """
-        return self.getOption('dhcp_message_type')[0] == 10
+        return self._getDHCPMessageType() == 10
         
     def isDHCPReleasePacket(self):
         """
@@ -377,7 +390,7 @@ class DHCPPacket(object):
         @rtype: bool
         @return: True if this is a RELEASE packet.
         """
-        return self.getOption('dhcp_message_type')[0] == 7
+        return self._getDHCPMessageType() == 7
         
     def isDHCPRequestPacket(self):
         """
@@ -386,7 +399,7 @@ class DHCPPacket(object):
         @rtype: bool
         @return: True if this is a REQUEST packet.
         """
-        return self.getOption('dhcp_message_type')[0] == 3
+        return self._getDHCPMessageType() == 3
 
     def extractVendorOptions(self):
         """
