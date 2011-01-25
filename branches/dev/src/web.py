@@ -31,7 +31,11 @@ import os
 import select
 import threading
 import time
-import urlparse
+
+try:
+	from urlparse import parse_qs
+except:
+	from cgi import parse_qs
 
 import src.conf_buffer as conf
 import src.dhcp
@@ -70,7 +74,7 @@ class _WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
             self.send_header('Last-modified', time.strftime('%a, %d %b %Y %H:%M:%S %Z'))
             self.end_headers()
         except Exception, e:
-            src.logging.writeLog("Problem while processing HEAD in Web module: %(errors)s" % {'error': str(e),})
+            src.logging.writeLog("Problem while processing HEAD in Web module: %(error)s" % {'error': str(e),})
             
     def do_POST(self):
         """
@@ -82,7 +86,7 @@ class _WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
         try:
             (ctype, pdict) = cgi.parse_header(self.headers.getheader('content-type'))
             if ctype == 'application/x-www-form-urlencoded':
-                query = urlparse.parse_qs(self.rfile.read(int(self.headers.getheader('content-length'))))
+                query = parse_qs(self.rfile.read(int(self.headers.getheader('content-length'))))
                 key = query.get('key')
                 if key:
                     if hashlib.md5(key[0]).hexdigest() == conf.WEB_RELOAD_KEY:
@@ -94,7 +98,7 @@ class _WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
                     else:
                         src.logging.writeLog("Invalid Web-access-key provided")
         except Exception, e:
-            src.logging.writeLog("Problem while processing POST in Web module: %(errors)s" % {'error': str(e),})
+            src.logging.writeLog("Problem while processing POST in Web module: %(error)s" % {'error': str(e),})
         self._doResponse()
         
     def _doResponse(self):
@@ -155,7 +159,7 @@ class _WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
             
             self.wfile.write("</div></body></html>")
         except Exception, e:
-            src.logging.writeLog("Problem while serving response in Web module: %(errors)s" % {'error': str(e),})
+            src.logging.writeLog("Problem while serving response in Web module: %(error)s" % {'error': str(e),})
 
     def log_message(*args):
         """
