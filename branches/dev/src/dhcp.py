@@ -423,7 +423,8 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                     packet.transformToDHCPNackPacket()
                     self._sendDHCPPacket(packet, source_address, 'NAK', mac, 'NAK_RENEWALS')
                 else:
-                    if source_address[0] not in ('255.255.255.255', '0.0.0.0', ''):
+                    renew = source_address[0] not in ('255.255.255.255', '0.0.0.0', '')
+                    if renew:
                         src.logging.writeLog('DHCPREQUEST:RENEW from %(mac)s' % {
                          'mac': mac,
                         })
@@ -452,8 +453,9 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                                 })
                                 self._logDiscardedPacket()
                         else:
-                            packet.transformToDHCPNackPacket()
-                            self._sendDHCPPacket(packet, (s_ciaddr, 0), 'NAK', mac, s_ciaddr)
+                            if renew:
+                                packet.transformToDHCPNackPacket()
+                                self._sendDHCPPacket(packet, (s_ciaddr, 0), 'NAK', mac, s_ciaddr)
                     except Exception, e:
                         src.logging.sendErrorReport('Unable to respond to %(mac)s' % {'mac': mac,}, e)
             else:
