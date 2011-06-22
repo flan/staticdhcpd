@@ -591,7 +591,7 @@ class DHCPPacket(object):
         output = ['#Header fields']
         op = self._packet_data[DHCP_FIELDS['op'][0]:DHCP_FIELDS['op'][0] + DHCP_FIELDS['op'][1]]
         output.append("op: %(type)s" % {
-         'type': DHCP_FIELDS_NAME['op'][op[0]],
+         'type': DHCP_FIELDS_NAMES['op'][op[0]],
         })
         
         for opt in (
