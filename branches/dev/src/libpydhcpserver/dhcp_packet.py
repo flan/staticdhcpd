@@ -343,7 +343,7 @@ class DHCPPacket(object):
             message-type is undefined.
         """
         dhcp_message_type = self.getOption('dhcp_message_type')
-        if dhcp_meessage_type is None:
+        if dhcp_message_type is None:
             return -1
         return dhcp_message_type[0]
 
