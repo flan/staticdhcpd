@@ -127,6 +127,28 @@ def strToList(s):
     @return: An encoded byte version of the given string.
     """
     return type_strlist.strlist(str(s)).list()
+
+def strToPaddedList(s, l):
+    """
+    Converts the given string into an encoded byte format, exactly equal to the
+    specified length.
+    
+    Strings longer than the given length will be truncated, while those shorter
+    will be null-padded.
+    
+    @type s: basestring
+    @param s: The string to be converted.
+    @type l: int
+    @param l: The length of the list.
+
+    @rtype: list
+    @return: An encoded byte version of the given string of the specified length.
+    """
+    padded_list = strToList(s)
+    if len(padded_list) < l:
+        padded_list += [0] * (l - len(padded_list))
+    return padded_list[:l] 
+    
     
 def rfc3046_decode(l):
     """
