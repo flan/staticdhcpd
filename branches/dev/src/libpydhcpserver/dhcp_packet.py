@@ -28,6 +28,7 @@ Legal
 import operator
 from struct import unpack
 from struct import pack
+import warnings
 
 from dhcp_constants import *
 from type_hwmac import hwmac
@@ -82,7 +83,15 @@ class DHCPPacket(object):
                 opt_first = position + 1
                 opt_id = self._packet_data[position]
                 opt_val = self._packet_data[opt_first + 1:opt_len + opt_first + 1]
-                self._options_data[DHCP_OPTIONS_REVERSE[opt_id]] = opt_val
+                try:
+                    self._options_data[DHCP_OPTIONS_REVERSE[opt_id]] = opt_val
+                except Exception, e:
+                    warnings.warn("Unable to assign '%(value)s' to '%(id)s': %(error)s" % {
+                     'value': opt_val,
+                     'id': opt_id,
+                     'error': str(e),
+                    })
+                    
                 if opt_id == 55: #Handle requested options.
                     self._requested_options = tuple(set(
                      [int(i) for i in opt_val] + [1, 3, 6, 15, 51, 53, 54, 58, 59]
