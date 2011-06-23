@@ -37,7 +37,7 @@ from libpydhcpserver.type_rfc import (
  ipToList, ipsToList,
  intToList, intsToList,
  longToList, longsToList,
- strToList,
+ strToList, strToPaddedList,
 )
 
 _dhcp_servers = [] #: A collection of all instantiated DHCP servers; this should only ever be one element long.

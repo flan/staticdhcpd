@@ -1,0 +1,8 @@
+#Wed Jun 22 18:00:06 MDT 2011
+eclipse.preferences.version=1
+encoding//branches/dev/main.py=utf-8
+encoding//branches/dev/src/__init__.py=utf-8
+encoding//branches/dev/src/dhcp.py=utf-8
+encoding//branches/dev/src/libpydhcpserver/__init__.py=utf-8
+encoding//branches/dev/src/libpydhcpserver/dhcp_packet.py=utf-8
+encoding//branches/dev/src/libpydhcpserver/type_rfc.py=utf-8
