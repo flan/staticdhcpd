@@ -1,3 +1,11 @@
+= 1.5.5 =
+ * Primarily a bugfix release, and one long overdue.
+  * Addresses a number of issues affecting REBIND behaviour and errant NAKs (issue 7).
+  * Adds Python 2.5 backwards-compatibility thanks to a patch from Mark Schloesser.
+  * Fixes an error-logging issue that caused still more errors to be thrown, thanks again to Mark (issue 8).
+  * Fixes issues related to in-code typos that prevent custom attributes from being set correctly in DHCP packets (issue 10).
+ * Added some diagnosis logic and a strToPaddedList() function based on patches from Andrew Xuan.
+----
 = 1.5.4 =
  * Made it easy to upgrade by introducing a buffering setting-default system
  * Refactored some code out of places it didn't need to be
