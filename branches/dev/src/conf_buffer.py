@@ -136,6 +136,7 @@ conf.intsToList = type_rfc.intsToList
 conf.longToList = type_rfc.longToList
 conf.longsToList = type_rfc.longsToList
 conf.strToList = type_rfc.strToList
+conf.strToPaddedList = type_rfc.strToPaddedList
 
 conf.rfc2610_78 = type_rfc.rfc2610_78
 conf.rfc2610_79 = type_rfc.rfc2610_79
