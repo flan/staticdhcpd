@@ -1,0 +1,17 @@
+staticDHCPd makes use of only GPLv3-compatible resoruces. However, as with
+almost any good open source project, some of these resources came from other
+places.
+
+This file exists to document the origins of these borrowed resources, in case
+anyone might wish to research them on their own.
+
+--------------------
+
+pydhcplib : http://pydhcplib.tuxfamily.org/pmwiki/
+    Mathieu Ignacio's pure-Python implementation of the packet format used in
+    the DHCP protocol, plus a simple handler for receiving and sending packets
+    via UDP.
+    
+    staticDHCPd features a completely overhauled, fully updated, and
+    stripped-down version of this library, rebranded 'libpydhcpserver'.
+    
