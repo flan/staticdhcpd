@@ -456,6 +456,8 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                             if renew:
                                 packet.transformToDHCPNackPacket()
                                 self._sendDHCPPacket(packet, (s_ciaddr, 0), 'NAK', mac, s_ciaddr)
+                            else:
+                                self._logDiscardedPacket()
                     except Exception, e:
                         src.logging.sendErrorReport('Unable to respond to %(mac)s' % {'mac': mac,}, e)
             else:
@@ -624,7 +626,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         if not inform:
             if not packet.setOption('yiaddr', ipToList(ip)):
                 _logInvalidValue('ip', ip, subnet, serial)
-            if not packet.setOption('ip_address_lease_time', longToList(lease_time)):
+            if not packet.setOption('ip_address_lease_time', longToList(int(lease_time))):
                 _logInvalidValue('lease_time', lease_time, subnet, serial)
                 
         #Default gateway, subnet mask, and broadcast address.
