@@ -147,9 +147,7 @@ def strToPaddedList(s, l):
     padded_list = strToList(s)
     if len(padded_list) < l:
         padded_list += [0] * (l - len(padded_list))
-    elif len(padded_list) > l:
-        padded_list = padded_list[:l]
-    return padded_list 
+    return padded_list[:l] 
     
     
 def rfc3046_decode(l):
