@@ -302,7 +302,7 @@ class DHCPPacket(object):
                 return False
                 
             #Process normal options.
-            dhcp_field_specs = DHCP_FIELDS_SPECS[dhcp_field_type]
+            dhcp_field_specs = DHCP_FIELDS_SPECS.get(dhcp_field_type)
             if dhcp_field_specs:
                 (fixed_length, minimum_length, multiple) = dhcp_field_specs
                 length = len(value)
