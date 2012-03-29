@@ -130,7 +130,8 @@ class DHCPNetwork(object):
             active_sockets = select.select([self._dhcp_socket, self._pxe_socket], [], [], timeout)[0]
         else:
             active_sockets = select.select([self._dhcp_socket], [], [], timeout)[0]
-        for active_socket in active_sockets:
+        if active_sockets:
+            active_socket = active_sockets[0]
             (data, source_address) = active_socket.recvfrom(4096)
             if data:
                 packet = dhcp_packet.DHCPPacket(data)

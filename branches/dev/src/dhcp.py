@@ -211,6 +211,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                         packet.forceOption('rapid_commit', [])
                     else:
                         packet.transformToDHCPOfferPacket()
+                    pxe_options = packet.extractPXEOptions()
                     vendor_options = packet.extractVendorOptions()
                         
                     self._loadDHCPPacket(packet, result)
@@ -223,7 +224,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                      packet,
                      mac, tuple(ipToList(result[0])), giaddr,
                      result[9], result[10],
-                     pxe, vendor_options
+                     pxe and pxe_options, vendor_options
                     ):
                         if rapid_commit:
                             self._sendDHCPPacket(packet, source_address, 'ACK-rapid', mac, result[0], pxe)
@@ -370,13 +371,14 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                         result = self._sql_broker.lookupMAC(mac)
                         if result and (not ip or result[0] == s_ip):
                             packet.transformToDHCPAckPacket()
+                            pxe_options = packet.extractPXEOptions()
                             vendor_options = packet.extractVendorOptions()
                             self._loadDHCPPacket(packet, result)
                             if conf.loadDHCPPacket(
                              packet,
                              mac, tuple(ipToList(result[0])), giaddr,
                              result[9], result[10],
-                             pxe, vendor_options
+                             pxe and pxe_options, vendor_options
                             ):
                                 self._sendDHCPPacket(packet, source_address, 'ACK', mac, s_ip, pxe)
                             else:
@@ -399,13 +401,14 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                     result = self._sql_broker.lookupMAC(mac)
                     if result and result[0] == s_ip:
                         packet.transformToDHCPAckPacket()
+                        pxe_options = packet.extractPXEOptions()
                         vendor_options = packet.extractVendorOptions()
                         self._loadDHCPPacket(packet, result)
                         if conf.loadDHCPPacket(
                          packet,
                          mac, tuple(ip), giaddr,
                          result[9], result[10],
-                         pxe, vendor_options
+                         pxe and pxe_options, vendor_options
                         ):
                             self._sendDHCPPacket(packet, source_address, 'ACK', mac, s_ip, pxe)
                         else:
@@ -437,6 +440,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                         result = self._sql_broker.lookupMAC(mac)
                         if result and result[0] == s_ciaddr:
                             packet.transformToDHCPAckPacket()
+                            pxe_options = packet.extractPXEOptions()
                             vendor_options = packet.extractVendorOptions()
                             packet.setOption('yiaddr', ciaddr)
                             self._loadDHCPPacket(packet, result)
@@ -444,7 +448,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                              packet,
                              mac, tuple(ciaddr), giaddr,
                              result[9], result[10],
-                             pxe, vendor_options
+                             pxe and pxe_options, vendor_options
                             ):
                                 self._sendDHCPPacket(packet, (s_ciaddr, 0), 'ACK', mac, s_ciaddr, pxe)
                             else:
@@ -530,13 +534,14 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                 result = self._sql_broker.lookupMAC(mac)
                 if result:
                     packet.transformToDHCPAckPacket()
+                    pxe_options = packet.extractPXEOptions()
                     vendor_options = packet.extractVendorOptions()
                     self._loadDHCPPacket(packet, result, True)
                     if conf.loadDHCPPacket(
                      packet,
                      mac, tuple(ipToList(result[0])), giaddr,
                      result[9], result[10],
-                     pxe, vendor_options
+                     pxe and pxe_options, vendor_options
                     ):
                         self._sendDHCPPacket(packet, source_address, 'ACK', mac, s_ciaddr, pxe)
                     else:
