@@ -148,6 +148,10 @@ SQLITE_FILE = '/etc/staticDHCPd/dhcp.sqlite3'
 EMAIL_ENABLED = False
 #The server that receives your e-mail.
 EMAIL_SERVER = 'mail.yourdomain.com'
+#The port on the server that receives your e-mail.
+EMAIL_PORT = 25
+#The number of seconds to wait for e-mail to be accepted before timing out.
+EMAIL_TIMEOUT = 10
 #The user from which e-mail should claim to be sent.
 EMAIL_SOURCE = 'you@yourdomain.com'
 #The user to whom e-mail should be sent.
