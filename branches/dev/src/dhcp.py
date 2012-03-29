@@ -226,9 +226,9 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                      pxe, vendor_options
                     ):
                         if rapid_commit:
-                            self._sendDHCPPacket(packet, source_address, 'ACK-rapid', mac, result[0])
+                            self._sendDHCPPacket(packet, source_address, 'ACK-rapid', mac, result[0], pxe)
                         else:
-                            self._sendDHCPPacket(packet, source_address, 'OFFER', mac, result[0])
+                            self._sendDHCPPacket(packet, source_address, 'OFFER', mac, result[0], pxe)
                     else:
                         src.logging.writeLog('Ignoring %(mac)s per loadDHCPPacket()' % {
                          'mac': mac,
@@ -237,7 +237,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                 else:
                     if conf.AUTHORITATIVE:
                         packet.transformToDHCPNackPacket()
-                        self._sendDHCPPacket(packet, source_address, 'NAK', mac, '?.?.?.?')
+                        self._sendDHCPPacket(packet, source_address, 'NAK', mac, '?.?.?.?', pxe)
                     else:
                         src.logging.writeLog('%(mac)s unknown; ignoring for %(time)i seconds' % {
                          'mac': mac,
@@ -297,12 +297,12 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                 if result:
                     packet.transformToDHCPLeaseActivePacket()
                     if packet.setOption('yiaddr', ipToList(result[0])):
-                        self._sendDHCPPacket(packet, source_address, 'LEASEACTIVE', mac, result[0])
+                        self._sendDHCPPacket(packet, source_address, 'LEASEACTIVE', mac, result[0], pxe)
                     else:
                         _logInvalidValue('ip', result[0], result[-2], result[-1])
                 else:
                     packet.transformToDHCPLeaseUnknownPacket()
-                    self._sendDHCPPacket(packet, source_address, 'LEASEUNKNOWN', mac, '?.?.?.?')
+                    self._sendDHCPPacket(packet, source_address, 'LEASEUNKNOWN', mac, '?.?.?.?', pxe)
             except Exception, e:
                 src.logging.sendErrorReport('Unable to respond for %(mac)s' % {'mac': mac,}, e)
         else:
@@ -378,7 +378,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                              result[9], result[10],
                              pxe, vendor_options
                             ):
-                                self._sendDHCPPacket(packet, source_address, 'ACK', mac, s_ip)
+                                self._sendDHCPPacket(packet, source_address, 'ACK', mac, s_ip, pxe)
                             else:
                                 src.logging.writeLog('Ignoring %(mac)s per loadDHCPPacket()' % {
                                  'mac': mac,
@@ -386,7 +386,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                                 self._logDiscardedPacket()
                         else:
                             packet.transformToDHCPNackPacket()
-                            self._sendDHCPPacket(packet, source_address, 'NAK', mac, 'NO-MATCH')
+                            self._sendDHCPPacket(packet, source_address, 'NAK', mac, 'NO-MATCH', pxe)
                     except Exception, e:
                         src.logging.sendErrorReport('Unable to respond to %(mac)s' % {'mac': mac,}, e)
                 else:
@@ -407,7 +407,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                          result[9], result[10],
                          pxe, vendor_options
                         ):
-                            self._sendDHCPPacket(packet, source_address, 'ACK', mac, s_ip)
+                            self._sendDHCPPacket(packet, source_address, 'ACK', mac, s_ip, pxe)
                         else:
                             src.logging.writeLog('Ignoring %(mac)s per loadDHCPPacket()' % {
                              'mac': mac,
@@ -415,13 +415,13 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                             self._logDiscardedPacket()
                     else:
                         packet.transformToDHCPNackPacket()
-                        self._sendDHCPPacket(packet, source_address, 'NAK', mac, s_ip)
+                        self._sendDHCPPacket(packet, source_address, 'NAK', mac, s_ip, pxe)
                 except Exception, e:
                     src.logging.sendErrorReport('Unable to respond to %(mac)s' % {'mac': mac,}, e)
             elif not sid and ciaddr and not ip: #RENEWING or REBINDING
                 if conf.NAK_RENEWALS:
                     packet.transformToDHCPNackPacket()
-                    self._sendDHCPPacket(packet, source_address, 'NAK', mac, 'NAK_RENEWALS')
+                    self._sendDHCPPacket(packet, source_address, 'NAK', mac, 'NAK_RENEWALS', pxe)
                 else:
                     renew = source_address[0] not in ('255.255.255.255', '0.0.0.0', '')
                     if renew:
@@ -446,7 +446,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                              result[9], result[10],
                              pxe, vendor_options
                             ):
-                                self._sendDHCPPacket(packet, (s_ciaddr, 0), 'ACK', mac, s_ciaddr)
+                                self._sendDHCPPacket(packet, (s_ciaddr, 0), 'ACK', mac, s_ciaddr, pxe)
                             else:
                                 src.logging.writeLog('Ignoring %(mac)s per loadDHCPPacket()' % {
                                  'mac': mac,
@@ -455,7 +455,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                         else:
                             if renew:
                                 packet.transformToDHCPNackPacket()
-                                self._sendDHCPPacket(packet, (s_ciaddr, 0), 'NAK', mac, s_ciaddr)
+                                self._sendDHCPPacket(packet, (s_ciaddr, 0), 'NAK', mac, s_ciaddr, pxe)
                             else:
                                 self._logDiscardedPacket()
                     except Exception, e:
@@ -538,7 +538,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                      result[9], result[10],
                      pxe, vendor_options
                     ):
-                        self._sendDHCPPacket(packet, source_address, 'ACK', mac, s_ciaddr)
+                        self._sendDHCPPacket(packet, source_address, 'ACK', mac, s_ciaddr, pxe)
                     else:
                         src.logging.writeLog('Ignoring %(mac)s per loadDHCPPacket()' % {
                          'mac': mac,
@@ -706,7 +706,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         self._time_taken += time_taken
         self._stats_lock.release()
         
-    def _sendDHCPPacket(self, packet, address, response_type, mac, client_ip):
+    def _sendDHCPPacket(self, packet, address, response_type, mac, client_ip, pxe):
         """
         Sends the given packet to the right destination based on its properties.
         
@@ -729,6 +729,8 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         @param mac: The MAC of the client for which this packet is destined.
         @type client_ip: basestring
         @param client_ip: The IP being assigned to the client.
+        @type pxe: bool
+        @param pxe: True if the packet was received via the PXE port
         
         @rtype: int
         @return: The number of bytes transmitted.
@@ -747,14 +749,15 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
             port = self._client_port
             
         packet.setOption('server_identifier', ipToList(self._server_address))
-        bytes = self._sendDHCPPacketTo(packet, ip, port)
-        src.logging.writeLog('DHCP%(type)s sent to %(mac)s for %(client)s via %(ip)s:%(port)i [%(bytes)i bytes]' % {
+        bytes = self._sendDHCPPacketTo(packet, ip, port, pxe)
+        src.logging.writeLog('DHCP%(type)s sent to %(mac)s for %(client)s via %(ip)s:%(port)i %(pxe)s[%(bytes)i bytes]' % {
              'type': response_type,
              'mac': mac,
              'client': client_ip,
              'bytes': bytes,
              'ip': ip,
              'port': port,
+             'pxe': pxe and '(PXE) ' or '',
         })
         return bytes
         

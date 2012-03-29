@@ -1,5 +1,6 @@
 = 1.5.6 =
  * Fixes a fignificant issue that prevented special DHCP options from being parsed, thanks to Aditya Kulkarni.
+ * Fixes an issue that, despite what 1.5.3 said, prevented PXE from working properly, since the socket was never checked for pending data.
 ----
 = 1.5.5 =
  * Primarily a bugfix release, and one long overdue.
