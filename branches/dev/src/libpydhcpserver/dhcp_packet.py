@@ -432,7 +432,7 @@ class DHCPPacket(object):
         if opt_93:
             value = []
             for i in xrange(0, len(opt_93), 2):
-                value.append(ord(data[i]) * 256 + ord(data[i + 1]))
+                value.append(ord(opt_93[i]) * 256 + ord(opt_93[i + 1]))
             opt_93 = value
             
         if opt_94:
