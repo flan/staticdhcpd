@@ -422,7 +422,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                 except Exception, e:
                     src.logging.sendErrorReport('Unable to respond to %(mac)s' % {'mac': mac,}, e)
             elif not sid and ciaddr and not ip: #RENEWING or REBINDING
-                if conf.NAK_RENEWALS:
+                if conf.NAK_RENEWALS and not pxe:
                     packet.transformToDHCPNackPacket()
                     self._sendDHCPPacket(packet, source_address, 'NAK', mac, 'NAK_RENEWALS', pxe)
                 else:
