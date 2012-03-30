@@ -432,14 +432,14 @@ class DHCPPacket(object):
         if opt_93:
             value = []
             for i in xrange(0, len(opt_93), 2):
-                value.append(ord(opt_93[i]) * 256 + ord(opt_93[i + 1]))
+                value.append(opt_93[i] * 256 + opt_93[i + 1])
             opt_93 = value
             
         if opt_94:
             opt_94 = tuple(opt_94)
             
         if opt_97:
-            opt_97 = (ord(opt_97[0]), opt_97[1:])
+            opt_97 = (opt_97[0], opt_97[1:])
             
         self.deleteOption("client_system")
         self.deleteOption("client_ndi")
