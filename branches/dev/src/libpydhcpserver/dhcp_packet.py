@@ -422,7 +422,7 @@ class DHCPPacket(object):
         @return: A triple containing, in order, option 93 (client_system) as
             a sequence of ints, option 94 (client_ndi) as a sequence of three
             bytes, and option 97 (uuid_guid) as digested data:
-            (type:byte, data:string).
+            (type:byte, data:[byte]).
             Any unset options are presented as None.
         """
         opt_93 = self.getOption("client_system")

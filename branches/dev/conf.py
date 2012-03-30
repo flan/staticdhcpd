@@ -189,7 +189,7 @@ def loadDHCPPacket(packet, mac, client_ip, relay_ip, subnet, serial, pxe, vendor
     #pxe is False if not used or a triple containing, in order, option 93
     #    (client_system) as a sequence of ints, option 94 (client_ndi) as a
     #    sequence of three bytes, and option 97 (uuid_guid) as digested data:
-    #    (type:byte, data:string). Any unset options are presented as None.
+    #    (type:byte, data:[byte]). Any unset options are presented as None.
     #vendor is a four-tuple containing, in order, option 43
     #    (vendor_specific_information) as a string of bytes, option 60
     #    (vendor_class_identifier) as a string, and both option 124
