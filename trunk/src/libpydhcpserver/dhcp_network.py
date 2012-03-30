@@ -125,13 +125,18 @@ class DHCPNetwork(object):
         @rtype: bool
         @return: True if something was received; False otherwise.
         """
-        active_sockets = select.select([self._dhcp_socket], [], [], timeout)[0]
+        active_sockets = None
+        if self._pxe_socket:
+            active_sockets = select.select([self._dhcp_socket, self._pxe_socket], [], [], timeout)[0]
+        else:
+            active_sockets = select.select([self._dhcp_socket], [], [], timeout)[0]
         if active_sockets:
-            (data, source_address) = active_sockets[0].recvfrom(4096)
+            active_socket = active_sockets[0]
+            (data, source_address) = active_socket.recvfrom(4096)
             if data:
                 packet = dhcp_packet.DHCPPacket(data)
                 if packet.isDHCPPacket():
-                    pxe = source_address[1] == self._pxe_port
+                    pxe = active_socket == self._pxe_socket
                     if packet.isDHCPRequestPacket():
                         threading.Thread(target=self._handleDHCPRequest, args=(packet, source_address, pxe)).start()
                     elif packet.isDHCPDiscoverPacket():
@@ -229,7 +234,7 @@ class DHCPNetwork(object):
         """
         pass
         
-    def _sendDHCPPacketTo(self, packet, ip, port):
+    def _sendDHCPPacketTo(self, packet, ip, port, pxe):
         """
         Encodes and sends a DHCP packet to its destination.
         
@@ -239,12 +244,15 @@ class DHCPNetwork(object):
         @param ip: The IP address to which the packet is to be sent.
         @type port: int
         @param port: The port to which the packet is to be addressed.
+        @type pxe: bool
+        @param pxe: True if the packet was received via the PXE port
         """
         packet_encoded = packet.encodePacket()
 
         # When responding to a relay, the packet will be unicast, so use
         # self._dhcp_socket so the source port will be 67. Some relays
-        # will not relay when the source port is not 67.
+        # will not relay when the source port is not 67. Or, if PXE is in
+        # use, use that socket instead.
         #
         # Otherwise use self._response_socket because it has SO_BROADCAST.
         #
@@ -252,7 +260,10 @@ class DHCPNetwork(object):
         # actually be one and the same, so this change has no potentially
         # damaging effects.
         if not ip == '255.255.255.255':
-            return self._dhcp_socket.sendto(packet_encoded, (ip, port))
+            if pxe:
+                return self._pxe_socket.sendto(packet_encoded, (ip, port))
+            else:
+                return self._dhcp_socket.sendto(packet_encoded, (ip, port))
         else:
             return self._response_socket.sendto(packet_encoded, (ip, port))
             

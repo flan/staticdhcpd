@@ -148,6 +148,10 @@ SQLITE_FILE = '/etc/staticDHCPd/dhcp.sqlite3'
 EMAIL_ENABLED = False
 #The server that receives your e-mail.
 EMAIL_SERVER = 'mail.yourdomain.com'
+#The port on the server that receives your e-mail.
+EMAIL_PORT = 25
+#The number of seconds to wait for e-mail to be accepted before timing out.
+EMAIL_TIMEOUT = 10
 #The user from which e-mail should claim to be sent.
 EMAIL_SOURCE = 'you@yourdomain.com'
 #The user to whom e-mail should be sent.
@@ -182,8 +186,10 @@ def loadDHCPPacket(packet, mac, client_ip, relay_ip, subnet, serial, pxe, vendor
     #    depending on whether this is a response to a relay request.
     #subnet and serial are values passed through from the database, as a
     #    string and int, respectively.
-    #pxe is a boolean indicating whether the request was received on the PXE
-    #    port (True) or not (False).
+    #pxe is False if not used or a triple containing, in order, option 93
+    #    (client_system) as a sequence of ints, option 94 (client_ndi) as a
+    #    sequence of three bytes, and option 97 (uuid_guid) as digested data:
+    #    (type:byte, data:[byte]). Any unset options are presented as None.
     #vendor is a four-tuple containing, in order, option 43
     #    (vendor_specific_information) as a string of bytes, option 60
     #    (vendor_class_identifier) as a string, and both option 124
