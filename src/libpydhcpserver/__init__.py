@@ -25,4 +25,4 @@ Legal
  (C) Neil Tallim, 2011 <red.hamsterx@gmail.com>
  (C) Mathieu Ignacio, 2008 <mignacio@april.org>
 """
-VERSION = '1.1.3'
+VERSION = '1.1.5'

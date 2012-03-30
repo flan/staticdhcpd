@@ -24,4 +24,4 @@ Legal
  
  (C) Neil Tallim, 2011 <red.hamsterx@gmail.com>
 """
-VERSION = '1.5.5'
+VERSION = '1.5.6'

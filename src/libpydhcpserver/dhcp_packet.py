@@ -302,7 +302,7 @@ class DHCPPacket(object):
                 return False
                 
             #Process normal options.
-            dhcp_field_specs = DHCP_FIELDS_SPECS[dhcp_field_type]
+            dhcp_field_specs = DHCP_FIELDS_SPECS.get(dhcp_field_type)
             if dhcp_field_specs:
                 (fixed_length, minimum_length, multiple) = dhcp_field_specs
                 length = len(value)
@@ -410,6 +410,43 @@ class DHCPPacket(object):
         """
         return self._getDHCPMessageType() == 3
 
+    def extractPXEOptions(self):
+        """
+        Strips out PXE-specific options from the packet, returning them
+        separately.
+        
+        This function is good for scrubbing information that needs to be sent
+        monodirectionally from the client.
+
+        @rtype: tuple(3)
+        @return: A triple containing, in order, option 93 (client_system) as
+            a sequence of ints, option 94 (client_ndi) as a sequence of three
+            bytes, and option 97 (uuid_guid) as digested data:
+            (type:byte, data:[byte]).
+            Any unset options are presented as None.
+        """
+        opt_93 = self.getOption("client_system")
+        opt_94 = self.getOption("client_ndi")
+        opt_97 = self.getOption("uuid_guid")
+
+        if opt_93:
+            value = []
+            for i in xrange(0, len(opt_93), 2):
+                value.append(opt_93[i] * 256 + opt_93[i + 1])
+            opt_93 = value
+            
+        if opt_94:
+            opt_94 = tuple(opt_94)
+            
+        if opt_97:
+            opt_97 = (opt_97[0], opt_97[1:])
+            
+        self.deleteOption("client_system")
+        self.deleteOption("client_ndi")
+        self.deleteOption("uuid_guid")
+        
+        return (opt_93, opt_94, opt_97)
+        
     def extractVendorOptions(self):
         """
         Strips out vendor-specific options from the packet, returning them

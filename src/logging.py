@@ -194,7 +194,11 @@ def _sendEmail(message):
     
     @raise Exception: A problem occurred while sending the message.
     """
-    smtp_server = smtplib.SMTP(conf.EMAIL_SERVER)
+    smtp_server = smtplib.SMTP(
+     host=conf.EMAIL_SERVER,
+     port=(hasattr(conf, 'EMAIL_PORT') and conf.EMAIL_PORT or 25),
+     timeout=(hasattr(conf, 'EMAIL_TIMEOUT') and conf.EMAIL_TIMEOUT or 10)
+    )
     if conf.EMAIL_USER:
         smtp_server.login(conf.EMAIL_USER, conf.EMAIL_PASSWORD)
     smtp_server.sendmail(
@@ -248,6 +252,7 @@ Exception traceback:
         print report
         
     if not conf.EMAIL_ENABLED:
+        writeLog(report)
         return
         
     global _EMAIL_TIMEOUT
@@ -268,14 +273,15 @@ Exception traceback:
         )
         
         writeLog("E-mail about '%(error)s' sent to %(destination)s" % {
-         'error': exception,
+         'error': str(exception),
          'destination': conf.EMAIL_DESTINATION,
         })
     except Exception, e:
         writeLog("Unable to send e-mail about '%(error)s': %(e)s" % {
-         'error': exception,
-         'e': e,
+         'error': str(exception),
+         'e': str(e),
         })
+        writeLog(report)
         
 def sendDeclineReport(mac, ip_4, subnet, subnet_serial):
     """
@@ -317,6 +323,7 @@ Subnet:
         print report
         
     if not conf.EMAIL_ENABLED:
+        writeLog(report)
         return
         
     try:
@@ -334,6 +341,7 @@ Subnet:
     except Exception, e:
         writeLog("Unable to send e-mail about DHCPDECLINE from '%(mac)s': %(e)s" % {
          'mac': mac,
-         'e': e,
+         'e': str(e),
         })
+        writeLog(report)
         

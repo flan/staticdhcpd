@@ -206,7 +206,7 @@ DHCP_OPTIONS_TYPES = {
  90: "RFC3118_90", #Not implemented; not necessary for static model
  91: "32-bits",
  92: "ipv4+",
- 93: "16-bits",
+ 93: "16-bits+",
  94: "byte+",
  95: "string", #Specifications not published
  96: "Unassigned",
