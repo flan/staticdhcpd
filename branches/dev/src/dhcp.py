@@ -748,7 +748,10 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                 port = self._server_port
             else: #Request directly from client, routed or otherwise.
                 ip = address[0]
-                port = self._client_port
+                if pxe:
+                    port = conf.PXE_PORT
+                else:
+                    port = self._client_port
         else: #Broadcast.
             ip = '255.255.255.255'
             port = self._client_port
