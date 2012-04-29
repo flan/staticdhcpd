@@ -1,5 +1,7 @@
+= 1.5.7 =
+ * PXE will now work even when ALLOW_LOCAL_DHCP is False. This failed before because PXE is strictly unicast, so it doesn't use a relay, even when the other half of the negotiation does.
 = 1.5.6 =
- * Fixes a fignificant issue that prevented special DHCP options from being parsed, thanks to Aditya Kulkarni.
+ * Fixes a significant issue that prevented special DHCP options from being parsed, thanks to Aditya Kulkarni.
  * Fixes an issue that, despite what 1.5.3 said, prevented PXE from working properly, since the socket was never checked for pending data.
  * Fixes the lack of e-mail timeouts and allows ports to be specified.
 ----
