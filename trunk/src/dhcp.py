@@ -99,13 +99,15 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         
         self._sql_broker = src.sql.SQL_BROKER()
         
-    def _evaluateRelay(self, packet):
+    def _evaluateRelay(self, packet, pxe):
         """
         Determines whether the received packet belongs to a relayed request or
         not and decides whether it should be allowed based on policy.
         
         @type packet: L{libpydhcpserver.dhcp_packet.DHCPPacket}
         @param packet: The packet to be evaluated.
+        @type pxe: bool
+        @param pxe: Whether the request is PXE
         """
         giaddr = packet.getOption("giaddr")
         if not giaddr == [0,0,0,0]: #Relayed request.
@@ -116,7 +118,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                  'ip': '.'.join(map(str, giaddr)),
                 })
                 return False
-        elif not conf.ALLOW_LOCAL_DHCP: #Local request, but denied.
+        elif not conf.ALLOW_LOCAL_DHCP and not pxe: #Local request, but denied.
             return False
         return True
         
@@ -138,7 +140,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         @type pxe: bool
         @param pxe: True if the packet was received on the PXE port.
         """
-        if not self._evaluateRelay(packet):
+        if not self._evaluateRelay(packet, pxe):
             return
             
         start_time = time.time()
@@ -188,7 +190,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         @type pxe: bool
         @param pxe: True if the packet was received on the PXE port.
         """
-        if not self._evaluateRelay(packet):
+        if not self._evaluateRelay(packet, pxe):
             return
             
         start_time = time.time()
@@ -271,7 +273,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         @type pxe: bool
         @param pxe: True if the packet was received on the PXE port.
         """
-        if not self._evaluateRelay(packet):
+        if not self._evaluateRelay(packet, pxe):
             return
             
         start_time = time.time()
@@ -333,7 +335,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         @type pxe: bool
         @param pxe: True if the packet was received on the PXE port.
         """
-        if not self._evaluateRelay(packet):
+        if not self._evaluateRelay(packet, pxe):
             return
             
         start_time = time.time()
@@ -495,7 +497,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         @type pxe: bool
         @param pxe: True if the packet was received on the PXE port.
         """
-        if not self._evaluateRelay(packet):
+        if not self._evaluateRelay(packet, pxe):
             return
             
         start_time = time.time()
@@ -582,7 +584,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         @type pxe: bool
         @param pxe: True if the packet was received on the PXE port.
         """
-        if not self._evaluateRelay(packet):
+        if not self._evaluateRelay(packet, pxe):
             return
             
         start_time = time.time()
@@ -749,7 +751,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
             else: #Request directly from client, routed or otherwise.
                 ip = address[0]
                 if pxe:
-                    port = address[1]
+                    port = address[1] or self._client_port #BSD doesn't seem to preserve port information
                 else:
                     port = self._client_port
         else: #Broadcast.
