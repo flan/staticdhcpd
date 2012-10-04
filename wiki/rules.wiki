@@ -1,3 +1,5 @@
+#summary The handbook for making staticDHCPd do cool things to make administering your site easier
+
 This article explains how to write custom DHCP-option-handling routines for staticDHCPd. This is not a feature most users will need to explore, so if you can't imagine why you would need to do it, you don't need to read on.
 
 ----
