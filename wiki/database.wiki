@@ -1,3 +1,5 @@
+#summary An overview of what a database needs to contain for staticDHCPd
+
 This article explains how to set values in the database to provide DHCP-handling for staticDHCPd's clients.
 
 ----
