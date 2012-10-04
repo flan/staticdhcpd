@@ -1,3 +1,5 @@
+#summary (Possibly) Frequently Asked Questions
+
 = Release errata =
 == [http://www.rfc-archive.org/getrfc.php?rfc=4388 RFC4388] ==
 The featureset described by this RFC, LEASEQUERY, is untested, yet has been included in versions 1.4.0+.
