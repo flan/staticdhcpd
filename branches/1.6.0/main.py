@@ -77,10 +77,24 @@ def _logHandler(signum, frame):
     else:
         src.logging.writeLog("Wrote log to '%(log)s'" % {'log': conf.LOG_FILE,})
         
+def _daemonise():
+	if os.fork(): #This is the parent
+		sys.exit(0)
+	os.setsid() #Ensure session semantics are configured
+	os.chdir('/') #Avoid holding references to unstable resources
+	
+	#And lastly, clean up the base descriptors
+	os.dup2(open('/dev/null', 'r').fileno(), sys.stdin.fileno())
+	os.dup2(open('/dev/null', 'a+').fileno(), sys.stdout.fileno())
+	os.dup2(open('/dev/null', 'a+', 0).fileno(), sys.stderr.fileno())
+	
 if __name__ == '__main__':
     #Ensure that pre-setup tasks are taken care of.
     conf.init()
-    
+	
+	if conf.DAEMON:
+		_daemonise()
+		
     #Start Web server.
     if conf.WEB_ENABLED:
         web_thread = src.web.WebService()

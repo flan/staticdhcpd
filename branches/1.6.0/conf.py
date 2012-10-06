@@ -9,6 +9,8 @@
 #######################################
 #If True, all events will be printed to console.
 DEBUG = False
+#If True, runs as a daemon (you usually don't want this during setup)
+DAEMON = True
 
 #The name to use when referring to this system.
 SYSTEM_NAME = 'staticDHCPd'

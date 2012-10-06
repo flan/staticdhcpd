@@ -36,6 +36,7 @@ _defaults = {}
 #######################################
 _defaults.update({
  'DEBUG': False,
+ 'DAEMON': False,
  
  'POLLING_INTERVAL': 30,
  'LOG_CAPACITY': 1000,
