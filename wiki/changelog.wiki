@@ -2,6 +2,7 @@
 
 = 1.6.0 (beta) =
  * Support for dynamic provisioning.
+ * Support for true daemon operation. (Not strictly necessary, but I just realised I somehow left it out, which is odd because it's in everything else I've written)
 ----
 = 1.5.7 =
  * PXE will now work even when ALLOW_LOCAL_DHCP is False. This failed before because PXE is strictly unicast, so it doesn't use a relay, even when the other half of the negotiation does.
