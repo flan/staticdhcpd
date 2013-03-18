@@ -3,6 +3,7 @@
 Deployment script for staticDHCPd.
 """
 from distutils.core import setup
+import platform
 
 from staticdhcpd import VERSION
 
@@ -29,19 +30,30 @@ setup(
 )
 
 #Post-installation stuff
-for i in [
+instructions = [
 "Before you can run 'staticDHCPd', which should now be in PATH, you must copy",
 "/etc/staticDHCPd/conf.py.sample to /etc/staticDHCPd/conf.py and configure it",
 "",
 "Perform the following tasks to configure staticDHCPd to launch on system startup",
-"Debian/Ubuntu",
+]
+if platform.linux_distribution()[0] in ('Debian', 'Ubuntu', 'Mint',):
+    instructions.extend([
+"Debian-like",
 "\tCopy samples/staticDHCPd to /etc/init.d/staticDHCPd",
 "\tRun '/bin/chmod a+x /etc/init.d/staticDHCPd'",
 "\tRun '/usr/sbin/update-rc.d staticDHCPd defaults'",
-"",
+    ])
+elif platform.mac_ver()[0]:
+    instructions.extend([
 "OS X",
 "\tCopy samples/ca.uguu.puukusoft.staticdhcpd.plist to the System Launch Library"
 "\tThere's probably more to it; please contibute detailed steps"
-]:
+    ])
+else:
+    instructions.extend([
+"Instructions relevant to your platform are unavailable; please contribute documentation",
+    ])
+
+for i in instructions:
     print(i)
     

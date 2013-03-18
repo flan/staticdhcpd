@@ -19,6 +19,20 @@ intact, meaning that you just have to pull code, run setup, and go.
 -------------------------------------------------------------------------------
 
 
+Installation instructions:
+    Run install.sh with privileges that can create content in
+    /etc and /usr/local/bin. Follow the resulting on-screen text to integrate
+    the server with your OS's daemon-management engine.
+    
+    Just remember to set up conf.py and everything should just work. Before
+    installing the server, though, run through the five-minute quickstart
+    described below; it doesn't require that you make any permanent changes to
+    your host.
+
+
+-------------------------------------------------------------------------------
+
+
 Five-minute "does this really work?" setup guide for busy administrators
     Uses sqlite3 to avoid unnecessary installations
 

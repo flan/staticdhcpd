@@ -38,33 +38,30 @@ Legal
 """
 #Get the "conf" module from somewhere
 conf = None
-try: #First, try the current directory
-    import conf
-except ImportError:
-    import os
-    import sys
-    import imp
-    conf_path = os.path.join(os.getcwd(), 'conf')
-    sys.path.append(conf_path)
-    try: #If that fails, look for a 'conf' subdirectory
-        conf = imp.load_source('conf', os.path.join(conf_path, 'conf.py'))
+import os
+import sys
+import imp
+conf_path = os.path.join(os.getcwd(), 'conf')
+sys.path.append(conf_path)
+try: #Look for a 'conf/' subdirectory
+    conf = imp.load_source('conf', os.path.join(conf_path, 'conf.py'))
+except IOError:
+    etc_path = '/etc/staticDHCPd'
+    sys.path.append(etc_path)
+    try: #If that fails, try /etc/staticDHCPd/
+        conf = imp.load_source('conf', os.path.join(etc_path, 'conf.py'))
     except IOError:
-        etc_path = '/etc/staticDHCPd'
-        sys.path.append(etc_path)
-        try: #If that, too, fails, try /etc/staticDHCPd/
-            conf = imp.load_source('conf', os.path.join(etc_path, 'conf.py'))
-        except IOError:
-            raise ImportError("Unable to find a suitable copy of conf.py")
-        finally:
-            sys.path.remove(etc_path)
-            del etc_path
+        raise ImportError("Unable to find a suitable copy of conf.py")
     finally:
-        sys.path.remove(conf_path)
-        del conf_path
-        del os
-        del sys
-        del imp
-
+        sys.path.remove(etc_path)
+        del etc_path
+finally:
+    sys.path.remove(conf_path)
+    del conf_path
+    del os
+    del sys
+    del imp
+    
 #Options passed through from conf.py
 #For explanations, please consult that file.
 ##############################################################################
