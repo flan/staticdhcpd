@@ -12,7 +12,7 @@ Be aware also that, unlike dynamic-provisioning-focused servers, like the ISC's,
 ----
 = Modules =
 == In-memory ==
-Provided in `samples/dynamism.py`, this is the reference module for dynamic allocation, providing management for leases in a single-DHCP-server environment.
+Provided in `samples/dynamism.py`, this is the reference module for dynamic allocation, offering management for leases in a single-DHCP-server environment.
 
 
 To use this module, copy it to the same path as `conf.py` (unless you know how packages work) and add the line `import dynamism` to `conf.py`'s `init()` function.

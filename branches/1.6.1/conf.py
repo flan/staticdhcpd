@@ -208,7 +208,8 @@ def loadDHCPPacket(packet, mac, client_ip, relay_ip, subnet, serial, pxe, vendor
 def handleUnknownMAC(mac):
     #This is a custom function, called when a request is made by a MAC for which
     #no binding exists. You can use this to do things like dynamic addressing,
-    #using your own domain-specific logic. See the wiki for examples.
+    #using your own domain-specific logic. See the wiki for examples, including
+    #a functional, if basic, dynamic-provisioning engine.
     #
     ##### PARAMETERS #####
     #mac is a human-readable MAC string, lower-case, separated by colons.
