@@ -16,7 +16,6 @@ setup(
  url = 'http://staticdhcpd.googlecode.com/',
  packages = [
   'staticdhcpd',
-  'libpydhcpserver',
  ],
  data_files = [
   ('/etc/staticDHCPd', [
