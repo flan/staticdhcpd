@@ -115,6 +115,9 @@ Step 3: Edit conf.py
     since it adds a little bit of overhead and it may fill system logs very
     quickly)
     
+    Also set DAEMON to False. If you don't, it'll do daemonsy things, which
+    aren't good for helping to identify configuration problems quickly.
+    
     Then set LOG_FILE to point at your home directory. We'll be running this
     test using your privileges so you don't have to create a special role
     account, to save time. (In production, though, you'll definitely want to
@@ -134,7 +137,7 @@ Step 3: Edit conf.py
     Lastly, set SQLITE_FILE to point at the file you created in step 2.
     
 Step 4: Start the server
-    Run `sudo python main.py`.
+    Run `sudo python staticDHCPd`.
     
     You should see a few lines appear, explaining that the server is now
     running.

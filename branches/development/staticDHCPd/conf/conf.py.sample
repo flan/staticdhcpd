@@ -90,6 +90,7 @@ WEB_RELOAD_KEY = '5f4dcc3b5aa765d61d8327deb882cf99'
 #######################################
 #Allowed values: MySQL, PostgreSQL, Oracle, SQLite
 DATABASE_ENGINE = 'MySQL'
+#You may remove configuration sections pertaining to other database engines.
 
 #Controls whether DHCP data gleaned from database lookups should be cached until
 #manually flushed; consumes more resources and adds a step before a MAC can be
