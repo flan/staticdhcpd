@@ -22,19 +22,19 @@ Legal
  You should have received a copy of the GNU General Public License
  along with this program. If not, see <http://www.gnu.org/licenses/>.
  
- (C) Neil Tallim, 2009 <red.hamsterx@gmail.com>
+ (C) Neil Tallim, 2013 <flan@uguu.ca>
 """
 import os
 import signal
 import sys
 import time
 
-import src.conf_buffer as conf
-import src.dhcp
-import src.logging
-import src.web
+import staticdhcpd.config
+import staticdhcpd.dhcp
+import staticdhcpd.logging
+import staticdhcpd.web
 
-if not conf.DEBUG: #Suppress all unnecessary prints. 
+if not staticdhcpd.config.DEBUG: #Suppress all unnecessary prints. 
     sys.stdout = sys.stderr = open('/dev/null', 'w')
 else:
     sys.stdout = sys.stderr
@@ -52,11 +52,11 @@ def _quitHandler(signum, frame):
     """
     #Remove PID.
     try:
-        os.unlink(conf.PID_FILE)
+        os.unlink(staticdhcpd.config.PID_FILE)
     except:
         pass
         
-    src.logging.logToDisk()
+    staticdhcpd.logging.logToDisk()
     
     exit(0)
     
@@ -71,11 +71,11 @@ def _logHandler(signum, frame):
     @param frame: The stack-frame in which the kill-signal was received.
         This is not used.
     """
-    src.dhcp.flushCache()
-    if not src.logging.logToDisk():
-        src.logging.writeLog("Unable to write logfile: %(log)s" % {'log': conf.LOG_FILE,})
+    staticdhcpd.dhcp.flushCache()
+    if not staticdhcpd.logging.logToDisk():
+        staticdhcpd.logging.writeLog("Unable to write logfile: %(log)s" % {'log': staticdhcpd.config.LOG_FILE,})
     else:
-        src.logging.writeLog("Wrote log to '%(log)s'" % {'log': conf.LOG_FILE,})
+        staticdhcpd.logging.writeLog("Wrote log to '%(log)s'" % {'log': staticdhcpd.config.LOG_FILE,})
         
 def _daemonise():
 	if os.fork(): #This is the parent
@@ -90,43 +90,43 @@ def _daemonise():
 	
 if __name__ == '__main__':
     #Ensure that pre-setup tasks are taken care of.
-    conf.init()
+    staticdhcpd.config.init()
 	
-	if conf.DAEMON:
+	if staticdhcpd.config.DAEMON:
 		_daemonise()
 		
     #Start Web server.
-    if conf.WEB_ENABLED:
-        web_thread = src.web.WebService()
+    if staticdhcpd.config.WEB_ENABLED:
+        web_thread = staticdhcpd.web.WebService()
         web_thread.start()
         
     #Start DHCP server.
-    dhcp_thread = src.dhcp.DHCPService()
+    dhcp_thread = staticdhcpd.dhcp.DHCPService()
     dhcp_thread.start()
     
     #Record PID.
     try:
-        pidfile = open(conf.PID_FILE, 'w')
+        pidfile = open(staticdhcpd.config.PID_FILE, 'w')
         pidfile.write(str(os.getpid()) + '\n')
         pidfile.close()
-        os.chown(conf.PID_FILE, conf.UID, conf.GID)
+        os.chown(staticdhcpd.config.PID_FILE, staticdhcpd.config.UID, staticdhcpd.config.GID)
     except:
-        src.logging.writeLog("Unable to write pidfile: %(file)s" % {'file': conf.PID_FILE,})
+        staticdhcpd.logging.writeLog("Unable to write pidfile: %(file)s" % {'file': staticdhcpd.config.PID_FILE,})
         
     #Touch logfile.
     try:
-        open(conf.LOG_FILE, 'a').close()
-        os.chown(conf.LOG_FILE, conf.UID, conf.GID)
+        open(staticdhcpd.config.LOG_FILE, 'a').close()
+        os.chown(staticdhcpd.config.LOG_FILE, staticdhcpd.config.UID, staticdhcpd.config.GID)
     except:
-        src.logging.writeLog("Unable to write pidfile: %(file)s" % {'file': conf.PID_FILE,})
+        staticdhcpd.logging.writeLog("Unable to write pidfile: %(file)s" % {'file': staticdhcpd.config.PID_FILE,})
         
     #Set signal-handlers.
     signal.signal(signal.SIGHUP, _logHandler)
     signal.signal(signal.SIGTERM, _quitHandler)
     
     #Set proper permissions for execution
-    os.setregid(conf.GID, conf.GID)
-    os.setreuid(conf.UID, conf.UID)
+    os.setregid(staticdhcpd.config.GID, staticdhcpd.config.GID)
+    os.setreuid(staticdhcpd.config.UID, staticdhcpd.config.UID)
     
     #Serve until interrupted.
     tick = 0
@@ -134,8 +134,8 @@ if __name__ == '__main__':
         time.sleep(1)
         
         tick += 1
-        if tick >= conf.POLLING_INTERVAL: #Perform periodic cleanup.
+        if tick >= staticdhcpd.config.POLLING_INTERVAL: #Perform periodic cleanup.
             dhcp_thread.pollStats()
-            src.logging.emailTimeoutCooldown()
+            staticdhcpd.logging.emailTimeoutCooldown()
             tick = 0
             

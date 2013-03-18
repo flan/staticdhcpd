@@ -1,11 +1,22 @@
 # -*- encoding: utf-8 -*-
 """
-staticDHCPd module: src.conf
+staticDHCPd module: config
+
+WARNING
+=======
+ If you are attempting to customise your environment, edit conf.py instead.
+ If testing, it will likely be in conf/, if installed, in /etc/staticDHCPd/,
+ or, if upgrading from an older version, in the same directory as main.py.
+ 
+ This file is intended for internal use only and modifications here will
+ probably lead to headaches later.
 
 Purpose
 =======
  Provides a buffer to seed options with default values to make upgrading easier
  for end users who do not need to manage any newly added features.
+ 
+ Also handles the process of determining where config values should be accessed.
  
 Legal
 =====
@@ -23,9 +34,36 @@ Legal
  You should have received a copy of the GNU General Public License
  along with this program. If not, see <http://www.gnu.org/licenses/>.
  
- (C) Neil Tallim, 2011 <red.hamsterx@gmail.com>
+ (C) Neil Tallim, 2013 <flan@uguu.ca>
 """
-import conf
+#Get the "conf" module from somewhere
+conf = None
+try: #First, try the current directory
+    import conf
+except ImportError:
+    import os
+    import sys
+    import imp
+    conf_path = os.path.join(os.getcwd(), 'conf')
+    sys.path.append(conf_path)
+    try: #If that fails, look for a 'conf' subdirectory
+        conf = imp.load_source('conf', os.path.join(conf_path, 'conf.py'))
+    except IOError:
+        etc_path = '/etc/staticDHCPd'
+        sys.path.append(etc_path)
+        try: #If that, too, fails, try /etc/staticDHCPd/
+            conf = imp.load_source('conf', os.path.join(etc_path, 'conf.py'))
+        except IOError:
+            raise ImportError("Unable to find a suitable copy of conf.py")
+        finally:
+            sys.path.remove(etc_path)
+            del etc_path
+    finally:
+        sys.path.remove(conf_path)
+        del conf_path
+        del os
+        del sys
+        del imp
 
 #Options passed through from conf.py
 #For explanations, please consult that file.
@@ -165,4 +203,3 @@ del type_rfc
 import logging
 conf.writeLog = logging.writeLog
 del logging
-

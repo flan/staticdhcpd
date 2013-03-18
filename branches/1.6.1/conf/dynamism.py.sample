@@ -17,13 +17,14 @@ unknown clients access to a guest subnet so they can be migrated to a static
 context.
 
 You can identify dynamic requests by using a unique subnet/serial pair and
-checking for it in loadDHCPPacket().
+checking for it in loadDHCPPacket(); the default pair this module provides is
+('guest', 0).
 """
 import collections
 import threading
 import time
 
-import src.logging
+import staticdhcpd.logging as logging
 
 #Configure these variables as needed
 ###############################################################################

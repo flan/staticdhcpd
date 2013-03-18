@@ -11,7 +11,9 @@ Fortunately, staticDHCPd makes that easy: just copy your old conf.py file into
 the new version and you're good to go. Any omitted options are supplemented by
 sane defaults, new scriptable features are defined passively (you only use what
 you need), and you can add references to new options when you actually need
-them. It really couldn't be any friendlier.
+them. It really couldn't be any friendlier... until it was: starting with 1.6.1,
+if you install the system using setup.py, your old config directory will be left
+intact, meaning that you just have to pull code, run setup, and go.
 
 
 -------------------------------------------------------------------------------
@@ -92,8 +94,7 @@ Step 2: Set up the DHCP database
         hostname. It inherits other settings from the subnet group.
         
 Step 3: Edit conf.py
-    You may want to make a backup of this file, but it's hardly necessary. If
-    you mess up, just grab another copy of the soruce.
+    Copy 'conf/conf.py.sample' to 'conf/conf.py'.
     
     For now, since you'll want to see everything that goes on, set DEBUG to
     True; 'True' must be capitalized. (In production, DEBUG should be False,
