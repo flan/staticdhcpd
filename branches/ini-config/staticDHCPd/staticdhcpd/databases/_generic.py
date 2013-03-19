@@ -31,23 +31,13 @@ from .. import config
 
 class Database(object):
     """
-    A stub documenting the features an _SQLBroker object must provide.
+    A stub documenting the features a Database object must provide.
     """
     _resource_lock = None #: A lock used to prevent the database from being overwhelmed.
     _cache_lock = None #: A lock used to prevent multiple simultaneous cache updates.
     _mac_cache = None #: A cache used to prevent unnecessary database hits.
     _subnet_cache = None #: A cache used to prevent unnecessary database hits.
     
-    def _getConnection(self):
-        """
-        Provides a connection to the database.
-
-        @return: The connection object to be used.
-
-        @raise Exception: If a problem occurs while accessing the database.
-        """
-        raise NotImplementedError("_getConnection must be overridden")
-        
     def _setupBroker(self, concurrency_limit):
         """
         Sets up common attributes of broker objects.

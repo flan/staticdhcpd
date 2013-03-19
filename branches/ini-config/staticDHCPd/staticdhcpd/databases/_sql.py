@@ -28,7 +28,21 @@ from .. import config
 
 from _generic import Database
 
-class _DB20Broker(Database):
+class _SQLDatabase(Database):
+    """
+    A stub documenting the features an _SQLDatabase object must provide.
+    """
+    def _getConnection(self):
+        """
+        Provides a connection to the database.
+
+        @return: The connection object to be used.
+
+        @raise Exception: If a problem occurs while accessing the database.
+        """
+        raise NotImplementedError("_getConnection must be overridden")
+        
+class _DB20Broker(_SQLDatabase):
     """
     Defines bevahiour for a DB API 2.0-compatible broker.
     """
