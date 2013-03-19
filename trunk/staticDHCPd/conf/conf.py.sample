@@ -178,6 +178,7 @@ def init():
     #If importing another module (whether something you created or something
     #native, declare it in the global namespace if it's to be used in either
     #loadDHCPPacket() or handledUnknownMAC, using "global <module>" first.
+    #Or you can import it again in the appropriate function; either way works.
     
     #Copy samples/dynamism.py to this directory and uncomment the following
     #lines to expose a simple dynamic-address-provisioning engine.
