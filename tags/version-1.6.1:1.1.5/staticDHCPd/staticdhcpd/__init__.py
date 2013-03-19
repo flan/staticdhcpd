@@ -22,6 +22,6 @@ Legal
  You should have received a copy of the GNU General Public License
  along with this program. If not, see <http://www.gnu.org/licenses/>.
  
- (C) Neil Tallim, 2011 <red.hamsterx@gmail.com>
+ (C) Neil Tallim, 2013 <flan@uguu.ca>
 """
-VERSION = '1.5.6'
+VERSION = '1.6.1'

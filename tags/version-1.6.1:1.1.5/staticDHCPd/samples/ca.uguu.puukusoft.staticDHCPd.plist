@@ -8,7 +8,7 @@
             <string>/usr/bin/env</string>
             <string>python</string>
             <string>-OO</string>
-            <string>/opt/puukusoft/staticDHCPd/main.py</string>
+            <string>/usr/local/bin/staticDHCPd</string>
         </array>
         <key>KeepAlive</key>
         <true/>

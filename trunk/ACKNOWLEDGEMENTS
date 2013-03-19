@@ -13,5 +13,5 @@ pydhcplib : http://pydhcplib.tuxfamily.org/pmwiki/
     via UDP.
     
     staticDHCPd features a completely overhauled, fully updated, and
-    stripped-down version of this library, rebranded 'libpydhcpserver'.
+    stripped-down version of this library, rebranded as 'libpydhcpserver'.
     
