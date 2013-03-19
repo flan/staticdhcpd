@@ -1,6 +1,6 @@
 #summary What's changed -- change is good
 
-= 1.6.1 =
+= 1.6.1 [staticDHCPd] =
  * Massive re-architecture of the directory structures
   * staticDHCPd and libpydhcpserver now separated
   * conf/ directory added for source-based testing and deployment
