@@ -198,8 +198,6 @@ class INI(Database):
         """
         Effectively performs foreign-key checking, to avoid deferred errors.
         """
-        print self._subnets
-        print self._maps
         for (mac, (_, _, subnet)) in self._maps.items():
             if subnet not in self._subnets:
                 raise ValueError("MAC '%(mac)s' references unknown subnet '%(subnet)s|%(serial)i'" % {
@@ -243,4 +241,3 @@ class INI(Database):
          domain_name, domain_name_servers, ntp_servers,
          lease_time, subnet[0], subnet[1]
         )
-        
