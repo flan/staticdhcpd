@@ -31,6 +31,8 @@ setup(
 
 #Post-installation stuff
 instructions = [
+"",
+"",
 "Before you can run 'staticDHCPd', which should now be in PATH, you must copy",
 "/etc/staticDHCPd/conf.py.sample to /etc/staticDHCPd/conf.py and configure it",
 "",
