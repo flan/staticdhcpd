@@ -76,12 +76,9 @@ class Database(object):
         data.
         """
         if config.USE_CACHE:
-            self._cache_lock.acquire()
-            try:
+            with self._cache_lock:
                 self._mac_cache = {}
                 self._subnet_cache = {}
-            finally:
-                self._cache_lock.release()
                 
     def lookupMAC(self, mac):
         """
@@ -105,17 +102,13 @@ class Database(object):
         @raise Exception: If a problem occurs while accessing the database.
         """
         if config.USE_CACHE:
-            self._cache_lock.acquire()
-            try:
+            with self._cache_lock:
                 data = self._mac_cache.get(mac)
                 if data:
                     (ip, hostname, subnet_id) = data
                     return (ip, hostname,) + self._subnet_cache[subnet_id] + subnet_id
-            finally:
-                self._cache_lock.release()
-                
-        self._resource_lock.acquire()
-        try:
+                    
+        with self._resource_lock:
             data = self._lookupMAC(mac)
             if config.USE_CACHE:
                 if data:
@@ -124,16 +117,11 @@ class Database(object):
                      domain_name, domain_name_servers, ntp_servers,
                      lease_time, subnet, serial) = data
                     subnet_id = (subnet, serial)
-                    self._cache_lock.acquire()
-                    try:
+                    with self._cache_lock:
                         self._mac_cache[mac] = (ip, hostname, subnet_id,)
                         self._subnet_cache[subnet_id] = (
                          gateway, subnet_mask, broadcast_address,
                          domain_name, domain_name_servers, ntp_servers,
                          lease_time,
                         )
-                    finally:
-                        self._cache_lock.release()
             return data
-        finally:
-            self._resource_lock.release()

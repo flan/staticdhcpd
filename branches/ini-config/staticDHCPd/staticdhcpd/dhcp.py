@@ -246,9 +246,8 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                          'mac': mac,
                          'time': config.UNAUTHORIZED_CLIENT_TIMEOUT,
                         })
-                        self._stats_lock.acquire()
-                        self._ignored_addresses.append([mac, config.UNAUTHORIZED_CLIENT_TIMEOUT])
-                        self._stats_lock.release()
+                        with self._stats_lock:
+                            self._ignored_addresses.append([mac, config.UNAUTHORIZED_CLIENT_TIMEOUT])
             except Exception, e:
                 logging.sendErrorReport('Unable to respond to %(mac)s' % {'mac': mac,}, e)
         else:
@@ -526,9 +525,8 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                  'mac': mac,
                  'time': config.UNAUTHORIZED_CLIENT_TIMEOUT,
                 })
-                self._stats_lock.acquire()
-                self._ignored_addresses.append([mac, config.UNAUTHORIZED_CLIENT_TIMEOUT])
-                self._stats_lock.release()
+                with self._stats_lock:
+                    self._ignored_addresses.append([mac, config.UNAUTHORIZED_CLIENT_TIMEOUT])
                 self._logDiscardedPacket()
                 return
                 
@@ -556,9 +554,8 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                      'mac': mac,
                      'time': config.UNAUTHORIZED_CLIENT_TIMEOUT,
                     })
-                    self._stats_lock.acquire()
-                    self._ignored_addresses.append([mac, config.UNAUTHORIZED_CLIENT_TIMEOUT])
-                    self._stats_lock.release()
+                    with self._stats_lock:
+                        self._ignored_addresses.append([mac, config.UNAUTHORIZED_CLIENT_TIMEOUT])
                     self._logDiscardedPacket()
             except Exception, e:
                 logging.sendErrorReport('Unable to respond to %(mac)s' % {'mac': mac,}, e)
@@ -676,8 +673,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         @return: True if the MAC's request should be processed.
         """
         if config.ENABLE_SUSPEND:
-            self._stats_lock.acquire()
-            try:
+            with self._stats_lock:
                 assignments = self._dhcp_assignments.get(mac)
                 if not assignments:
                     self._dhcp_assignments[mac] = 1
@@ -690,18 +686,15 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                         })
                         self._ignored_addresses.append([mac, config.MISBEHAVING_CLIENT_TIMEOUT])
                         return False
-            finally:
-                self._stats_lock.release()
         return True
         
     def _logDiscardedPacket(self):
         """
         Increments the number of packets discarded.
         """
-        self._stats_lock.acquire()
-        self._packets_discarded += 1
-        self._stats_lock.release()
-        
+        with self._stats_lock:
+            self._packets_discarded += 1
+            
     def _logTimeTaken(self, time_taken):
         """
         Records the time taken to process a packet.
@@ -709,10 +702,9 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         @type time_taken: float
         @param time_taken: The number of seconds the request took.
         """
-        self._stats_lock.acquire()
-        self._time_taken += time_taken
-        self._stats_lock.release()
-        
+        with self._stats_lock:
+            self._time_taken += time_taken
+            
     def _sendDHCPPacket(self, packet, address, response_type, mac, client_ip, pxe):
         """
         Sends the given packet to the right destination based on its properties.
@@ -783,18 +775,16 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         Listens for a DHCP packet and initiates processing upon receipt.
         """
         if self._getNextDHCPPacket():
-            self._stats_lock.acquire()
-            self._packets_processed += 1
-            self._stats_lock.release()
-            
+            with self._stats_lock:
+                self._packets_processed += 1
+                
     def getStats(self):
         """
         Returns the performance statistics of all operations performed since the
         last polling event, resets all counters, and updates the time left before
         ignored MACs' requests will be processed again.
         """
-        self._stats_lock.acquire()
-        try:
+        with self._stats_lock:
             for i in range(len(self._ignored_addresses)):
                 self._ignored_addresses[i][1] -= config.POLLING_INTERVAL
             self._ignored_addresses = [address for address in self._ignored_addresses if address[1] > 0]
@@ -808,8 +798,6 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                 self._dhcp_assignments = {}
                 
             return stats
-        finally:
-            self._stats_lock.release()
             
             
 class DHCPService(threading.Thread):

@@ -51,17 +51,14 @@ def writeLog(data):
     """
     global _LOG
     
-    _LOG_LOCK.acquire()
-    try:
+    with _LOG_LOCK:
         _LOG = [(time.time(), data)] + _LOG[:config.LOG_CAPACITY - 1]
         if config.DEBUG:
             print '%(time)s : %(event)s' % {
              'time': time.asctime(),
              'event': data,
             }
-    finally:
-        _LOG_LOCK.release()
-        
+            
 def readLog():
     """
     Returns a static, immutable copy of the memory-log.
@@ -71,11 +68,8 @@ def readLog():
         (timestamp:float, details:basestring) values, in reverse-chronological
         order.
     """
-    _LOG_LOCK.acquire()
-    try:
+    with _LOG_LOCK:
         return tuple(_LOG)
-    finally:
-        _LOG_LOCK.release()
         
 def writePollRecord(packets, discarded, time_taken, ignored_macs):
     """
@@ -94,11 +88,8 @@ def writePollRecord(packets, discarded, time_taken, ignored_macs):
     """
     global _POLL_RECORDS
     
-    _POLL_RECORDS_LOCK.acquire()
-    try:
+    with _POLL_RECORDS_LOCK:
         _POLL_RECORDS = [(time.time(), packets, discarded, time_taken, ignored_macs)] + _POLL_RECORDS[:config.POLL_INTERVALS_TO_TRACK - 1]
-    finally:
-        _POLL_RECORDS_LOCK.release()
         
 def readPollRecords():
     """
@@ -110,11 +101,8 @@ def readPollRecords():
         processing_time:float, ignored_macs:int) values, in reverse-chronological
         order.
     """
-    _POLL_RECORDS_LOCK.acquire()
-    try:
+    with _POLL_RECORDS_LOCK:
         return tuple(_POLL_RECORDS)
-    finally:
-        _POLL_RECORDS_LOCK.release()
         
 #Logging functions
 def logToDisk():
@@ -171,10 +159,9 @@ def emailTimeoutCooldown():
     """
     global _EMAIL_TIMEOUT
     
-    _EMAIL_LOCK.acquire()
-    _EMAIL_TIMEOUT = max(0, _EMAIL_TIMEOUT - config.POLLING_INTERVAL)
-    _EMAIL_LOCK.release()
-    
+    with _EMAIL_LOCK:
+        _EMAIL_TIMEOUT = max(0, _EMAIL_TIMEOUT - config.POLLING_INTERVAL)
+        
 def _buildEmail(subject, report):
     message = email.MIMEMultipart.MIMEMultipart()
     message['From'] = config.EMAIL_SOURCE
@@ -256,13 +243,10 @@ Exception traceback:
         return
         
     global _EMAIL_TIMEOUT
-    _EMAIL_LOCK.acquire()
-    try:
+    with _EMAIL_LOCK:
         if _EMAIL_TIMEOUT > 0:
             return
         _EMAIL_TIMEOUT = config.EMAIL_TIMEOUT
-    finally:
-        _EMAIL_LOCK.release()
         
     try:
         _sendEmail(
