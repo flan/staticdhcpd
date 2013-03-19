@@ -34,7 +34,7 @@ Installation instructions:
 
 
 Five-minute "does this really work?" setup guide for busy administrators
-    Uses sqlite3 to avoid unnecessary installations
+    Uses sqlite3 or INI files to avoid unnecessary installations
 
 (If you need more information, see the project page at
  http://uguu.ca/puukusoft/staticDHCPd/ or
@@ -56,57 +56,81 @@ Step 1: Gather resources
     So you're done. That was easy.
     
 Step 2: Set up the DHCP database
-    Open a terminal and run `sqlite3 dhcp.sqlite3`
+    (This example assumes your network is similar to that of a typical home
+    user; if this is not the case, you will need to adjust things, but you
+    probably wouldn't be playing with a DHCP server if you were a typical home
+    user anyway)
     
-    Copy and paste the contents of samples/sqlite.sql into the prompt.
+    The example values below will give the MAC 'aa:bb:cc:dd:ee:ff' the IP
+    '192.168.0.197' and no hostname. You'll notice that non-host-specific
+    parameters are inherited from its subnet-classification, specifically
+    things like lease-time and basic routing parameters. DNS, NTP, and
+    other properties aren't specified in this example, but are in the samples/
+    directory.
     
-    Now that your database is ready to go (SQLite is so easy!), add some rules.
-        (This example assumes your network is similar to that of a typical home
-        user; if this is not the case, you will need to adjust some settings)
+    (The term "subnet" is used loosely here: the only thing that matters is that
+    the "subnet" and "serial" values match for inheritance -- you could put
+    "floor 3" in as a "subnet" if you wanted to. The term "subnet" was chosen
+    because it seemed like the most likely classification system for
+    administrators to use and recognise)
+    
+    INI method:
+        Create a file with the following contents; the name is up to you.
+            
+            [192.168.0.0/24|0]
+            lease-time: 14400
+            gateway: 192.168.0.1
+            subnet-mask: 255.255.255.0
+            broadcast-address: 192.168.0.255
+
+            [aa:bb:cc:dd:ee:ff]
+            ip: 192.168.0.197
+            subnet: 192.168.0.0/24
+            serial: 0
+            
+    SQLite method:
+        Open a terminal and run `sqlite3 dhcp.sqlite3`
         
-        INSERT INTO subnets (
-            subnet,
-            serial,
-            lease_time,
-            gateway,
-            subnet_mask,
-            broadcast_address,
-            ntp_servers,
-            domain_name_servers,
-            domain_name
-        ) VALUES (
-            '192.168.0.0/24',
-            0,
-            14400,
-            '192.168.0.1',
-            '255.255.255.0',
-            '192.168.0.255',
-            NULL,
-            NULL,
-            NULL
-        );
+        Copy and paste the contents of samples/sqlite.sql into the prompt.
         
-        This creates the subnet entry with some very basic parameters. Clients
-        won't receive DNS information using this configuration, but that's fine
-        for testing purposes.
-        
-        INSERT INTO maps (
-            mac,
-            ip,
-            hostname,
-            subnet,
-            serial
-        ) VALUES (
-            'aa:bb:cc:dd:ee:ff',
-            '192.168.0.197',
-            NULL,
-            '192.168.0.0/24',
-            0
-        );
-        
-        This gives the MAC 'aa:bb:cc:dd:ee:ff' the IP '192.168.0.197' and no
-        hostname. It inherits other settings from the subnet group.
-        
+        Now that your database is ready to go (SQLite is easy!), add some rules.
+            
+            INSERT INTO subnets (
+                subnet,
+                serial,
+                lease_time,
+                gateway,
+                subnet_mask,
+                broadcast_address,
+                ntp_servers,
+                domain_name_servers,
+                domain_name
+            ) VALUES (
+                '192.168.0.0/24',
+                0,
+                14400,
+                '192.168.0.1',
+                '255.255.255.0',
+                '192.168.0.255',
+                NULL,
+                NULL,
+                NULL
+            );
+            
+            INSERT INTO maps (
+                mac,
+                ip,
+                hostname,
+                subnet,
+                serial
+            ) VALUES (
+                'aa:bb:cc:dd:ee:ff',
+                '192.168.0.197',
+                NULL,
+                '192.168.0.0/24',
+                0
+            );
+            
 Step 3: Edit conf.py
     Copy 'conf/conf.py.sample' to 'conf/conf.py'.
     
@@ -132,10 +156,16 @@ Step 3: Edit conf.py
     Run `ifconfig` and make note of your IPs; set DHCP_SERVER_IP and WEB_IP
     accordingly. If you only have one IP, enter it in both fields.
     
-    After that, set DATABASE_ENGINE to 'SQLite'; capitalization matters.
-    
-    Lastly, set SQLITE_FILE to point at the file you created in step 2.
-    
+    INI method:
+        After that, set DATABASE_ENGINE to 'INI'; capitalization matters.
+        
+        Lastly, set INI_FILE to point at the file you created in step 2.
+        
+    SQLite method:
+        After that, set DATABASE_ENGINE to 'SQLite'; capitalization matters.
+        
+        Lastly, set SQLITE_FILE to point at the file you created in step 2.
+        
 Step 4: Start the server
     Run `sudo python staticDHCPd`.
     
