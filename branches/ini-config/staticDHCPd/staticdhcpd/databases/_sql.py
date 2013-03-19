@@ -26,9 +26,9 @@ Legal
 """
 from .. import config
 
-from _generic import _Database
+from _generic import Database
 
-class _DB20Broker(_Database):
+class _DB20Broker(Database):
     """
     Defines bevahiour for a DB API 2.0-compatible broker.
     """

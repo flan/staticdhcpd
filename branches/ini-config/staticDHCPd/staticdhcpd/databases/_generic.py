@@ -29,7 +29,7 @@ import threading
 
 from .. import config
 
-class _Database(object):
+class Database(object):
     """
     A stub documenting the features an _SQLBroker object must provide.
     """

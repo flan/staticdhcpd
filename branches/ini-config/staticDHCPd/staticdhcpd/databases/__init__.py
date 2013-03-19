@@ -28,6 +28,12 @@ Legal
 from .. import config
 
 def get_database():
+    """
+    Assembles and returns a database-interface object.
+    
+    @rtype: _generic.Database
+    @return A database interface, usable to access DHCP information.
+    """
     if config.DATABASE_ENGINE == 'MySQL':
         from _sql import MySQL
         return MySQL()
