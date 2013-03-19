@@ -17,6 +17,7 @@ setup(
  url = 'http://staticdhcpd.googlecode.com/',
  packages = [
   'staticdhcpd',
+  'staticdhcpd.databases',
  ],
  data_files = [
   ('/etc/staticDHCPd', [
@@ -40,7 +41,7 @@ instructions = [
 ]
 if platform.linux_distribution()[0] in ('Debian', 'Ubuntu', 'Mint',):
     instructions.extend([
-"Debian-like",
+"Debian-like (" + platform.linux_distribution()[0] + ")",
 "\tCopy samples/staticDHCPd to /etc/init.d/staticDHCPd",
 "\tRun '/bin/chmod a+x /etc/init.d/staticDHCPd'",
 "\tRun '/usr/sbin/update-rc.d staticDHCPd defaults'",

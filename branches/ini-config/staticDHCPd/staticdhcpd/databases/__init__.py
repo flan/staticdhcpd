@@ -1,10 +1,11 @@
 # -*- encoding: utf-8 -*-
 """
-staticDHCPd package
+staticDHCPd package: databases
 
 Purpose
 =======
- Provides the logical implementation of a staticDHCPd daemon.
+ Provides implementations for communication with all databases staticDHCPd can
+ use.
  
 Legal
 =====
@@ -24,4 +25,22 @@ Legal
  
  (C) Neil Tallim, 2013 <flan@uguu.ca>
 """
-VERSION = '1.6.1'
+from .. import config
+
+def get_database():
+    if config.DATABASE_ENGINE == 'MySQL':
+        from _sql import MySQL
+        return MySQL()
+    elif config.DATABASE_ENGINE == 'PostgreSQL':
+        from _sql import PostgreSQL
+        return PostgreSQL()
+    elif config.DATABASE_ENGINE == 'Oracle':
+        from _sql import Oracle
+        return Oracle()
+    elif config.DATABASE_ENGINE == 'SQLite':
+        from _sql import SQLite
+        return SQLite()
+        
+    raise ValueError("Unknown database engine: %(engine)s" % {
+     'engine': config.DATABASE_ENGINE
+    })

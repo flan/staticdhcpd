@@ -30,7 +30,7 @@ import time
 
 import config
 import logging
-import sql
+import databases
 
 import libpydhcpserver.dhcp_network
 from libpydhcpserver.type_rfc import (
@@ -60,7 +60,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
     """
     The handler that responds to all received DHCP requests.
     """
-    _sql_broker = None #: The SQL broker to be used when handling MAC lookups.
+    _database = None #: The database to be used when handling MAC lookups.
     
     _stats_lock = None #: A lock used to ensure synchronous access to performance statistics.
     _dhcp_assignments = None #: The MACs and the number of DHCP "leases" granted to each since the last polling interval.
@@ -97,7 +97,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
          self, server_address, server_port, client_port, pxe_port
         )
         
-        self._sql_broker = sql.SQL_BROKER()
+        self._database = databases.get_database()
         
     def _evaluateRelay(self, packet, pxe):
         """
@@ -152,7 +152,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                 
             if '.'.join(map(str, packet.getOption("server_identifier"))) == self._server_address: #Rejected!
                 ip = '.'.join(map(str, packet.getOption("requested_ip_address")))
-                result = self._sql_broker.lookupMAC(mac) or config.handleUnknownMAC(mac)
+                result = self._database.lookupMAC(mac) or config.handleUnknownMAC(mac)
                 if result and result[0] == ip: #Known client.
                     logging.writeLog('DHCPDECLINE from %(mac)s for %(ip)s on (%(subnet)s, %(serial)i)' % {
                      'ip': ip,
@@ -205,7 +205,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
             })
             
             try:
-                result = self._sql_broker.lookupMAC(mac) or config.handleUnknownMAC(mac)
+                result = self._database.lookupMAC(mac) or config.handleUnknownMAC(mac)
                 if result:
                     rapid_commit = not packet.getOption('rapid_commit') is None
                     if rapid_commit:
@@ -296,7 +296,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
             })
             
             try:
-                result = self._sql_broker.lookupMAC(mac) or config.handleUnknownMAC(mac)
+                result = self._database.lookupMAC(mac) or config.handleUnknownMAC(mac)
                 if result:
                     packet.transformToDHCPLeaseActivePacket()
                     if packet.setOption('yiaddr', ipToList(result[0])):
@@ -370,7 +370,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                      'mac': mac,
                     })
                     try:
-                        result = self._sql_broker.lookupMAC(mac) or config.handleUnknownMAC(mac)
+                        result = self._database.lookupMAC(mac) or config.handleUnknownMAC(mac)
                         if result and (not ip or result[0] == s_ip):
                             packet.transformToDHCPAckPacket()
                             pxe_options = packet.extractPXEOptions()
@@ -400,7 +400,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                  'mac': mac,
                 })
                 try:
-                    result = self._sql_broker.lookupMAC(mac) or config.handleUnknownMAC(mac)
+                    result = self._database.lookupMAC(mac) or config.handleUnknownMAC(mac)
                     if result and result[0] == s_ip:
                         packet.transformToDHCPAckPacket()
                         pxe_options = packet.extractPXEOptions()
@@ -439,7 +439,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                         })
                         
                     try:
-                        result = self._sql_broker.lookupMAC(mac) or config.handleUnknownMAC(mac)
+                        result = self._database.lookupMAC(mac) or config.handleUnknownMAC(mac)
                         if result and result[0] == s_ciaddr:
                             packet.transformToDHCPAckPacket()
                             pxe_options = packet.extractPXEOptions()
@@ -533,7 +533,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                 return
                 
             try:
-                result = self._sql_broker.lookupMAC(mac) or config.handleUnknownMAC(mac)
+                result = self._database.lookupMAC(mac) or config.handleUnknownMAC(mac)
                 if result:
                     packet.transformToDHCPAckPacket()
                     pxe_options = packet.extractPXEOptions()
@@ -596,7 +596,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                 
             if '.'.join(map(str, packet.getOption("server_identifier"))) == self._server_address: #Released!
                 ip = '.'.join(map(str, packet.getOption("ciaddr")))
-                result = self._sql_broker.lookupMAC(mac) or config.handleUnknownMAC(mac)
+                result = self._database.lookupMAC(mac) or config.handleUnknownMAC(mac)
                 if result and result[0] == ip: #Known client.
                     logging.writeLog('DHCPRELEASE from %(mac)s for %(ip)s' % {
                      'ip': ip,
@@ -620,7 +620,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         @type packet: L{libpydhcpserver.dhcp_packet.DHCPPacket}
         @param packet: The packet being updated.
         @type result: tuple(11)
-        @param result: The value returned from the SQL broker.
+        @param result: The value returned from the database or surrogate source.
         @type inform: bool
         @param inform: True if this is a response to a DHCPINFORM message.
         """
@@ -775,7 +775,8 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         """
         Flushes the DHCP cache.
         """
-        self._sql_broker.flushCache()
+        self._database.flushCache()
+        logging.writeLog("Flushed DHCP cache")
         
     def getNextDHCPPacket(self):
         """
