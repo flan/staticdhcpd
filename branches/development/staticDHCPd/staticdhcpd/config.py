@@ -46,17 +46,19 @@ sys.path.append(conf_path)
 try: #Look for a 'conf/' subdirectory
     conf = imp.load_source('conf', os.path.join(conf_path, 'conf.py'))
 except IOError:
+    sys.path.remove(conf_path)
+    
     etc_path = '/etc/staticDHCPd'
     sys.path.append(etc_path)
     try: #If that fails, try /etc/staticDHCPd/
         conf = imp.load_source('conf', os.path.join(etc_path, 'conf.py'))
     except IOError:
+        sys.path.remove(etc_path)
+        
         raise ImportError("Unable to find a suitable copy of conf.py")
     finally:
-        sys.path.remove(etc_path)
         del etc_path
 finally:
-    sys.path.remove(conf_path)
     del conf_path
     del os
     del sys

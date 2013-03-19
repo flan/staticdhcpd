@@ -175,9 +175,13 @@ EMAIL_TIMEOUT = 600
 #######################################
 def init():
     #Perform any required imports or setup operations within this function.
+    #If importing another module (whether something you created or something
+    #native, declare it in the global namespace if it's to be used in either
+    #loadDHCPPacket() or handledUnknownMAC, using "global <module>" first.
     
-    #Copy samples/dynamism.py to this directory and uncomment the following line
-    #to expose a simple dynamic-address-provisioning engine.
+    #Copy samples/dynamism.py to this directory and uncomment the following
+    #lines to expose a simple dynamic-address-provisioning engine.
+    #global dynamism
     #import dynamism
     
     pass

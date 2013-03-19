@@ -40,7 +40,7 @@ except:
 import config
 import dhcp
 import logging
-import src
+from staticdhcpd import VERSION
 
 class _WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
     """
