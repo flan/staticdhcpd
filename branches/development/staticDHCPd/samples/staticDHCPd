@@ -12,7 +12,7 @@
 case "$1" in
 start)
     echo -n "Starting staticDHCPd"
-    /usr/bin/env python -OO /opt/puukusoft/staticDHCPd/staticDHCPd &
+    /usr/bin/env python -OO /usr/local/bin/staticDHCPd &
     echo "."
     ;;
 
@@ -27,7 +27,7 @@ force-reload|restart)
     kill -15 `cat /var/run/staticDHCPd.pid`
     echo "."
     echo -n "Starting staticDHCPd"
-    /usr/bin/env python -OO /opt/puukusoft/staticDHCPd/staticDHCPd &
+    /usr/bin/env python -OO /usr/local/bin/staticDHCPd &
     echo "."
     ;;
 

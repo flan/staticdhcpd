@@ -46,8 +46,7 @@ if platform.linux_distribution()[0] in ('Debian', 'Ubuntu', 'Mint',):
 elif platform.mac_ver()[0]:
     instructions.extend([
 "OS X",
-"\tCopy samples/ca.uguu.puukusoft.staticdhcpd.plist to the System Launch Library"
-"\tThere's probably more to it; please contibute detailed steps"
+"\tCopy samples/ca.uguu.puukusoft.staticdhcpd.plist to /Library/LaunchDaemons/"
     ])
 else:
     instructions.extend([
