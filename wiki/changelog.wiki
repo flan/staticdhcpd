@@ -1,5 +1,9 @@
 #summary What's changed -- change is good
 
+= 1.6.2 : staticDHCPd =
+ * Refactored the database component, breaking coupling to SQL
+ * Implemented support for using an INI file as an alternative to an SQL-based database, borrowing from contributions by John Stowers
+----
 = 1.6.1 : staticDHCPd =
  * Massive re-architecture of the directory structures
   * staticDHCPd and libpydhcpserver now separated
