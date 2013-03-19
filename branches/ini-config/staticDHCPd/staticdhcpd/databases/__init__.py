@@ -34,18 +34,21 @@ def get_database():
     @rtype: _generic.Database
     @return A database interface, usable to access DHCP information.
     """
-    if config.DATABASE_ENGINE == 'MySQL':
-        from _sql import MySQL
-        return MySQL()
+    if config.DATABASE_ENGINE == 'SQLite':
+        from _sql import SQLite
+        return SQLite()
     elif config.DATABASE_ENGINE == 'PostgreSQL':
         from _sql import PostgreSQL
         return PostgreSQL()
+    elif config.DATABASE_ENGINE == 'MySQL':
+        from _sql import MySQL
+        return MySQL()
     elif config.DATABASE_ENGINE == 'Oracle':
         from _sql import Oracle
         return Oracle()
-    elif config.DATABASE_ENGINE == 'SQLite':
-        from _sql import SQLite
-        return SQLite()
+    elif config.DATABASE_ENGINE == 'INI':
+        from _ini import INI
+        return INI()
         
     raise ValueError("Unknown database engine: %(engine)s" % {
      'engine': config.DATABASE_ENGINE

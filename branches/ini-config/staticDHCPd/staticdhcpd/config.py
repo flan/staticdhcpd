@@ -112,12 +112,7 @@ _defaults.update({
 
  'USE_POOL': True,
 
- 'MYSQL_DATABASE': 'dhcp',
- 'MYSQL_USERNAME': 'dhcp_user',
- 'MYSQL_PASSWORD': 'dhcp_pass',
- 'MYSQL_HOST': None,
- 'MYSQL_PORT': 3306,
- 'MYSQL_MAXIMUM_CONNECTIONS': 4,
+ 'SQLITE_FILE': '/etc/staticDHCPd/dhcp.sqlite3',
 
  'POSTGRESQL_DATABASE': 'dhcp',
  'POSTGRESQL_USERNAME': 'dhcp_user',
@@ -131,8 +126,15 @@ _defaults.update({
  'ORACLE_USERNAME': 'dhcp_user',
  'ORACLE_PASSWORD': 'dhcp_pass',
  'ORACLE_MAXIMUM_CONNECTIONS': 4,
-
- 'SQLITE_FILE': '/etc/staticDHCPd/dhcp.sqlite3',
+ 
+ 'MYSQL_DATABASE': 'dhcp',
+ 'MYSQL_USERNAME': 'dhcp_user',
+ 'MYSQL_PASSWORD': 'dhcp_pass',
+ 'MYSQL_HOST': None,
+ 'MYSQL_PORT': 3306,
+ 'MYSQL_MAXIMUM_CONNECTIONS': 4,
+ 
+ 'INI_FILE': '/etc/staticDHCPd/dhcp.ini',
 })
 
 #E-mail settings

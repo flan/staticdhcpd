@@ -88,8 +88,8 @@ WEB_RELOAD_KEY = '5f4dcc3b5aa765d61d8327deb882cf99'
 
 #Database settings
 #######################################
-#Allowed values: MySQL, PostgreSQL, Oracle, SQLite
-DATABASE_ENGINE = 'MySQL'
+#Allowed values: SQLite, PostgreSQL, Oracle, MySQL, INI
+DATABASE_ENGINE = 'SQLite'
 #You may remove configuration sections pertaining to other database engines.
 
 #Controls whether DHCP data gleaned from database lookups should be cached until
@@ -98,24 +98,15 @@ DATABASE_ENGINE = 'MySQL'
 #performance under heavy loads.
 USE_CACHE = False
 
-#Controls whether SQL daemon connections are pooled. This only works if the
-#eventlet library has been installed and you've chosen a pooling-friendly
-#engine, which excludes SQLite.
+#Controls whether database connections are pooled.
+#This only applies to engines that both support and benefit from pooling.
+#For PostgreSQL, Oracle, and MySQL, this requires that the eventlet library
+#has been installed.
 USE_POOL = True
 
-#MYSQL_* values used only with 'MySQL' engine.
-#The name of your database.
-MYSQL_DATABASE = 'dhcp'
-#The name of a user with SELECT access.
-MYSQL_USERNAME = 'dhcp_user'
-#The password of the user.
-MYSQL_PASSWORD = 'dhcp_pass'
-#The host on which MySQL is running. None for 'localhost'.
-MYSQL_HOST = None
-#The port on which MySQL is running; ignored when HOST is None.
-MYSQL_PORT = 3306
-#The number of threads that may read the database at once.
-MYSQL_MAXIMUM_CONNECTIONS = 4
+#SQLITE_* values used only with 'SQLite' engine.
+#The file that contains your SQLite database.
+SQLITE_FILE = '/etc/staticDHCPd/dhcp.sqlite3'
 
 #POSTGRESQL_* values used only with 'PostgreSQL' engine.
 #The name of your database.
@@ -144,9 +135,23 @@ ORACLE_PASSWORD = 'dhcp_pass'
 #The number of threads that may read the database at once.
 ORACLE_MAXIMUM_CONNECTIONS = 4
 
-#SQLITE_* values used only with 'SQLite' engine.
-#The file that contains your SQLite database.
-SQLITE_FILE = '/etc/staticDHCPd/dhcp.sqlite3'
+#MYSQL_* values used only with 'MySQL' engine.
+#The name of your database.
+MYSQL_DATABASE = 'dhcp'
+#The name of a user with SELECT access.
+MYSQL_USERNAME = 'dhcp_user'
+#The password of the user.
+MYSQL_PASSWORD = 'dhcp_pass'
+#The host on which MySQL is running. None for 'localhost'.
+MYSQL_HOST = None
+#The port on which MySQL is running; ignored when HOST is None.
+MYSQL_PORT = 3306
+#The number of threads that may read the database at once.
+MYSQL_MAXIMUM_CONNECTIONS = 4
+
+#INI_* values used only with 'INI' engine.
+#The file that contains your INI database.
+INI_FILE = '/etc/staticDHCPd/dhcp.ini'
 
 #E-mail settings
 #######################################

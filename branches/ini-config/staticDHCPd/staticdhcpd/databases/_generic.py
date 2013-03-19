@@ -67,8 +67,8 @@ class Database(object):
         """
         if config.USE_CACHE:
             with self._cache_lock:
-                self._mac_cache = {}
-                self._subnet_cache = {}
+                self._mac_cache.clear()
+                self._subnet_cache.clear()
                 
     def lookupMAC(self, mac):
         """
@@ -94,24 +94,24 @@ class Database(object):
         if config.USE_CACHE:
             with self._cache_lock:
                 data = self._mac_cache.get(mac)
-                if data:
-                    (ip, hostname, subnet_id) = data
-                    return (ip, hostname,) + self._subnet_cache[subnet_id] + subnet_id
-                    
+            if data:
+                (ip, hostname, subnet_id) = data
+                return (ip, hostname,) + self._subnet_cache[subnet_id] + subnet_id
+                
         with self._resource_lock:
             data = self._lookupMAC(mac)
-            if config.USE_CACHE:
-                if data:
-                    (ip, hostname,
-                     gateway, subnet_mask, broadcast_address,
-                     domain_name, domain_name_servers, ntp_servers,
-                     lease_time, subnet, serial) = data
-                    subnet_id = (subnet, serial)
-                    with self._cache_lock:
-                        self._mac_cache[mac] = (ip, hostname, subnet_id,)
-                        self._subnet_cache[subnet_id] = (
-                         gateway, subnet_mask, broadcast_address,
-                         domain_name, domain_name_servers, ntp_servers,
-                         lease_time,
-                        )
+            if data and config.USE_CACHE:
+                (ip, hostname,
+                    gateway, subnet_mask, broadcast_address,
+                    domain_name, domain_name_servers, ntp_servers,
+                    lease_time, subnet, serial) = data
+                subnet_id = (subnet, serial)
+                with self._cache_lock:
+                    self._mac_cache[mac] = (ip, hostname, subnet_id,)
+                    self._subnet_cache[subnet_id] = (
+                        gateway, subnet_mask, broadcast_address,
+                        domain_name, domain_name_servers, ntp_servers,
+                        lease_time,
+                    )
             return data
+            
