@@ -1,6 +1,20 @@
 #summary What's changed -- change is good
 
-= 1.6.0 (beta) =
+= 1.6.1 =
+ * Massive re-architecture of the directory structures
+  * staticDHCPd and libpydhcpserver now separated
+  * conf/ directory added for source-based testing and deployment
+  * /etc/staticDHCPd/ now recognised as a configuration path
+ * Better deployment and operation logic
+  * Setup scripts for both components of the system
+  * Basic unified installer
+   * Upgrade-friendly
+  * Platform auto-detection and initscript-setup-help
+  * No more need for hacks to access custom modules imported relative to `conf.py`
+ * Fixed a tab-based indentation issue in 1.6.0 (thanks to John Stowers for pointing it out)
+ * `main.py` is now `staticDHCPd`
+----
+= 1.6.0 (svn-only) =
  * Support for dynamic provisioning.
  * Support for true daemon operation. (Not strictly necessary, but I just realised I somehow left it out, which is odd because it's in everything else I've written)
 ----
