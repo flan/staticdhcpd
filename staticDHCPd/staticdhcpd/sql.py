@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
-staticDHCPd module: src.sql
+staticDHCPd module: sql
 
 Purpose
 =======
@@ -23,7 +23,7 @@ Legal
  You should have received a copy of the GNU General Public License
  along with this program. If not, see <http://www.gnu.org/licenses/>.
  
- (C) Neil Tallim, 2011 <red.hamsterx@gmail.com>
+ (C) Neil Tallim, 2013 <flan@uguu.ca>
  (C) Matthew Boedicker, 2011 <matthewm@boedicker.org>
 """
 ################################################################################
@@ -33,8 +33,8 @@ Legal
 ################################################################################
 import threading
 
-import src.conf_buffer as conf
-import src.logging
+import config
+import logging
 
 class _SQLBroker(object):
     """
@@ -79,12 +79,12 @@ class _SQLBroker(object):
         Resets the cache to an empty state, forcing all lookups to pull fresh
         data.
         """
-        if conf.USE_CACHE:
+        if config.USE_CACHE:
             self._cache_lock.acquire()
             try:
                 self._mac_cache = {}
                 self._subnet_cache = {}
-                src.logging.writeLog("Flushed DHCP cache")
+                logging.writeLog("Flushed DHCP cache")
             finally:
                 self._cache_lock.release()
                 
@@ -109,7 +109,7 @@ class _SQLBroker(object):
         
         @raise Exception: If a problem occurs while accessing the database.
         """
-        if conf.USE_CACHE:
+        if config.USE_CACHE:
             self._cache_lock.acquire()
             try:
                 data = self._mac_cache.get(mac)
@@ -122,7 +122,7 @@ class _SQLBroker(object):
         self._resource_lock.acquire()
         try:
             data = self._lookupMAC(mac)
-            if conf.USE_CACHE:
+            if config.USE_CACHE:
                 if data:
                     (ip, hostname,
                      gateway, subnet_mask, broadcast_address,
@@ -211,7 +211,7 @@ class _PoolingBroker(_DB20Broker):
         """
         _DB20Broker._setupBroker(self, concurrency_limit)
 
-        if conf.USE_POOL:
+        if config.USE_POOL:
             try:
                 import eventlet.db_pool
                 self._eventlet__db_pool = eventlet.db_pool
@@ -273,17 +273,17 @@ class _MySQL(_PoolingBroker):
         Constructs the broker.
         """
         self._connection_details = {
-         'db': conf.MYSQL_DATABASE,
-         'user': conf.MYSQL_USERNAME,
-         'passwd': conf.MYSQL_PASSWORD,
+         'db': config.MYSQL_DATABASE,
+         'user': config.MYSQL_USERNAME,
+         'passwd': config.MYSQL_PASSWORD,
         }
-        if conf.MYSQL_HOST is None:
+        if config.MYSQL_HOST is None:
             self._connection_details['host'] = 'localhost'
         else:
-            self._connection_details['host'] = conf.MYSQL_HOST
-            self._connection_details['port'] = conf.MYSQL_PORT
+            self._connection_details['host'] = config.MYSQL_HOST
+            self._connection_details['port'] = config.MYSQL_PORT
             
-        self._setupBroker(conf.MYSQL_MAXIMUM_CONNECTIONS)
+        self._setupBroker(config.MYSQL_MAXIMUM_CONNECTIONS)
         
 class _PostgreSQL(_PoolingBroker):
     """
@@ -305,16 +305,16 @@ class _PostgreSQL(_PoolingBroker):
         Constructs the broker.
         """
         self._connection_details = {
-         'database': conf.POSTGRESQL_DATABASE,
-         'user': conf.POSTGRESQL_USERNAME,
-         'password': conf.POSTGRESQL_PASSWORD,
+         'database': config.POSTGRESQL_DATABASE,
+         'user': config.POSTGRESQL_USERNAME,
+         'password': config.POSTGRESQL_PASSWORD,
         }
-        if not conf.POSTGRESQL_HOST is None:
-            self._connection_details['host'] = conf.POSTGRESQL_HOST
-            self._connection_details['port'] = conf.POSTGRESQL_PORT
-            self._connection_details['sslmode'] = conf.POSTGRESQL_SSLMODE
+        if not config.POSTGRESQL_HOST is None:
+            self._connection_details['host'] = config.POSTGRESQL_HOST
+            self._connection_details['port'] = config.POSTGRESQL_PORT
+            self._connection_details['sslmode'] = config.POSTGRESQL_SSLMODE
             
-        self._setupBroker(conf.POSTGRESQL_MAXIMUM_CONNECTIONS)
+        self._setupBroker(config.POSTGRESQL_MAXIMUM_CONNECTIONS)
         
 class _Oracle(_PoolingBroker):
     """
@@ -336,12 +336,12 @@ class _Oracle(_PoolingBroker):
         Constructs the broker.
         """
         self._connection_details = {
-         'user': conf.ORACLE_USERNAME,
-         'password': conf.ORACLE_PASSWORD,
-         'dsn': conf.ORACLE_DATABASE,
+         'user': config.ORACLE_USERNAME,
+         'password': config.ORACLE_PASSWORD,
+         'dsn': config.ORACLE_DATABASE,
         }
 
-        self._setupBroker(conf.ORACLE_MAXIMUM_CONNECTIONS)
+        self._setupBroker(config.ORACLE_MAXIMUM_CONNECTIONS)
 
 class _SQLite(_NonPoolingBroker):
     """
@@ -363,7 +363,7 @@ class _SQLite(_NonPoolingBroker):
         Constructs the broker.
         """
         self._connection_details = {
-         'database': conf.SQLITE_FILE,
+         'database': config.SQLITE_FILE,
         }
         
         self._setupBroker(1)
@@ -373,20 +373,20 @@ class _SQLite(_NonPoolingBroker):
 #################################################################
 SQL_BROKER = None #: The class of the SQL engine to use.
 SQL_MODULE = None #: The module of the SQL engine to use.
-if conf.DATABASE_ENGINE == 'MySQL':
+if config.DATABASE_ENGINE == 'MySQL':
     import MySQLdb as SQL_MODULE
     SQL_BROKER = _MySQL
-elif conf.DATABASE_ENGINE == 'PostgreSQL':
+elif config.DATABASE_ENGINE == 'PostgreSQL':
     import psycopg2 as SQL_MODULE
     SQL_BROKER = _PostgreSQL
-elif conf.DATABASE_ENGINE == 'Oracle':
+elif config.DATABASE_ENGINE == 'Oracle':
     import cx_Oracle as SQL_MODULE
     SQL_BROKER = _Oracle
-elif conf.DATABASE_ENGINE == 'SQLite':
+elif config.DATABASE_ENGINE == 'SQLite':
     import sqlite3 as SQL_MODULE
     SQL_BROKER = _SQLite
 else:
     raise ValueError("Unknown database engine: %(engine)s" % {
-     'engine': conf.DATABASE_ENGINE
+     'engine': config.DATABASE_ENGINE
     })
     
