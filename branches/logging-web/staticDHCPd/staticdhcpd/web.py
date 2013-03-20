@@ -33,9 +33,9 @@ import threading
 import time
 
 try:
-	from urlparse import parse_qs
+    from urlparse import parse_qs
 except:
-	from cgi import parse_qs
+    from cgi import parse_qs
 
 import config
 import dhcp
