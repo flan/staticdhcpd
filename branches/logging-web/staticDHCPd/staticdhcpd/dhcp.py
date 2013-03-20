@@ -335,24 +335,32 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
             
             try:
                 giaddr = self._extractIPOrNone(packet, "giaddr", as_tuple=True)
+                ciaddr = self._extractIPOrNone(packet, "ciaddr", as_tuple=True)
                 pxe_options = packet.extractPXEOptions()
                 vendor_options = packet.extractVendorOptions()
                 result = self._database.lookupMAC(mac) or config.handleUnknownMAC(
                  packet, "LEASEQUERY",
-                 mac, self._extractIPOrNone(packet, "ciaddr", as_tuple=True), giaddr,
+                 mac, ciaddr, giaddr,
                  pxe and pxe_options, vendor_options
                 )
                 if result:
-                    packet.transformToDHCPLeaseActivePacket()
+                    if result[0] is None:
+                        packet.transformToDHCPLeaseUnassignedPacket()
+                    else:
+                        packet.transformToDHCPLeaseActivePacket()
+                        
                     self._loadDHCPPacket(packet, result)
                     if config.loadDHCPPacket(
                         packet,
-                        mac, tuple(ipToList(result[0])), giaddr,
+                        mac, result[0] and tuple(ipToList(result[0])) or ciaddr, giaddr,
                         result[9], result[10],
                         pxe and pxe_options, vendor_options
                     ):
                         if packet.setOption('yiaddr', ipToList(result[0])):
-                            self._sendDHCPPacket(packet, source_address, 'LEASEACTIVE', mac, result[0], pxe)
+                            self._sendDHCPPacket(
+                             packet, source_address, result[0] and 'LEASEACTIVE' or 'LEASEUNASSIGNED',
+                             mac, result[0], pxe
+                            )
                         else:
                             _logInvalidValue('ip', result[0], result[-2], result[-1])
                     else:

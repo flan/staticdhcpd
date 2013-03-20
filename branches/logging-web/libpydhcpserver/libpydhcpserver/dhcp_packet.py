@@ -544,6 +544,19 @@ class DHCPPacket(object):
         self.deleteOption("file")
         self.deleteOption("sname")
         
+    def transformToDHCPLeaseUnassignedPacket(self):
+        """
+        Transforms a DHCP packet received from a client into a LEASEUNASSIGNED
+        packet to be returned to the client.
+        """
+        self._transformBase()
+        self.setOption("dhcp_message_type", [11])
+        
+        self.deleteOption("ciaddr")
+        
+        self.deleteOption("file")
+        self.deleteOption("sname")
+        
     def transformToDHCPLeaseUnknownPacket(self):
         """
         Transforms a DHCP packet received from a client into a LEASEUNKNOWN

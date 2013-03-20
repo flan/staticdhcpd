@@ -267,7 +267,9 @@ def handleUnknownMAC(packet, method, mac, client_ip, relay_ip, pxe, vendor):
     #    return dynamism.releaseDynamic(mac)
     #if method == 'INFORM':
     #    return dynamism.informDynamic(mac, client_ip)
-    #elif method != '':
+    #elif method == 'LEASEQUERY':
+    #    return dynamism.leasequeryDynamic(mac)
+    #else:
     #    return dynamism.provisionDynamic(mac)
     
     return None
