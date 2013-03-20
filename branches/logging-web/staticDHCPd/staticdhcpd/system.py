@@ -39,8 +39,7 @@ def initialise():
     
 def reinitialise():
     """
-    Resets the state of the database, then invokes every registered
-    reinitialisation handler.
+    Invokes every registered reinitialisation handler.
     """
     DATABASE.reinitialise()
     

@@ -7,25 +7,35 @@
 
 #General settings
 #######################################
-#If True, all events will be printed to console.
+#If True, all non-SMTP logging will be set to DEBUG severity and
+#console-logging will be enabled.
 DEBUG = False
 #If True, runs as a daemon (you usually don't want this during setup)
 DAEMON = True
 
 #The name to use when referring to this system.
 SYSTEM_NAME = 'staticDHCPd'
-#The file to which logs should be dumped on receipt of TERM or HUP.
+#The file to which logs should be written; the specified file must be writeable.
+#If None or an empty string, file-based logging will be disabled.
 LOG_FILE = '/var/log/' + SYSTEM_NAME + '.log'
-#True to write logfiles with the current timestamp; requires that staticDHCPd
-#has write-access to the directory above, which may be a security risk.
-LOG_FILE_TIMESTAMP = False
+#True to enable logfile rotation, using timestamps as archive markers; requires
+#that staticDHCPd has write-access to the directory above, which may be a
+#security risk.
+LOG_FILE_TIMESTAMP = True
+#The number of days to retain logfiles, if using rotation.
+LOG_FILE_HISTORY = 7
+#The minimum severity level required before a message will appear in the file.
+#Choices: DEBUG, INFO, WARN, ERROR, CRITICAL
+LOG_FILE_SEVERITY = 'WARN'
+#The minimum severity level required before a message will appear on the console.
+#Output will only appear on the console if DAEMON is not set.
+#Choices: DEBUG, INFO, WARN, ERROR, CRITICAL
+LOG_CONSOLE_SEVERITY = 'INFO'
 #The file to which PID information should be written.
 PID_FILE = '/var/run/' + SYSTEM_NAME + '.pid'
 
 #The frequency at which the DHCP server's stats will be polled, in seconds.
 POLLING_INTERVAL = 30
-#The number of events to keep in the server's log-buffer.
-LOG_CAPACITY = 1000
 #The amount of statistical information to track.
 POLL_INTERVALS_TO_TRACK = 20
 
@@ -54,6 +64,11 @@ WEB_ENABLED = True
 WEB_IP = '192.168.1.100'
 #The port on which the HTTP interface should be served.
 WEB_PORT = 30880
+#The number of events to present on the web interface.
+WEB_LOG_HISTORY = 100
+#The minimum severity level required before a message will appear on the web interface.
+#Choices: DEBUG, INFO, WARN, ERROR, CRITICAL
+WEB_LOG_SEVERITY = 'INFO'
 
 #Server behaviour settings
 #######################################
@@ -163,18 +178,18 @@ EMAIL_SERVER = 'mail.yourdomain.com'
 #The port on the server that receives your e-mail.
 EMAIL_PORT = 25
 #The number of seconds to wait for e-mail to be accepted before timing out.
-EMAIL_TIMEOUT = 10
+EMAIL_TIMEOUT = 4.0
 #The user from which e-mail should claim to be sent.
 EMAIL_SOURCE = 'you@yourdomain.com'
 #The user to whom e-mail should be sent.
 EMAIL_DESTINATION = 'problems@yourdomain.com'
+#The subject-line to use.
+EMAIL_SUBJECT = SYSTEM_NAME + " running on " + DHCP_SERVER_IP + ":" + str(DHCP_SERVER_PORT) + " encountered a problem"
 #The user who should authenticate to the mail server.
 #If None, SMTP authentication is not used.
 EMAIL_USER = 'you'
 #The password of the user who should authenticate to the mail server.
 EMAIL_PASSWORD = 'password'
-#The number of seconds to wait between sending e-mails.
-EMAIL_TIMEOUT = 600
 
 #DHCP-processing functions
 #######################################

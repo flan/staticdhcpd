@@ -25,6 +25,8 @@ Legal
  
  (C) Neil Tallim, 2013 <flan@uguu.ca>
 """
+import logging
+import logging.handlers
 import os
 import signal
 import sys
@@ -33,7 +35,7 @@ import time
 import staticdhcpd.system
 import staticdhcpd.config
 import staticdhcpd.dhcp
-import staticdhcpd.logging
+import staticdhcpd.logging_handlers
 import staticdhcpd.web
 
 if not staticdhcpd.config.DEBUG: #Suppress all unnecessary prints. 
@@ -91,6 +93,54 @@ def _daemonise():
     os.dup2(open('/dev/null', 'a+').fileno(), sys.stdout.fileno())
     os.dup2(open('/dev/null', 'a+', 0).fileno(), sys.stderr.fileno())
     
+def _setupLogging(logger):
+    """
+    Attaches handlers to the given logger, allowing for universal access to resources.
+    """
+    formatter = logging.Formatter(
+     "%(asctime)s : %(levelname)s : %(name)s:%(lineno)d[%(threadName)s] : %(message)s"
+    )
+    
+    if not staticdhcpd.config.DAEMON: #Daemon-style execution disables console-based logging
+        console_logger = logging.StreamHandler()
+        console_logger.setLevel(getattr(logging, staticdhcpd.config.LOG_CONSOLE_SEVERITY))
+        console_logger.setFormatter(formatter)
+        logger.addHandler(console_logger)
+        logger.info("Console-based logging online")
+        
+    if staticdhcpd.config.LOG_FILE: #Determine whether disk-based logging is desired
+        logger.info("Configuring file-based logging for " + staticdhcpd.config.LOG_FILE + "...")
+        if staticdhcpd.config.LOG_FILE_TIMESTAMP:
+            #Rollover once per day, keeping the configured number of days' logs as history
+            file_logger = logging.handlers.TimedRotatingFileHandler(
+             staticdhcpd.config.LOG_FILE, 'D', 1, staticdhcpd.config.LOG_FILE_HISTORY
+            )
+            logger.info("Configured rotation-based logging, with history=" + str(staticdhcpd.config.LOG_FILE_HISTORY) + " days")
+        else:
+            #Keep writing to the specified file forever
+            file_logger = logging.handlers.FileHandler(staticdhcpd.config.LOG_FILE)
+            logger.info("Configured indefinite-growth logging")
+        file_logger.setLevel(getattr(logging, staticdhcpd.config.LOG_FILE_SEVERITY))
+        file_logger.setFormatter(formatter)
+        logger.addHandler(file_logger)
+        logger.info("File-based logging online")
+        
+    if staticdhcpd.config.EMAIL_ENABLED: #Add an SMTP handler
+        smtp_handler = logging.handlers.SMTPHandler(
+         (staticdhcpd.config.EMAIL_SERVER, staticdhcpd.config.EMAIL_PORT),
+         staticdhcpd.config.EMAIL_SOURCE,
+         staticdhcpd.config.EMAIL_DESTINATION,
+         staticdhcpd.config.EMAIL_SUBJECT,
+         credentials=(staticdhcpd.config.EMAIL_USER and (staticdhcpd.config.EMAIL_USER, staticdhcpd.config.EMAIL_PASSWORD) or None),
+         timeout=staticdhcpd.config.EMAIL_TIMEOUT
+        )
+        logger.info("Configured SMTP-based logging for " + staticdhcpd.config.EMAIL_DESTINATION + " via " + staticdhcpd.config.EMAIL_SERVER + ":" + str(staticdhcpd.config.EMAIL_PORT))
+        smtp_handler.setLevel(logging.CRITICAL)
+        smtp_handler.setFormatter(formatter)
+        logger.addHandler(smtp_handler)
+        logger.info("SMTP-based logging online")
+        
+        
 if __name__ == '__main__':
     #Ensure that pre-setup tasks are taken care of.
     staticdhcpd.config.init()
@@ -98,6 +148,9 @@ if __name__ == '__main__':
     if staticdhcpd.config.DAEMON:
         _daemonise()
         
+    _logger = logging.getLogger('')
+    _setupLogging(_logger)
+    
     #Initialise all system resources
     staticdhcpd.system.initialise()
     

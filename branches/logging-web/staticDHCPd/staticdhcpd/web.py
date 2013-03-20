@@ -27,6 +27,7 @@ Legal
 import BaseHTTPServer
 import cgi
 import hashlib
+import logging
 import os
 import select
 import threading
@@ -39,9 +40,12 @@ except:
 
 import config
 import dhcp
-import logging
+import logging_handlers
 import system
 from staticdhcpd import VERSION
+
+_logger = logging.get('web')
+_web_logger = None
 
 class _WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
     """
@@ -182,6 +186,8 @@ class WebService(threading.Thread):
         @raise Exception: If a problem occurs while binding the sockets needed
             to handle HTTP traffic.
         """
+        self._setupLogging()
+        
         threading.Thread.__init__(self)
         self.daemon = True
         
@@ -194,6 +200,15 @@ class WebService(threading.Thread):
         )
         
         logging.writeLog('Configured Web server')
+        
+    def _setupLogging(self):
+        global _web_logger
+        _logger.info("Configuring web-interface logging...")
+        _web_logger = logging_handlers.FIFOHandler(config.WEB_LOG_HISTORY)
+        _web_logger.setLevel(getattr(logging, staticdhcpd.config.LOG_WEB_SEVERITY))
+        _web_logger.setFormatter(logging.Formatter("%(asctime)s : %(levelname)s : %(message)s"))
+        _logger.addHandler(_web_logger)
+        _logger.info("Web-accessible logging online")
         
     def run(self):
         """

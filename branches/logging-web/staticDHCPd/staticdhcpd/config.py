@@ -75,8 +75,11 @@ _defaults.update({
  'DEBUG': False,
  'DAEMON': False,
  
+ 'LOG_FILE_HISTORY': 7,
+ 'LOG_FILE_SEVERITY': 'WARN',
+ 'LOG_CONSOLE_SEVERITY': 'INFO',
+ 
  'POLLING_INTERVAL': 30,
- 'LOG_CAPACITY': 1000,
  'POLL_INTERVALS_TO_TRACK': 20,
 })
 
@@ -103,6 +106,16 @@ _defaults.update({
  'SUSPEND_THRESHOLD': 10,
 
  'WEB_RELOAD_KEY': '5f4dcc3b5aa765d61d8327deb882cf99',
+})
+
+#Web settings
+#######################################
+_defaults.update({
+ 'WEB_ENABLED': False,
+ 'WEB_IP': '0.0.0.0',
+ 'WEB_PORT': 30880,
+ 'WEB_LOG_HISTORY': 100,
+ 'WEB_LOG_SEVERITY': 'INFO',
 })
 
 #Database settings
@@ -142,11 +155,13 @@ _defaults.update({
 _defaults.update({
  'EMAIL_ENABLED': False,
  'EMAIL_SERVER': 'mail.yourdomain.com',
+ 'EMAIL_PORT': 25,
+ 'EMAIL_TIMEOUT': 4.0,
  'EMAIL_SOURCE': 'you@yourdomain.com',
  'EMAIL_DESTINATION': 'problems@yourdomain.com',
+ 'EMAIL_SUBJECT': "staticDHCPd encountered a problem",
  'EMAIL_USER': 'you',
  'EMAIL_PASSWORD': 'password',
- 'EMAIL_TIMEOUT': 600,
 })
 
 
