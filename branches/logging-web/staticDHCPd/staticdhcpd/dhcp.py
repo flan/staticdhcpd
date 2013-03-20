@@ -306,6 +306,13 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         @type pxe: bool
         @param pxe: True if the packet was received on the PXE port.
         """
+        start_time = time.time()
+        mac = packet.getHardwareAddress()
+        
+        logging.writeLog('DHCPRELEASE from %(mac)s' % {
+         'mac': mac,
+        })
+        
         self._logDiscardedPacket()
         self._logTimeTaken(time.time() - start_time)
         
@@ -350,14 +357,15 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
             s_sid = sid and '.'.join(map(str, sid))
             s_ciaddr = ciaddr and '.'.join(map(str, ciaddr))
             
+            pxe_options = packet.extractPXEOptions()
+            vendor_options = packet.extractVendorOptions()
+            
             if sid and not ciaddr: #SELECTING
                 if s_sid == self._server_address: #Chosen!
                     logging.writeLog('DHCPREQUEST:SELECTING from %(mac)s' % {
                      'mac': mac,
                     })
                     try:
-                        pxe_options = packet.extractPXEOptions()
-                        vendor_options = packet.extractVendorOptions()
                         result = self._database.lookupMAC(mac) or config.handleUnknownMAC(
                          packet, "SELECTING",
                          mac, ip, giaddr,
@@ -390,8 +398,6 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                  'mac': mac,
                 })
                 try:
-                    pxe_options = packet.extractPXEOptions()
-                    vendor_options = packet.extractVendorOptions()
                     result = self._database.lookupMAC(mac) or config.handleUnknownMAC(
                      packet, "INIT-REBOOT",
                      mac, ip, giaddr,
@@ -433,8 +439,6 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                         })
                         
                     try:
-                        pxe_options = packet.extractPXEOptions()
-                        vendor_options = packet.extractVendorOptions()
                         result = self._database.lookupMAC(mac) or config.handleUnknownMAC(
                          packet, renew and "RENEW" or "REBIND",
                          mac, ip, giaddr,
