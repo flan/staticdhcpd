@@ -73,7 +73,8 @@ def _logHandler(signum, frame):
     @param frame: The stack-frame in which the kill-signal was received.
         This is not used.
     """
-    staticdhcpd.dhcp.flushCache()
+    staticdhcpd.system.reinitialise()
+    
     if not staticdhcpd.logging.logToDisk():
         staticdhcpd.logging.writeLog("Unable to write logfile: %(log)s" % {'log': staticdhcpd.config.LOG_FILE,})
     else:

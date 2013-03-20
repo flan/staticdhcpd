@@ -26,6 +26,7 @@ Legal
 """
 import ConfigParser
 import re
+import threading
 
 from .. import config
 
@@ -117,6 +118,7 @@ class INI(Database):
     """
     _maps = None
     _subnets = None
+    _lock = None
     
     def __init__(self):
         """
@@ -124,8 +126,16 @@ class INI(Database):
         """
         self._maps = {}
         self._subnets = {}
-        self._parse_ini()
+        self._lock = threading.Lock()
         
+        self.reinitialise()
+        
+    def reinitialise(self):
+        with self._lock():
+            self._maps.clear()
+            self._subnets.clear()
+            self._parse_ini()
+            
     def _parse_ini(self):
         """
         Creates an optimal in-memory representation of the data in the INI file.
@@ -223,16 +233,17 @@ class INI(Database):
         
         @raise Exception: If a problem occurs while accessing the database.
         """
-        map = self._maps.get(mac)
-        if not map:
-            return None
+        with self._lock:
+            map = self._maps.get(mac)
+            if not map:
+                return None
+                
+            (ip, hostname, subnet) = map
+            (lease_time,
+            gateway, subnet_mask, broadcast_address,
+            ntp_servers, domain_name_servers, domain_name
+            ) = self._subnets.get(subnet)
             
-        (ip, hostname, subnet) = map
-        (lease_time,
-         gateway, subnet_mask, broadcast_address,
-         ntp_servers, domain_name_servers, domain_name
-        ) = self._subnets.get(subnet)
-        
         return (
          ip, hostname,
          gateway, subnet_mask, broadcast_address,

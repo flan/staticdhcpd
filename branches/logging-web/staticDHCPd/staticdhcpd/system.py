@@ -33,3 +33,6 @@ def initialise():
     global DATABASE
     DATABASE = databases.get_database()
     
+def reinitialise():
+    DATABASE.reinitialise()
+    

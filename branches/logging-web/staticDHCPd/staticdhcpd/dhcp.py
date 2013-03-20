@@ -40,14 +40,6 @@ from libpydhcpserver.type_rfc import (
  strToList, strToPaddedList,
 )
 
-_dhcp_servers = [] #: A collection of all instantiated DHCP servers; this should only ever be one element long.
-def flushCache():
-    """
-    Flushes all cached DHCP data.
-    """
-    for dhcp_server in _dhcp_servers:
-        dhcp_server.flushCache()
-        
 def _logInvalidValue(name, value, subnet, serial):
     logging.writeLog("Invalid value for %(subnet)s:%(serial)i:%(name)s: %(value)s" % {
      'subnet': subnet,
@@ -775,13 +767,6 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         })
         return bytes
         
-    def flushCache(self):
-        """
-        Flushes the DHCP cache.
-        """
-        system.DATABASE.flushCache()
-        logging.writeLog("Flushed DHCP cache")
-        
     def getNextDHCPPacket(self):
         """
         Listens for a DHCP packet and initiates processing upon receipt.
@@ -834,7 +819,6 @@ class DHCPService(threading.Thread):
          int(config.DHCP_CLIENT_PORT),
          config.PXE_PORT and int(config.PXE_PORT)
         )
-        _dhcp_servers.append(self._dhcp_server) #Add this server to the global list.
         
         logging.writeLog('Configured DHCP server')
         

@@ -33,12 +33,6 @@ class Database(object):
     """
     A stub documenting the features a Database object must provide.
     """
-    def flushCache(self):
-        """
-        If the subclass supports caching, this ensures that the cache is
-        cleared.
-        """
-        
     def lookupMAC(self, mac):
         """
         Queries the database for the given MAC address and returns the IP and
@@ -62,6 +56,14 @@ class Database(object):
         @raise Exception: If a problem occurs while accessing the database.
         """
         raise NotImplementedError("lookupMAC() must be implemented by subclasses")
+        
+    def reinitialise(self):
+        """
+        Though subclass-dependent, this will generally result in some guarantee
+        that the database will provide fresh data, whether that means flushing
+        a cache or reconnecting to the source.
+        """
+        
         
 class CachingDatabase(Database):
     """
@@ -95,7 +97,7 @@ class CachingDatabase(Database):
             self._mac_cache = {}
             self._subnet_cache = {}
             
-    def flushCache(self):
+    def reinitialise(self):
         if config.USE_CACHE:
             with self._cache_lock:
                 self._mac_cache.clear()

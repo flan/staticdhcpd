@@ -164,7 +164,6 @@ class DHCPNetwork(object):
         @type pxe: bool
         @param pxe: True if the packet was received on the PXE port.
         """
-        pass
         
     def _handleDHCPDiscover(self, packet, source_address, pxe):
         """
@@ -178,7 +177,6 @@ class DHCPNetwork(object):
         @type pxe: bool
         @param pxe: True if the packet was received on the PXE port.
         """
-        pass
         
     def _handleDHCPInform(self, packet, source_address, pxe):
         """
@@ -192,7 +190,6 @@ class DHCPNetwork(object):
         @type pxe: bool
         @param pxe: True if the packet was received on the PXE port.
         """
-        pass
         
     def _handleDHCPLeaseQuery(self, packet, source_address, pxe):
         """
@@ -206,7 +203,6 @@ class DHCPNetwork(object):
         @type pxe: bool
         @param pxe: True if the packet was received on the PXE port.
         """
-        pass
         
     def _handleDHCPRelease(self, packet, source_address):
         """
@@ -218,7 +214,6 @@ class DHCPNetwork(object):
         @param source_address: The address (host, port) from which the request
             was received.
         """
-        pass
         
     def _handleDHCPRequest(self, packet, source_address, pxe):
         """
@@ -232,7 +227,6 @@ class DHCPNetwork(object):
         @type pxe: bool
         @param pxe: True if the packet was received on the PXE port.
         """
-        pass
         
     def _sendDHCPPacketTo(self, packet, ip, port, pxe):
         """

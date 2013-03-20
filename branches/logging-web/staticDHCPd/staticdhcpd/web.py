@@ -40,6 +40,7 @@ except:
 import config
 import dhcp
 import logging
+import system
 from staticdhcpd import VERSION
 
 class _WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
@@ -90,7 +91,8 @@ class _WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
                 key = query.get('key')
                 if key:
                     if hashlib.md5(key[0]).hexdigest() == config.WEB_RELOAD_KEY:
-                        dhcp.flushCache()
+                        system.reinitialise()
+                        
                         if logging.logToDisk():
                             logging.writeLog("Wrote log to '%(log)s'" % {'log': config.LOG_FILE,})
                         else:
