@@ -33,49 +33,19 @@ class Database(object):
     """
     A stub documenting the features a Database object must provide.
     """
-    _resource_lock = None #: A lock used to prevent the database from being overwhelmed.
-    _cache_lock = None #: A lock used to prevent multiple simultaneous cache updates.
-    _mac_cache = None #: A cache used to prevent unnecessary database hits.
-    _subnet_cache = None #: A cache used to prevent unnecessary database hits.
-    
-    def _setupBroker(self, concurrency_limit):
-        """
-        Sets up common attributes of broker objects.
-        
-        Must be invoked by subclasses' __init__() methods.
-        
-        @type concurrency_limit: int
-        @param concurrent_limit: The number of concurrent database hits to
-            permit.
-        """
-        self._resource_lock = threading.BoundedSemaphore(concurrency_limit)
-        self._setupCache()
-        
-    def _setupCache(self):
-        """
-        Sets up the SQL broker cache.
-        """
-        if config.USE_CACHE:
-            self._cache_lock = threading.Lock()
-            self._mac_cache = {}
-            self._subnet_cache = {}
-            
     def flushCache(self):
         """
-        Resets the cache to an empty state, forcing all lookups to pull fresh
-        data.
+        If the subclass supports caching, this ensures that the cache is
+        cleared.
         """
-        if config.USE_CACHE:
-            with self._cache_lock:
-                self._mac_cache.clear()
-                self._subnet_cache.clear()
-                
+        
     def lookupMAC(self, mac):
         """
         Queries the database for the given MAC address and returns the IP and
         associated details if the MAC is known.
         
-        If enabled, the cache is checked and updated by this function.
+        If the subclass supports caching, the cache is checked and updated by
+        this function.
         
         @type mac: basestring
         @param mac: The MAC address to lookup.
@@ -91,6 +61,47 @@ class Database(object):
         
         @raise Exception: If a problem occurs while accessing the database.
         """
+        raise NotImplementedError("lookupMAC() must be implemented by subclasses")
+        
+class CachingDatabase(Database):
+    """
+    A partial implementation of the Database engine, adding generic caching
+    logic and concurrency-throttling.
+    """
+    _resource_lock = None #: A lock used to prevent the database from being overwhelmed.
+    _cache_lock = None #: A lock used to prevent multiple simultaneous cache updates.
+    _mac_cache = None #: A cache used to prevent unnecessary database hits.
+    _subnet_cache = None #: A cache used to prevent unnecessary database hits.
+    
+    def __init__(self, concurrency_limit=2147483647):
+        """
+        Sets up common attributes of broker objects.
+        
+        Must be invoked by subclasses' __init__() methods.
+        
+        @type concurrency_limit: int
+        @param concurrent_limit: The number of concurrent database hits to
+            permit, defaulting to a ridiculously large number.
+        """
+        self._resource_lock = threading.BoundedSemaphore(concurrency_limit)
+        self._setupCache()
+        
+    def _setupCache(self):
+        """
+        Sets up the SQL broker cache.
+        """
+        if config.USE_CACHE:
+            self._cache_lock = threading.Lock()
+            self._mac_cache = {}
+            self._subnet_cache = {}
+            
+    def flushCache(self):
+        if config.USE_CACHE:
+            with self._cache_lock:
+                self._mac_cache.clear()
+                self._subnet_cache.clear()
+                
+    def lookupMAC(self, mac):
         if config.USE_CACHE:
             with self._cache_lock:
                 data = self._mac_cache.get(mac)
@@ -114,4 +125,3 @@ class Database(object):
                         lease_time,
                     )
             return data
-            

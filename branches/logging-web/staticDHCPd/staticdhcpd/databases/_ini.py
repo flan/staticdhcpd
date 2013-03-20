@@ -126,8 +126,6 @@ class INI(Database):
         self._subnets = {}
         self._parse_ini()
         
-        self._setupBroker(65536) #Effectively no limit on the number of simultaneous readers
-        
     def _parse_ini(self):
         """
         Creates an optimal in-memory representation of the data in the INI file.
@@ -206,7 +204,7 @@ class INI(Database):
                  'serial': subnet[1],
                 })
                 
-    def _lookupMAC(self, mac):
+    def lookupMAC(self, mac):
         """
         Queries the database for the given MAC address and returns the IP and
         associated details if the MAC is known.

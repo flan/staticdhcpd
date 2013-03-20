@@ -27,9 +27,9 @@ Legal
 """
 from .. import config
 
-from _generic import Database
+from _generic import CachingDatabase
 
-class _SQLDatabase(Database):
+class _SQLDatabase(CachingDatabase):
     """
     A stub documenting the features an _SQLDatabase object must provide.
     """
@@ -97,11 +97,9 @@ class _PoolingBroker(_DB20Broker):
     _pool = None #: The database connection pool.
     _eventlet__db_pool = None #: A reference to the eventlet.db_pool module.
     
-    def _setupBroker(self, concurrency_limit):
+    def __init__(self, concurrency_limit):
         """
         Sets up connection-pooling, if it's supported by the environment.
-        
-        Also completes the broker-setup process.
         
         L{_connection_details} must be defined before calling this function.
         
@@ -109,7 +107,7 @@ class _PoolingBroker(_DB20Broker):
         @param concurrent_limit: The number of concurrent database hits to
             permit.
         """
-        _DB20Broker._setupBroker(self, concurrency_limit)
+        _DB20Broker.__init__(self, concurrency_limit)
 
         if config.USE_POOL:
             try:
@@ -172,6 +170,8 @@ class MySQL(_PoolingBroker):
         """
         Constructs the broker.
         """
+        _PoolingBroker.__init__(self, config.MYSQL_MAXIMUM_CONNECTIONS)
+        
         import MySQLdb
         self._module = MySQLdb
         
@@ -186,8 +186,6 @@ class MySQL(_PoolingBroker):
             self._connection_details['host'] = config.MYSQL_HOST
             self._connection_details['port'] = config.MYSQL_PORT
             
-        self._setupBroker(config.MYSQL_MAXIMUM_CONNECTIONS)
-        
 class PostgreSQL(_PoolingBroker):
     """
     Implements a PostgreSQL broker.
@@ -207,6 +205,8 @@ class PostgreSQL(_PoolingBroker):
         """
         Constructs the broker.
         """
+        _PoolingBroker.__init__(self, config.POSTGRESQL_MAXIMUM_CONNECTIONS)
+        
         import psycopg2
         self._module = psycopg2
         
@@ -220,8 +220,6 @@ class PostgreSQL(_PoolingBroker):
             self._connection_details['port'] = config.POSTGRESQL_PORT
             self._connection_details['sslmode'] = config.POSTGRESQL_SSLMODE
             
-        self._setupBroker(config.POSTGRESQL_MAXIMUM_CONNECTIONS)
-        
 class Oracle(_PoolingBroker):
     """
     Implements an Oracle broker.
@@ -241,6 +239,8 @@ class Oracle(_PoolingBroker):
         """
         Constructs the broker.
         """
+        _PoolingBroker.__init__(self, config.ORACLE_MAXIMUM_CONNECTIONS)
+        
         import cx_Oracle
         self._module = cx_Oracle
         
@@ -249,8 +249,6 @@ class Oracle(_PoolingBroker):
          'password': config.ORACLE_PASSWORD,
          'dsn': config.ORACLE_DATABASE,
         }
-
-        self._setupBroker(config.ORACLE_MAXIMUM_CONNECTIONS)
 
 class SQLite(_NonPoolingBroker):
     """
@@ -271,11 +269,11 @@ class SQLite(_NonPoolingBroker):
         """
         Constructs the broker.
         """
+        _NonPoolingBroker.__init__(self, 1)
+        
         import sqlite3
         self._module = sqlite3
         
         self._connection_details = {
          'database': config.SQLITE_FILE,
         }
-        
-        self._setupBroker(1)
