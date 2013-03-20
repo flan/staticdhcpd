@@ -217,5 +217,8 @@ conf.rfc5678_140 = type_rfc.rfc5678_140
 del type_rfc
 
 import logging
-conf.writeLog = logging.writeLog
+logger = logging.getLogger('conf')
+conf.writeLog = logger.warn
+conf.logger = logger
+del logger
 del logging
