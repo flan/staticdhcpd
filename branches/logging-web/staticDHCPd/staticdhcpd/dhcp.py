@@ -109,8 +109,8 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         @type pxe: bool
         @param pxe: Whether the request is PXE
         """
-        giaddr = packet.getOption("giaddr")
-        if not giaddr == [0,0,0,0]: #Relayed request.
+        giaddr = self._extractIPOrNone(packet, "giaddr")
+        if giaddr: #Relayed request.
             if not config.ALLOW_DHCP_RELAYS: #Ignore it.
                 return False
             elif config.ALLOWED_DHCP_RELAYS and not '.'.join(map(str, giaddr)) in config.ALLOWED_DHCP_RELAYS:
@@ -121,6 +121,29 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         elif not config.ALLOW_LOCAL_DHCP and not pxe: #Local request, but denied.
             return False
         return True
+        
+    def _extractIPOrNone(self, packet, parameter, as_tuple=False):
+        """
+        Extracts the identified IP and returns it if it is defined, None otherwise.
+        
+        @type packet: L{libpydhcpserver.dhcp_packet.DHCPPacket}
+        @param packet: The packet to be evaluated.
+        @type parameter: basestring
+        @param parameter: The parameter to be extracted.
+        @type as_tuple: bool
+        @param as_tuple: True if the result should be converted to a tuple,
+            rather than being left as a list, if not None.
+            
+        @rtype: list|tuple|NoneType
+        @return: The requested IP.
+        """
+        addr = packet.getOption(parameter)
+        if not addr or not any(addr):
+            return None
+            
+        if as_tuple:
+            return tuple(addr)
+        return addr
         
     def _handleDHCPDecline(self, packet, source_address, pxe):
         """
@@ -150,9 +173,25 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                 self._logDiscardedPacket()
                 return
                 
-            if '.'.join(map(str, packet.getOption("server_identifier"))) == self._server_address: #Rejected!
-                ip = '.'.join(map(str, packet.getOption("requested_ip_address")))
-                result = self._database.lookupMAC(mac) or config.handleUnknownMAC(mac)
+            server_identifier = self._extractIPOrNone(packet, "server_identifier")
+            if not server_identifier:
+                #Log error
+                #Discard
+                pass
+                
+            if '.'.join(map(str, server_identifier)) == self._server_address: #Rejected!
+                ip = self._extractIPOrNone(packet, "requested_ip_address")
+                if not ip:
+                    #Log error
+                    #Discard
+                    pass
+                    
+                result = self._database.lookupMAC(mac) or config.handleUnknownMAC(
+                 packet, "DECLINE",
+                 mac, tuple(ip), self._extractIPOrNone(packet, "giaddr", as_tuple=True),
+                 pxe and packet.extractPXEOptions(), packet.extractVendorOptions()
+                )
+                ip = '.'.join(map(str, ip))
                 if result and result[0] == ip: #Known client.
                     logging.writeLog('DHCPDECLINE from %(mac)s for %(ip)s on (%(subnet)s, %(serial)i)' % {
                      'ip': ip,
@@ -205,7 +244,12 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
             })
             
             try:
-                result = self._database.lookupMAC(mac) or config.handleUnknownMAC(mac)
+                giaddr = self._extractIPOrNone(packet, "giaddr", as_tuple=True)
+                result = self._database.lookupMAC(mac) or config.handleUnknownMAC(
+                 packet, "DISCOVER",
+                 mac, None, giaddr,
+                 pxe and packet.extractPXEOptions(), packet.extractVendorOptions()
+                )
                 if result:
                     rapid_commit = not packet.getOption('rapid_commit') is None
                     if rapid_commit:
@@ -217,11 +261,6 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                     vendor_options = packet.extractVendorOptions()
                         
                     self._loadDHCPPacket(packet, result)
-                    giaddr = packet.getOption("giaddr")
-                    if not giaddr or giaddr == [0,0,0,0]:
-                        giaddr = None
-                    else:
-                        giaddr = tuple(giaddr)
                     if config.loadDHCPPacket(
                      packet,
                      mac, tuple(ipToList(result[0])), giaddr,
@@ -295,7 +334,11 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
             })
             
             try:
-                result = self._database.lookupMAC(mac) or config.handleUnknownMAC(mac)
+                result = self._database.lookupMAC(mac) or config.handleUnknownMAC(
+                 packet,
+                 mac, tuple(ip), giaddr,
+                 pxe and packet.extractPXEOptions(), packet.extractVendorOptions()
+                )
                 if result:
                     packet.transformToDHCPLeaseActivePacket()
                     if packet.setOption('yiaddr', ipToList(result[0])):
@@ -344,36 +387,29 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                 self._logDiscardedPacket()
                 return
                 
-            ip = packet.getOption("requested_ip_address")
-            sid = packet.getOption("server_identifier")
-            ciaddr = packet.getOption("ciaddr")
-            giaddr = packet.getOption("giaddr")
+            ip = self._extractIPOrNone(packet, "requested_ip_address", as_tuple=True)
+            sid = self._extractIPOrNone(packet, "server_identifier")
+            ciaddr = self._extractIPOrNone(packet, "ciaddr")
+            giaddr = self._extractIPOrNone(packet, "giaddr", as_tuple=True)
             s_ip = ip and '.'.join(map(str, ip))
             s_sid = sid and '.'.join(map(str, sid))
             s_ciaddr = ciaddr and '.'.join(map(str, ciaddr))
             
-            if not ip or ip == [0,0,0,0]:
-                ip = None
-            if not sid or sid == [0,0,0,0]:
-                sid = None
-            if not ciaddr or ciaddr == [0,0,0,0]:
-                ciaddr = None
-            if not giaddr or giaddr == [0,0,0,0]:
-                giaddr = None
-            else:
-                giaddr = tuple(giaddr)
-                
             if sid and not ciaddr: #SELECTING
                 if s_sid == self._server_address: #Chosen!
                     logging.writeLog('DHCPREQUEST:SELECTING from %(mac)s' % {
                      'mac': mac,
                     })
                     try:
-                        result = self._database.lookupMAC(mac) or config.handleUnknownMAC(mac)
+                        pxe_options = packet.extractPXEOptions()
+                        vendor_options = packet.extractVendorOptions()
+                        result = self._database.lookupMAC(mac) or config.handleUnknownMAC(
+                         packet, "SELECTING",
+                         mac, ip, giaddr,
+                         pxe and pxe_options, vendor_options
+                        )
                         if result and (not ip or result[0] == s_ip):
                             packet.transformToDHCPAckPacket()
-                            pxe_options = packet.extractPXEOptions()
-                            vendor_options = packet.extractVendorOptions()
                             self._loadDHCPPacket(packet, result)
                             if config.loadDHCPPacket(
                              packet,
@@ -399,11 +435,15 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                  'mac': mac,
                 })
                 try:
-                    result = self._database.lookupMAC(mac) or config.handleUnknownMAC(mac)
+                    pxe_options = packet.extractPXEOptions()
+                    vendor_options = packet.extractVendorOptions()
+                    result = self._database.lookupMAC(mac) or config.handleUnknownMAC(
+                     packet, "INIT-REBOOT",
+                     mac, ip, giaddr,
+                     pxe and pxe_options, vendor_options
+                    )
                     if result and result[0] == s_ip:
                         packet.transformToDHCPAckPacket()
-                        pxe_options = packet.extractPXEOptions()
-                        vendor_options = packet.extractVendorOptions()
                         self._loadDHCPPacket(packet, result)
                         if config.loadDHCPPacket(
                          packet,
@@ -438,11 +478,15 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                         })
                         
                     try:
-                        result = self._database.lookupMAC(mac) or config.handleUnknownMAC(mac)
+                        pxe_options = packet.extractPXEOptions()
+                        vendor_options = packet.extractVendorOptions()
+                        result = self._database.lookupMAC(mac) or config.handleUnknownMAC(
+                         packet, renew and "RENEW" or "REBIND",
+                         mac, ip, giaddr,
+                         pxe and pxe_options, vendor_options
+                        )
                         if result and result[0] == s_ciaddr:
                             packet.transformToDHCPAckPacket()
-                            pxe_options = packet.extractPXEOptions()
-                            vendor_options = packet.extractVendorOptions()
                             packet.setOption('yiaddr', ciaddr)
                             self._loadDHCPPacket(packet, result)
                             if config.loadDHCPPacket(
@@ -506,16 +550,9 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                 self._logDiscardedPacket()
                 return
                 
-            ciaddr = packet.getOption("ciaddr")
-            giaddr = packet.getOption("giaddr")
-            s_ciaddr = '.'.join(map(str, ciaddr))
-            if not ciaddr or ciaddr == [0,0,0,0]:
-                ciaddr = None
-            if not giaddr or giaddr == [0,0,0,0]:
-                giaddr = None
-            else:
-                giaddr = tuple(giaddr)
-                
+            ciaddr = self._extractIPOrNone(packet, "ciaddr")
+            giaddr = self._extractIPOrNone(packet, "giaddr", as_tuple=True)
+            
             logging.writeLog('DHCPINFORM from %(mac)s' % {
              'mac': mac,
             })
@@ -531,11 +568,15 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                 return
                 
             try:
-                result = self._database.lookupMAC(mac) or config.handleUnknownMAC(mac)
+                pxe_options = packet.extractPXEOptions()
+                vendor_options = packet.extractVendorOptions()
+                result = self._database.lookupMAC(mac) or config.handleUnknownMAC(
+                 packet, "INFORM",
+                 mac, ciaddr, giaddr,
+                 pxe and pxe_options, vendor_options
+                )
                 if result:
                     packet.transformToDHCPAckPacket()
-                    pxe_options = packet.extractPXEOptions()
-                    vendor_options = packet.extractVendorOptions()
                     self._loadDHCPPacket(packet, result, True)
                     if config.loadDHCPPacket(
                      packet,
@@ -543,7 +584,11 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                      result[9], result[10],
                      pxe and pxe_options, vendor_options
                     ):
-                        self._sendDHCPPacket(packet, source_address, 'ACK', mac, s_ciaddr, pxe)
+                        self._sendDHCPPacket(
+                         packet,
+                         source_address, 'ACK', mac, ciaddr and '.'.join(map(str, ciaddr)) or '0.0.0.0',
+                         pxe
+                        )
                     else:
                         logging.writeLog('Ignoring %(mac)s per loadDHCPPacket()' % {
                          'mac': mac,
@@ -591,9 +636,21 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                 self._logDiscardedPacket()
                 return
                 
-            if '.'.join(map(str, packet.getOption("server_identifier"))) == self._server_address: #Released!
-                ip = '.'.join(map(str, packet.getOption("ciaddr")))
-                result = self._database.lookupMAC(mac) or config.handleUnknownMAC(mac)
+            s_id = self._extractIPOrNone(packet, "server_identifier")
+            if not s_id:
+                #Lof error
+                #discard
+                pass
+                
+            if '.'.join(map(str, s_id)) == self._server_address: #Released!
+                ip = self._extractIPOrNone(packet, "ciaddr", as_tuple=True)
+                
+                result = self._database.lookupMAC(mac) or config.handleUnknownMAC(
+                 packet, "RELEASE",
+                 mac, ip, self._extractIPOrNone(packet, "giaddr", as_tuple=True),
+                 pxe and packet.extractPXEOptions(), packet.extractVendorOptions()
+                )
+                ip = '.'.join(map(str, ip))
                 if result and result[0] == ip: #Known client.
                     logging.writeLog('DHCPRELEASE from %(mac)s for %(ip)s' % {
                      'ip': ip,
@@ -736,8 +793,8 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         """
         ip = port = None
         if address[0] not in ('255.255.255.255', '0.0.0.0', ''): #Unicast.
-            giaddr = packet.getOption("giaddr")
-            if giaddr and not giaddr == [0,0,0,0]: #Relayed request.
+            giaddr = self._extractIPOrNone(packet, "giaddr")
+            if giaddr: #Relayed request.
                 ip = '.'.join(map(str, giaddr))
                 port = self._server_port
             else: #Request directly from client, routed or otherwise.

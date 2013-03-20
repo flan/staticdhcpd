@@ -221,13 +221,15 @@ def loadDHCPPacket(packet, mac, client_ip, relay_ip, subnet, serial, pxe, vendor
     #    respectively. Any unset options are presented as None.
     return True
     
-def handleUnknownMAC(mac):
+def handleUnknownMAC(packet, method, mac, client_ip, relay_ip, pxe, vendor):
     #This is a custom function, called when a request is made by a MAC for which
     #no binding exists. You can use this to do things like dynamic addressing,
     #using your own domain-specific logic.
     #
     ##### PARAMETERS #####
-    #mac is a human-readable MAC string, lower-case, separated by colons.
+    #method is a string that indicates the type of DHCP action the packet
+    #    represents: DECLINE, DISCOVER, INFORM, INIT-REBOOT, RELEASE, SELECTING
+    #All other parameters are identical to those found in loadDHCPPacket()
     #
     ##### Return #####
     #Returning None will cause system-default behaviour to occur, which is usually
@@ -259,8 +261,11 @@ def handleUnknownMAC(mac):
     #    )
     
     #If 'dynamism' was imported in init(), and you've customised that file for your
-    #site, uncomment the following line to enable basic dynamic provisioning.
-    #return dynamism.provisionDynamic(mac)
+    #site, uncomment the following lines to enable basic dynamic provisioning.
+    #if method == 'RELEASE':
+    #    return dynamism.releaseDynamic(mac)
+    #elif method != 'INFORM':
+    #    return dynamism.provisionDynamic(mac)
     
     return None
     

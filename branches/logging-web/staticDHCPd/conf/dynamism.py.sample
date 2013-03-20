@@ -97,6 +97,17 @@ def _getLease(mac):
                  'time': expiration,
                 })
     return ip
+
+def _dropLease(mac):
+    ip = None
+    with _DYNAMIC_MAP_LOCK:
+        match = _DYNAMIC_MAP.get(mac)
+        if match: #Drop the lease and reclaim the IP
+            ip = match[1]
+            del _DYNAMIC_MAP[mac]
+            with _IPS_LOCK:
+                _IPS.append(ip)
+    return ip
     
 def provisionDynamic(mac):
     """
@@ -110,6 +121,30 @@ def provisionDynamic(mac):
     ip = _getLease(mac)
     if not ip: #No IP available; fail
         logging.writeLog("No IP available for assignment to '%(mac)s'" % {
+         'mac': mac,
+        })
+        return None
+        
+    return (
+     ip, _HOSTNAME_PATTERN + ip.replace('.', '-'),
+     GATEWAY, SUBNET_MASK, BROADCAST_ADDRESS,
+     DOMAIN_NAME, _DOMAIN_NAME_SERVERS,
+     _NTP_SERVERS, LEASE_TIME,
+     SUBNET, SERIAL
+    )
+    
+def releaseDynamic(mac):
+    """
+    If you need to reject a MAC, return None instead of the usual value.
+    """
+    logging.writeLog("Processing dynamic provisioning release from '%(mac)s'..." % {
+     'mac': mac,
+    })
+    
+    _cleanupLeases() #Remove stale assignments
+    ip = _dropLease(mac)
+    if not ip: #No IP available; fail
+        logging.writeLog("No IP assigned to '%(mac)s'" % {
          'mac': mac,
         })
         return None
