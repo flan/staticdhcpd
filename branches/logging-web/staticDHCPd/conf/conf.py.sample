@@ -228,7 +228,8 @@ def handleUnknownMAC(packet, method, mac, client_ip, relay_ip, pxe, vendor):
     #
     ##### PARAMETERS #####
     #method is a string that indicates the type of DHCP action the packet
-    #    represents: DECLINE, DISCOVER, INFORM, INIT-REBOOT, RELEASE, SELECTING
+    #    represents: DECLINE, DISCOVER, INFORM, INIT-REBOOT, LEASEQUERY, RELEASE,
+    #    SELECTING
     #All other parameters are identical to those found in loadDHCPPacket()
     #
     ##### Return #####
@@ -264,7 +265,9 @@ def handleUnknownMAC(packet, method, mac, client_ip, relay_ip, pxe, vendor):
     #site, uncomment the following lines to enable basic dynamic provisioning.
     #if method == 'RELEASE':
     #    return dynamism.releaseDynamic(mac)
-    #elif method != 'INFORM':
+    #if method == 'INFORM':
+    #    return dynamism.informDynamic(mac, client_ip)
+    #elif method != '':
     #    return dynamism.provisionDynamic(mac)
     
     return None

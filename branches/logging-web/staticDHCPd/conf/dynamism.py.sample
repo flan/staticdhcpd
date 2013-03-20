@@ -109,6 +109,25 @@ def _dropLease(mac):
                 _IPS.append(ip)
     return ip
     
+def informDynamic(mac, client_ip):
+    """
+    If you need to reject a MAC, return None instead of the usual value.
+    """
+    logging.writeLog("Processing dynamic provisioning inform from '%(mac)s'..." % {
+     'mac': mac,
+    })
+    
+    _cleanupLeases() #Remove stale assignments
+    
+    ip = '.'.join(map(str, client_ip))
+    return (
+     ip, _HOSTNAME_PATTERN + ip.replace('.', '-'),
+     GATEWAY, SUBNET_MASK, BROADCAST_ADDRESS,
+     DOMAIN_NAME, _DOMAIN_NAME_SERVERS,
+     _NTP_SERVERS, LEASE_TIME,
+     SUBNET, SERIAL
+    )
+    
 def provisionDynamic(mac):
     """
     If you need to reject a MAC, return None instead of the usual value.

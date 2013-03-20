@@ -245,10 +245,12 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
             
             try:
                 giaddr = self._extractIPOrNone(packet, "giaddr", as_tuple=True)
+                pxe_options = packet.extractPXEOptions()
+                vendor_options = packet.extractVendorOptions()
                 result = self._database.lookupMAC(mac) or config.handleUnknownMAC(
                  packet, "DISCOVER",
                  mac, None, giaddr,
-                 pxe and packet.extractPXEOptions(), packet.extractVendorOptions()
+                 pxe and pxe_options, vendor_options
                 )
                 if result:
                     rapid_commit = not packet.getOption('rapid_commit') is None
@@ -257,8 +259,6 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                         packet.forceOption('rapid_commit', [])
                     else:
                         packet.transformToDHCPOfferPacket()
-                    pxe_options = packet.extractPXEOptions()
-                    vendor_options = packet.extractVendorOptions()
                         
                     self._loadDHCPPacket(packet, result)
                     if config.loadDHCPPacket(
@@ -334,17 +334,32 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
             })
             
             try:
+                giaddr = self._extractIPOrNone(packet, "giaddr", as_tuple=True)
+                pxe_options = packet.extractPXEOptions()
+                vendor_options = packet.extractVendorOptions()
                 result = self._database.lookupMAC(mac) or config.handleUnknownMAC(
-                 packet,
-                 mac, tuple(ip), giaddr,
-                 pxe and packet.extractPXEOptions(), packet.extractVendorOptions()
+                 packet, "LEASEQUERY",
+                 mac, self._extractIPOrNone(packet, "ciaddr", as_tuple=True), giaddr,
+                 pxe and pxe_options, vendor_options
                 )
                 if result:
                     packet.transformToDHCPLeaseActivePacket()
-                    if packet.setOption('yiaddr', ipToList(result[0])):
-                        self._sendDHCPPacket(packet, source_address, 'LEASEACTIVE', mac, result[0], pxe)
+                    self._loadDHCPPacket(packet, result)
+                    if config.loadDHCPPacket(
+                        packet,
+                        mac, tuple(ipToList(result[0])), giaddr,
+                        result[9], result[10],
+                        pxe and pxe_options, vendor_options
+                    ):
+                        if packet.setOption('yiaddr', ipToList(result[0])):
+                            self._sendDHCPPacket(packet, source_address, 'LEASEACTIVE', mac, result[0], pxe)
+                        else:
+                            _logInvalidValue('ip', result[0], result[-2], result[-1])
                     else:
-                        _logInvalidValue('ip', result[0], result[-2], result[-1])
+                            logging.writeLog('Ignoring %(mac)s per loadDHCPPacket()' % {
+                             'mac': mac,
+                            })
+                            self._logDiscardedPacket()
                 else:
                     packet.transformToDHCPLeaseUnknownPacket()
                     self._sendDHCPPacket(packet, source_address, 'LEASEUNKNOWN', mac, '?.?.?.?', pxe)
