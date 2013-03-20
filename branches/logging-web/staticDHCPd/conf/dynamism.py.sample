@@ -109,45 +109,7 @@ def _getLease(mac):
                 })
     return ip
     
-def _queryLease(mac, ip):
-    current_time = time.time()
-    with _DYNAMIC_MAP_LOCK:
-        match = _DYNAMIC_MAP.get(mac)
-        if match:
-            return (match[0], int(match[0] - time.time()))
-            
-        with _IPS_LOCK:
-            
-            if ip:
-                expiration = time.time() + LEASE_TIME
-                _DYNAMIC_MAP[mac] = [expiration, ip]
-                logging.writeLog("Bound '%(ip)s' to '%(mac)s' until '%(time).1f'" % {
-                 'ip': ip,
-                 'mac': mac,
-                 'time': expiration,
-                })
-    return (None, 0)
-    
 def informDynamic(mac, client_ip):
-    """
-    If you need to reject a MAC, return None instead of the usual value.
-    """
-    logging.writeLog("Processing dynamic provisioning inform from '%(mac)s'..." % {
-     'mac': mac,
-    })
-    
-    _cleanupLeases() #Remove stale assignments
-    
-    ip = '.'.join(map(str, client_ip))
-    return (
-     ip, _HOSTNAME_PATTERN + ip.replace('.', '-'),
-     GATEWAY, SUBNET_MASK, BROADCAST_ADDRESS,
-     DOMAIN_NAME, _DOMAIN_NAME_SERVERS,
-     _NTP_SERVERS, LEASE_TIME,
-     SUBNET, SERIAL
-    )
-    
-def leasequeryDynamic(mac, client_ip):
     """
     If you need to reject a MAC, return None instead of the usual value.
     """

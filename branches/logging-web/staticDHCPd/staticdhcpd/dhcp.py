@@ -295,13 +295,8 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         
     def _handleDHCPLeaseQuery(self, packet, source_address, pxe):
         """
-        Evaluates a DHCPLEASEQUERY request from a relay and determines whether
-        a DHCPLEASEACTIVE or DHCPLEASEUNKNOWN should be sent.
-        
-        The logic here is to make sure the MAC isn't ignored or acting
-        maliciously, then check the database to see whether it has an assigned
-        IP. If it does, DHCPLEASEACTIVE is sent. Otherwise, DHCPLEASEUNKNOWN is
-        sent.
+        Simply discards the packet; LeaseQuery support was dropped in 1.6.3,
+        because the implementation was wrong.
         
         @type packet: L{libpydhcpserver.dhcp_packet.DHCPPacket}
         @param packet: The DHCPREQUEST to be evaluated.
@@ -311,70 +306,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         @type pxe: bool
         @param pxe: True if the packet was received on the PXE port.
         """
-        if not self._evaluateRelay(packet, pxe):
-            return
-            
-        start_time = time.time()
-        mac = None
-        try:
-            mac = packet.getHardwareAddress()
-        except:
-            pass
-        if not mac: #IP/client-ID-based lookup; not supported.
-            self._logDiscardedPacket()
-            return
-            
-        if not [None for (ignored_mac, timeout) in self._ignored_addresses if mac == ignored_mac]:
-            if not self._logDHCPAccess(mac):
-                self._logDiscardedPacket()
-                return
-                
-            logging.writeLog('DHCPLEASEQUERY for %(mac)s' % {
-             'mac': mac,
-            })
-            
-            try:
-                giaddr = self._extractIPOrNone(packet, "giaddr", as_tuple=True)
-                ciaddr = self._extractIPOrNone(packet, "ciaddr", as_tuple=True)
-                pxe_options = packet.extractPXEOptions()
-                vendor_options = packet.extractVendorOptions()
-                result = self._database.lookupMAC(mac) or config.handleUnknownMAC(
-                 packet, "LEASEQUERY",
-                 mac, ciaddr, giaddr,
-                 pxe and pxe_options, vendor_options
-                )
-                if result:
-                    if result[0] is None:
-                        packet.transformToDHCPLeaseUnassignedPacket()
-                    else:
-                        packet.transformToDHCPLeaseActivePacket()
-                        
-                    self._loadDHCPPacket(packet, result)
-                    if config.loadDHCPPacket(
-                        packet,
-                        mac, result[0] and tuple(ipToList(result[0])) or ciaddr, giaddr,
-                        result[9], result[10],
-                        pxe and pxe_options, vendor_options
-                    ):
-                        if packet.setOption('yiaddr', ipToList(result[0])):
-                            self._sendDHCPPacket(
-                             packet, source_address, result[0] and 'LEASEACTIVE' or 'LEASEUNASSIGNED',
-                             mac, result[0], pxe
-                            )
-                        else:
-                            _logInvalidValue('ip', result[0], result[-2], result[-1])
-                    else:
-                            logging.writeLog('Ignoring %(mac)s per loadDHCPPacket()' % {
-                             'mac': mac,
-                            })
-                            self._logDiscardedPacket()
-                else:
-                    packet.transformToDHCPLeaseUnknownPacket()
-                    self._sendDHCPPacket(packet, source_address, 'LEASEUNKNOWN', mac, '?.?.?.?', pxe)
-            except Exception, e:
-                logging.sendErrorReport('Unable to respond for %(mac)s' % {'mac': mac,}, e)
-        else:
-            self._logDiscardedPacket()
+        self._logDiscardedPacket()
         self._logTimeTaken(time.time() - start_time)
         
     def _handleDHCPRequest(self, packet, source_address, pxe):
