@@ -24,15 +24,58 @@ Legal
  
  (C) Neil Tallim, 2013 <flan@uguu.ca>
 """
-import config
+import threading
+
 import databases
 
 DATABASE = None
+
+_reinitialisation_lock = threading.Lock()
+_reinitialisation_callbacks = []
 
 def initialise():
     global DATABASE
     DATABASE = databases.get_database()
     
 def reinitialise():
+    """
+    Resets the state of the database, then invokes every registered
+    reinitialisation handler.
+    """
     DATABASE.reinitialise()
     
+    with _reinitialisation_lock:
+        for callback in _reinitialisation_callbacks:
+            callback()
+            
+def registerReinitialisationCallback(func):
+    """
+    Allows for modular registration of reinitialisation callbacks, to be invoked
+    in the order of registration.
+    
+    @type func: callable
+    @param func: A callable that takes no arguments; if already present, it will
+        not be registered a second time.
+    """
+    with _reinitialisation_lock:
+        if func in _reinitialisation_callbacks:
+            #Log error
+            pass
+         else:
+            _reinitialisation_callbacks.append(func)
+            
+def unregisterReinitialisationCallback(func):
+    """
+    Allows for modular unregistration of reinitialisation callbacks.
+    
+    @type func: callable
+    @param func: A callable that takes no arguments; if not present, this is a
+        no-op.
+    """
+    with _reinitialisation_lock:
+        try:
+            _reinitialisation_callbacks.remove(func)
+        except ValueError:
+            #log error
+            pass
+            
