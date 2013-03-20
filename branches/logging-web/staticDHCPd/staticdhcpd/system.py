@@ -36,13 +36,12 @@ _reinitialisation_callbacks = []
 def initialise():
     global DATABASE
     DATABASE = databases.get_database()
+    registerReinitialisationCallback(DATABASE.reinitialise)
     
 def reinitialise():
     """
     Invokes every registered reinitialisation handler.
     """
-    DATABASE.reinitialise()
-    
     with _reinitialisation_lock:
         for callback in _reinitialisation_callbacks:
             callback()
