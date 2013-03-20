@@ -30,7 +30,7 @@ import time
 
 import config
 import logging
-import databases
+import system
 
 import libpydhcpserver.dhcp_network
 from libpydhcpserver.type_rfc import (
@@ -60,8 +60,6 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
     """
     The handler that responds to all received DHCP requests.
     """
-    _database = None #: The database to be used when handling MAC lookups.
-    
     _stats_lock = None #: A lock used to ensure synchronous access to performance statistics.
     _dhcp_assignments = None #: The MACs and the number of DHCP "leases" granted to each since the last polling interval.
     _ignored_addresses = None #: A list of all MACs currently ignored, plus the time remaining until requests will be honoured again.
@@ -96,8 +94,6 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         libpydhcpserver.dhcp_network.DHCPNetwork.__init__(
          self, server_address, server_port, client_port, pxe_port
         )
-        
-        self._database = databases.get_database()
         
     def _evaluateRelay(self, packet, pxe):
         """
@@ -186,7 +182,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                     #Discard
                     pass
                     
-                result = self._database.lookupMAC(mac) or config.handleUnknownMAC(
+                result = system.DATABASE.lookupMAC(mac) or config.handleUnknownMAC(
                  packet, "DECLINE",
                  mac, tuple(ip), self._extractIPOrNone(packet, "giaddr", as_tuple=True),
                  pxe and packet.extractPXEOptions(), packet.extractVendorOptions()
@@ -247,7 +243,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                 giaddr = self._extractIPOrNone(packet, "giaddr", as_tuple=True)
                 pxe_options = packet.extractPXEOptions()
                 vendor_options = packet.extractVendorOptions()
-                result = self._database.lookupMAC(mac) or config.handleUnknownMAC(
+                result = system.DATABASE.lookupMAC(mac) or config.handleUnknownMAC(
                  packet, "DISCOVER",
                  mac, None, giaddr,
                  pxe and pxe_options, vendor_options
@@ -366,7 +362,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                      'mac': mac,
                     })
                     try:
-                        result = self._database.lookupMAC(mac) or config.handleUnknownMAC(
+                        result = system.DATABASE.lookupMAC(mac) or config.handleUnknownMAC(
                          packet, "SELECTING",
                          mac, ip, giaddr,
                          pxe and pxe_options, vendor_options
@@ -398,7 +394,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                  'mac': mac,
                 })
                 try:
-                    result = self._database.lookupMAC(mac) or config.handleUnknownMAC(
+                    result = system.DATABASE.lookupMAC(mac) or config.handleUnknownMAC(
                      packet, "INIT-REBOOT",
                      mac, ip, giaddr,
                      pxe and pxe_options, vendor_options
@@ -439,7 +435,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                         })
                         
                     try:
-                        result = self._database.lookupMAC(mac) or config.handleUnknownMAC(
+                        result = system.DATABASE.lookupMAC(mac) or config.handleUnknownMAC(
                          packet, renew and "RENEW" or "REBIND",
                          mac, ip, giaddr,
                          pxe and pxe_options, vendor_options
@@ -529,7 +525,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
             try:
                 pxe_options = packet.extractPXEOptions()
                 vendor_options = packet.extractVendorOptions()
-                result = self._database.lookupMAC(mac) or config.handleUnknownMAC(
+                result = system.DATABASE.lookupMAC(mac) or config.handleUnknownMAC(
                  packet, "INFORM",
                  mac, ciaddr, giaddr,
                  pxe and pxe_options, vendor_options
@@ -604,7 +600,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
             if '.'.join(map(str, s_id)) == self._server_address: #Released!
                 ip = self._extractIPOrNone(packet, "ciaddr", as_tuple=True)
                 
-                result = self._database.lookupMAC(mac) or config.handleUnknownMAC(
+                result = system.DATABASE.lookupMAC(mac) or config.handleUnknownMAC(
                  packet, "RELEASE",
                  mac, ip, self._extractIPOrNone(packet, "giaddr", as_tuple=True),
                  pxe and packet.extractPXEOptions(), packet.extractVendorOptions()
@@ -783,7 +779,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         """
         Flushes the DHCP cache.
         """
-        self._database.flushCache()
+        system.DATABASE.flushCache()
         logging.writeLog("Flushed DHCP cache")
         
     def getNextDHCPPacket(self):

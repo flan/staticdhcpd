@@ -30,6 +30,7 @@ import signal
 import sys
 import time
 
+import staticdhcpd.system
 import staticdhcpd.config
 import staticdhcpd.dhcp
 import staticdhcpd.logging
@@ -96,6 +97,9 @@ if __name__ == '__main__':
     if staticdhcpd.config.DAEMON:
         _daemonise()
         
+    #Initialise all system resources
+    staticdhcpd.system.initialise()
+    
     #Start Web server.
     if staticdhcpd.config.WEB_ENABLED:
         web_thread = staticdhcpd.web.WebService()
