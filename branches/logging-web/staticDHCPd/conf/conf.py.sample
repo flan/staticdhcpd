@@ -7,8 +7,9 @@
 
 #General settings
 #######################################
-#If True, all non-SMTP logging will be set to DEBUG severity and
-#console-logging will be enabled.
+#If True, additional logging information will be written to all feeds.
+#The logging verbosity levels of specific feeds will need to be configured
+#elsewhere, however.
 DEBUG = False
 #If True, runs as a daemon (you usually don't want this during setup)
 DAEMON = True

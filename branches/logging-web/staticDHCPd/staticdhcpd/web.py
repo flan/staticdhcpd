@@ -223,7 +223,10 @@ class WebService(threading.Thread, WebServiceDummy):
         _logger.info("Configuring web-interface logging...")
         _web_logger = logging_handlers.FIFOHandler(config.WEB_LOG_HISTORY)
         _web_logger.setLevel(getattr(logging, config.WEB_LOG_SEVERITY))
-        _web_logger.setFormatter(logging.Formatter("%(asctime)s : %(levelname)s : %(message)s"))
+        if config.DEBUG:
+            _web_logger.setFormatter(logging.Formatter("%(asctime)s : %(levelname)s : %(message)s"))
+        else:
+            _web_logger.setFormatter(logging.Formatter("%(asctime)s : %(message)s"))
         _logger.addHandler(_web_logger)
         _logger.info("Web-accessible logging online")
         

@@ -87,10 +87,15 @@ def _setupLogging(logger):
     """
     logger.setLevel(logging.DEBUG)
     
-    formatter = logging.Formatter(
-     "%(asctime)s : %(levelname)s : %(name)s:%(lineno)d[%(threadName)s] : %(message)s"
-    )
-    
+    if staticdhcpd.config.DEBUG:
+        formatter = logging.Formatter(
+         "%(asctime)s : %(levelname)s : %(name)s:%(lineno)d[%(threadName)s] : %(message)s"
+        )
+    else:
+        formatter = logging.Formatter(
+         "%(asctime)s : %(levelname)s : %(message)s"
+        )
+        
     if not staticdhcpd.config.DAEMON: #Daemon-style execution disables console-based logging
         console_logger = logging.StreamHandler()
         console_logger.setLevel(getattr(logging, staticdhcpd.config.LOG_CONSOLE_SEVERITY))
