@@ -328,7 +328,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                         self._addToTempBlacklist(mac, "is unknown", "DISCOVER")
                         return
             except Exception:
-                _logger.critical("Unable to respond to '%(mac)s':\n%(error)s"  % {'mac': mac, 'error': traceback.format_exc()})
+                _logger.critical("Unable to respond to %(mac)s:\n%(error)s"  % {'mac': mac, 'error': traceback.format_exc()})
                 return
         finally:
             self._logTimeTaken(time.time() - start_time)
@@ -439,7 +439,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                             self._sendDHCPPacket(packet, source_address, 'NAK', mac, 'NO-MATCH', pxe)
                             return
                     except Exception:
-                        _logger.critical("Unable to respond to '%(mac)s':\n%(error)s"  % {'mac': mac, 'error': traceback.format_exc()})
+                        _logger.critical("Unable to respond to %(mac)s:\n%(error)s"  % {'mac': mac, 'error': traceback.format_exc()})
                         return
                 else:
                     self._logDiscardedPacket('REQUEST:SELECTING')
@@ -473,7 +473,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                         self._sendDHCPPacket(packet, source_address, 'NAK', mac, s_ip, pxe)
                         return
                 except Exception:
-                    _logger.critical("Unable to respond to '%(mac)s':\n%(error)s"  % {'mac': mac, 'error': traceback.format_exc()})
+                    _logger.critical("Unable to respond to %(mac)s:\n%(error)s"  % {'mac': mac, 'error': traceback.format_exc()})
                     return
             elif not sid and ciaddr and not ip: #RENEWING or REBINDING
                 if config.NAK_RENEWALS and not pxe:
@@ -517,7 +517,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                                 self._logDiscardedPacket('REQUEST:REBIND')
                                 return
                     except Exception:
-                        _logger.critical("Unable to respond to '%(mac)s':\n%(error)s"  % {'mac': mac, 'error': traceback.format_exc()})
+                        _logger.critical("Unable to respond to %(mac)s:\n%(error)s"  % {'mac': mac, 'error': traceback.format_exc()})
                         return
             else:
                 _logger.warn('REQUEST:UNKNOWN (%(sid)s %(ciaddr)s %(ip)s) from %(mac)s' % {
@@ -601,7 +601,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                     self._addToTempBlacklist(mac, "is unknown", "INFORM")
                     return
             except Exception:
-                _logger.critical("Unable to respond to '%(mac)s':\n%(error)s"  % {'mac': mac, 'error': traceback.format_exc()})
+                _logger.critical("Unable to respond to %(mac)s:\n%(error)s"  % {'mac': mac, 'error': traceback.format_exc()})
                 return
         finally:
             self._logTimeTaken(time.time() - start_time)
