@@ -32,6 +32,7 @@ import os
 import select
 import threading
 import time
+import traceback
 
 try:
     from urlparse import parse_qs
@@ -78,8 +79,8 @@ class _WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
             self.send_header('Content-type', 'text/html')
             self.send_header('Last-modified', time.strftime('%a, %d %b %Y %H:%M:%S %Z'))
             self.end_headers()
-        except Exception, e:
-            logging.writeLog("Problem while processing HEAD in Web module: %(error)s" % {'error': str(e),})
+        except Exception:
+            _logger.error("Problem while processing HEAD:\n" + traceback.format_exc())
             
     def do_POST(self):
         """
@@ -89,7 +90,7 @@ class _WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
         flushes the cache and writes the memory-log to disk.
         """
         try:
-            (ctype, pdict) = cgi.parse_header(self.headers.getheader('content-type'))
+            """(ctype, pdict) = cgi.parse_header(self.headers.getheader('content-type'))
             if ctype == 'application/x-www-form-urlencoded':
                 query = parse_qs(self.rfile.read(int(self.headers.getheader('content-length'))))
                 key = query.get('key')
@@ -103,8 +104,10 @@ class _WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
                             logging.writeLog("Unable to write log to '%(log)s'" % {'log': config.LOG_FILE,})
                     else:
                         logging.writeLog("Invalid Web-access-key provided")
-        except Exception, e:
-            logging.writeLog("Problem while processing POST in Web module: %(error)s" % {'error': str(e),})
+            """
+            _logger.warn("POST not yet reimplemented")
+        except Exception:
+            _logger.error("Problem while processing POST:\n" + traceback.format_exc())
         self._doResponse()
         
     def _doResponse(self):
@@ -121,6 +124,7 @@ class _WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
             self.wfile.write('<html><head><title>%(name)s log</title></head><body>' % {'name': config.SYSTEM_NAME,})
             self.wfile.write('<div style="width: 950px; margin-left: auto; margin-right: auto; border: 1px solid black;">')
             
+            """
             self.wfile.write('<div>Statistics:<div style="text-size: 0.9em; margin-left: 20px;">')
             for (timestamp, packets, discarded, time_taken, ignored_macs) in logging.readPollRecords():
                 if packets:
@@ -135,11 +139,11 @@ class _WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
                  'ignored': ignored_macs,
                 })
             self.wfile.write("</div></div><br/>")
+            """
             
             self.wfile.write('<div>Events:<div style="text-size: 0.9em; margin-left: 20px;">')
-            for (timestamp, line) in logging.readLog():
-                self.wfile.write("%(time)s : %(line)s<br/>" % {
-                 'time': time.ctime(timestamp),
+            for line in _web_logger.readContent():
+                self.wfile.write("%(line)s<br/>" % {
                  'line': cgi.escape(line),
                 })
             self.wfile.write("</div></div><br/>")
@@ -164,16 +168,25 @@ class _WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
             self.wfile.write('</div>')
             
             self.wfile.write("</div></body></html>")
-        except Exception, e:
-            logging.writeLog("Problem while serving response in Web module: %(error)s" % {'error': str(e),})
-
+        except Exception:
+            _logger.error("Problem while serving Response:\n" + traceback.format_exc())
+            
     def log_message(*args):
         """
         Just a stub to suppress automatic webserver log messages.
         """
         pass
         
-class WebService(threading.Thread):
+class WebServiceDummy(object):
+    """
+    A stub that defines what the WebService needs to implement, but that does
+    nothing, used so that modules don't need to check to see if the service is
+    actually available before registering functionality.
+    """
+    def __init__(self):
+        _logger.info("Webservice is disabled; configuring dummy")
+        
+class WebService(threading.Thread, WebServicedummy):
     """
     A thread that handles HTTP requests indefinitely, daemonically.
     """
@@ -191,15 +204,19 @@ class WebService(threading.Thread):
         threading.Thread.__init__(self)
         self.daemon = True
         
+        server_address = '.'.join([str(int(o)) for o in config.WEB_IP.split('.')])
+        _logger.info("Prepared to bind to %(address)s:%(port)i" % {
+         'address': server_address,
+         'port': config.WEB_PORT,
+        })
         self._web_server = BaseHTTPServer.HTTPServer(
          (
-          '.'.join([str(int(o)) for o in config.WEB_IP.split('.')]),
-          int(config.WEB_PORT)
+          server_address,
+          config.WEB_PORT
          ),
          _WebServer
         )
-        
-        logging.writeLog('Configured Web server')
+        _logger.info("Configured Webservice engine")
         
     def _setupLogging(self):
         global _web_logger
@@ -217,12 +234,13 @@ class WebService(threading.Thread):
         In the event of an unexpected error, e-mail will be sent and processing
         will continue with the next request.
         """
-        logging.writeLog('Running Web server')
+        _logger.info('Webservice engine beginning normal operation')
         while True:
             try:
                 self._web_server.handle_request()
             except select.error:
-                logging.writeLog('Suppressed non-fatal select() error in Web module')
-            except Exception, e:
-                logging.sendErrorReport('Unhandled exception', e)
+                _logger.debug('Suppressed non-fatal select() error')
+            except Exception:
+                staticdhcpd.system.ALIVE = False
+                _logger.critical("Unhandled exception:\n" + traceback.format_exc())
                 

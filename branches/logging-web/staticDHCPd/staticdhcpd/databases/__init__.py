@@ -25,7 +25,11 @@ Legal
  
  (C) Neil Tallim, 2013 <flan@uguu.ca>
 """
+import logging
+
 from .. import config
+
+_logger = logging.getLogger('databases')
 
 def get_database():
     """
@@ -34,6 +38,8 @@ def get_database():
     @rtype: _generic.Database
     @return A database interface, usable to access DHCP information.
     """
+    _logger.debug("Loading database of type '" + config.DATABASE_ENGINE + "'...")
+    
     if config.DATABASE_ENGINE == 'SQLite':
         from _sql import SQLite
         return SQLite()

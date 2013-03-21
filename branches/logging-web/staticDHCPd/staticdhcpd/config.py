@@ -74,13 +74,21 @@ _defaults = {}
 _defaults.update({
  'DEBUG': False,
  'DAEMON': False,
- 
+})
+
+#Logging settings
+#######################################
+_defaults.update({
  'LOG_FILE_HISTORY': 7,
  'LOG_FILE_SEVERITY': 'WARN',
  'LOG_CONSOLE_SEVERITY': 'INFO',
- 
- 'POLLING_INTERVAL': 30,
- 'POLL_INTERVALS_TO_TRACK': 20,
+})
+
+#Statistics settings
+#######################################
+_defaults.update({
+ 'STATS_QUANTISATION': 60 * 5,
+ 'STATS_RETENTION_COUNT': 288 * 7,
 })
 
 #Server settings
@@ -108,7 +116,7 @@ _defaults.update({
  'WEB_RELOAD_KEY': '5f4dcc3b5aa765d61d8327deb882cf99',
 })
 
-#Web settings
+#Webservice settings
 #######################################
 _defaults.update({
  'WEB_ENABLED': False,

@@ -25,12 +25,15 @@ Legal
  (C) Neil Tallim, 2013 <flan@uguu.ca>
 """
 import ConfigParser
+import logging
 import re
 import threading
 
 from .. import config
 
 from _generic import Database
+
+_logger = logging.getLogger("databases._ini")
 
 class _Config(ConfigParser.RawConfigParser):
     """
@@ -135,11 +138,13 @@ class INI(Database):
             self._maps.clear()
             self._subnets.clear()
             self._parse_ini()
-            
+        _logger.info("INI-file contents parsed and loaded into memory")
+        
     def _parse_ini(self):
         """
         Creates an optimal in-memory representation of the data in the INI file.
         """
+        _logger.info("Preparing to read '%(ini)s'..." % {'ini': config.INI_FILE,})
         reader = _Config()
         if not reader.read(config.INI_FILE):
             raise ValueError("Unable to read '%(file)s'" % {
@@ -158,11 +163,13 @@ class INI(Database):
                 if mac_re.match(mac):
                     self._process_map(reader, section, mac)
                 else:
-                    pass #Log as unknown entry
+                    _logger.warn("Unrecognised section encountered: " + section)
                     
         self._validate_references()
         
     def _process_subnet(self, reader, section, subnet, serial):
+        _logger.debug("Processing subnet: " + section)
+        
         lease_time = reader.getint(section, 'lease-time', None)
         if not lease_time:
             raise ValueError("Field 'lease-time' unspecified for '%(section)s'" % {
@@ -182,6 +189,8 @@ class INI(Database):
         )
         
     def _process_map(self, reader, section, mac):
+        _logger.debug("Processing map: " + section)
+        
         ip = reader.get(section, 'ip', None)
         if not ip:
             raise ValueError("Field 'ip' unspecified for '%(section)s'" % {

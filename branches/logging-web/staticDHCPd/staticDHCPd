@@ -31,19 +31,14 @@ import os
 import signal
 import sys
 import time
+import traceback
 
+import staticdhcpd
+import libpydhcpserver
 import staticdhcpd.system
 import staticdhcpd.config
-import staticdhcpd.dhcp
-import staticdhcpd.logging_handlers
-import staticdhcpd.web
 
-if not staticdhcpd.config.DEBUG: #Suppress all unnecessary prints. 
-    sys.stdout = sys.stderr = open('/dev/null', 'w')
-else:
-    sys.stdout = sys.stderr
-    
-def _quitHandler(signum, frame):
+def _termHandler(signum, frame):
     """
     Cleanly shuts down this daemon upon receipt of a SIGTERM.
     
@@ -54,19 +49,13 @@ def _quitHandler(signum, frame):
     @param frame: The stack-frame in which the kill-signal was received.
         This is not used.
     """
-    #Remove PID.
-    try:
-        os.unlink(staticdhcpd.config.PID_FILE)
-    except:
-        pass
-        
-    staticdhcpd.logging.logToDisk()
+    _logger.warn("Received SIGTERM")
+    staticdhcpd.system.ALIVE = False
+    _logger.warn("System shutdown in progress")
     
-    exit(0)
-    
-def _logHandler(signum, frame):
+def _hupHandler(signum, frame):
     """
-    Flushes DHCP cache and writes log to disk upon receipt of a SIGHUP.
+    Reinitialises the system upon receipt of a SIGHUP.
     
     @type signum: int
     @param signum: The kill-signal constant received. This will always be
@@ -75,13 +64,10 @@ def _logHandler(signum, frame):
     @param frame: The stack-frame in which the kill-signal was received.
         This is not used.
     """
+    _logger.warn("Received SIGHUP")
     staticdhcpd.system.reinitialise()
+    _logger.warn("System reinitialised")
     
-    if not staticdhcpd.logging.logToDisk():
-        staticdhcpd.logging.writeLog("Unable to write logfile: %(log)s" % {'log': staticdhcpd.config.LOG_FILE,})
-    else:
-        staticdhcpd.logging.writeLog("Wrote log to '%(log)s'" % {'log': staticdhcpd.config.LOG_FILE,})
-        
 def _daemonise():
     if os.fork(): #This is the parent
         sys.exit(0)
@@ -150,51 +136,62 @@ if __name__ == '__main__':
         
     _logger = logging.getLogger('')
     _setupLogging(_logger)
+    for i in (
+     "----------------------------------------",
+     "----------------------------------------",
+     "----------------------------------------",
+     "----------------------------------------",
+     "----------------------------------------",
+     "System startup in progress",
+     "staticDHCPd version " + staticdhcpd.VERSION,
+     "libpydhcpserver version " + libpydhcpserver.VERSION,
+     "Continuing with subsystem initialisation",
+     "----------------------------------------",
+    ):
+        _logger.warn(i)
+    del i
     
-    #Initialise all system resources
-    staticdhcpd.system.initialise()
-    
-    #Start Web server.
-    if staticdhcpd.config.WEB_ENABLED:
-        web_thread = staticdhcpd.web.WebService()
-        web_thread.start()
-        
-    #Start DHCP server.
-    dhcp_thread = staticdhcpd.dhcp.DHCPService()
-    dhcp_thread.start()
-    
-    #Record PID.
+    _logger.debug("Writing pidfile...")
+    pidfile_recorded = False
     try:
         pidfile = open(staticdhcpd.config.PID_FILE, 'w')
         pidfile.write(str(os.getpid()) + '\n')
         pidfile.close()
         os.chown(staticdhcpd.config.PID_FILE, staticdhcpd.config.UID, staticdhcpd.config.GID)
     except:
-        staticdhcpd.logging.writeLog("Unable to write pidfile: %(file)s" % {'file': staticdhcpd.config.PID_FILE,})
+        _logger.error("Unable to write pidfile: %(file)s" % {'file': staticdhcpd.config.PID_FILE,})
+    else:
+        pidfile_recorded = True
         
-    #Touch logfile.
     try:
-        open(staticdhcpd.config.LOG_FILE, 'a').close()
-        os.chown(staticdhcpd.config.LOG_FILE, staticdhcpd.config.UID, staticdhcpd.config.GID)
-    except:
-        staticdhcpd.logging.writeLog("Unable to write pidfile: %(file)s" % {'file': staticdhcpd.config.PID_FILE,})
+        #Set signal-handlers.
+        signal.signal(signal.SIGHUP, _hupHandler)
+        _logger.debug("Installed SIGHUP handler")
+        signal.signal(signal.SIGTERM, _termHandler)
+        _logger.debug("Installed SIGTERM handler")
         
-    #Set signal-handlers.
-    signal.signal(signal.SIGHUP, _logHandler)
-    signal.signal(signal.SIGTERM, _quitHandler)
-    
-    #Set proper permissions for execution
-    os.setregid(staticdhcpd.config.GID, staticdhcpd.config.GID)
-    os.setreuid(staticdhcpd.config.UID, staticdhcpd.config.UID)
-    
-    #Serve until interrupted.
-    tick = 0
-    while True:
-        time.sleep(1)
+        #Initialise all system resources
+        staticdhcpd.system.initialise()
         
-        tick += 1
-        if tick >= staticdhcpd.config.POLLING_INTERVAL: #Perform periodic cleanup.
-            dhcp_thread.pollStats()
-            staticdhcpd.logging.emailTimeoutCooldown()
-            tick = 0
-            
+        _logger.info("Changing runtime permissions to UID=%(uid)i, GID=%(gid)i..." % {
+         'uid': staticdhcpd.config.UID,
+         'gid': staticdhcpd.config.GID,
+        })
+        os.setregid(staticdhcpd.config.GID, staticdhcpd.config.GID)
+        os.setreuid(staticdhcpd.config.UID, staticdhcpd.config.UID)
+        
+        _logger.warn("All subsystems initialised; serving")
+        while staticdhcpd.system.ALIVE:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        _logger.warn("System shutdown requested via keyboard interrupt")
+    except Exception:
+        _logger.critical("System shutdown triggered by unhandled exception:\n" + traceback.format_exc())
+    finally:
+        if pidfile_recorded:
+            _logger.debug("Unlinking pidfile...")
+            try:
+                os.unlink(staticdhcpd.config.PID_FILE)
+            except:
+                _logger.error("Unable to unlink pidfile: %(file)s" % {'file': staticdhcpd.config.PID_FILE,})
+                

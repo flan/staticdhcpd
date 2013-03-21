@@ -25,9 +25,13 @@ Legal
  (C) Neil Tallim, 2013 <flan@uguu.ca>
  (C) Matthew Boedicker, 2011 <matthewm@boedicker.org>
 """
+import logging
+
 from .. import config
 
 from _generic import CachingDatabase
+
+_logger = logging.getLogger("databases._sql")
 
 class _SQLDatabase(CachingDatabase):
     """
@@ -71,11 +75,14 @@ class _DB20Broker(_SQLDatabase):
         @raise Exception: If a problem occurs while accessing the database.
         """
         try:
+            _logger.debug("Connecting to database...")
             db = self._getConnection()
             cur = db.cursor()
             
+            _logger.debug("Fetching data...")
             cur.execute(self._query_mac, (mac,))
             result = cur.fetchone()
+            _logger.debug("Result collected")
             if result:
                 return result
             return None
@@ -83,11 +90,11 @@ class _DB20Broker(_SQLDatabase):
             try:
                 cur.close()
             except Exception:
-                pass
+                _logger.warn("Unable to close cursor")
             try:
                 db.close()
             except Exception:
-                pass
+                _logger.warn("Unable to close connection")
                 
 class _PoolingBroker(_DB20Broker):
     """
@@ -110,10 +117,12 @@ class _PoolingBroker(_DB20Broker):
         _DB20Broker.__init__(self, concurrency_limit)
 
         if config.USE_POOL:
+            _logger.debug("Configuring connection-pooling...")
             try:
                 import eventlet.db_pool
                 self._eventlet__db_pool = eventlet.db_pool
             except ImportError:
+                _logger.warn("eventlet is not available; falling back to unpooled mode")
                 return
             else:
                 self._pool = self._eventlet__db_pool.ConnectionPool(
@@ -130,7 +139,7 @@ class _PoolingBroker(_DB20Broker):
         
         @raise Exception: If a problem occurs while accessing the database.
         """
-        if not self._pool is None:
+        if self._pool is not None:
             return self._eventlet__db_pool.PooledConnectionWrapper(self._pool.get(), self._pool)
         else:
             return self._module.connect(**self._connection_details)
@@ -186,6 +195,8 @@ class MySQL(_PoolingBroker):
             self._connection_details['host'] = config.MYSQL_HOST
             self._connection_details['port'] = config.MYSQL_PORT
             
+        _logger.debug("MySQL configured; connection-details: " + str(self._connection_details))
+        
 class PostgreSQL(_PoolingBroker):
     """
     Implements a PostgreSQL broker.
@@ -220,6 +231,8 @@ class PostgreSQL(_PoolingBroker):
             self._connection_details['port'] = config.POSTGRESQL_PORT
             self._connection_details['sslmode'] = config.POSTGRESQL_SSLMODE
             
+        _logger.debug("PostgreSQL configured; connection-details: " + str(self._connection_details))
+        
 class Oracle(_PoolingBroker):
     """
     Implements an Oracle broker.
@@ -249,6 +262,8 @@ class Oracle(_PoolingBroker):
          'password': config.ORACLE_PASSWORD,
          'dsn': config.ORACLE_DATABASE,
         }
+        
+        _logger.debug("Oracle configured; connection-details: " + str(self._connection_details))
 
 class SQLite(_NonPoolingBroker):
     """
@@ -277,3 +292,5 @@ class SQLite(_NonPoolingBroker):
         self._connection_details = {
          'database': config.SQLITE_FILE,
         }
+        
+        _logger.debug("SQLite configured; connection-details: " + str(self._connection_details))

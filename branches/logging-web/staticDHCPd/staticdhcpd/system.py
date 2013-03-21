@@ -25,18 +25,46 @@ Legal
  (C) Neil Tallim, 2013 <flan@uguu.ca>
 """
 import threading
+import traceback
 
+import config
 import databases
+import dhcp
+import statistics
+import web
+
+ALIVE = True #True until the system is ready to shut down.
 
 DATABASE = None
+DHCP = None
+STATISTICS_DHCP = None
+WEBSERVICE = None
 
 _reinitialisation_lock = threading.Lock()
 _reinitialisation_callbacks = []
 
 def initialise():
+    #Ready the database.
     global DATABASE
     DATABASE = databases.get_database()
     registerReinitialisationCallback(DATABASE.reinitialise)
+    
+    #Prepare the statistics engine.
+    global STATISTICS_DHCP
+    STATISTICS_DHCP = statistics.DHCPStatistics()
+    
+    #Start Webservice.
+    global WEBSERVICE
+    if config.WEB_ENABLED:
+        WEBSERVICE = web.WebService()
+        WEBSERVICE.start()
+    else:
+        WEBSERVICE = web.WebServiceDummy()
+        
+    #Start DHCP server.
+    global DHCP
+    DHCP = dhcp.DHCPService()
+    DHCP.start()
     
 def reinitialise():
     """
@@ -44,8 +72,14 @@ def reinitialise():
     """
     with _reinitialisation_lock:
         for callback in _reinitialisation_callbacks:
-            callback()
-            
+            try:
+                callback()
+            except Exception:
+                global ALIVE
+                ALIVE = False
+                _logger.critical("System shutdown triggered by unhandled exception:\n" + traceback.format_exc())
+                raise
+                
 def registerReinitialisationCallback(func):
     """
     Allows for modular registration of reinitialisation callbacks, to be invoked

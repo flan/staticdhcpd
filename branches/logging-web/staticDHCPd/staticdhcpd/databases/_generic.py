@@ -25,9 +25,12 @@ Legal
  
  (C) Neil Tallim, 2013 <flan@uguu.ca>
 """
+import logging
 import threading
 
 from .. import config
+
+_logger = logging.getLogger('databases._generic')
 
 class Database(object):
     """
@@ -85,6 +88,7 @@ class CachingDatabase(Database):
         @param concurrent_limit: The number of concurrent database hits to
             permit, defaulting to a ridiculously large number.
         """
+        _logger.debug("Initialising database with a maximum of %(count)i concurrent connections" % {'count': concurrency_limit,})
         self._resource_lock = threading.BoundedSemaphore(concurrency_limit)
         self._setupCache()
         
@@ -96,13 +100,15 @@ class CachingDatabase(Database):
             self._cache_lock = threading.Lock()
             self._mac_cache = {}
             self._subnet_cache = {}
+            _logger.debug("Database cache initialised")
             
     def reinitialise(self):
         if config.USE_CACHE:
             with self._cache_lock:
                 self._mac_cache.clear()
                 self._subnet_cache.clear()
-                
+            _logger.info("Database cache cleared")
+            
     def lookupMAC(self, mac):
         if config.USE_CACHE:
             with self._cache_lock:
