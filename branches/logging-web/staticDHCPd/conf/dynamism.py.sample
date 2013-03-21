@@ -21,10 +21,11 @@ checking for it in loadDHCPPacket(); the default pair this module provides is
 ('guest', 0).
 """
 import collections
+import logging
 import threading
 import time
 
-import staticdhcpd.logging as logging
+_logger = logging.getLogger('conf.dynamism')
 
 #Configure these variables as needed
 ###############################################################################
@@ -89,7 +90,7 @@ def _getLease(mac):
             match[0] = time.time() + LEASE_TIME
             ip = match[1]
             
-            logging.writeLog("Extended lease of '%(ip)s' to '%(mac)s' until '%(time).1f'" % {
+            _logger.info("Extended lease of '%(ip)s' to '%(mac)s' until '%(time).1f'" % {
              'ip': ip,
              'mac': mac,
              'time': match[0],
@@ -102,7 +103,7 @@ def _getLease(mac):
             if ip:
                 expiration = time.time() + LEASE_TIME
                 _DYNAMIC_MAP[mac] = [expiration, ip]
-                logging.writeLog("Bound '%(ip)s' to '%(mac)s' until '%(time).1f'" % {
+                _logger.info("Bound '%(ip)s' to '%(mac)s' until '%(time).1f'" % {
                  'ip': ip,
                  'mac': mac,
                  'time': expiration,
@@ -113,7 +114,7 @@ def informDynamic(mac, client_ip):
     """
     If you need to reject a MAC, return None instead of the usual value.
     """
-    logging.writeLog("Processing dynamic provisioning inform from '%(mac)s'..." % {
+    _logger.info("Processing dynamic provisioning inform from '%(mac)s'..." % {
      'mac': mac,
     })
     
@@ -132,14 +133,14 @@ def provisionDynamic(mac):
     """
     If you need to reject a MAC, return None instead of the usual value.
     """
-    logging.writeLog("Processing dynamic provisioning request from '%(mac)s'..." % {
+    _logger.info("Processing dynamic provisioning request from '%(mac)s'..." % {
      'mac': mac,
     })
     
     _cleanupLeases() #Remove stale assignments
     ip = _getLease(mac)
     if not ip: #No IP available; fail
-        logging.writeLog("No IP available for assignment to '%(mac)s'" % {
+        _logger.warn("No IP available for assignment to '%(mac)s'" % {
          'mac': mac,
         })
         return None
@@ -156,14 +157,14 @@ def releaseDynamic(mac):
     """
     If you need to reject a MAC, return None instead of the usual value.
     """
-    logging.writeLog("Processing dynamic provisioning release from '%(mac)s'..." % {
+    _logger.info("Processing dynamic provisioning release from '%(mac)s'..." % {
      'mac': mac,
     })
     
     _cleanupLeases() #Remove stale assignments
     ip = _dropLease(mac)
     if not ip: #No IP available; fail
-        logging.writeLog("No IP assigned to '%(mac)s'" % {
+        _logger.warn("No IP assigned to '%(mac)s'" % {
          'mac': mac,
         })
         return None

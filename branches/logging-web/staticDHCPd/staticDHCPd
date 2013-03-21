@@ -38,6 +38,8 @@ import libpydhcpserver
 import staticdhcpd.system
 import staticdhcpd.config
 
+_logger = logging.getLogger('')
+
 def _termHandler(signum, frame):
     """
     Cleanly shuts down this daemon upon receipt of a SIGTERM.
@@ -134,7 +136,6 @@ if __name__ == '__main__':
     if staticdhcpd.config.DAEMON:
         _daemonise()
         
-    _logger = logging.getLogger('')
     _setupLogging(_logger)
     for i in (
      "----------------------------------------",
