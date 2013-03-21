@@ -182,8 +182,13 @@ if __name__ == '__main__':
         os.setreuid(staticdhcpd.config.UID, staticdhcpd.config.UID)
         
         _logger.warn("All subsystems initialised; serving")
+        sleep_offset = 0
         while staticdhcpd.system.ALIVE:
-            time.sleep(1)
+            time.sleep(max(0.0, 1.0 - sleep_offset))
+            
+            start_time = time.time()
+            staticdhcpd.system.tick()
+            sleep_offset = time.time() - start_time
     except KeyboardInterrupt:
         _logger.warn("System shutdown requested via keyboard interrupt")
     except Exception:

@@ -24,6 +24,7 @@ Legal
  
  (C) Neil Tallim, 2013 <flan@uguu.ca>
 """
+import logging
 import threading
 import traceback
 
@@ -32,6 +33,8 @@ import databases
 import dhcp
 import statistics
 import web
+
+_logger = logging.getLogger('system')
 
 ALIVE = True #True until the system is ready to shut down.
 
@@ -42,6 +45,9 @@ WEBSERVICE = None
 
 _reinitialisation_lock = threading.Lock()
 _reinitialisation_callbacks = []
+
+_tick_lock = threading.Lock()
+_tick_callbacks = []
 
 def initialise():
     #Ready the database.
@@ -65,6 +71,7 @@ def initialise():
     global DHCP
     DHCP = dhcp.DHCPService()
     DHCP.start()
+    registerTickCallback(DHCP.tick)
     
 def reinitialise():
     """
@@ -91,8 +98,7 @@ def registerReinitialisationCallback(func):
     """
     with _reinitialisation_lock:
         if func in _reinitialisation_callbacks:
-            #Log error
-            pass
+            _logger.error("Callback %(callback)r is already registered" % {'callback': func,})
          else:
             _reinitialisation_callbacks.append(func)
             
@@ -108,6 +114,45 @@ def unregisterReinitialisationCallback(func):
         try:
             _reinitialisation_callbacks.remove(func)
         except ValueError:
-            #log error
-            pass
+            _logger.error("Callback %(callback)r is not registered" % {'callback': func,})
+
+def tick():
+    """
+    Invokes every registered tick handler.
+    """
+    with _tick_lock:
+        for callback in _tick_callbacks:
+            try:
+                callback()
+            except Exception:
+                _logger.critical("Unable to process tick-callback:\n" + traceback.format_exc())
+                
+def registerTickCallback(func):
+    """
+    Allows for modular registration of tick callbacks, to be invoked
+    in the order of registration.
+    
+    @type func: callable
+    @param func: A callable that takes no arguments; if already present, it will
+        not be registered a second time.
+    """
+    with _tick_lock:
+        if func in _tick_callbacks:
+            _logger.error("Callback %(callback)r is already registered" % {'callback': func,})
+         else:
+            _tick_callbacks.append(func)
+            
+def unregisterTickCallback(func):
+    """
+    Allows for modular unregistration of tick callbacks.
+    
+    @type func: callable
+    @param func: A callable that takes no arguments; if not present, this is a
+        no-op.
+    """
+    with _tick_lock:
+        try:
+            _tick_callbacks.remove(func)
+        except ValueError:
+            _logger.error("Callback %(callback)r is not registered" % {'callback': func,})
             

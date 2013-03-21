@@ -53,7 +53,7 @@ class DHCPStatistics(object):
     _activity = True
     
     def __init__(self):
-        self._histograph = collections.deque((None for i in range(config.STATS_RETENTION_COUNT)), maxlen=config.STATS_RETENTION_COUNT)
+        self._histograph = collections.deque((None for i in xrange(config.STATS_RETENTION_COUNT)), maxlen=config.STATS_RETENTION_COUNT)
         
         self._dhcp_packets = {
          'DECLINE': 0,
