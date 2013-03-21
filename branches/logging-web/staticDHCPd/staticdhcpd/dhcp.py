@@ -205,7 +205,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         @type pxe: bool
         @param pxe: True if the packet was received on the PXE port.
         """
-        _logger.debug('Received DHCP DECLINE')
+        _logger.debug('Received DECLINE')
         if not self._evaluateRelay(packet, pxe):
             return
             
@@ -215,18 +215,18 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
             if self._evaluateAbuse(mac, 'DECLINE'):
                 return
                 
-            _logger.info('DHCPDECLINE from %(mac)s' % {
+            _logger.info('DECLINE from %(mac)s' % {
                 'mac': mac,
             })
             
             ip = self._extractIPOrNone(packet, "requested_ip_address")
             if not ip:
-                self._addToTempBlacklist(mac, "sent DHCPDECLINE without indicating the conflicting IP", "DECLINE")
+                self._addToTempBlacklist(mac, "sent DECLINE without indicating the conflicting IP", "DECLINE")
                 return
                 
             server_identifier = self._extractIPOrNone(packet, "server_identifier")
             if not server_identifier:
-                self._addToTempBlacklist(mac, "DHCPDECLINE without a server-identifier", "DECLINE")
+                self._addToTempBlacklist(mac, "DECLINE without a server-identifier", "DECLINE")
                 return
                 
             if '.'.join(map(str, server_identifier)) == self._server_address: #Rejected!
@@ -237,7 +237,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                 )
                 ip = '.'.join(map(str, ip))
                 if result and result[0] == ip: #Known client.
-                    _logger.error('DHCPDECLINE from %(mac)s for %(ip)s on (%(subnet)s, %(serial)i)' % {
+                    _logger.error('DECLINE from %(mac)s for %(ip)s on (%(subnet)s, %(serial)i)' % {
                         'ip': ip,
                         'mac': mac,
                         'subnet': result[9],
@@ -245,7 +245,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                     })
                     return
                 else:
-                    _logger.warn('Misconfigured client %(mac)s sent DHCPDECLINE for %(ip)s' % {
+                    _logger.warn('Misconfigured client %(mac)s sent DECLINE for %(ip)s' % {
                         'ip': ip,
                         'mac': mac,
                     })
@@ -271,7 +271,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         @type pxe: bool
         @param pxe: True if the packet was received on the PXE port.
         """
-        _logger.debug('Received DHCP DISCOVER')
+        _logger.debug('Received DISCOVER')
         if not self._evaluateRelay(packet, pxe):
             return
             
@@ -281,7 +281,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
             if self._evaluateAbuse(mac, 'DISCOVER'):
                 return
                 
-            _logger.info('DHCPDISCOVER from %(mac)s' % {
+            _logger.info('DISCOVER from %(mac)s' % {
              'mac': mac,
             })
             
@@ -344,7 +344,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         @type pxe: bool
         @param pxe: True if the packet was received on the PXE port.
         """
-        _logger.debug('Received DHCP LEASEQUERY')
+        _logger.debug('Received LEASEQUERY')
         if not self._evaluateRelay(packet, pxe):
             return
             
@@ -354,7 +354,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
             if self._evaluateAbuse(mac, 'LEASEQUERY'):
                 return
                 
-            _logger.info('DHCPLEASEQUERY from %(mac)s' % {
+            _logger.info('LEASEQUERY from %(mac)s' % {
              'mac': mac,
             })
             
@@ -385,7 +385,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         @type pxe: bool
         @param pxe: True if the packet was received on the PXE port.
         """
-        _logger.debug('Received DHCP REQUEST')
+        _logger.debug('Received REQUEST')
         if not self._evaluateRelay(packet, pxe):
             return
             
@@ -408,7 +408,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
             
             if sid and not ciaddr: #SELECTING
                 if s_sid == self._server_address: #Chosen!
-                    _logger.info('DHCPREQUEST:SELECTING from %(mac)s' % {
+                    _logger.info('REQUEST:SELECTING from %(mac)s' % {
                      'mac': mac,
                     })
                     try:
@@ -440,7 +440,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                 else:
                     self._logDiscardedPacket('REQUEST:SELECTING')
             elif not sid and not ciaddr and ip: #INIT-REBOOT
-                _logger.info('DHCPREQUEST:INIT-REBOOT from %(mac)s' % {
+                _logger.info('REQUEST:INIT-REBOOT from %(mac)s' % {
                  'mac': mac,
                 })
                 try:
@@ -475,7 +475,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                     self._sendDHCPPacket(packet, source_address, 'NAK', mac, 'NAK_RENEWALS', pxe)
                 else:
                     renew = source_address[0] not in ('255.255.255.255', '0.0.0.0', '')
-                    _logger.info('DHCPREQUEST:%(mode)s from %(mac)s' % {
+                    _logger.info('REQUEST:%(mode)s from %(mac)s' % {
                      'mac': mac,
                      'mode': renew and 'RENEW' or 'REBIND',
                     })
@@ -511,7 +511,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                     except Exception:
                         _logger.critical("Unable to respond to '%(mac)s':\n%(error)s"  % {'mac': mac, 'error': traceback.format_exc()})
             else:
-                _logger.warn('DHCPREQUEST:UNKNOWN (%(sid)s %(ciaddr)s %(ip)s) from %(mac)s' % {
+                _logger.warn('REQUEST:UNKNOWN (%(sid)s %(ciaddr)s %(ip)s) from %(mac)s' % {
                  'sid': str(sid),
                  'ciaddr': str(ciaddr),
                  'ip': str(ip),
@@ -540,7 +540,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         @type pxe: bool
         @param pxe: True if the packet was received on the PXE port.
         """
-        _logger.debug('Received DHCP INFORM')
+        _logger.debug('Received INFORM')
         if not self._evaluateRelay(packet, pxe):
             return
             
@@ -550,7 +550,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
             if self._evaluateAbuse(mac, 'INFORM'):
                 return
                 
-            _logger.info('DHCPINFORM from %(mac)s' % {
+            _logger.info('INFORM from %(mac)s' % {
                 'mac': mac,
             })
             
@@ -614,7 +614,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         @type pxe: bool
         @param pxe: True if the packet was received on the PXE port.
         """
-        _logger.debug('Received DHCP RELEASE')
+        _logger.debug('Received RELEASE')
         if not self._evaluateRelay(packet, pxe):
             return
             
@@ -624,7 +624,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
             if self._evaluateAbuse(mac, 'RELEASE'):
                 return
                 
-            _logger.info('DHCPRELEASE from %(mac)s' % {
+            _logger.info('RELEASE from %(mac)s' % {
              'mac': mac,
             })
             
@@ -640,18 +640,18 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                     )
                     ip = '.'.join(map(str, ip))
                     if result and result[0] == ip: #Known client.
-                        _logger.info('DHCPRELEASE from %(mac)s for %(ip)s' % {
+                        _logger.info('RELEASE from %(mac)s for %(ip)s' % {
                          'ip': ip,
                          'mac': mac,
                         })
                         return
                     else:
-                        _logger.warn('Misconfigured client %(mac)s sent DHCPRELEASE for %(ip)s' % {
+                        _logger.warn('Misconfigured client %(mac)s sent RELEASE for %(ip)s' % {
                          'ip': ip,
                          'mac': mac,
                         })
             else:
-                _logger.warn('Client %(mac)s sent DHCPRELEASE without a server-identifier' % {
+                _logger.warn('Client %(mac)s sent RELEASE without a server-identifier' % {
                  'ip': ip,
                  'mac': mac,
                 })
@@ -803,7 +803,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
             
         packet.setOption('server_identifier', ipToList(self._server_address))
         bytes = self._sendDHCPPacketTo(packet, ip, port, pxe)
-        _logger.info('DHCP%(type)s sent to %(mac)s for %(client)s via %(ip)s:%(port)i %(pxe)s[%(bytes)i bytes]' % {
+        _logger.info('%(type)s sent to %(mac)s for %(client)s via %(ip)s:%(port)i %(pxe)s[%(bytes)i bytes]' % {
          'type': response_type,
          'mac': mac,
          'client': client_ip,
