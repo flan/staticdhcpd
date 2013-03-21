@@ -250,6 +250,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                         'mac': mac,
                     })
             self._logDiscardedPacket('DECLINE')
+            return
         finally:
             self._logTimeTaken(time.time() - start_time)
             
@@ -311,9 +312,10 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                     ):
                         if rapid_commit:
                             self._sendDHCPPacket(packet, source_address, 'ACK-rapid', mac, result[0], pxe)
+                            return
                         else:
                             self._sendDHCPPacket(packet, source_address, 'OFFER', mac, result[0], pxe)
-                        return
+                            return
                     else:
                         self._logIgnoredPacket(mac, 'DISCOVER')
                         return
@@ -327,6 +329,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                         return
             except Exception:
                 _logger.critical("Unable to respond to '%(mac)s':\n%(error)s"  % {'mac': mac, 'error': traceback.format_exc()})
+                return
         finally:
             self._logTimeTaken(time.time() - start_time)
             
@@ -358,6 +361,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
             })
             
             self._logDiscardedPacket('LEASEQUERY')
+            return
         finally:
             self._logTimeTaken(time.time() - start_time)
             
@@ -426,16 +430,20 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                              pxe and pxe_options, vendor_options
                             ):
                                 self._sendDHCPPacket(packet, source_address, 'ACK', mac, s_ip, pxe)
+                                return
                             else:
                                 self._logIgnoredPacket(mac, 'REQUEST:SELECTING')
                                 return
                         else:
                             packet.transformToDHCPNackPacket()
                             self._sendDHCPPacket(packet, source_address, 'NAK', mac, 'NO-MATCH', pxe)
+                            return
                     except Exception:
                         _logger.critical("Unable to respond to '%(mac)s':\n%(error)s"  % {'mac': mac, 'error': traceback.format_exc()})
+                        return
                 else:
                     self._logDiscardedPacket('REQUEST:SELECTING')
+                    return
             elif not sid and not ciaddr and ip: #INIT-REBOOT
                 _logger.info('REQUEST:INIT-REBOOT from %(mac)s' % {
                  'mac': mac,
@@ -456,18 +464,22 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                          pxe and pxe_options, vendor_options
                         ):
                             self._sendDHCPPacket(packet, source_address, 'ACK', mac, s_ip, pxe)
+                            return
                         else:
                             self._logIgnoredPacket(mac, 'REQUEST:INIT-REBOOT')
                             return
                     else:
                         packet.transformToDHCPNackPacket()
                         self._sendDHCPPacket(packet, source_address, 'NAK', mac, s_ip, pxe)
+                        return
                 except Exception:
                     _logger.critical("Unable to respond to '%(mac)s':\n%(error)s"  % {'mac': mac, 'error': traceback.format_exc()})
+                    return
             elif not sid and ciaddr and not ip: #RENEWING or REBINDING
                 if config.NAK_RENEWALS and not pxe:
                     packet.transformToDHCPNackPacket()
                     self._sendDHCPPacket(packet, source_address, 'NAK', mac, 'NAK_RENEWALS', pxe)
+                    return
                 else:
                     renew = source_address[0] not in ('255.255.255.255', '0.0.0.0', '')
                     _logger.info('REQUEST:%(mode)s from %(mac)s' % {
@@ -492,6 +504,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                              pxe and pxe_options, vendor_options
                             ):
                                 self._sendDHCPPacket(packet, (s_ciaddr, 0), 'ACK', mac, s_ciaddr, pxe)
+                                return
                             else:
                                 self._logIgnoredPacket(mac, renew and "RENEW" or "REBIND")
                                 return
@@ -499,10 +512,13 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                             if renew:
                                 packet.transformToDHCPNackPacket()
                                 self._sendDHCPPacket(packet, (s_ciaddr, 0), 'NAK', mac, s_ciaddr, pxe)
+                                return
                             else:
                                 self._logDiscardedPacket('REQUEST:REBIND')
+                                return
                     except Exception:
                         _logger.critical("Unable to respond to '%(mac)s':\n%(error)s"  % {'mac': mac, 'error': traceback.format_exc()})
+                        return
             else:
                 _logger.warn('REQUEST:UNKNOWN (%(sid)s %(ciaddr)s %(ip)s) from %(mac)s' % {
                  'sid': str(sid),
@@ -511,6 +527,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                  'mac': mac,
                 })
                 self._logDiscardedPacket('REQUEST')
+                return
         finally:
             self._logTimeTaken(time.time() - start_time)
             
@@ -576,6 +593,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                             source_address, 'ACK', mac, ciaddr and '.'.join(map(str, ciaddr)) or '0.0.0.0',
                             pxe
                         )
+                        return
                     else:
                         self._logIgnoredPacket(mac, 'INFORM')
                         return
@@ -584,6 +602,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                     return
             except Exception:
                 _logger.critical("Unable to respond to '%(mac)s':\n%(error)s"  % {'mac': mac, 'error': traceback.format_exc()})
+                return
         finally:
             self._logTimeTaken(time.time() - start_time)
             
@@ -645,6 +664,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                         'mac': mac,
                     })
             self._logDiscardedPacket('RELEASE')
+            return
         finally:
             self._logTimeTaken(time.time() - start_time)
             
