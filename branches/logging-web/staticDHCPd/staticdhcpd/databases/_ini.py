@@ -134,7 +134,7 @@ class INI(Database):
         self.reinitialise()
         
     def reinitialise(self):
-        with self._lock():
+        with self._lock:
             self._maps.clear()
             self._subnets.clear()
             self._parse_ini()

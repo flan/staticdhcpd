@@ -99,7 +99,7 @@ def registerReinitialisationCallback(func):
     with _reinitialisation_lock:
         if func in _reinitialisation_callbacks:
             _logger.error("Callback %(callback)r is already registered" % {'callback': func,})
-         else:
+        else:
             _reinitialisation_callbacks.append(func)
             
 def unregisterReinitialisationCallback(func):
@@ -139,7 +139,7 @@ def registerTickCallback(func):
     with _tick_lock:
         if func in _tick_callbacks:
             _logger.error("Callback %(callback)r is already registered" % {'callback': func,})
-         else:
+        else:
             _tick_callbacks.append(func)
             
 def unregisterTickCallback(func):

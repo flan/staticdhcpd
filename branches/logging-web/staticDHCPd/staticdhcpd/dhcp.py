@@ -124,7 +124,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         @return: True if the MAC should be ignored.
         """
         with self._lock:
-            ignored = [None for (ignored_mac, timeout) in self._ignored_addresses if mac == ignored_mac]:
+            ignored = bool([None for (ignored_mac, timeout) in self._ignored_addresses if mac == ignored_mac])
         if ignored:
             self._logDiscardedPacket(packet_type)
             return True
@@ -215,7 +215,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
             if self._evaluateAbuse(mac, 'DECLINE'):
                 return
                 
-            _logger.info('DECLINE from %(mac)s' % {
+            _logger.debug('DECLINE from %(mac)s' % {
                 'mac': mac,
             })
             
@@ -634,7 +634,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
             if self._evaluateAbuse(mac, 'RELEASE'):
                 return
                 
-            _logger.info('RELEASE from %(mac)s' % {
+            _logger.debug('RELEASE from %(mac)s' % {
              'mac': mac,
             })
             

@@ -33,7 +33,7 @@ class FIFOHandler(logging.Handler):
     """
     def __init__(self, capacity):
         logging.Handler.__init__(self)
-        self._buffer = collections.deque(capacity)
+        self._buffer = collections.deque(maxlen=capacity)
         
     def emit(self, record):
         self.acquire()

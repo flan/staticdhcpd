@@ -85,6 +85,8 @@ def _setupLogging(logger):
     """
     Attaches handlers to the given logger, allowing for universal access to resources.
     """
+    logger.setLevel(logging.DEBUG)
+    
     formatter = logging.Formatter(
      "%(asctime)s : %(levelname)s : %(name)s:%(lineno)d[%(threadName)s] : %(message)s"
     )
@@ -103,11 +105,11 @@ def _setupLogging(logger):
             file_logger = logging.handlers.TimedRotatingFileHandler(
              staticdhcpd.config.LOG_FILE, 'D', 1, staticdhcpd.config.LOG_FILE_HISTORY
             )
-            logger.info("Configured rotation-based logging, with history=" + str(staticdhcpd.config.LOG_FILE_HISTORY) + " days")
+            logger.info("Configured rotation-based logging for file, with history=" + str(staticdhcpd.config.LOG_FILE_HISTORY) + " days")
         else:
             #Keep writing to the specified file forever
-            file_logger = logging.handlers.FileHandler(staticdhcpd.config.LOG_FILE)
-            logger.info("Configured indefinite-growth logging")
+            file_logger = logging.FileHandler(staticdhcpd.config.LOG_FILE)
+            logger.info("Configured indefinite-growth logging for file")
         file_logger.setLevel(getattr(logging, staticdhcpd.config.LOG_FILE_SEVERITY))
         file_logger.setFormatter(formatter)
         logger.addHandler(file_logger)

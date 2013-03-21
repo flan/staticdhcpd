@@ -45,7 +45,7 @@ import logging_handlers
 import system
 from staticdhcpd import VERSION
 
-_logger = logging.get('web')
+_logger = logging.getLogger('web')
 _web_logger = None
 
 class _WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
@@ -186,7 +186,7 @@ class WebServiceDummy(object):
     def __init__(self):
         _logger.info("Webservice is disabled; configuring dummy")
         
-class WebService(threading.Thread, WebServicedummy):
+class WebService(threading.Thread, WebServiceDummy):
     """
     A thread that handles HTTP requests indefinitely, daemonically.
     """
@@ -222,7 +222,7 @@ class WebService(threading.Thread, WebServicedummy):
         global _web_logger
         _logger.info("Configuring web-interface logging...")
         _web_logger = logging_handlers.FIFOHandler(config.WEB_LOG_HISTORY)
-        _web_logger.setLevel(getattr(logging, staticdhcpd.config.LOG_WEB_SEVERITY))
+        _web_logger.setLevel(getattr(logging, config.WEB_LOG_SEVERITY))
         _web_logger.setFormatter(logging.Formatter("%(asctime)s : %(levelname)s : %(message)s"))
         _logger.addHandler(_web_logger)
         _logger.info("Web-accessible logging online")
