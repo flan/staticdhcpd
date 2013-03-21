@@ -315,9 +315,8 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                             self._sendDHCPPacket(packet, source_address, 'OFFER', mac, result[0], pxe)
                         return
                     else:
-                        _logger.info('Ignoring %(mac)s per loadDHCPPacket()' % {
-                         'mac': mac,
-                        })
+                        self._logIgnoredPacket(mac, 'DISCOVER')
+                        return
                 else:
                     if config.AUTHORITATIVE:
                         packet.transformToDHCPNackPacket()
@@ -428,10 +427,8 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                             ):
                                 self._sendDHCPPacket(packet, source_address, 'ACK', mac, s_ip, pxe)
                             else:
-                                _logger.info('Ignoring %(mac)s per loadDHCPPacket()' % {
-                                 'mac': mac,
-                                })
-                                self._logDiscardedPacket('REQUEST:SELECTING')
+                                self._logIgnoredPacket(mac, 'REQUEST:SELECTING')
+                                return
                         else:
                             packet.transformToDHCPNackPacket()
                             self._sendDHCPPacket(packet, source_address, 'NAK', mac, 'NO-MATCH', pxe)
@@ -460,10 +457,8 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                         ):
                             self._sendDHCPPacket(packet, source_address, 'ACK', mac, s_ip, pxe)
                         else:
-                            _logger.info('Ignoring %(mac)s per loadDHCPPacket()' % {
-                             'mac': mac,
-                            })
-                            self._logDiscardedPacket('REQUEST:INIT-REBOOT')
+                            self._logIgnoredPacket(mac, 'REQUEST:INIT-REBOOT')
+                            return
                     else:
                         packet.transformToDHCPNackPacket()
                         self._sendDHCPPacket(packet, source_address, 'NAK', mac, s_ip, pxe)
@@ -498,10 +493,8 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                             ):
                                 self._sendDHCPPacket(packet, (s_ciaddr, 0), 'ACK', mac, s_ciaddr, pxe)
                             else:
-                                _logger.info('Ignoring %(mac)s per loadDHCPPacket()' % {
-                                 'mac': mac,
-                                })
-                                self._logDiscardedPacket('REQUEST:' + (renew and "RENEW" or "REBIND"))
+                                self._logIgnoredPacket(mac, renew and "RENEW" or "REBIND")
+                                return
                         else:
                             if renew:
                                 packet.transformToDHCPNackPacket()
@@ -584,10 +577,8 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                             pxe
                         )
                     else:
-                        _logger.info('Ignoring %(mac)s per loadDHCPPacket()' % {
-                            'mac': mac,
-                        })
-                        self._logDiscardedPacket('INFORM')
+                        self._logIgnoredPacket(mac, 'INFORM')
+                        return
                 else:
                     self._addToTempBlacklist(mac, "is unknown", "INFORM")
                     return
@@ -629,32 +620,30 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
             })
             
             s_id = self._extractIPOrNone(packet, "server_identifier")
-            if s_id:
-                if '.'.join(map(str, s_id)) == self._server_address: #Released!
-                    ip = self._extractIPOrNone(packet, "ciaddr", as_tuple=True)
-                    
-                    result = system.DATABASE.lookupMAC(mac) or config.handleUnknownMAC(
-                     packet, "RELEASE",
-                     mac, ip, self._extractIPOrNone(packet, "giaddr", as_tuple=True),
-                     pxe and packet.extractPXEOptions(), packet.extractVendorOptions()
-                    )
-                    ip = '.'.join(map(str, ip))
-                    if result and result[0] == ip: #Known client.
-                        _logger.info('RELEASE from %(mac)s for %(ip)s' % {
-                         'ip': ip,
-                         'mac': mac,
-                        })
-                        return
-                    else:
-                        _logger.warn('Misconfigured client %(mac)s sent RELEASE for %(ip)s' % {
-                         'ip': ip,
-                         'mac': mac,
-                        })
-            else:
-                _logger.warn('Client %(mac)s sent RELEASE without a server-identifier' % {
-                 'ip': ip,
-                 'mac': mac,
-                })
+            if not s_id:
+                self._addToTempBlacklist(mac, "sent RELEASE without a server-identifier", "RELEASE")
+                return
+                
+            if '.'.join(map(str, s_id)) == self._server_address: #Released!
+                ip = self._extractIPOrNone(packet, "ciaddr", as_tuple=True)
+                
+                result = system.DATABASE.lookupMAC(mac) or config.handleUnknownMAC(
+                    packet, "RELEASE",
+                    mac, ip, self._extractIPOrNone(packet, "giaddr", as_tuple=True),
+                    pxe and packet.extractPXEOptions(), packet.extractVendorOptions()
+                )
+                ip = '.'.join(map(str, ip))
+                if result and result[0] == ip: #Known client.
+                    _logger.info('RELEASE from %(mac)s for %(ip)s' % {
+                        'ip': ip,
+                        'mac': mac,
+                    })
+                    return
+                else:
+                    _logger.warn('Misconfigured client %(mac)s sent RELEASE for %(ip)s' % {
+                        'ip': ip,
+                        'mac': mac,
+                    })
             self._logDiscardedPacket('RELEASE')
         finally:
             self._logTimeTaken(time.time() - start_time)
@@ -745,7 +734,16 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         #TODO
         #with self._stats_lock:
         #    self._packets_discarded += 1
-            
+        
+    def _logIgnoredPacket(self, mac, packet_type):
+        """
+        A very common logging operation.
+        """
+        _logger.info('Ignoring %(mac)s per loadDHCPPacket()' % {
+         'mac': mac,
+        })
+        self._logDiscardedPacket(packet_type)
+        
     def _logTimeTaken(self, time_taken):
         """
         Records the time taken to process a packet.
