@@ -59,3 +59,4 @@ def get_database():
     raise ValueError("Unknown database engine: %(engine)s" % {
      'engine': config.DATABASE_ENGINE
     })
+    
