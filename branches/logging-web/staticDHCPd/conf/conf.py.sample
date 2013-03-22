@@ -99,8 +99,8 @@ UNAUTHORIZED_CLIENT_TIMEOUT = 60
 MISBEHAVING_CLIENT_TIMEOUT = 150
 #If True, MACs requesting too many addresses will be flagged as malicious.
 ENABLE_SUSPEND = True
-#The number of times a well-behaved MAC can search for or request an IP
-#within the polling interval.
+#The number of times a well-behaved MAC can interact with the server before
+#being temporarily ignored; actions are forgotten at a rate of one per second.
 SUSPEND_THRESHOLD = 10
 
 #MD5 of the password needed to reload config.
@@ -212,7 +212,7 @@ def init():
     
     pass
     
-def loadDHCPPacket(packet, mac, client_ip, relay_ip, subnet, serial, pxe, vendor):
+def loadDHCPPacket(packet, method, mac, client_ip, relay_ip, subnet, serial, pxe, vendor):
     #This is a custom function, called before each packet is sent, that
     #allows you to tweak the options attached to a DHCP response.
     #
@@ -222,6 +222,11 @@ def loadDHCPPacket(packet, mac, client_ip, relay_ip, subnet, serial, pxe, vendor
     #rule-writing guide.
     #
     ##### PARAMETERS #####
+    #packet is the packet currently being processed for transmission to the
+    #    client.
+    #method is a string that indicates the type of DHCP action the packet
+    #    represents: DECLINE, DISCOVER, INFORM, RELEASE, REQUEST:INIT-REBOOT,
+    #    REQUEST:REBIND, REQUEST:RENEW, REQUEST:SELECTING.
     #mac is a human-readable MAC string, lower-case, separated by colons.
     #client_ip is a quadruple of octets: (192, 168, 1, 1)
     #relay_ip is either None or an address as a quadruple of octets,
@@ -247,10 +252,7 @@ def handleUnknownMAC(packet, method, mac, client_ip, relay_ip, pxe, vendor):
     #using your own domain-specific logic.
     #
     ##### PARAMETERS #####
-    #method is a string that indicates the type of DHCP action the packet
-    #    represents: DECLINE, DISCOVER, INFORM, RELEASE, REQUEST:INIT-REBOOT,
-    #    REQUEST:REBIND, REQUEST:RENEW, REQUEST:SELECTING
-    #All other parameters are identical to those found in loadDHCPPacket()
+    #All parameters are identical to those found in loadDHCPPacket()
     #
     ##### Return #####
     #Returning None will cause system-default behaviour to occur, which is usually

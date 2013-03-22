@@ -15,6 +15,19 @@ them. It really couldn't be any friendlier... until it was: starting with 1.6.1,
 if you install the system using setup.py, your old config directory will be left
 intact, meaning that you just have to pull code, run setup, and go.
 
+----------------------------------------
+
+If upgrading from any version before 1.7.0, two simple changes will need to be
+made to conf.py: replace the "def" lines for loadDHCPPacket() and
+handleUnknownMAC(), if they exist at all, with the following:
+
+def loadDHCPPacket(packet, method, mac, client_ip, relay_ip, subnet, serial,\
+pxe, vendor):
+
+def handleUnknownMAC(packet, method, mac, client_ip, relay_ip, pxe, vendor):
+
+Any pre-existing code will continue to work without modification; these changes
+just give you more control over how to respond to different situations.
 
 -------------------------------------------------------------------------------
 
