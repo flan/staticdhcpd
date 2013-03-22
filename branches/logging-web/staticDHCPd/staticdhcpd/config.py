@@ -231,3 +231,23 @@ conf.writeLog = logger.warn
 conf.logger = logger
 del logger
 del logging
+
+import web
+conf.webAddDashboard = web.registerDashboardCallback
+conf.webRemoveDashboard = web.unregisterDashboardCallback
+conf.webAddMethod = web.registerMethodCallback
+conf.webRemoveMethod = web.unregisterMessageCallback
+del web
+
+import statistics
+conf.statsAddHandler = statistics.registerStatsCallback
+conf.statsRemoveHandler = statistics.unregisterStatsCallback
+del statistics
+
+import system
+conf.systemAddReinitHandler = system.registerReinitialisationCallback
+conf.systemRemoveReinitHandler = system.unregisterReinitialisationCallback
+conf.systemAddTickHandler = system.registerTickCallback
+conf.systemRemoveTickHandler = conf.unregisterTickCallback
+del system
+

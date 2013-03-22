@@ -63,7 +63,7 @@ def registerDashboardCallback(module, name, callback):
     Allows for modular registration of dashboard callbacks, to be invoked
     in the order of registration.
     
-    If the given triple is already present, it will not be registered a second
+    If the given callback is already present, it will not be registered a second
     time.
     
     @type module: basestring
@@ -76,36 +76,33 @@ def registerDashboardCallback(module, name, callback):
         must not require any parameters; must return data formatted as XHTML, to
         be embedded inside of a <div/>.
     """
-    element = _WebDashboardElement(module, name, callback)
     with _web_lock:
-        if element in _web_dashboard:
-            _logger.error("Dashboard element %(element)r is already registered" % {'element': element,})
-        else:
-            _web_dashboard.append(element)
-            
-def unregisterDashboardCallback(module, name, callback):
+        for (i, element) in enumerate(_web_dashboard):
+            if element.callback is callback:
+                _logger.error("Dashboard callback %(callback)r is already registered" % {'callback': callback,})
+                break
+            else:
+                _web_dashboard.append(_WebDashboardElement(module, name, callback))
+                
+def unregisterDashboardCallback(callback):
     """
     Allows for modular unregistration of dashboard callbacks.
     
-    If the given triple is not present, this is a no-op.
+    If the given callback is not present, this is a no-op.
     
-    @type module: basestring
-    @param module: The human-friendly name of the module to which the element
-        belongs.
-    @type name: basestring
-    @param name: The human-friendly name of the element, within the module.
     @type callback: callbale
     @param callback: The callable to be invoked when the dashboard is rendered;
         must not require any parameters; must return data formatted as XHTML, to
         be embedded inside of a <div/>.
     """
-    element = _WebDashboardElement(module, name, callback)
     with _web_lock:
-        try:
-            _web_dashboard.remove(element)
-        except ValueError:
-            _logger.error("Dashboard element %(element)r is not registered" % {'element': element,})
-            
+        for (i, element) in enumerate(_web_dashboard):
+            if element.callback is callback:
+                del _web_dashboard[i]
+                break
+            else:
+                _logger.error("Dashboard callback %(callback)r is not registered" % {'callback': callback,})
+                
 def registerMethodCallback(path, module, name, hidden, callback):
     """
     Allows for modular registration of method callbacks.

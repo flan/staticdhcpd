@@ -139,7 +139,8 @@ def registerTickCallback(func):
     
     @type func: callable
     @param func: A callable that takes no arguments; if already present, it will
-        not be registered a second time.
+        not be registered a second time. The given callable must not block for
+        any significant amount of time.
     """
     with _tick_lock:
         if func in _tick_callbacks:
