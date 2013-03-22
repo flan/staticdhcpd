@@ -188,7 +188,9 @@ if __name__ == '__main__':
         os.setregid(staticdhcpd.config.GID, staticdhcpd.config.GID)
         os.setreuid(staticdhcpd.config.UID, staticdhcpd.config.UID)
         
-        _logger.warn("All subsystems initialised; serving")
+        _logger.warn("----------------------------------------")
+        _logger.warn("All subsystems initialised; now serving")
+        _logger.warn("----------------------------------------")
         sleep_offset = 0
         while staticdhcpd.system.ALIVE:
             time.sleep(max(0.0, 1.0 - sleep_offset))

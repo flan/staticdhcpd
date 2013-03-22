@@ -30,6 +30,7 @@ import hashlib
 import logging
 import os
 import select
+import SocketServer
 import threading
 import time
 import traceback
@@ -48,7 +49,7 @@ from staticdhcpd import VERSION
 _logger = logging.getLogger('web')
 _web_logger = None
 
-class _WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
+class _WebHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     """
     The handler that responds to all received HTTP requests.
     """
@@ -202,6 +203,7 @@ class WebService(threading.Thread, WebServiceDummy):
         self._setupLogging()
         
         threading.Thread.__init__(self)
+        self.name = "Webservice"
         self.daemon = True
         
         server_address = '.'.join([str(int(o)) for o in config.WEB_IP.split('.')])
@@ -209,12 +211,14 @@ class WebService(threading.Thread, WebServiceDummy):
          'address': server_address,
          'port': config.WEB_PORT,
         })
-        self._web_server = BaseHTTPServer.HTTPServer(
+        
+        class _ThreadedServer(SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer): pass
+        self._web_server = _ThreadedServer(
          (
           server_address,
           config.WEB_PORT
          ),
-         _WebServer
+         _WebHandler
         )
         _logger.info("Configured Webservice engine")
         

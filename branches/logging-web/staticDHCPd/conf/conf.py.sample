@@ -248,8 +248,8 @@ def handleUnknownMAC(packet, method, mac, client_ip, relay_ip, pxe, vendor):
     #
     ##### PARAMETERS #####
     #method is a string that indicates the type of DHCP action the packet
-    #    represents: DECLINE, DISCOVER, INFORM, INIT-REBOOT, REBIND, RELEASE,
-    #    RENEW, SELECTING
+    #    represents: DECLINE, DISCOVER, INFORM, RELEASE, REQUEST:INIT-REBOOT,
+    #    REQUEST:REBIND, REQUEST:RENEW, REQUEST:SELECTING
     #All other parameters are identical to those found in loadDHCPPacket()
     #
     ##### Return #####
