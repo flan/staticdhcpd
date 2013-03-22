@@ -87,8 +87,9 @@ _defaults.update({
 #Statistics settings
 #######################################
 _defaults.update({
+ 'STATS_ENABLED': True,
  'STATS_QUANTISATION': 60 * 5,
- 'STATS_RETENTION_COUNT': 288 * 7,
+ 'STATS_RETENTION_COUNT': 288 * 2,
 })
 
 #Server settings

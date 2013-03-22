@@ -25,6 +25,7 @@ Legal
  (C) Neil Tallim, 2013 <flan@uguu.ca>
 """
 import BaseHTTPServer
+import collections
 import cgi
 import hashlib
 import logging
@@ -48,6 +49,118 @@ from staticdhcpd import VERSION
 
 _logger = logging.getLogger('web')
 _web_logger = None
+
+
+_web_lock = threading.Lock()
+_web_dashboard = []
+_web_methods = {}
+
+_WebDashboardElement = collections.namedtuple("WebDashboardElement", ('module', 'name', 'callback'))
+_WebMethod = collections.namedtuple("WebMethod", ('module', 'name', 'hidden', 'callback'))
+
+def registerDashboardCallback(module, name, callback):
+    """
+    Allows for modular registration of dashboard callbacks, to be invoked
+    in the order of registration.
+    
+    If the given triple is already present, it will not be registered a second
+    time.
+    
+    @type module: basestring
+    @param module: The human-friendly name of the module to which the element
+        belongs.
+    @type name: basestring
+    @param name: The human-friendly name of the element, within the module.
+    @type callback: callbale
+    @param callback: The callable to be invoked when the dashboard is rendered;
+        must not require any parameters; must return data formatted as XHTML, to
+        be embedded inside of a <div/>.
+    """
+    element = _WebDashboardElement(module, name, callback)
+    with _web_lock:
+        if element in _web_dashboard:
+            _logger.error("Dashboard element %(element)r is already registered" % {'element': element,})
+        else:
+            _web_dashboard.append(element)
+            
+def unregisterDashboardCallback(module, name, callback):
+    """
+    Allows for modular unregistration of dashboard callbacks.
+    
+    If the given triple is not present, this is a no-op.
+    
+    @type module: basestring
+    @param module: The human-friendly name of the module to which the element
+        belongs.
+    @type name: basestring
+    @param name: The human-friendly name of the element, within the module.
+    @type callback: callbale
+    @param callback: The callable to be invoked when the dashboard is rendered;
+        must not require any parameters; must return data formatted as XHTML, to
+        be embedded inside of a <div/>.
+    """
+    element = _WebDashboardElement(module, name, callback)
+    with _web_lock:
+        try:
+            _web_dashboard.remove(element)
+        except ValueError:
+            _logger.error("Dashboard element %(element)r is not registered" % {'element': element,})
+            
+def registerMethodCallback(path, module, name, hidden, callback):
+    """
+    Allows for modular registration of method callbacks.
+    
+    @type path: str
+    @param path: The path at which to register this callback, typically
+        something like "ca/uguu/puukusoft/statcDHCPd/statistics/histogram.csv",
+        but as long as it's a valid URI-fragment, it's up to you.
+        If the given path is already present, it will not be overwritten.
+    @type module: basestring
+    @param module: The human-friendly name of the module to which the method
+        belongs.
+    @type name: basestring
+    @param name: The human-friendly name of the method, within the module.
+    @type hidden: bool
+    @param hidden: Whether the method should be rendered on the interface.
+    @type callback: callbale
+    @param callback: The callable to be invoked when the method is called; must
+        accept the parameters 'mimetype' and 'data', so POST traffic can be
+        routed; must return a tuple of (mimetype, data).
+    """
+    with _web_lock:
+        if path in _web_methods:
+            _logger.error("Method '%(path)s' is already registered" % {'path': path,})
+        else:
+            _web_methods[path] = _WebMethod(module, name, hidden, callback)
+            
+def unregisterMethodCallback(path):
+    """
+    Allows for modular unregistration of method callbacks.
+    
+    @type path: str
+    @param path: The path at which the callback was registered.
+        If the given path is not present, this is a no-op.
+    """
+    with _web_lock:
+        try:
+            del _web_methods[path]
+        except KeyError:
+            _logger.error("Method '%(path)s' is not registered" % {'path': path,})
+            
+
+
+
+#A web package should be created, to contain things like CSS (and images?), which can be served
+#via registered methods
+
+
+#To sort methods, use the following logic:
+#module = None
+#for (element, path) in sorted((element, path) for (path, element) in _web_methods.items() if not element.hidden):
+#    if element.module != module:
+#        <create a new section>
+#    <add entry>
+
 
 class _WebHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     """
@@ -178,16 +291,7 @@ class _WebHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         """
         pass
         
-class WebServiceDummy(object):
-    """
-    A stub that defines what the WebService needs to implement, but that does
-    nothing, used so that modules don't need to check to see if the service is
-    actually available before registering functionality.
-    """
-    def __init__(self):
-        _logger.info("Webservice is disabled; configuring dummy")
-        
-class WebService(threading.Thread, WebServiceDummy):
+class WebService(threading.Thread):
     """
     A thread that handles HTTP requests indefinitely, daemonically.
     """

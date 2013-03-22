@@ -62,7 +62,7 @@ STATS_ENABLED = True
 #The number of seconds over which to quantise data for histographic purposes
 STATS_QUANTISATION = 60 * 5 #Five minutes
 #The number of quantised blocks to retain
-STATS_RETENTION_COUNT = 288 * 3 #Two days
+STATS_RETENTION_COUNT = 288 * 2 #Two days
 
 #Webservice settings
 #######################################

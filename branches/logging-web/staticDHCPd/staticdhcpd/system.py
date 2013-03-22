@@ -26,22 +26,14 @@ Legal
 """
 import logging
 import threading
+import time
 import traceback
 
 import config
-import databases
-import dhcp
-import statistics
-import web
 
 _logger = logging.getLogger('system')
 
 ALIVE = True #True until the system is ready to shut down.
-
-DATABASE = None
-DHCP = None
-STATISTICS_DHCP = None
-WEBSERVICE = None
 
 _reinitialisation_lock = threading.Lock()
 _reinitialisation_callbacks = []
@@ -49,34 +41,47 @@ _reinitialisation_callbacks = []
 _tick_lock = threading.Lock()
 _tick_callbacks = []
 
+_initialised = False
 def initialise():
+    #Avoid re-invocation.
+    global _initialised
+    if _initialised:
+        return
+    _initialised = True
+    
     #Ready the database.
-    global DATABASE
-    DATABASE = databases.get_database()
-    registerReinitialisationCallback(DATABASE.reinitialise)
+    import databases
+    database = databases.get_database()
+    registerReinitialisationCallback(database.reinitialise)
     
-    #Prepare the statistics engine.
-    global STATISTICS_DHCP
-    STATISTICS_DHCP = statistics.DHCPStatistics()
-    
-    #Start Webservice.
-    global WEBSERVICE
+    if config.STATS_ENABLED:
+        #Prepare the statistics engine.
+        import statistics
+        statistics_dhcp = statistics.DHCPStatistics()
+        statistics.registerStatsCallback(statistics_dhcp.process)
+        
     if config.WEB_ENABLED:
-        WEBSERVICE = web.WebService()
-        WEBSERVICE.start()
-    else:
-        WEBSERVICE = web.WebServiceDummy()
+        #Start Webservice.
+        import web
+        webservice = web.WebService()
+        webservice.start()
         
     #Start DHCP server.
-    global DHCP
-    DHCP = dhcp.DHCPService()
-    DHCP.start()
-    registerTickCallback(DHCP.tick)
+    import dhcp
+    dhcp = dhcp.DHCPService(database)
+    dhcp.start()
+    registerTickCallback(dhcp.tick)
     
 def reinitialise():
     """
     Invokes every registered reinitialisation handler.
+    
+    @rtype: float
+    @return: The number of seconds required to reinitialise the system.
+    
+    @raise Exception: Something went wrong; this is fatal.
     """
+    start = time.time()
     with _reinitialisation_lock:
         for callback in _reinitialisation_callbacks:
             try:
@@ -86,7 +91,8 @@ def reinitialise():
                 ALIVE = False
                 _logger.critical("System shutdown triggered by unhandled exception:\n" + traceback.format_exc())
                 raise
-                
+    return time.time() - start
+    
 def registerReinitialisationCallback(func):
     """
     Allows for modular registration of reinitialisation callbacks, to be invoked
@@ -107,8 +113,7 @@ def unregisterReinitialisationCallback(func):
     Allows for modular unregistration of reinitialisation callbacks.
     
     @type func: callable
-    @param func: A callable that takes no arguments; if not present, this is a
-        no-op.
+    @param func: A callable; if not present, this is a no-op.
     """
     with _reinitialisation_lock:
         try:
@@ -147,8 +152,7 @@ def unregisterTickCallback(func):
     Allows for modular unregistration of tick callbacks.
     
     @type func: callable
-    @param func: A callable that takes no arguments; if not present, this is a
-        no-op.
+    @param func: A callable; if not present, this is a no-op.
     """
     with _tick_lock:
         try:

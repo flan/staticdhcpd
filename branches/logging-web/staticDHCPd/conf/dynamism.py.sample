@@ -170,7 +170,7 @@ def _reclaim(mac, client_ip):
     
 def handle(method, mac, client_ip):
     """
-    Processes a dynamic request, returning synthesised definitions, if possible.
+    Processes a dynamic request, returning a synthesised lease, if possible.
     
     @type method: basestring
     @param method: The DHCP method being invoked.

@@ -32,7 +32,7 @@ import time
 import traceback
 
 import config
-import system
+import statistics
 
 import libpydhcpserver.dhcp_network
 from libpydhcpserver.type_rfc import (
@@ -177,14 +177,11 @@ class _PacketWrapper(object):
                 })
                 return True
         finally:
-            #Add receipt-notification to stats
-            
             if self._discarded:
                 _logger.debug("Discarded packet of type %(type)s from %(mac)s" % {
                 'type': self._packet_type,
                 'mac': self.mac,
                 })
-                #Add to stats
                 
             time_taken = time.time() - self._start_time
             _logger.debug("%(type)s request from %(mac)s processed in %(seconds).4f seconds" % {
@@ -192,7 +189,8 @@ class _PacketWrapper(object):
              'mac': self.mac,
              'seconds': time_taken,
             })
-            system.STATISTICS_DHCP.trackProcessingTime(time_taken)
+            
+            statistics.emit(statistics.Statistics(self.mac, self._packet_type, time_taken, not self._discarded))
             
     def _extractInterestingFields(self):
         """
@@ -366,7 +364,7 @@ class _PacketWrapper(object):
         if override_ip:
             ip = override_ip_value
             
-        result = system.DATABASE.lookupMAC(self.mac) or config.handleUnknownMAC(
+        result = self._server.getDatabase().lookupMAC(self.mac) or config.handleUnknownMAC(
          self._packet, self._packet_type,
          self.mac, ip and tuple(ip), self.giaddr and tuple(self.giaddr),
          self._pxe and self.pxe_options, self.vendor_options
@@ -380,13 +378,14 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
     The handler that responds to all received DHCP requests.
     """
     _lock = None #: A lock used to ensure synchronous access to internal structures.
+    _database = None #: The database to use for retrieving lease definitions.
     _dhcp_actions = None #: The MACs and the number of DHCP actions each has performed, decremented by one each tick.
     _ignored_addresses = None #: A list of all MACs currently ignored, plus the time remaining until requests will be honoured again.
     _packets_discarded = 0 #: The number of packets discarded since the last polling interval.
     _packets_processed = 0 #: The number of packets processed since the last polling interval.
     _time_taken = 0.0 #: The amount of time taken since the last polling interval.
     
-    def __init__(self, server_address, server_port, client_port, pxe_port):
+    def __init__(self, server_address, server_port, client_port, pxe_port, database):
         """
         Constructs the DHCP handler.
         
@@ -402,16 +401,19 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         @type pxe_port: int|NoneType
         @param pxe_port: The port on which to listen for PXE requests, or a
             NoneType if PXE support is disabled.
+        @type database: L{databases._generic.Database}
+        @param database: The database to use for retrieving lease definitions.
         
         @raise Exception: If a problem occurs while initializing the sockets
             required to process DHCP messages.
         """
         self._lock = threading.Lock()
+        self._database = database
         self._dhcp_actions = {}
         self._ignored_addresses = []
         
         libpydhcpserver.dhcp_network.DHCPNetwork.__init__(
-            self, server_address, server_port, client_port, pxe_port
+         self, server_address, server_port, client_port, pxe_port
         )
         
     def _handleDHCPDecline(self, packet, source_address, pxe):
@@ -774,12 +776,21 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         if not self._logDHCPAccess(mac):
             raise _PacketSourceIgnored("MAC has been ignored for excessive activity")
             
+    def getDatabase(self):
+        """
+        Returns the database this server is configured to use.
+        
+        @rtype: L{databases._generic.Database}
+        @return: The database to use for retrieving lease definitions.
+        """
+        return self._database
+        
     def getNextDHCPPacket(self):
         """
         Listens for a DHCP packet and initiates processing upon receipt.
         """
         if not self._getNextDHCPPacket():
-            system.STATISTICS_DHCP.trackOtherPacket()
+            statistics.emit(statistics.Statistics(None, None, 0.0, False))
             
     def tick(self):
         """
@@ -811,9 +822,12 @@ class DHCPService(threading.Thread):
     """
     _dhcp_server = None #: The handler that responds to DHCP requests.
     
-    def __init__(self):
+    def __init__(self, database):
         """
         Sets up the DHCP server.
+        
+        @type database: L{databases._generic.Database}
+        @param database: The database to use for retrieving lease definitions.
         
         @raise Exception: If a problem occurs while binding the sockets needed
             to handle DHCP traffic.
@@ -833,7 +847,8 @@ class DHCPService(threading.Thread):
          server_address,
          config.DHCP_SERVER_PORT,
          config.DHCP_CLIENT_PORT,
-         config.PXE_PORT
+         config.PXE_PORT,
+         database
         )
         _logger.info("Configured DHCP server")
         

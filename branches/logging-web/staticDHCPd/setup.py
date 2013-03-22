@@ -41,7 +41,7 @@ instructions = [
 ]
 if platform.linux_distribution()[0] in ('Debian', 'Ubuntu', 'Mint',):
     instructions.extend([
-"Debian-like (" + platform.linux_distribution()[0] + ")",
+"Debian-like (" + platform.linux_distribution()[0] + ":" + platform.linux_distribution()[1] + ")",
 "\tCopy samples/staticDHCPd to /etc/init.d/staticDHCPd",
 "\tRun '/bin/chmod a+x /etc/init.d/staticDHCPd'",
 "\tRun '/usr/sbin/update-rc.d staticDHCPd defaults'",
@@ -58,4 +58,3 @@ else:
 
 for i in instructions:
     print(i)
-    

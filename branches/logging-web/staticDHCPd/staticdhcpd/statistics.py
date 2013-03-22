@@ -30,6 +30,72 @@ import time
 
 import config
 
+_stats_lock = threading.Lock()
+_stats_callbacks = []
+
+Statistics = collections.namedtuple("Statistics", ('mac', 'method', 'processing_time', 'processed'))
+"""
+@type mac: basestring|None
+@param mac: If a DHCP packet, the MAC for which it was sent; None otherwise.
+@type method: basestring|None
+@param method: A DHCP method, or None if the packet was not DHCP-compliant.
+@type processing_time: float
+@param processing_time: The amount of time, in seconds, required for processing.
+@type processed: bool
+@param processed: Whether the packet was processed or discarded for any reason.
+"""
+
+def emit(statistics):
+    """
+    Invokes every registered stats handler to deliver the new statistics
+    information.
+    
+    @type statistics: Statistics
+    @param statistics: The statistics to report.
+    """
+    with _stats_lock:
+        for callback in _stats_callbacks:
+            try:
+                callback(statistics)
+            except Exception:
+                _logger.critical("Unable to deliver statistics:\n" + traceback.format_exc())
+                
+def registerStatsCallback(func):
+    """
+    Allows for modular registration of statistics callbacks, to be invoked
+    in the order of registration.
+    
+    @type func: callable
+    @param func: A callable that takes L{Statistics} as its argument; if already
+        present, it will not be registered a second time. This function must not
+        block for any significant amount of time.
+    """
+    with _stats_lock:
+        if func in _stats_callbacks:
+            _logger.error("Callback %(callback)r is already registered" % {'callback': func,})
+        else:
+            _stats_callbacks.append(func)
+            
+def unregisterStatsCallback(func):
+    """
+    Allows for modular unregistration of stats callbacks.
+    
+    @type func: callable
+    @param func: A callable; if not present, this is a no-op.
+    """
+    with _stats_lock:
+        try:
+            _stats_callbacks.remove(func)
+        except ValueError:
+            _logger.error("Callback %(callback)r is not registered" % {'callback': func,})
+            
+
+
+
+
+
+
+
 _Histrogram = collections.namedtuple('Histogram', ('unknown',))
 
 class DHCPStatistics(object):
@@ -126,6 +192,9 @@ class DHCPStatistics(object):
         with self._lock:
             self._dhcp_processing_time += time_taken
             
+    def process(self, statistics):
+        print statistics
+        
 """
 def getStats(self):
         with self._stats_lock:
