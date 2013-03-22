@@ -74,6 +74,7 @@ WEB_IP = '192.168.1.100'
 #The port on which the HTTP interface should be served.
 WEB_PORT = 30880
 #The number of events to present on the web interface.
+#If 0, the web-log will be disabled.
 WEB_LOG_HISTORY = 100
 #The minimum severity level required before a message will appear on the web interface.
 #Choices: DEBUG, INFO, WARN, ERROR, CRITICAL

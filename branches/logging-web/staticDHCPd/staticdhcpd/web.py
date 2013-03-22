@@ -327,17 +327,18 @@ class WebService(threading.Thread):
         _logger.info("Configured Webservice engine")
         
     def _setupLogging(self):
-        global _web_logger
-        _logger.info("Configuring web-interface logging...")
-        _web_logger = logging_handlers.FIFOHandler(config.WEB_LOG_HISTORY)
-        _web_logger.setLevel(getattr(logging, config.WEB_LOG_SEVERITY))
-        if config.DEBUG:
-            _web_logger.setFormatter(logging.Formatter("%(asctime)s : %(levelname)s : %(message)s"))
-        else:
-            _web_logger.setFormatter(logging.Formatter("%(asctime)s : %(message)s"))
-        _logger.addHandler(_web_logger)
-        _logger.info("Web-accessible logging online")
-        
+        if config.WEB_LOG_HISTORY > 0:
+            global _web_logger
+            _logger.info("Configuring web-interface logging...")
+            _web_logger = logging_handlers.FIFOHandler(config.WEB_LOG_HISTORY)
+            _web_logger.setLevel(getattr(logging, config.WEB_LOG_SEVERITY))
+            if config.DEBUG:
+                _web_logger.setFormatter(logging.Formatter("%(asctime)s : %(levelname)s : %(message)s"))
+            else:
+                _web_logger.setFormatter(logging.Formatter("%(asctime)s : %(message)s"))
+            _logger.addHandler(_web_logger)
+            _logger.info("Web-accessible logging online")
+            
     def run(self):
         """
         Runs the Web server indefinitely.
