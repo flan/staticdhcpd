@@ -86,7 +86,7 @@ def _getLease(mac):
         match[0] = time.time() + LEASE_TIME
         ip = match[1]
         
-        _logger.info("Extended lease of %(ip)s to %(mac)s until %(time).1f" % {
+        _logger.debug("Extended lease of %(ip)s to %(mac)s until %(time).1f" % {
             'ip': ip,
             'mac': mac,
             'time': match[0],
@@ -99,7 +99,7 @@ def _getLease(mac):
         if ip:
             expiration = time.time() + LEASE_TIME
             _DYNAMIC_MAP[mac] = [expiration, ip]
-            _logger.info("Bound %(ip)s to %(mac)s until %(time).1f" % {
+            _logger.debug("Bound %(ip)s to %(mac)s until %(time).1f" % {
                 'ip': ip,
                 'mac': mac,
                 'time': expiration,

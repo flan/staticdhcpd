@@ -225,16 +225,19 @@ class _PacketWrapper(object):
         elif not config.ALLOW_LOCAL_DHCP and not pxe: #Local request, but denied.
             raise _PacketSourceUnacceptable("neither link-local traffic nor PXE is enabled")
             
-    def announcePacket(self, verbosity=logging.INFO):
+    def announcePacket(self, ip=None, verbosity=logging.INFO):
         """
         Logs the occurance of the wrapped packet.
         
+        @type ip: basestring
+        @param ip: The IP for which the quest was sent, if known.
         @type verbosity: int
         @param verbosity: A logging seerity constant.
         """
-        _logger.log(verbosity, '%(type)s from %(mac)s' % {
+        _logger.log(verbosity, '%(type)s from %(mac)s%(ip)s' % {
          'type': self._packet_type,
          'mac': self.mac,
+         'ip': ip and (' for %(ip)s' % {'ip': ip,}) or '',
         })
         
     def setType(self, packet_type):
@@ -539,7 +542,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
             if wrapper.sid and not wrapper.ciaddr: #SELECTING
                 wrapper.setType('REQUEST:SELECTING')
                 if s_sid == self._server_address: #Chosen!
-                    wrapper.announcePacket()
+                    wrapper.announcePacket(ip=s_ip)
                     
                     definition = wrapper.retrieveDefinition()
                     if definition and (not wrapper.ip or definition.ip == s_ip):
@@ -553,7 +556,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                         wrapper.markAddressed()
             elif not wrapper.sid and not wrapper.ciaddr and wrapper.ip: #INIT-REBOOT
                 wrapper.setType('REQUEST:INIT-REBOOT')
-                wrapper.announcePacket()
+                wrapper.announcePacket(ip=s_ip)
                 
                 definition = wrapper.retrieveDefinition()
                 if definition and definition.ip == s_ip:
@@ -568,7 +571,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
             elif not wrapper.sid and wrapper.ciaddr and not wrapper.ip: #RENEWING or REBINDING
                 renew = source_address[0] not in ('255.255.255.255', '0.0.0.0', '')
                 wrapper.setType('REQUEST:' + (renew and 'RENEW' or 'REBIND'))
-                wrapper.announcePacket()
+                wrapper.announcePacket(ip=s_ip)
                 
                 if config.NAK_RENEWALS and not pxe:
                     packet.transformToDHCPNackPacket()
@@ -610,7 +613,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         """
         with _PacketWrapper(self, packet, 'INFORM', pxe) as wrapper:
             if not wrapper.valid: return
-            wrapper.announcePacket()
+            wrapper.announcePacket(ip=_toDottedQuadOrNone(wrapper.ciaddr))
             
             if not wrapper.ciaddr:
                 raise _PacketSourceBlacklist("malformed packet did not include ciaddr")
@@ -650,10 +653,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                 definition = wrapper.retrieveDefinition(override_ip=True, override_ip_value=wrapper.ciaddr)
                 ip = _toDottedQuadOrNone(wrapper.ciaddr)
                 if definition and definition.ip == ip: #Known client.
-                    _logger.info('RELEASE from %(mac)s for %(ip)s' % {
-                     'ip': ip,
-                     'mac': wrapper.mac,
-                    })
+                    wrapper.announcePacket(ip=ip)
                     wrapper.markAddressed()
                 else:
                     _logger.warn('Misconfigured client %(mac)s sent RELEASE for %(ip)s, for which it has no assignment' % {
