@@ -88,7 +88,7 @@ class _PacketWrapper(object):
     easy statistics aggregation, exception-handling, and reduction of in-line
     processing.
     """
-    _server = None #:The DHCP server from which this packet was received.
+    _server = None #:The server from which this packet was received.
     _packet_type = None #:The type of packet being wrapped.
     _discarded = True #:Whether the packet is in a discarded state.
     _start_time = None #:The time at which processing began.
@@ -242,7 +242,7 @@ class _PacketWrapper(object):
           " from %(address)s:%(port)i" % {'address': source_address[0], 'port': source_address[1],} or
           ''
          ),
-         'pxe': self.pxe and " via PXE" or '',
+         'pxe': self.pxe and " (PXE)" or '',
         })
         
     def setType(self, packet_type):
@@ -283,12 +283,12 @@ class _PacketWrapper(object):
         
     def _loadDHCPPacket(self, definition, inform):
         """
-        Sets DHCP option fields based on values returned from the database.
+        Sets option fields based on values returned from the database.
         
         @type definition: _Definition
         @param definition: The value returned from the database or surrogate source.
         @type inform: bool
-        @param inform: True if this is a response to a DHCPINFORM message, which
+        @param inform: True if this is a response to an INFORM message, which
             will result in no IP being inserted into the response.
         """
         #Core parameters.
@@ -333,7 +333,7 @@ class _PacketWrapper(object):
         @type definition: Definition
         @param definition: The definition retrieved from the database.
         @type inform: bool
-        @param inform: Whether this is a DHCP INFORM scenario, which omits
+        @param inform: Whether this is an INFORM scenario, which omits
             certain steps.
             
         @rtype: bool
@@ -398,19 +398,19 @@ def _dhcpHandler(packet_type):
     
 class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
     """
-    The handler that responds to all received DHCP requests.
+    The handler that responds to all received requests.
     """
     _lock = None #: A lock used to ensure synchronous access to internal structures.
     _database = None #: The database to use for retrieving lease definitions.
-    _dhcp_actions = None #: The MACs and the number of DHCP actions each has performed, decremented by one each tick.
+    _dhcp_actions = None #: The MACs and the number of actions each has performed, decremented by one each tick.
     _ignored_addresses = None #: A list of all MACs currently ignored, plus the time remaining until requests will be honoured again.
     
     def __init__(self, server_address, server_port, client_port, pxe_port, database):
         """
-        Constructs the DHCP handler.
+        Constructs the handler.
         
         @type server_address: basestring
-        @param server_address: The IP of the interface from which DHCP responses
+        @param server_address: The IP of the interface from which responses
             are to be sent.
         @type server_port: int
         @param server_port: The port on which DHCP requests are expected to
@@ -425,7 +425,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         @param database: The database to use for retrieving lease definitions.
         
         @raise Exception: If a problem occurs while initializing the sockets
-            required to process DHCP messages.
+            required to process messages.
         """
         self._lock = threading.Lock()
         self._database = database
@@ -470,8 +470,8 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
     @_dhcpHandler('DISCOVER')
     def _handleDHCPDiscover(self, wrapper):
         """
-        Evaluates a DHCPDISCOVER request from a client and determines whether a
-        DHCPOFFER should be sent.
+        Evaluates a DISCOVER request from a client and determines whether an
+        OFFER should be sent.
         
         @type wrapper: L{_PacketWrapper}
         @param wrapper: A wrapper around the packet, exposing helpful details.
@@ -504,7 +504,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
     @_dhcpHandler('LEASEQUERY')
     def _handleDHCPLeaseQuery(self, wrapper):
         """
-        Simply discards the packet; LeaseQuery support was dropped in 1.6.3,
+        Simply discards the packet; LeaseQuery support was dropped in 1.7.0,
         because the implementation was wrong.
         
         @type wrapper: L{_PacketWrapper}
@@ -515,13 +515,13 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
     @_dhcpHandler('REQUEST')
     def _handleDHCPRequest(self, wrapper):
         """
-        Evaluates a DHCPREQUEST request from a client and determines whether a
-        DHCPACK should be sent.
+        Evaluates a REQUEST request from a client and determines whether an ACK
+        should be sent.
         
         This is the most important part of the system, in which the IP a client
         claims to own is validated against the database, before it can be
         formally assigned. If the IP in question belongs to the requesting MAC,
-        then an ACK is sent, along with all relevant options; if not, a DHCPNAK
+        then an ACK is sent, along with all relevant options; if not, a NAK
         is sent to inform the client that it is not allowed to use the requested
         IP, forcing it to DISCOVER a new one.
         
@@ -597,8 +597,8 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
     @_dhcpHandler('INFORM')
     def _handleDHCPInform(self, wrapper):
         """
-        Evaluates a DHCPINFORM request from a client and determines whether a
-        DHCPACK should be sent.
+        Evaluates an INFORM request from a client and determines whether an ACK
+        should be sent.
         
         @type wrapper: L{_PacketWrapper}
         @param wrapper: A wrapper around the packet, exposing helpful details.
@@ -624,7 +624,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
     @_dhcpHandler('RELEASE')
     def _handleDHCPRelease(self, wrapper):
         """
-        Informs the DHCP operator that a client has terminated its "lease".
+        Handles a client that has terminated its "lease".
         
         @type wrapper: L{_PacketWrapper}
         @param wrapper: A wrapper around the packet, exposing helpful details.
@@ -689,7 +689,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         @param address: The address from which the packet was received:
             (host, port)
         @type response_type: basestring
-        @param response_type: The DHCP subtype of this response: 'OFFER', 'ACK',
+        @param response_type: The subtype of this response: 'OFFER', 'ACK',
             'NAK'
         @type mac: basestring
         @param mac: The MAC of the client for which this packet is destined.
