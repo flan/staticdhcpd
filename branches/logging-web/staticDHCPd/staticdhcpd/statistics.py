@@ -33,8 +33,12 @@ import config
 _stats_lock = threading.Lock()
 _stats_callbacks = []
 
-Statistics = collections.namedtuple("Statistics", ('mac', 'method', 'processing_time', 'processed'))
+Statistics = collections.namedtuple("Statistics", (
+ 'source_address', 'mac', 'method', 'processing_time', 'processed',
+))
 """
+@type source_address: tuple(2)
+@param source_address: The (address:basestring, port:int) of the sender.
 @type mac: basestring|None
 @param mac: If a DHCP packet, the MAC for which it was sent; None otherwise.
 @type method: basestring|None
