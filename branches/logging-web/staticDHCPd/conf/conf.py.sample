@@ -55,6 +55,10 @@ PXE_PORT = None
 
 #Statistics settings
 #######################################
+#Whether to enable the built-in statistics-tracking engine.
+#Statistics information will still be emitted for custom handlers, even if
+#disabled.
+STATS_ENABLED = True
 #The number of seconds over which to quantise data for histographic purposes
 STATS_QUANTISATION = 60 * 5 #Five minutes
 #The number of quantised blocks to retain
@@ -284,13 +288,8 @@ def handleUnknownMAC(packet, method, mac, client_ip, relay_ip, pxe, vendor):
     #    )
     
     #If 'dynamism' was imported in init(), and you've customised that file for your
-    #site, uncomment the following lines to enable basic dynamic provisioning.
-    #if method == 'RELEASE':
-    #    return dynamism.releaseDynamic(mac)
-    #if method == 'INFORM':
-    #    return dynamism.informDynamic(mac, client_ip)
-    #else:
-    #    return dynamism.provisionDynamic(mac)
+    #site, uncomment the following line to enable basic dynamic provisioning.
+    #return dynamism.handle(method, mac, client_ip)
     
     return None
     

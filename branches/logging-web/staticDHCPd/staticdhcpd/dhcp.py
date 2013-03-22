@@ -121,6 +121,7 @@ class _PacketWrapper(object):
         
         self._server = server
         self._packet = packet
+        self._packet_type = packet_type
         self._pxe = pxe
         
         self._extractInterestingFields()

@@ -57,123 +57,154 @@ _DOMAIN_NAME_SERVERS = ','.join(DOMAIN_NAME_SERVERS)
 _NTP_SERVERS = ','.join(NTP_SERVERS)
 _HOSTNAME_PATTERN = SUBNET + '-' + str(SERIAL) + '-'
 
-
 def _cleanupLeases():
     current_time = time.time()
     dead_records = []
-    with _DYNAMIC_MAP_LOCK:
-        for (mac, (expiration, ip)) in _DYNAMIC_MAP.items():
-            if current_time - expiration > LEASE_TIME: #Kill it
-                dead_records.append(mac)
-                with _IPS_LOCK: #Put the IP back into the pool
-                    _IPS.append(ip)
-                    
-        for mac in dead_records:
-            del _DYNAMIC_MAP[mac]
-            
+    for (mac, (expiration, ip)) in _DYNAMIC_MAP.items():
+        if current_time - expiration > LEASE_TIME: #Kill it
+            dead_records.append(mac)
+            with _IPS_LOCK: #Put the IP back into the pool
+                _IPS.append(ip)
+                
+    for mac in dead_records:
+        del _DYNAMIC_MAP[mac]
+        
 def _dropLease(mac):
     ip = None
-    with _DYNAMIC_MAP_LOCK:
-        match = _DYNAMIC_MAP.get(mac)
-        if match: #Drop the lease and reclaim the IP
-            ip = match[1]
-            del _DYNAMIC_MAP[mac]
-            with _IPS_LOCK:
-                _IPS.append(ip)
+    match = _DYNAMIC_MAP.get(mac)
+    if match: #Drop the lease and reclaim the IP
+        ip = match[1]
+        del _DYNAMIC_MAP[mac]
+        with _IPS_LOCK:
+            _IPS.append(ip)
     return ip
     
 def _getLease(mac):
     ip = None
-    with _DYNAMIC_MAP_LOCK:
-        match = _DYNAMIC_MAP.get(mac)
-        if match: #Renew the lease and take the IP
-            match[0] = time.time() + LEASE_TIME
-            ip = match[1]
-            
-            _logger.info("Extended lease of %(ip)s to %(mac)s until %(time).1f" % {
-             'ip': ip,
-             'mac': mac,
-             'time': match[0],
+    match = _DYNAMIC_MAP.get(mac)
+    if match: #Renew the lease and take the IP
+        match[0] = time.time() + LEASE_TIME
+        ip = match[1]
+        
+        _logger.info("Extended lease of %(ip)s to %(mac)s until %(time).1f" % {
+            'ip': ip,
+            'mac': mac,
+            'time': match[0],
+        })
+    else:
+        with _IPS_LOCK:
+            if _IPS:
+                ip = _IPS.popleft()
+                
+        if ip:
+            expiration = time.time() + LEASE_TIME
+            _DYNAMIC_MAP[mac] = [expiration, ip]
+            _logger.info("Bound %(ip)s to %(mac)s until %(time).1f" % {
+                'ip': ip,
+                'mac': mac,
+                'time': expiration,
             })
-        else:
-            with _IPS_LOCK:
-                if _IPS:
-                    ip = _IPS.popleft()
-                    
-            if ip:
-                expiration = time.time() + LEASE_TIME
-                _DYNAMIC_MAP[mac] = [expiration, ip]
-                _logger.info("Bound %(ip)s to %(mac)s until %(time).1f" % {
-                 'ip': ip,
-                 'mac': mac,
-                 'time': expiration,
-                })
     return ip
     
-def informDynamic(mac, client_ip):
-    """
-    If you need to reject a MAC, return None instead of the usual value.
-    """
-    _logger.info("Processing dynamic provisioning inform from %(mac)s..." % {
-     'mac': mac,
-    })
+def _queryLease(mac):
+    match = _DYNAMIC_MAP.get(mac)
+    if match:
+        return match[1]
+    return None
     
-    _cleanupLeases() #Remove stale assignments
     
-    ip = '.'.join(map(str, client_ip))
-    return (
-     ip, _HOSTNAME_PATTERN + ip.replace('.', '-'),
-     GATEWAY, SUBNET_MASK, BROADCAST_ADDRESS,
-     DOMAIN_NAME, _DOMAIN_NAME_SERVERS,
-     _NTP_SERVERS, LEASE_TIME,
-     SUBNET, SERIAL
-    )
+def _dynamicMethod(f):
+    def wrappedMethod(*args, **kwargs):
+        with _DYNAMIC_MAP_LOCK:
+            _cleanupLeases() #Remove stale assignments
+            ip = f(*args, **kwargs)
+            if ip:
+                return (
+                 ip, _HOSTNAME_PATTERN + ip.replace('.', '-'),
+                 GATEWAY, SUBNET_MASK, BROADCAST_ADDRESS,
+                 DOMAIN_NAME, _DOMAIN_NAME_SERVERS,
+                 _NTP_SERVERS, LEASE_TIME,
+                 SUBNET, SERIAL
+                )
+            return None
+    return wrappedMethod
     
-def provisionDynamic(mac):
+@_dynamicMethod
+def _allocate(mac):
     """
-    If you need to reject a MAC, return None instead of the usual value.
+    If you need to reject a MAC, return None.
     """
-    _logger.info("Processing dynamic provisioning request from %(mac)s..." % {
-     'mac': mac,
-    })
-    
-    _cleanupLeases() #Remove stale assignments
     ip = _getLease(mac)
-    if not ip: #No IP available; fail
+    if not ip:
         _logger.warn("No IP available for assignment to %(mac)s" % {
          'mac': mac,
         })
-        return None
-        
-    return (
-     ip, _HOSTNAME_PATTERN + ip.replace('.', '-'),
-     GATEWAY, SUBNET_MASK, BROADCAST_ADDRESS,
-     DOMAIN_NAME, _DOMAIN_NAME_SERVERS,
-     _NTP_SERVERS, LEASE_TIME,
-     SUBNET, SERIAL
-    )
+    return ip
     
-def releaseDynamic(mac):
+@_dynamicMethod
+def _inform(mac, client_ip):
     """
-    If you need to reject a MAC, return None instead of the usual value.
+    If you need to reject a MAC, return None.
     """
-    _logger.info("Processing dynamic provisioning release from %(mac)s..." % {
-     'mac': mac,
-    })
+    return client_ip
     
-    _cleanupLeases() #Remove stale assignments
-    ip = _dropLease(mac)
-    if not ip: #No IP available; fail
+@_dynamicMethod
+def _reclaim(mac, client_ip):
+    """
+    If you need to reject a MAC, return None.
+    """
+    ip = _queryLease(mac)
+    if not ip:
         _logger.warn("No IP assigned to %(mac)s" % {
          'mac': mac,
         })
         return None
-        
-    return (
-     ip, _HOSTNAME_PATTERN + ip.replace('.', '-'),
-     GATEWAY, SUBNET_MASK, BROADCAST_ADDRESS,
-     DOMAIN_NAME, _DOMAIN_NAME_SERVERS,
-     _NTP_SERVERS, LEASE_TIME,
-     SUBNET, SERIAL
-    )
+    elif ip != client_ip:
+        _logger.warn("IP assigned to %(mac)s, %(aip)s, does not match %(ip)s" % {
+         'aip': ip,
+         'ip': client_ip,
+         'mac': mac,
+        })
+        return None
+    return _dropLease(mac)
+    
+def handle(method, mac, client_ip):
+    """
+    Processes a dynamic request, returning synthesised definitions, if possible.
+    
+    @type method: basestring
+    @param method: The DHCP method being invoked.
+    @type mac: basestring
+    @param mac: A human-readable MAC address.
+    @type client_ip: tuple|None
+    @param client_ip: The client's address, if not a provisioning request.
+    
+    @rtype: tuple(11)|None
+    @return: A tuple of the following form, if processing succeeded, or None:
+        (ip:basestring, hostname:basestring|None,
+        gateway:basestring|None, subnet_mask:basestring|None,
+        broadcast_address:basestring|None,
+        domain_name:basestring|None, domain_name_servers:basestring|None,
+        ntp_servers:basestring|None, lease_time:int,
+        subnet:basestring, serial:int)
+    """
+    client_ip = client_ip and '.'.join(map(str, client_ip))
+    
+    _logger.info("Dynamic %(method)s from %(mac)s%(ip)s" % {
+     'method': method,
+     'mac': mac,
+     'ip': client_ip and (' for %(ip)s' % {'ip': client_ip,}) or '',
+    })
+    
+    if method == 'DISCOVER' or method.startswith('REQUEST:'):
+        return _allocate(mac)
+    if method == 'RELEASE' or method == 'DECLINE':
+        return _reclaim(mac, client_ip)
+    if method == 'INFORM':
+        return _inform(mac, client_ip)
+    
+    _logger.info("%(method)s is unknown to the dynamic provisioning engine" % {
+     'method': method,
+    })
+    return None
     
