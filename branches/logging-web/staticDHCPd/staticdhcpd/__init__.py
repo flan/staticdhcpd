@@ -24,4 +24,4 @@ Legal
  
  (C) Neil Tallim, 2013 <flan@uguu.ca>
 """
-VERSION = '1.6.3'
+VERSION = '1.6.4'

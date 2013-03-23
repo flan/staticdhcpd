@@ -1,10 +1,10 @@
 # -*- encoding: utf-8 -*-
 """
-staticDHCPd module: web
+staticDHCPd module: web.server
 
 Purpose
 =======
- Provides a web interface for viewing and interacting with a staticDHCPd server.
+ Provides a web interface for browsers and service-consumers.
  
 Legal
 =====
@@ -25,12 +25,10 @@ Legal
  (C) Neil Tallim, 2013 <flan@uguu.ca>
 """
 import BaseHTTPServer
-import collections
 import cgi
 import hashlib
 import logging
 import os
-import select
 import SocketServer
 import threading
 import time
@@ -42,115 +40,15 @@ except:
     from cgi import parse_qs
 
 import config
-import dhcp
-import logging_handlers
-import system
-from staticdhcpd import VERSION
 
-_logger = logging.getLogger('web')
+
+from staticdhcpd import VERSION as _staticdhcpd_VERSION
+from libpydhcpserver import VERSION as _libpydhcpserver_VERSION
+
+_logger = logging.getLogger('web.server')
 _web_logger = None
 
 
-_web_lock = threading.Lock()
-_web_dashboard = []
-_web_methods = {}
-
-_WebDashboardElement = collections.namedtuple("WebDashboardElement", ('module', 'name', 'callback'))
-_WebMethod = collections.namedtuple("WebMethod", ('module', 'name', 'hidden', 'div_content', 'show_in_dashboard', 'callback'))
-
-def registerDashboardCallback(module, name, callback):
-    """
-    Allows for modular registration of dashboard callbacks, to be invoked
-    in the order of registration.
-    
-    If the given callback is already present, it will not be registered a second
-    time.
-    
-    @type module: basestring
-    @param module: The human-friendly name of the module to which the element
-        belongs.
-    @type name: basestring
-    @param name: The human-friendly name of the element, within the module.
-    @type callback: callbale
-    @param callback: The callable to be invoked when the dashboard is rendered;
-        must not require any parameters; must return data formatted as XHTML, to
-        be embedded inside of a <div/>.
-    """
-    with _web_lock:
-        for (i, element) in enumerate(_web_dashboard):
-            if element.callback is callback:
-                _logger.error("Dashboard callback %(callback)r is already registered" % {'callback': callback,})
-                break
-            else:
-                _web_dashboard.append(_WebDashboardElement(module, name, callback))
-                
-def unregisterDashboardCallback(callback):
-    """
-    Allows for modular unregistration of dashboard callbacks.
-    
-    If the given callback is not present, this is a no-op.
-    
-    @type callback: callbale
-    @param callback: The callable to be invoked when the dashboard is rendered;
-        must not require any parameters; must return data formatted as XHTML, to
-        be embedded inside of a <div/>.
-    """
-    with _web_lock:
-        for (i, element) in enumerate(_web_dashboard):
-            if element.callback is callback:
-                del _web_dashboard[i]
-                break
-            else:
-                _logger.error("Dashboard callback %(callback)r is not registered" % {'callback': callback,})
-                
-def registerMethodCallback(path, module, name, hidden, div_content, show_in_dashboard, callback):
-    """
-    Allows for modular registration of method callbacks.
-    
-    @type path: str
-    @param path: The path at which to register this callback, typically
-        something like "ca/uguu/puukusoft/statcDHCPd/statistics/histogram.csv",
-        but as long as it's a valid URI-fragment, it's up to you.
-        If the given path is already present, it will not be overwritten.
-    @type module: basestring
-    @param module: The human-friendly name of the module to which the method
-        belongs.
-    @type name: basestring
-    @param name: The human-friendly name of the method, within the module.
-    @type hidden: bool
-    @param hidden: Whether the method should be rendered on the interface.
-    @type div_content: bool
-    @param div_content: Whether the returned data will be XHTML-formatted
-        content, to be placed inside of a dashboard-like <div/>.
-    @type show_in_dashboard: bool
-    @param show_in_dashboard: Whether the method's contents, if div_content,
-        should be shown alongside dashboard elements. (Good for confirmation
-        messages)
-    @type callback: callbale
-    @param callback: The callable to be invoked when the method is called; must
-        accept the parameters 'mimetype' and 'data', so POST traffic can be
-        routed; must return a tuple of (mimetype, data).
-    """
-    with _web_lock:
-        if path in _web_methods:
-            _logger.error("Method '%(path)s' is already registered" % {'path': path,})
-        else:
-            _web_methods[path] = _WebMethod(module, name, hidden, div_content, show_in_dashboard, callback)
-            
-def unregisterMethodCallback(path):
-    """
-    Allows for modular unregistration of method callbacks.
-    
-    @type path: str
-    @param path: The path at which the callback was registered.
-        If the given path is not present, this is a no-op.
-    """
-    with _web_lock:
-        try:
-            del _web_methods[path]
-        except KeyError:
-            _logger.error("Method '%(path)s' is not registered" % {'path': path,})
-            
 
 
 
@@ -293,7 +191,6 @@ class _WebHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         """
         Just a stub to suppress automatic webserver log messages.
         """
-        pass
         
 class WebService(threading.Thread):
     """
@@ -308,41 +205,18 @@ class WebService(threading.Thread):
         @raise Exception: If a problem occurs while binding the sockets needed
             to handle HTTP traffic.
         """
-        self._setupLogging()
-        
         threading.Thread.__init__(self)
         self.name = "Webservice"
         self.daemon = True
         
-        server_address = '.'.join([str(int(o)) for o in config.WEB_IP.split('.')])
         _logger.info("Prepared to bind to %(address)s:%(port)i" % {
-         'address': server_address,
+         'address': config.WEB_IP,
          'port': config.WEB_PORT,
         })
-        
         class _ThreadedServer(SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer): pass
-        self._web_server = _ThreadedServer(
-         (
-          server_address,
-          config.WEB_PORT
-         ),
-         _WebHandler
-        )
+        self._web_server = _ThreadedServer((config.WEB_IP, config.WEB_PORT), _WebHandler)
         _logger.info("Configured Webservice engine")
         
-    def _setupLogging(self):
-        if config.WEB_LOG_HISTORY > 0:
-            global _web_logger
-            _logger.info("Configuring web-interface logging...")
-            _web_logger = logging_handlers.FIFOHandler(config.WEB_LOG_HISTORY)
-            _web_logger.setLevel(getattr(logging, config.WEB_LOG_SEVERITY))
-            if config.DEBUG:
-                _web_logger.setFormatter(logging.Formatter("%(asctime)s : %(levelname)s : %(message)s"))
-            else:
-                _web_logger.setFormatter(logging.Formatter("%(asctime)s : %(message)s"))
-            _logger.addHandler(_web_logger)
-            _logger.info("Web-accessible logging online")
-            
     def run(self):
         """
         Runs the Web server indefinitely.
@@ -354,9 +228,6 @@ class WebService(threading.Thread):
         while True:
             try:
                 self._web_server.handle_request()
-            except select.error:
-                _logger.debug('Suppressed non-fatal select() error')
             except Exception:
-                staticdhcpd.system.ALIVE = False
                 _logger.critical("Unhandled exception:\n" + traceback.format_exc())
                 

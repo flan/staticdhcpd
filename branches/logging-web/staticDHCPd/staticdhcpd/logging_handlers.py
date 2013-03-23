@@ -54,11 +54,9 @@ class FIFOHandler(logging.Handler):
         logging.Handler.close(self)
         
     def readContents(self):
-        lines = []
         self.acquire()
         try:
-            for record in self._buffer:
-                lines.append(self.format(record))
+            return [self.format(record) for record in self._buffer]
         finally:
             self.release()
             

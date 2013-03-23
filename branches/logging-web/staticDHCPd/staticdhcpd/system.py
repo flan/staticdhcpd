@@ -30,6 +30,8 @@ import time
 import traceback
 
 import config
+import statistics
+import web
 
 _logger = logging.getLogger('system')
 
@@ -54,18 +56,24 @@ def initialise():
     database = databases.get_database()
     registerReinitialisationCallback(database.reinitialise)
     
-    if config.STATS_ENABLED:
-        #Prepare the statistics engine.
-        import statistics
-        statistics_dhcp = statistics.DHCPStatistics()
-        statistics.registerStatsCallback(statistics_dhcp.process)
-        
     if config.WEB_ENABLED:
-        #Start Webservice.
-        import web
+        _logger.info("Webservice module enabled; configuring...")
+        import web.server
         webservice = web.WebService()
         webservice.start()
         
+        import web.methods
+        if config.WEB_LOG_HISTORY > 0:
+            _logger.info("Webservice logging module enabled; configuring...")
+            web_logger = web.methods.Logger()
+            web.registerDashboardCallback(config.SYSTEM_NAME, 'log', web_logger.render)
+            
+        if config.STATS_ENABLED: #No point in turning this on without webservices
+            _logger.info("Webservice statistics enabled; configuring...")
+            import statistics.basic_engines
+            statistics_dhcp = statistics.basic_engines.DHCPStatistics()
+            statistics.registerStatsCallback(statistics_dhcp.process)
+            
     #Start DHCP server.
     import dhcp
     dhcp = dhcp.DHCPService(database)
