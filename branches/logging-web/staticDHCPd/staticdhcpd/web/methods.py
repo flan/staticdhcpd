@@ -47,5 +47,5 @@ class _WebLogger(object):
         _logger.info("Web-accessible logging online; buffer-size=" + str(config.WEB_LOG_HISTORY))
         
     def render(self, path, queryargs, mimetype, data):
-        return '<br/>\n'.join(self._logger.readContents())
+        return '<br/>\n'.join((cgi.escape(line) for line in self._logger.readContents()))
         
