@@ -73,6 +73,14 @@ WEB_ENABLED = True
 WEB_IP = '192.168.1.100'
 #The port on which the HTTP interface should be served.
 WEB_PORT = 30880
+#The credentials needed for DIGEST authentication, where required.
+WEB_CREDENTIALS = ('username', 'password')
+#Whether authentication is needed to access the dashboard.
+WEB_DASHBOARD_SECURE = False
+#Whether confirmation is required to reinitialise the server.
+WEB_REINITIALISE_CONFIRM = True
+#Whether authentication is required to reinitialise the server.
+WEB_REINITIALISE_SECURE = False
 #The number of events to present on the web interface.
 #If 0, the web-log will be disabled.
 WEB_LOG_HISTORY = 100
@@ -107,9 +115,6 @@ ENABLE_SUSPEND = True
 #The number of times a well-behaved MAC can interact with the server before
 #being temporarily ignored; actions are forgotten at a rate of one per second.
 SUSPEND_THRESHOLD = 10
-
-#MD5 of the password needed to reload config.
-WEB_RELOAD_KEY = '5f4dcc3b5aa765d61d8327deb882cf99'
 
 #Database settings
 #######################################

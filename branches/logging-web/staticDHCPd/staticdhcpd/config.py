@@ -113,8 +113,6 @@ _defaults.update({
  'MISBEHAVING_CLIENT_TIMEOUT': 150,
  'ENABLE_SUSPEND': True,
  'SUSPEND_THRESHOLD': 10,
-
- 'WEB_RELOAD_KEY': '5f4dcc3b5aa765d61d8327deb882cf99',
 })
 
 #Webservice settings
@@ -125,6 +123,9 @@ _defaults.update({
  'WEB_PORT': 30880,
  'WEB_LOG_HISTORY': 100,
  'WEB_LOG_SEVERITY': 'INFO',
+ 'WEB_DASHBOARD_SECURE': False,
+ 'WEB_REINITIALISE_CONFIRM': True,
+ 'WEB_REINITIALISE_SECURE': False,
 })
 
 #Database settings
