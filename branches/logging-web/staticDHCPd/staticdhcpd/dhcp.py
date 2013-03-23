@@ -42,6 +42,18 @@ from libpydhcpserver.type_rfc import (
  strToList, strToPaddedList,
 )
 
+#Packet-type string-constants
+_PACKET_TYPE_DECLINE = 'DECLINE'
+_PACKET_TYPE_DISCOVER = 'DISCOVER'
+_PACKET_TYPE_INFORM = 'INFORM'
+_PACKET_TYPE_LEASEQUERY = 'LEASEQUERY'
+_PACKET_TYPE_RELEASE = 'RELEASE'
+_PACKET_TYPE_REQUEST = 'REQUEST'
+_PACKET_TYPE_REQUEST_INIT_REBOOT = 'REQUEST:INIT-REBOOT'
+_PACKET_TYPE_REQUEST_REBIND = 'REQUEST:REBIND'
+_PACKET_TYPE_REQUEST_RENEW = 'REQUEST:RENEW'
+_PACKET_TYPE_REQUEST_SELECTING = 'REQUEST:SELECTING'
+
 _Definition = collections.namedtuple('Definition', (
  'ip', 'hostname',
  'gateway', 'subnet_mask', 'broadcast_address',
@@ -166,9 +178,10 @@ class _PacketWrapper(object):
         """
         try:
             if isinstance(value, _PacketSourceBlacklist):
-                _logger.warn('%(mac)s was temporarily blacklisted, for %(time)i seconds: %(reason)s' % {
+                _logger.warn('%(mac)s was temporarily blacklisted, for %(time)i seconds, following %(packet_type)s: %(reason)s' % {
                  'mac': self.mac,
                  'time': config.UNAUTHORIZED_CLIENT_TIMEOUT,
+                 'packet_type': self._packet_type,
                  'reason': str(value),
                 })
                 self._server.addToTempBlacklist(self.mac)
@@ -244,6 +257,15 @@ class _PacketWrapper(object):
          ),
          'pxe': self.pxe and " (PXE)" or '',
         })
+        
+    def getType(self):
+        """
+        Returns the type of packet being processed.
+        
+        @rtype: basestring
+        @return: The type of packet being processed.
+        """
+        return self._packet_type
         
     def setType(self, packet_type):
         """
@@ -436,7 +458,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
          self, server_address, server_port, client_port, pxe_port
         )
         
-    @_dhcpHandler('DECLINE')
+    @_dhcpHandler(_PACKET_TYPE_DECLINE)
     def _handleDHCPDecline(self, wrapper):
         """
         Informs the operator of a potential IP collision on the network.
@@ -445,16 +467,17 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         @param wrapper: A wrapper around the packet, exposing helpful details.
         """
         if not wrapper.ip:
-            raise _PacketSourceBlacklist("DECLINE sent without indicating the conflicting IP")
+            raise _PacketSourceBlacklist("conflicting IP was not specified")
             
         if not wrapper.sid:
-            raise _PacketSourceBlacklist("DECLINE sent without a server-identifier")
+            raise _PacketSourceBlacklist("server-identifier was not specified")
             
         if _toDottedQuadOrNone(wrapper.sid) == self._server_address: #Rejected!
             definition = wrapper.retrieveDefinition()
             ip = _toDottedQuadOrNone(wrapper.ip)
             if definition and definition.ip == ip: #Known client.
-                _logger.error('DECLINE from %(mac)s for %(ip)s on (%(subnet)s, %(serial)i)' % {
+                _logger.error('%(type)s from %(mac)s for %(ip)s on (%(subnet)s, %(serial)i)' % {
+                 'type': wrapper.getType(),
                  'ip': ip,
                  'mac': wrapper.mac,
                  'subnet': definition.subnet,
@@ -462,7 +485,8 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                 })
                 wrapper.markAddressed()
             else:
-                _logger.warn('%(mac)s sent DECLINE for %(ip)s to this server, but the MAC is unknown' % {
+                _logger.warn('%(type)s from %(mac)s for %(ip)s, but the MAC is unknown' % {
+                 'type': wrapper.getType(),
                  'ip': ip,
                  'mac': wrapper.mac,
                 })
@@ -501,7 +525,34 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
             else:
                 raise _PacketSourceBlacklist("unknown MAC and server is not authoritative, so a NAK cannot be sent")
                 
-    @_dhcpHandler('LEASEQUERY')
+    @_dhcpHandler(_PACKET_TYPE_INFORM)
+    def _handleDHCPInform(self, wrapper):
+        """
+        Evaluates an INFORM request from a client and determines whether an ACK
+        should be sent.
+        
+        @type wrapper: L{_PacketWrapper}
+        @param wrapper: A wrapper around the packet, exposing helpful details.
+        """
+        wrapper.announcePacket(ip=_toDottedQuadOrNone(wrapper.ciaddr))
+        
+        if not wrapper.ciaddr:
+            raise _PacketSourceBlacklist("ciaddr was not specified")
+            
+        definition = wrapper.retrieveDefinition(override_ip, override_ip_value=wrapper.ciaddr)
+        if definition:
+            wrapper.packet.transformToDHCPAckPacket()
+            if wrapper.loadDHCPPacket(definition, inform=True):
+                self._sendDHCPPacket(
+                 wrapper.packet,
+                 wrapper.source_address, 'ACK', wrapper.mac, _toDottedQuadOrNone(wrapper.ciaddr) or '0.0.0.0',
+                 wrapper.pxe
+                )
+                wrapper.markAddressed()
+        else:
+            raise _PacketSourceBlacklist("unknown MAC")
+            
+    @_dhcpHandler(_PACKET_TYPE_LEASEQUERY)
     def _handleDHCPLeaseQuery(self, wrapper):
         """
         Simply discards the packet; LeaseQuery support was dropped in 1.7.0,
@@ -512,7 +563,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         """
         wrapper.announcePacket()
         
-    @_dhcpHandler('REQUEST')
+    @_dhcpHandler(_PACKET_TYPE_REQUEST)
     def _handleDHCPRequest(self, wrapper):
         """
         Evaluates a REQUEST request from a client and determines whether an ACK
@@ -536,7 +587,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         s_ciaddr = _toDottedQuadOrNone(wrapper.ciaddr)
         
         if wrapper.sid and not wrapper.ciaddr: #SELECTING
-            wrapper.setType('REQUEST:SELECTING')
+            wrapper.setType(_PACKET_TYPE_REQUEST_SELECTING)
             if s_sid == self._server_address: #Chosen!
                 wrapper.announcePacket(ip=s_ip)
                 
@@ -551,7 +602,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                     self._sendDHCPPacket(wrapper.packet, wrapper.source_address, 'NAK', wrapper.mac, 'NO-MATCH', wrapper.pxe)
                     wrapper.markAddressed()
         elif not wrapper.sid and not wrapper.ciaddr and wrapper.ip: #INIT-REBOOT
-            wrapper.setType('REQUEST:INIT-REBOOT')
+            wrapper.setType(_PACKET_TYPE_REQUEST_INIT_REBOOT)
             wrapper.announcePacket(ip=s_ip)
             
             definition = wrapper.retrieveDefinition()
@@ -566,7 +617,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                 wrapper.markAddressed()
         elif not wrapper.sid and wrapper.ciaddr and not wrapper.ip: #RENEWING or REBINDING
             renew = wrapper.source_address[0] not in ('255.255.255.255', '0.0.0.0', '')
-            wrapper.setType('REQUEST:' + (renew and 'RENEW' or 'REBIND'))
+            wrapper.setType(renew and _PACKET_TYPE_REQUEST_RENEW or _PACKET_TYPE_REQUEST_REBIND)
             wrapper.announcePacket(ip=s_ip)
             
             if config.NAK_RENEWALS and not wrapper.pxe:
@@ -587,41 +638,15 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                         self._sendDHCPPacket(wrapper.packet, (s_ciaddr, 0), 'NAK', wrapper.mac, s_ciaddr, wrapper.pxe)
                         wrapper.markAddressed()
         else:
-            _logger.warn('REQUEST:UNKNOWN (%(sid)s|%(ciaddr)s|%(ip)s) from %(mac)s' % {
+            _logger.warn('%(type)s (%(sid)s|%(ciaddr)s|%(ip)s) from %(mac)s unhandled: packet not compliant with DHCP spec' % {
+             'type': wrapper.getType(),
              'sid': s_sid,
              'ciaddr': s_ciaddr,
              'ip': s_ip,
              'mac': wrapper.mac,
             })
             
-    @_dhcpHandler('INFORM')
-    def _handleDHCPInform(self, wrapper):
-        """
-        Evaluates an INFORM request from a client and determines whether an ACK
-        should be sent.
-        
-        @type wrapper: L{_PacketWrapper}
-        @param wrapper: A wrapper around the packet, exposing helpful details.
-        """
-        wrapper.announcePacket(ip=_toDottedQuadOrNone(wrapper.ciaddr))
-        
-        if not wrapper.ciaddr:
-            raise _PacketSourceBlacklist("malformed packet did not include ciaddr")
-            
-        definition = wrapper.retrieveDefinition(override_ip, override_ip_value=wrapper.ciaddr)
-        if definition:
-            wrapper.packet.transformToDHCPAckPacket()
-            if wrapper.loadDHCPPacket(definition, inform=True):
-                self._sendDHCPPacket(
-                 wrapper.packet,
-                 wrapper.source_address, 'ACK', wrapper.mac, _toDottedQuadOrNone(wrapper.ciaddr) or '0.0.0.0',
-                 wrapper.pxe
-                )
-                wrapper.markAddressed()
-        else:
-            raise _PacketSourceBlacklist("unknown MAC")
-            
-    @_dhcpHandler('RELEASE')
+    @_dhcpHandler(_PACKET_TYPE_RELEASE)
     def _handleDHCPRelease(self, wrapper):
         """
         Handles a client that has terminated its "lease".
@@ -630,7 +655,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         @param wrapper: A wrapper around the packet, exposing helpful details.
         """
         if not wrapper.sid:
-            raise _PacketSourceBlacklist("RELEASE sent without server-identifier")
+            raise _PacketSourceBlacklist("server-identifier was not specified")
             
         if _toDottedQuadOrNone(wrapper.sid) == self._server_address: #Released!
             definition = wrapper.retrieveDefinition(override_ip=True, override_ip_value=wrapper.ciaddr)
@@ -639,9 +664,10 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                 wrapper.announcePacket(ip=ip)
                 wrapper.markAddressed()
             else:
-                _logger.warn('Misconfigured client %(mac)s sent RELEASE for %(ip)s, for which it has no assignment' % {
-                    'ip': ip,
-                    'mac': wrapper.mac,
+                _logger.warn('%(type)s from %(mac)s for %(ip)s, but no assignment is known' % {
+                 'type': wrapper.getType(),
+                 'ip': ip,
+                 'mac': wrapper.mac,
                 })
                 
     def _logDHCPAccess(self, mac):
@@ -861,6 +887,11 @@ class _PacketRejection(Exception):
     The base-class for indicating that a packet could not be processed.
     """
     
+class _PacketSourceBlacklist(_PacketRejection):
+    """
+    Indicates that the packet was added to a blacklist, based on this event.
+    """
+    
 class _PacketSourceIgnored(_PacketRejection):
     """
     Indicates that the packet's sender is currently blacklisted.
@@ -869,10 +900,5 @@ class _PacketSourceIgnored(_PacketRejection):
 class _PacketSourceUnacceptable(_PacketRejection):
     """
     Indicates that the packet's sender is not permitted by policy.
-    """
-    
-class _PacketSourceBlacklist(_PacketRejection):
-    """
-    Indicates that the packet was added to a blacklist, based on this event.
     """
     
