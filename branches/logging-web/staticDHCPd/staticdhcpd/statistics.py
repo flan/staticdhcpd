@@ -93,14 +93,10 @@ def unregisterStatsCallback(func):
         except ValueError:
             _logger.error("Callback %(callback)r is not registered" % {'callback': func,})
             
-
-
-
-
-
-
-
-_Histrogram = collections.namedtuple('Histogram', ('unknown',))
+            
+_Histogram = collections.namedtuple('Histogram', (
+ 'dhcp_packets', 'dhcp_packets_discarded', 'other_packets', 'processing_time',
+))
 
 class DHCPStatistics(object):
     #TODO: Make this thing hold a histographic map of key statistics for some configurable amount of time, stored as a distillation of a configurable time-interval's worth of activity, so that a graph can be drawn on the web interface
@@ -116,11 +112,12 @@ class DHCPStatistics(object):
     
     _other_packets = 0
     _dhcp_packets = None
-    _dhcp_processing_time = 0.0
+    _dhcp_packets_discarded = None
+    _processing_time = 0.0
     
     _current_histogram = None
     _histogram_start_time = None
-    _activity = True
+    _activity = False
     
     def __init__(self):
         self._histograph = collections.deque((None for i in xrange(config.STATS_RETENTION_COUNT)), maxlen=config.STATS_RETENTION_COUNT)
@@ -129,10 +126,21 @@ class DHCPStatistics(object):
          'DECLINE': 0,
          'DISCOVER': 0,
          'INFORM': 0,
+         'RELEASE': 0,
          'REQUEST': 0,
          'REQUEST:INIT-REBOOT': 0,
          'REQUEST:REBIND': 0,
+         'REQUEST:RENEW': 0,
+         'REQUEST:SELECTING': 0,
+        }
+        self._dhcp_packets_discarded = {
+         'DECLINE': 0,
+         'DISCOVER': 0,
+         'INFORM': 0,
          'RELEASE': 0,
+         'REQUEST': 0,
+         'REQUEST:INIT-REBOOT': 0,
+         'REQUEST:REBIND': 0,
          'REQUEST:RENEW': 0,
          'REQUEST:SELECTING': 0,
         }
@@ -147,23 +155,33 @@ class DHCPStatistics(object):
         """
         self._histogram_start_time = time.time()
         self._histogram_start_time -= self._histogram_start_time % config.STATS_QUANTISATION #Round down
-        if self._activity:
-            self._current_histogram = {
-             'other-packets': 0,
-             'dhcp-packets': {
-              'DECLINE': 0,
-              'DISCOVER': 0,
-              'INFORM': 0,
-              'REQUEST': 0,
-              'REQUEST:INIT-REBOOT': 0,
-              'REQUEST:REBIND': 0,
-              'RELEASE': 0,
-              'REQUEST:RENEW': 0,
-              'REQUEST:SELECTING': 0,
-             }
-            }
-            self._activity = False
-            
+        self._current_histogram = {
+         'other-packets': 0,
+         'dhcp-packets': {
+          'DECLINE': 0,
+          'DISCOVER': 0,
+          'INFORM': 0,
+          'RELEASE': 0,
+          'REQUEST': 0,
+          'REQUEST:INIT-REBOOT': 0,
+          'REQUEST:REBIND': 0,
+          'REQUEST:RENEW': 0,
+          'REQUEST:SELECTING': 0,
+         },
+         'dhcp-packets-discarded': {
+          'DECLINE': 0,
+          'DISCOVER': 0,
+          'INFORM': 0,
+          'RELEASE': 0,
+          'REQUEST': 0,
+          'REQUEST:INIT-REBOOT': 0,
+          'REQUEST:REBIND': 0,
+          'REQUEST:RENEW': 0,
+          'REQUEST:SELECTING': 0,
+         },
+         'processing-time': 0.0,
+        }
+        
     def _updateHistograph(self):
         """
         Call this every time data is collected or requested.
@@ -176,100 +194,36 @@ class DHCPStatistics(object):
                 for i in range(1, steps):
                     self._histograph.append(None)
                     
-            if self._activity:
-                #Compile a Histogram tuple from the current histogram and store it
-                pass
-            else:
-                self._histograph.append(None)
-            self._initialiseHistogram()
-            
-    def trackDHCPPacket(self, packet_type):
-        with self._lock:
-            self._dhcp_packets[packet_type] += 1
-            self._current_histogram['dhcp-packets'][packet_type] += 1
-            
-    def trackOtherPacket(self):
-        with self._lock:
-            self._other_packets += 1
-            
-    def trackProcessingTime(self, time_taken):
-        with self._lock:
-            self._dhcp_processing_time += time_taken
-            
+                if self._activity:
+                    self._histograph.append(_Histogram(
+                     self._current_histogram['dhcp-packets'],
+                     self._current_histogram['dhcp-packets-discarded'],
+                     self._current_histogram['other-packets'],
+                     self._current_histogram['processing-time']
+                    ))
+                    self._initialiseHistogram()
+                    self._activity = False
+                else:
+                    self._histograph.append(None)
+                    
     def process(self, statistics):
-        print statistics
+        """
+        Updates the statstics engine with details about a packet.
         
-"""
-def getStats(self):
-        with self._stats_lock:
-            for i in range(len(self._ignored_addresses)):
-                self._ignored_addresses[i][1] -= config.POLLING_INTERVAL
-            self._ignored_addresses = [address for address in self._ignored_addresses if address[1] > 0]
-            
-            stats = (self._packets_processed, self._packets_discarded, self._time_taken, len(self._ignored_addresses))
-            
-            self._packets_processed = 0
-            self._packets_discarded = 0
-            self._time_taken = 0.0
-            if config.ENABLE_SUSPEND:
-                self._dhcp_assignments = {}
-                
-            return stats
-            
-            
-"""
-    
-"""
-_POLL_RECORDS_LOCK = threading.Lock() #: A lock used to synchronize access to the stats-log.
-_POLL_RECORDS = [] #: The stats-log.
-
-
-
-def writePollRecord(packets, discarded, time_taken, ignored_macs):
-    global _POLL_RECORDS
-    
-    with _POLL_RECORDS_LOCK:
-        _POLL_RECORDS = [(time.time(), packets, discarded, time_taken, ignored_macs)] + _POLL_RECORDS[:config.POLL_INTERVALS_TO_TRACK - 1]
-        
-def readPollRecords():
-    with _POLL_RECORDS_LOCK:
-        return tuple(_POLL_RECORDS)
-        
-def logToDisk():
-    try:
-        log_file = None
-        if config.LOG_FILE_TIMESTAMP:
-            log_file = open(config.LOG_FILE + time.strftime(".%Y%m%d%H%M%S"), 'w')
-        else:
-            log_file = open(config.LOG_FILE, 'w')
-            
-        log_file.write("Summary generated %(time)s\n" % {'time': time.asctime(),})
-        
-        log_file.write("\nStatistics:\n")
-        for (timestamp, packets, discarded, time_taken, ignored_macs) in readPollRecords():
-            if packets:
-                turnaround = time_taken / packets
+        @type statistics: L{_Statistics}
+        @param statistics: The processing result.
+        """
+        self._updateHistograph()
+        with self._lock:
+            if statistics.method:
+                self._dhcp_packets[packet_type] += 1
+                self._current_histogram['dhcp-packets'][packet_type] += 1
+                if not statistics.processed:
+                    self._dhcp_packets_discarded[packet_type] += 1
+                    self._current_histogram['dhcp-packets-discarded'][packet_type] += 1
             else:
-                turnaround = 0.0
-            log_file.write("%(time)s : received: %(received)i; discarded: %(discarded)i; turnaround: %(turnaround)fs/pkt; ignored MACs: %(ignored)i\n" % {
-             'time': time.ctime(timestamp),
-             'received': packets,
-             'discarded': discarded,
-             'turnaround': turnaround,
-             'ignored': ignored_macs,
-            })
+                self._other_packets += 1
+                self._current_histogram['other-packets'] += 1
+            self._processing_time += statistics.processing_time
+            self._current_histogram['processing-time'] += statistics.processing_time
             
-        log_file.write("\nEvents:\n")
-        for (timestamp, line) in readLog():
-            log_file.write("%(time)s : %(line)s\n" % {
-             'time': time.ctime(timestamp),
-             'line': line,
-            })
-            
-        log_file.close()
-        
-        return True
-    except Exception, e:
-        writeLog('Writing to disk failed: %(error)s' % {'error': str(e),})
-        return False
-"""

@@ -56,7 +56,7 @@ _web_dashboard = []
 _web_methods = {}
 
 _WebDashboardElement = collections.namedtuple("WebDashboardElement", ('module', 'name', 'callback'))
-_WebMethod = collections.namedtuple("WebMethod", ('module', 'name', 'hidden', 'callback'))
+_WebMethod = collections.namedtuple("WebMethod", ('module', 'name', 'hidden', 'div_content', 'show_in_dashboard', 'callback'))
 
 def registerDashboardCallback(module, name, callback):
     """
@@ -103,7 +103,7 @@ def unregisterDashboardCallback(callback):
             else:
                 _logger.error("Dashboard callback %(callback)r is not registered" % {'callback': callback,})
                 
-def registerMethodCallback(path, module, name, hidden, callback):
+def registerMethodCallback(path, module, name, hidden, div_content, show_in_dashboard, callback):
     """
     Allows for modular registration of method callbacks.
     
@@ -119,6 +119,13 @@ def registerMethodCallback(path, module, name, hidden, callback):
     @param name: The human-friendly name of the method, within the module.
     @type hidden: bool
     @param hidden: Whether the method should be rendered on the interface.
+    @type div_content: bool
+    @param div_content: Whether the returned data will be XHTML-formatted
+        content, to be placed inside of a dashboard-like <div/>.
+    @type show_in_dashboard: bool
+    @param show_in_dashboard: Whether the method's contents, if div_content,
+        should be shown alongside dashboard elements. (Good for confirmation
+        messages)
     @type callback: callbale
     @param callback: The callable to be invoked when the method is called; must
         accept the parameters 'mimetype' and 'data', so POST traffic can be
@@ -128,7 +135,7 @@ def registerMethodCallback(path, module, name, hidden, callback):
         if path in _web_methods:
             _logger.error("Method '%(path)s' is already registered" % {'path': path,})
         else:
-            _web_methods[path] = _WebMethod(module, name, hidden, callback)
+            _web_methods[path] = _WebMethod(module, name, hidden, div_content, show_in_dashboard, callback)
             
 def unregisterMethodCallback(path):
     """
