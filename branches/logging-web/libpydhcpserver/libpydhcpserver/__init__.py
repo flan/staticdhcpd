@@ -25,4 +25,5 @@ Legal
  (C) Neil Tallim, 2013 <flan@uguu.ca>
  (C) Mathieu Ignacio, 2008 <mignacio@april.org>
 """
-VERSION = '1.1.6'
+VERSION = '1.1.7'
+URL = 'http://uguu.ca/'
