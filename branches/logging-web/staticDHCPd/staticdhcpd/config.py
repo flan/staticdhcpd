@@ -186,18 +186,28 @@ for (key, value) in _defaults.iteritems():
         globals()[key] = value
 del _defaults
 
+import inspect
 if hasattr(conf, 'init'):
     init = conf.init
 else:
     init = lambda : None
 if hasattr(conf, 'loadDHCPPacket'):
-    loadDHCPPacket = conf.loadDHCPPacket
+    if inspect.getargspec(conf.handleUnknownMAC).args == ['packet', 'mac', 'client_ip', 'relay_ip', 'subnet', 'serial', 'pxe', 'vendor']:
+        #It's pre-2.0.0, so wrap it for backwards-compatibility
+        loadDHCPPacket = lambda packet, method, mac, client_ip, relay_ip, subnet, serial, pxe, vendor : conf.loadDHCPPacket(packet, mac, client_ip, relay_ip, subnet, serial, pxe, vendor)
+    else:
+        loadDHCPPacket = conf.loadDHCPPacket
 else:
     loadDHCPPacket = lambda *args, **kwargs : True
 if hasattr(conf, 'handleUnknownMAC'):
-    handleUnknownMAC = conf.handleUnknownMAC
+    if inspect.getargspec(conf.handleUnknownMAC).args == ['mac']:
+        #It's pre-2.0.0, so wrap it for backwards-compatibility
+        handleUnknownMAC = lambda packet, method, mac, client_ip, relay_ip, pxe, vendor : conf.handleUnknownMAC(mac)
+    else:
+        handleUnknownMAC = conf.handleUnknownMAC
 else:
     handleUnknownMAC = lambda *args, **kwargs : None
+del inspect
 
 #Inject namespace elements into conf.
 ##############################################################################
