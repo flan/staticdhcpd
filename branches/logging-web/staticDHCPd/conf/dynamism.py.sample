@@ -1,10 +1,10 @@
 """
-Import this module from conf.py and call `provisionDynamic(mac)` to get dynamic
-allocations, good for use in a single-DHCP-server environment. Do be aware that
-no validation is performed to ensure that the DHCP request was legal, just that
-it was well-formed. Malicious clients cannot compromise the server, but they
-can trigger DoS behaviour. Given that there's nothing to gain, however, this is
-probably a non-issue.
+Import this module from conf.py and call handle(method, mac, client_ip)` to get 
+dynamic allocations, good for use in a single-DHCP-server environment. Do be
+aware that no validation is performed to ensure that the DHCP request was legal,
+just that it was well-formed. Malicious clients cannot compromise the server,
+but they can trigger DoS behaviour. Given that there's nothing to gain, however,
+this is probably a non-issue.
 
 Please make changes to this module before using it in your environment. The
 default settings are almost certainly good for nobody.
@@ -20,13 +20,6 @@ You can identify dynamic requests by using a unique subnet/serial pair and
 checking for it in loadDHCPPacket(); the default pair this module provides is
 ('guest', 0).
 """
-import collections
-import logging
-import threading
-import time
-
-_logger = logging.getLogger('conf.dynamism')
-
 #Configure these variables as needed
 ###############################################################################
 LEASE_TIME = 300 #seconds
@@ -46,6 +39,13 @@ DOMAIN_NAME_SERVERS = ('192.168.250.5', '192.168.250.6', '192.168.250.7') #Limit
 NTP_SERVERS = ('192.168.250.2', '192.168.250.3', '192.168.250.4') #Limit: 3
 ###############################################################################
 #Don't touch anything else, unless you want to (it's your network, after all)
+
+import collections
+import logging
+import threading
+import time
+
+_logger = logging.getLogger('conf.dynamism')
 
 _IPS = collections.deque(sorted(IPS)) #Redefine the set of IPs as an initially-sorted deque for sanity
 _IPS_LOCK = threading.Lock()
