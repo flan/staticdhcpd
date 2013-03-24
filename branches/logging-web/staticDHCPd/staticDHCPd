@@ -35,7 +35,6 @@ import traceback
 
 import staticdhcpd
 import libpydhcpserver
-import staticdhcpd.system
 import staticdhcpd.config
 
 _logger = logging.getLogger('')
@@ -135,11 +134,43 @@ def _setupLogging(logger):
         logger.addHandler(smtp_handler)
         logger.info("SMTP-based logging online")
         
-        
-if __name__ == '__main__':
-    #Ensure that pre-setup tasks are taken care of.
-    staticdhcpd.config.init()
+def _initialise():
+    import staticdhcpd.system
     
+    #Ready the database.
+    import staticdhcpd.databases
+    database = staticdhcpd.databases.get_database()
+    staticdhcpd.system.registerReinitialisationCallback(database.reinitialise)
+    
+    if staticdhcpd.config.WEB_ENABLED:
+        _logger.info("Webservice module enabled; configuring...")
+        import staticdhcpd.web
+        import staticdhcpd.web.server
+        webservice = staticdhcpd.web.server.WebService()
+        webservice.start()
+        
+        import staticdhcpd.web.methods
+        staticdhcpd.web.registerMethodCallback('/css.css', None, None, True, False, False, False, False, staticdhcpd.web.methods.css)
+        staticdhcpd.web.registerMethodCallback('/favicon.ico', None, None, True, False, False, False, False, staticdhcpd.web.methods.favicon)
+        if staticdhcpd.config.WEB_LOG_HISTORY > 0:
+            _logger.info("Webservice logging module enabled; configuring...")
+            web_logger = staticdhcpd.web.methods.Logger()
+            staticdhcpd.web.registerDashboardCallback(staticdhcpd.config.SYSTEM_NAME, 'log', web_logger.render, 1000)
+            
+        if staticdhcpd.config.STATS_ENABLED: #No point in turning this on without webservices
+            _logger.info("Webservice statistics enabled; configuring...")
+            import staticdhcpd.statistics
+            import staticdhcpd.statistics.basic_engines
+            statistics_dhcp = staticdhcpd.statistics.basic_engines.DHCPStatistics()
+            staticdhcpd.statistics.registerStatsCallback(statistics_dhcp.process)
+            
+    #Start DHCP server.
+    import staticdhcpd.dhcp
+    dhcp = staticdhcpd.dhcp.DHCPService(database)
+    dhcp.start()
+    staticdhcpd.system.registerTickCallback(dhcp.tick)
+    
+if __name__ == '__main__':
     if staticdhcpd.config.DAEMON:
         _daemonise()
         
@@ -179,7 +210,7 @@ if __name__ == '__main__':
         _logger.debug("Installed SIGTERM handler")
         
         #Initialise all system resources
-        staticdhcpd.system.initialise()
+        _initialise()
         
         _logger.info("Changing runtime permissions to UID=%(uid)i, GID=%(gid)i..." % {
          'uid': staticdhcpd.config.UID,
@@ -187,6 +218,9 @@ if __name__ == '__main__':
         })
         os.setregid(staticdhcpd.config.GID, staticdhcpd.config.GID)
         os.setreuid(staticdhcpd.config.UID, staticdhcpd.config.UID)
+        
+        _logger.info("Initialising custom code...")
+        staticdhcpd.config.init()
         
         _logger.warn("----------------------------------------")
         _logger.warn("All subsystems initialised; now serving")

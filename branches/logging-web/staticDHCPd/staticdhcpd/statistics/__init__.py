@@ -27,6 +27,7 @@ Legal
 import collections
 import logging
 import threading
+import traceback
 
 _logger = logging.getLogger('statistics')
 

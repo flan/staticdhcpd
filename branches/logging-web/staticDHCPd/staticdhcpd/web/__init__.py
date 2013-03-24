@@ -34,12 +34,12 @@ _web_lock = threading.Lock()
 _web_dashboard = []
 _web_methods = {}
 
-_WebDashboardElement = collections.namedtuple("WebDashboardElement", ('module', 'name', 'callback'))
+_WebDashboardElement = collections.namedtuple("WebDashboardElement", ('ordering', 'module', 'name', 'callback'))
 _WebMethod = collections.namedtuple("WebMethod", (
  'module', 'name', 'hidden', 'secure', 'confirm', 'div_content', 'show_in_dashboard', 'callback'
 ))
 
-def registerDashboardCallback(module, name, callback):
+def registerDashboardCallback(module, name, callback, ordering=None):
     """
     Allows for modular registration of dashboard callbacks, to be invoked
     in the order of registration.
@@ -54,18 +54,30 @@ def registerDashboardCallback(module, name, callback):
     @param name: The human-friendly name of the element, within the module.
     @type callback: callbale
     @param callback: The callable to be invoked when the dashboard is rendered;
-        must accept the parameters 'path', 'queryargs', 'mimetype', and 'data';
-        must be tolerant of any parameters being None; must return data as a
-        string, formatted as XHTML, to be embedded inside of a <div/>, or None
-        to suppress inclusion.
+        must accept the parameters 'path', 'queryargs', 'mimetype', 'data', and
+        'headers'; must be tolerant of any parameters being None; must return
+        data as a string, formatted as XHTML, to be embedded inside of a <div/>,
+        or None to suppress inclusion.
+    @type ordering: number|None
+    @param ordering: A bias-specifier that controls where this element will
+        appear in relation to others. If omitted, the value will be that of the
+        highest number plus one. Negatives are valid.
     """
     with _web_lock:
         for (i, element) in enumerate(_web_dashboard):
             if element.callback is callback:
-                _logger.error("Dashboard callback %(callback)r is already registered" % {'callback': callback,})
+                _logger.error("%(element)r is already registered" % {'element': element,})
                 break
             else:
-                _web_dashboard.append(_WebDashboardElement(module, name, callback))
+                if ordering is None:
+                    if _web_dashboard:
+                        ordering = _web_dashboard[-1].ordering + 1
+                    else:
+                        ordering = 0
+                element = _WebDashboardElement(ordering, module, name, callback)
+                _web_dashboard.append(element)
+                _web_dashboard.sort()
+                _logger.debug("Registered %(element)r" % {'element': element,})
                 
 def unregisterDashboardCallback(callback):
     """
@@ -86,6 +98,16 @@ def unregisterDashboardCallback(callback):
             else:
                 _logger.error("Dashboard callback %(callback)r is not registered" % {'callback': callback,})
                 
+def retrieveDashboardCallbacks():
+    """
+    Returns all registered callbacks.
+    
+    @rtype: tuple of L{_WebDashboardElement}s
+    @return: All registered callbacks.
+    """
+    with _web_lock:
+        return tuple(self._web_dashboard)
+        
 def registerMethodCallback(path, module, name, hidden, secure, confirm, div_content, show_in_dashboard, callback):
     """
     Allows for modular registration of method callbacks.
@@ -117,15 +139,16 @@ def registerMethodCallback(path, module, name, hidden, secure, confirm, div_cont
         messages)
     @type callback: callbale
     @param callback: The callable to be invoked when the method is called; must
-        accept the parameters 'path', 'queryargs', 'mimetype', and 'data'; must
-        be tolerant of any parameters being None; must return a tuple of
-        (mimetype, data).
+        accept the parameters 'path', 'queryargs', 'mimetype', 'data', and
+        'headers'; must be tolerant of any parameters being None; must return a
+        tuple of (mimetype, data, headers), with data being a (binary) string.
     """
     with _web_lock:
         if path in _web_methods:
-            _logger.error("Method '%(path)s' is already registered" % {'path': path,})
+            _logger.error("'%(path)s' is already registered" % {'path': path,})
         else:
             _web_methods[path] = _WebMethod(module, name, hidden, secure, confirm, div_content, show_in_dashboard, callback)
+            _logger.debug("Registered %(path)s" % {'path': path,})
             
 def unregisterMethodCallback(path):
     """
@@ -139,5 +162,28 @@ def unregisterMethodCallback(path):
         try:
             del _web_methods[path]
         except KeyError:
-            _logger.error("Method '%(path)s' is not registered" % {'path': path,})
+            _logger.error("'%(path)s' is not registered" % {'path': path,})
             
+def retrieveMethodCallback(path):
+    """
+    Returns a registered callback, if one exists.
+    
+    @type path: basestring
+    @param path: The path at which the callback was registered.
+    
+    @rtype: L{_WebMethod}|None
+    @return: The registered method, if nay.
+    """
+    with _web_lock:
+        return _web_methods.get(path)
+        
+def retrieveVisibleMethodCallbacks():
+    """
+    Returns all visible method callbacks, in lexically sorted order.
+    
+    @rtype: tuple of (L{_WebMethod}, path:basestring)
+    @return: All visible method callbacks.
+    """
+    with _web_lock:
+        return tuple(sorted((element, path) for (path, element) in _web_methods.items() if not element.hidden))
+        

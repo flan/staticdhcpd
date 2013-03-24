@@ -29,10 +29,6 @@ import threading
 import time
 import traceback
 
-import config
-import statistics
-import web
-
 _logger = logging.getLogger('system')
 
 ALIVE = True #True until the system is ready to shut down.
@@ -42,43 +38,6 @@ _reinitialisation_callbacks = []
 
 _tick_lock = threading.Lock()
 _tick_callbacks = []
-
-_initialised = False
-def initialise():
-    #Avoid re-invocation.
-    global _initialised
-    if _initialised:
-        return
-    _initialised = True
-    
-    #Ready the database.
-    import databases
-    database = databases.get_database()
-    registerReinitialisationCallback(database.reinitialise)
-    
-    if config.WEB_ENABLED:
-        _logger.info("Webservice module enabled; configuring...")
-        import web.server
-        webservice = web.WebService()
-        webservice.start()
-        
-        import web.methods
-        if config.WEB_LOG_HISTORY > 0:
-            _logger.info("Webservice logging module enabled; configuring...")
-            web_logger = web.methods.Logger()
-            web.registerDashboardCallback(config.SYSTEM_NAME, 'log', web_logger.render)
-            
-        if config.STATS_ENABLED: #No point in turning this on without webservices
-            _logger.info("Webservice statistics enabled; configuring...")
-            import statistics.basic_engines
-            statistics_dhcp = statistics.basic_engines.DHCPStatistics()
-            statistics.registerStatsCallback(statistics_dhcp.process)
-            
-    #Start DHCP server.
-    import dhcp
-    dhcp = dhcp.DHCPService(database)
-    dhcp.start()
-    registerTickCallback(dhcp.tick)
     
 def reinitialise():
     """

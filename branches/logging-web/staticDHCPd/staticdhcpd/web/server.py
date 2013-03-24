@@ -28,165 +28,233 @@ import BaseHTTPServer
 import cgi
 import hashlib
 import logging
-import os
+import re
 import SocketServer
 import threading
 import time
 import traceback
+import uuid
 
 try:
     from urlparse import parse_qs
 except:
     from cgi import parse_qs
 
-import config
+from staticdhcpd.web import retrieveMethodCallback
 
-
-from staticdhcpd import VERSION as _staticdhcpd_VERSION
-from libpydhcpserver import VERSION as _libpydhcpserver_VERSION
+from .. import config
+import _templates
 
 _logger = logging.getLogger('web.server')
-_web_logger = None
 
-
-
-
-
-#A web package should be created, to contain things like CSS (and images?), which can be served
-#via registered methods
-
-
-#To sort methods, use the following logic:
-#module = None
-#for (element, path) in sorted((element, path) for (path, element) in _web_methods.items() if not element.hidden):
-#    if element.module != module:
-#        <create a new section>
-#    <add entry>
-
-
-class _WebHandler(BaseHTTPServer.BaseHTTPRequestHandler):
-    """
-    The handler that responds to all received HTTP requests.
-    """
-    _allowed_pages = ('/', '/index.html',) #: A collection of all paths that will be allowed.
-    
-    def do_GET(self):
-        """
-        Handles all HTTP GET requests.
-        """
-        if not self.path in self._allowed_pages:
-            self.send_response(404)
-            return
-        self._doResponse()
-        
-    def do_HEAD(self):
-        """
-        Handles all HTTP HEAD requests.
-        
-        This involves lying about the existence of files and telling the browser
-        to always pull a fresh copy.
-        """
-        if not self.path in self._allowed_pages:
-                self.send_response(404)
-                return
+_AUTHORIZATION_RE = re.compile(r'^(?P<key>.+?)="?(?P<value>.+)"?$')
+_NONCE_TIMEOUT = 10.0 #: The number of seconds to wait for the client to try again.
+_OPAQUE = uuid.uuid4().hex
+_NONCES = []
+_NONCE_LOCK = threading.Lock()
+def _flush_expired_nonces():
+    current_time = time.time()
+    with _NONCE_LOCK:
+        for (i, (nonce, timeout)) in reversed(enumerate(_NONCES)):
+            if current_time >= timeout:
+                del _NONCES[i]
+                _logger.debug("Nonce %(nonce)s expired" % {
+                 'nonce': nonce,
+                })
                 
-        try:
-            self.send_response(200)
-            self.send_header('Content-type', 'text/html')
-            self.send_header('Last-modified', time.strftime('%a, %d %b %Y %H:%M:%S %Z'))
-            self.end_headers()
-        except Exception:
-            _logger.error("Problem while processing HEAD:\n" + traceback.format_exc())
-            
-    def do_POST(self):
-        """
-        Handles all HTTP POST requests.
+def _generateNonce():
+    nonce = uuid.uuid4().hex
+    timeout = time.time() + _NONCE_TIMEOUT
+    with _NONCE_LOCK:
+        _NONCES.append((nonce, timeout))
         
-        This checks to see if the user entered the flush key and, if so,
-        flushes the cache and writes the memory-log to disk.
-        """
-        try:
-            """(ctype, pdict) = cgi.parse_header(self.headers.getheader('content-type'))
-            if ctype == 'application/x-www-form-urlencoded':
-                query = parse_qs(self.rfile.read(int(self.headers.getheader('content-length'))))
-                key = query.get('key')
-                if key:
-                    if hashlib.md5(key[0]).hexdigest() == config.WEB_RELOAD_KEY:
-                        system.reinitialise()
-                        
-                        if logging.logToDisk():
-                            logging.writeLog("Wrote log to '%(log)s'" % {'log': config.LOG_FILE,})
-                        else:
-                            logging.writeLog("Unable to write log to '%(log)s'" % {'log': config.LOG_FILE,})
+def _locateNonce(nonce, remove=False):
+    with _NONCE_LOCK:
+        for (i, (n, _)) in enumerate(_NONCES):
+            if nonce == n:
+                if remove:
+                    del _NONCES[i]
+                    _logger.debug("Nonce %(nonce)s deleted" % {
+                     'nonce': nonce,
+                    })
+                return True
+        return False
+        
+def _parseAuthorization(authorization):
+    parameters = (p.strip() for p in authorization[authorization.find(' ') + 1:].split(','))
+    result = {}
+    for parameter in parameters:
+        if parameter:
+            match = _AUTHORIZATION_RE.match(parameter)
+            if match:
+                result[match.group('key')] = match.group('value')
+    return result
+    
+def _validateCredentials(parameters, method):
+    try:
+        _logger.debug("DIGEST via %(method)s; details: %(details)r" % {
+         'method': method,
+         'details': parameters,
+        })
+        
+        (username, password) = config.WEB_CREDENTIALS
+        nonce = parameters['nonce'].lower()
+        cnonce = parameters['cnonce'].lower()
+        
+        ha1 = hashlib.md5("%(username)s:%(realm)s:%(password)s" % {
+         'username': username,
+         'realm': config.SYSTEM_NAME,
+         'password': password,
+        }).hexdigest()
+        if parameters.get('algorithm', '').lower() == 'md5-sess':
+            ha1 = hashlib.md5("%(ha1)s:%(nonce)s:%(cnonce)s" % {
+             'ha1': ha1,
+             'nonce': nonce,
+             'cnonce': cnonce,
+            }).hexdigest()
+            
+        ha2 = hashlib.md5("%(method)s:%(uri)s" % {
+         'method': method,
+         'uri': parameters['uri']
+        }).hexdigest()
+        
+        if parameters.get('qop', '').lower() == 'auth':
+            target = hashlib.md5("%(ha1)s:%(nonce)s:%(count)s:%(cnonce)s:%(qop)s:%(ha2)s" % {
+             'ha1': ha1,
+             'nonce': nonce,
+             'count': parameters['nc'].lower(),
+             'cnonce': cnonce,
+             'qop': parameters['qop'].lower(),
+             'ha2': ha2,
+            }).hexdigest()
+        else:
+            target = hashlib.md5("%(ha1)s:%(nonce)s:%(ha2)s" % {
+             'ha1': ha1,
+             'nonce': nonce,
+             'ha2': ha2,
+            }).hexdigest()
+            
+        return target == parameters['response'].lower()
+    except Exception, e:
+        raise ValueError("Authorisation data from client is not spec-compliant: " + str(e))
+        
+def _isSecure(headers, method):
+    _flush_expired_nonces()
+    
+    authorization = headers.getheader('authorization')
+    if not authorization:
+        _logger.debug("No authentication credentials supplied")
+        raise _RequestAuthorizationRequired(_generateNonce(), False)
+        
+    parameters = _parseAuthorization(authorization)
+    if not parameters.get('opaque') == _OPAQUE:
+        _logger.debug("Invalid opaque value supplied")
+        raise _RequestAuthorizationRequired(_generateNonce(), False)
+        
+    if not _locateNonce(parameters.get('nonce')):
+        _logger.debug("Stale nonce supplied")
+        raise _RequestAuthorizationRequired(_generateNonce(), True)
+        
+    if _validateCredentials(parameters, method):
+        _logger.debug("Authentication succeeded")
+        _locateNonce(parameters.get('nonce'), remove=True)
+    else:
+        _logger.debug("Invalid authentication credentials supplied")
+        raise _RequestAuthorizationRequired(_generateNonce(), False)
+        
+def _validateRequest(headers, method, secure):
+    if secure:
+        _is_secure(headers, method)
+        
+def _webMethod(method_type):
+    """
+    A decorator to deal with web-flows.
+    
+    @type method_type: basestring
+    @param method_type: The type of method requested.
+    """
+    def decorator(http_method):
+        def wrappedHandler(self):
+            try:
+                (path, queryargs) = (self.path.split('?', 1) + [''])[:2]
+                queryargs = parse_qs(queryargs)
+                
+                handler = None
+                #First, see if it matches a registered callback
+                callback = retrieveMethodCallback(path)
+                if callback:
+                    _validate_request(self.headers, method_type, callback.secure)
+                    c = lambda mimetype, data : callback.callback(path, queryargs, mimetype, data, self.headers)
+                    if callback.show_in_dashboard:
+                        handler = lambda mimetype, data : _templates.renderDashboard(path, queryargs, mimetype, data, self.headers, self.wfile, featured_element=c)
+                    elif callback.div_content:
+                        handler = lambda mimetype, data : _templates.renderTemplate(path, queryargs, mimetype, data, self.headers, self.wfile, c)
                     else:
-                        logging.writeLog("Invalid Web-access-key provided")
-            """
-            _logger.warn("POST not yet reimplemented")
-        except Exception:
-            _logger.error("Problem while processing POST:\n" + traceback.format_exc())
-        self._doResponse()
-        
-    def _doResponse(self):
-        """
-        Renders the current state of the memory-log as HTML for consumption by
-        the client.
-        """
-        try:
-            self.send_response(200)
-            self.send_header('Content-type', 'text/html')
-            self.send_header('Last-modified', time.strftime('%a, %d %b %Y %H:%M:%S %Z'))
-            self.end_headers()
-            
-            self.wfile.write('<html><head><title>%(name)s log</title></head><body>' % {'name': config.SYSTEM_NAME,})
-            self.wfile.write('<div style="width: 950px; margin-left: auto; margin-right: auto; border: 1px solid black;">')
-            
-            """
-            self.wfile.write('<div>Statistics:<div style="text-size: 0.9em; margin-left: 20px;">')
-            for (timestamp, packets, discarded, time_taken, ignored_macs) in logging.readPollRecords():
-                if packets:
-                    turnaround = time_taken / packets
+                        handler = c
+                elif path == '/':
+                    _validateRequest(self.headers, method_type, config.WEB_DASHBOARD_SECURE)
+                    handler = lambda mimetype, data : _templates.renderDashboard(path, queryargs, mimetype, data, self.headers, self.wfile)
                 else:
-                    turnaround = 0.0
-                self.wfile.write("%(time)s : received: %(received)i; discarded: %(discarded)i; turnaround: %(turnaround)fs/pkt; ignored MACs: %(ignored)i<br/>" % {
-                 'time': time.ctime(timestamp),
-                 'received': packets,
-                 'discarded': discarded,
-                 'turnaround': turnaround,
-                 'ignored': ignored_macs,
+                    raise _NotFound(path)
+                    
+                (mimetype, data) = http_method(self)
+                (mimetype, data) = handler(mimetype, data)
+                self.send_response(200)
+                self.send_header('Last-Modified', time.strftime('%a, %d %b %Y %H:%M:%S %Z'))
+                self.send_header('Content-Type', mimetype)
+                self.send_header('Content-Length', len(data))
+                self.send_header('Expires', 'Tue, 03 Jul 2001 06:00:00 GMT')
+                self.send_header('Cache-Control', 'max-age=0, no-cache, must-revalidate, proxy-revalidate')
+                self.end_headers()
+                self.wfile.write(data)
+            except _NotFound, e:
+                _logger.debug("Request made of unbound path: %(path)s" % {
+                 'path': str(e),
                 })
-            self.wfile.write("</div></div><br/>")
-            """
-            
-            self.wfile.write('<div>Events:<div style="text-size: 0.9em; margin-left: 20px;">')
-            for line in _web_logger.readContent():
-                self.wfile.write("%(line)s<br/>" % {
-                 'line': cgi.escape(line),
+            except _RequestAuthorizationRequired, e:
+                _logger.debug("Authentication required to access %(path)s: %(nonce)s" % {
+                 'path': self.path,
+                 'nonce': e.nonce,
                 })
-            self.wfile.write("</div></div><br/>")
-            
-            self.wfile.write('<div style="text-align: center;">')
-            self.wfile.write('<small>Summary generated %(time)s</small><br/>' % {
-             'time': time.asctime(),
-            })
-            self.wfile.write('<small>%(server)s:%(port)i | PID: %(pid)i | v%(core_version)s | <a href="http://uguu.ca/" onclick="window.open(this.href); return false;">uguu.ca</a></small><br/>' % {
-             'pid': os.getpid(),
-             'server': config.DHCP_SERVER_IP,
-             'port': config.DHCP_SERVER_PORT,
-             'core_version': VERSION,
-            })
-            self.wfile.write('<form action="/" method="post"><div style="display: inline;">')
-            self.wfile.write('<label for="key">Key: </label><input type="password" name="key" id="key"/>')
-            if config.USE_CACHE:
-                self.wfile.write('<input type="submit" value="Flush cache and write log to disk"/>')
-            else:
-                self.wfile.write('<input type="submit" value="Write log to disk"/>')
-            self.wfile.write('</div></form>')
-            self.wfile.write('</div>')
-            
-            self.wfile.write("</div></body></html>")
-        except Exception:
-            _logger.error("Problem while serving Response:\n" + traceback.format_exc())
-            
+                self.send_response(401)
+                self.send_header(
+                 'WWW-Authenticate',
+                 'Digest ' + ', '.join('%(key)s="%(value)s' % {key, value} for (key, value) in (
+                  ('realm', config.SYSTEM_NAME),
+                  ('qop', 'auth'),
+                  ('algorithm', 'MD5,MD5-sess'),
+                  ('nonce', e.nonce),
+                  ('opaque', _OPAQUE),
+                  ('stale', str(e.stale).upper()),
+                 ))
+                )
+                self.end_headers()
+            except Exception:
+                error = traceback.format_exc()
+                _logger.error("Problem while processing request for '%(path)s' via %(method)s:\n%(error)s" % {
+                 'path': self.path,
+                 'method': method_type,
+                 'error': error,
+                })
+                self.send_response(500)
+                self.send_header('Content-Type', 'text/plain')
+                self.send_header('Content-Length', len(error))
+                self.end_headers()
+                self.wfile.write(error)
+        return wrappedHandler
+    return decorator
+    
+class _WebHandler(BaseHTTPServer.BaseHTTPRequestHandler):
+    @_webMethod('GET')
+    def do_GET(self):
+        return (None, None)
+        
+    @_webMethod('POST')
+    def do_POST(self):
+        (content_type, _) = cgi.parse_header(self.headers.getheader('content-type'))
+        content_length = int(self.headers.getheader('content-length'))
+        return (content_type, self.rfile.read(content_length))
+        
     def log_message(*args):
         """
         Just a stub to suppress automatic webserver log messages.
@@ -231,3 +299,9 @@ class WebService(threading.Thread):
             except Exception:
                 _logger.critical("Unhandled exception:\n" + traceback.format_exc())
                 
+class _RequestAuthorizationRequired(Exception):
+    def __init__(self, nonce, stale):
+        self.nonce = nonce
+        self.stale = stale
+        
+class _NotFound(Exception): pass

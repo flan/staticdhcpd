@@ -27,12 +27,13 @@ Legal
 import cgi
 import logging
 
-import config
+from .. import config
 from .. import logging_handlers
+import resources
 
 _logger = logging.getLogger('web.methods')
 
-class _WebLogger(object):
+class Logger(object):
     _logger = None
     
     def __init__(self):
@@ -46,6 +47,12 @@ class _WebLogger(object):
         _logger.root.addHandler(self._logger)
         _logger.info("Web-accessible logging online; buffer-size=" + str(config.WEB_LOG_HISTORY))
         
-    def render(self, path, queryargs, mimetype, data):
+    def render(self, path, queryargs, mimetype, data, headers):
         return '<br/>\n'.join((cgi.escape(line) for line in self._logger.readContents()))
         
+def css(path, queryargs, mimetype, data, headers):
+    return ('text/css', resources.CSS)
+    
+def favicon(path, queryargs, mimetype, data, headers):
+    return ('image/vnd.microsoft.icon', resources.FAVICON)
+    

@@ -29,7 +29,7 @@ import logging
 import threading
 import time
 
-import config
+from .. import config
 
 from .. import dhcp
 _PACKET_TYPES = tuple(sorted(getattr(dhcp, key) for key in dir(dhcp) if key.startswith('_PACKET_TYPE_')))
@@ -40,7 +40,7 @@ _Histogram = collections.namedtuple('Histogram', (
  'dhcp_packets', 'dhcp_packets_discarded', 'other_packets', 'processing_time',
 ))
 
-def _generateDHCPPacketsDict(){
+def _generateDHCPPacketsDict():
     return dict((packet_type, 0) for packet_type in _PACKET_TYPES)
     
 class DHCPStatistics(object):
@@ -114,11 +114,11 @@ class DHCPStatistics(object):
         self._updateHistograph()
         with self._lock:
             if statistics.method:
-                self._dhcp_packets[packet_type] += 1
-                self._current_histogram['dhcp-packets'][packet_type] += 1
+                self._dhcp_packets[statistics.packet_type] += 1
+                self._current_histogram['dhcp-packets'][statistics.packet_type] += 1
                 if not statistics.processed:
-                    self._dhcp_packets_discarded[packet_type] += 1
-                    self._current_histogram['dhcp-packets-discarded'][packet_type] += 1
+                    self._dhcp_packets_discarded[statistics.packet_type] += 1
+                    self._current_histogram['dhcp-packets-discarded'][statistics.packet_type] += 1
             else:
                 self._other_packets += 1
                 self._current_histogram['other-packets'] += 1

@@ -18,6 +18,8 @@ setup(
  packages = [
   'staticdhcpd',
   'staticdhcpd.databases',
+  'staticdhcpd.statistics',
+  'staticdhcpd.web',
  ],
  data_files = [
   ('/etc/staticDHCPd', [

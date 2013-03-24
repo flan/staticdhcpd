@@ -15,3 +15,7 @@ pydhcplib : http://pydhcplib.tuxfamily.org/pmwiki/
     staticDHCPd features a completely overhauled, fully updated, and
     stripped-down version of this library, rebranded as 'libpydhcpserver'.
     
+Favicon for the web-module shamelessly taken from Wikipedia
+    (http://en.wikipedia.org/wiki/File:Plasma-lamp_2.jpg), in compliance with
+    the GNU FDL.
+    

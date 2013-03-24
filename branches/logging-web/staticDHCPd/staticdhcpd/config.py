@@ -123,6 +123,7 @@ _defaults.update({
  'WEB_PORT': 30880,
  'WEB_LOG_HISTORY': 100,
  'WEB_LOG_SEVERITY': 'INFO',
+ 'WEB_CREDENTIALS': ('username', 'password'),
  'WEB_DASHBOARD_SECURE': False,
  'WEB_REINITIALISE_CONFIRM': True,
  'WEB_REINITIALISE_SECURE': False,
@@ -237,7 +238,7 @@ import web
 conf.webAddDashboard = web.registerDashboardCallback
 conf.webRemoveDashboard = web.unregisterDashboardCallback
 conf.webAddMethod = web.registerMethodCallback
-conf.webRemoveMethod = web.unregisterMessageCallback
+conf.webRemoveMethod = web.unregisterMethodCallback
 del web
 
 import statistics
@@ -249,5 +250,5 @@ import system
 conf.systemAddReinitHandler = system.registerReinitialisationCallback
 conf.systemRemoveReinitHandler = system.unregisterReinitialisationCallback
 conf.systemAddTickHandler = system.registerTickCallback
-conf.systemRemoveTickHandler = conf.unregisterTickCallback
+conf.systemRemoveTickHandler = system.unregisterTickCallback
 del system
