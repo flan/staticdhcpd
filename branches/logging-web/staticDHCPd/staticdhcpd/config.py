@@ -73,15 +73,75 @@ _defaults = {}
 #######################################
 _defaults.update({
  'DEBUG': False,
- 'DAEMON': False,
+ 'DAEMON': True,
+ 'SYSTEM_NAME': 'staticDHCPd',
+ 'PID_FILE': None,
+})
+
+#Server settings
+#######################################
+_defaults.update({
+ 'PXE_PORT': None,
+})
+
+#Database settings
+#######################################
+_defaults.update({
+ 'USE_CACHE': False,
+
+ 'USE_POOL': True,
+
+ 'POSTGRESQL_HOST': None,
+ 'POSTGRESQL_PORT': 5432,
+ 'POSTGRESQL_SSLMODE': 'disabled',
+ 'POSTGRESQL_MAXIMUM_CONNECTIONS': 4,
+
+ 'ORACLE_MAXIMUM_CONNECTIONS': 4,
+ 
+ 'MYSQL_HOST': None,
+ 'MYSQL_PORT': 3306,
+ 'MYSQL_MAXIMUM_CONNECTIONS': 4,
+})
+
+#Server behaviour settings
+#######################################
+_defaults.update({
+ 'ALLOW_LOCAL_DHCP': True,
+ 'ALLOW_DHCP_RELAYS': False,
+ 'ALLOWED_DHCP_RELAYS': [],
+
+ 'AUTHORITATIVE': False,
+ 'NAK_RENEWALS': False,
+
+ 'UNAUTHORIZED_CLIENT_TIMEOUT': 60,
+ 'MISBEHAVING_CLIENT_TIMEOUT': 150,
+ 'ENABLE_SUSPEND': True,
+ 'SUSPEND_THRESHOLD': 10,
 })
 
 #Logging settings
 #######################################
 _defaults.update({
+ 'LOG_FILE': None,
  'LOG_FILE_HISTORY': 7,
  'LOG_FILE_SEVERITY': 'WARN',
  'LOG_CONSOLE_SEVERITY': 'INFO',
+})
+
+#Webservice settings
+#######################################
+_defaults.update({
+ 'WEB_ENABLED': True,
+ 'WEB_IP': '0.0.0.0',
+ 'WEB_PORT': 30880,
+ 'WEB_LOG_HISTORY': 200,
+ 'WEB_LOG_SEVERITY': 'INFO',
+ 'WEB_DIGEST_USERNAME': None,
+ 'WEB_DIGEST_PASSWORD': None,
+ 'WEB_DASHBOARD_SECURE': False,
+ 'WEB_REINITIALISE_CONFIRM': True,
+ 'WEB_REINITIALISE_SECURE': False,
+ 'WEB_DASHBOARD_ORDER_LOG': 1000,
 })
 
 #Statistics settings
@@ -92,87 +152,14 @@ _defaults.update({
  'STATS_RETENTION_COUNT': 288 * 2,
 })
 
-#Server settings
-#######################################
-_defaults.update({
- 'PXE_PORT': None,
-})
-
-#Server behaviour settings
-#######################################
-_defaults.update({
- 'ALLOW_LOCAL_DHCP': True,
- 'ALLOW_DHCP_RELAYS': False,
- 'ALLOWED_DHCP_RELAYS': (),
-
- 'AUTHORITATIVE': False,
-
- 'NAK_RENEWALS': False,
-
- 'UNAUTHORIZED_CLIENT_TIMEOUT': 60,
- 'MISBEHAVING_CLIENT_TIMEOUT': 150,
- 'ENABLE_SUSPEND': True,
- 'SUSPEND_THRESHOLD': 10,
-})
-
-#Webservice settings
-#######################################
-_defaults.update({
- 'WEB_ENABLED': False,
- 'WEB_IP': '0.0.0.0',
- 'WEB_PORT': 30880,
- 'WEB_LOG_HISTORY': 100,
- 'WEB_LOG_SEVERITY': 'INFO',
- 'WEB_CREDENTIALS': ('username', 'password'),
- 'WEB_DASHBOARD_SECURE': False,
- 'WEB_REINITIALISE_CONFIRM': True,
- 'WEB_REINITIALISE_SECURE': False,
-})
-
-#Database settings
-#######################################
-_defaults.update({
- 'USE_CACHE': False,
-
- 'USE_POOL': True,
-
- 'SQLITE_FILE': '/etc/staticDHCPd/dhcp.sqlite3',
-
- 'POSTGRESQL_DATABASE': 'dhcp',
- 'POSTGRESQL_USERNAME': 'dhcp_user',
- 'POSTGRESQL_PASSWORD': 'dhcp_pass',
- 'POSTGRESQL_HOST': None,
- 'POSTGRESQL_PORT': 5432,
- 'POSTGRESQL_SSLMODE': 'disabled',
- 'POSTGRESQL_MAXIMUM_CONNECTIONS': 4,
-
- 'ORACLE_DATABASE': 'dhcp',
- 'ORACLE_USERNAME': 'dhcp_user',
- 'ORACLE_PASSWORD': 'dhcp_pass',
- 'ORACLE_MAXIMUM_CONNECTIONS': 4,
- 
- 'MYSQL_DATABASE': 'dhcp',
- 'MYSQL_USERNAME': 'dhcp_user',
- 'MYSQL_PASSWORD': 'dhcp_pass',
- 'MYSQL_HOST': None,
- 'MYSQL_PORT': 3306,
- 'MYSQL_MAXIMUM_CONNECTIONS': 4,
- 
- 'INI_FILE': '/etc/staticDHCPd/dhcp.ini',
-})
-
 #E-mail settings
 #######################################
 _defaults.update({
  'EMAIL_ENABLED': False,
- 'EMAIL_SERVER': 'mail.yourdomain.com',
  'EMAIL_PORT': 25,
  'EMAIL_TIMEOUT': 4.0,
- 'EMAIL_SOURCE': 'you@yourdomain.com',
- 'EMAIL_DESTINATION': 'problems@yourdomain.com',
  'EMAIL_SUBJECT': "staticDHCPd encountered a problem",
- 'EMAIL_USER': 'you',
- 'EMAIL_PASSWORD': 'password',
+ 'EMAIL_USER': None,
 })
 
 
@@ -191,14 +178,6 @@ if hasattr(conf, 'init'):
     init = conf.init
 else:
     init = lambda : None
-if hasattr(conf, 'loadDHCPPacket'):
-    if inspect.getargspec(conf.handleUnknownMAC).args == ['packet', 'mac', 'client_ip', 'relay_ip', 'subnet', 'serial', 'pxe', 'vendor']:
-        #It's pre-2.0.0, so wrap it for backwards-compatibility
-        loadDHCPPacket = lambda packet, method, mac, client_ip, relay_ip, subnet, serial, pxe, vendor : conf.loadDHCPPacket(packet, mac, client_ip, relay_ip, subnet, serial, pxe, vendor)
-    else:
-        loadDHCPPacket = conf.loadDHCPPacket
-else:
-    loadDHCPPacket = lambda *args, **kwargs : True
 if hasattr(conf, 'handleUnknownMAC'):
     if inspect.getargspec(conf.handleUnknownMAC).args == ['mac']:
         #It's pre-2.0.0, so wrap it for backwards-compatibility
@@ -207,6 +186,14 @@ if hasattr(conf, 'handleUnknownMAC'):
         handleUnknownMAC = conf.handleUnknownMAC
 else:
     handleUnknownMAC = lambda *args, **kwargs : None
+if hasattr(conf, 'loadDHCPPacket'):
+    if inspect.getargspec(conf.handleUnknownMAC).args == ['packet', 'mac', 'client_ip', 'relay_ip', 'subnet', 'serial', 'pxe', 'vendor']:
+        #It's pre-2.0.0, so wrap it for backwards-compatibility
+        loadDHCPPacket = lambda packet, method, mac, client_ip, relay_ip, subnet, serial, pxe, vendor : conf.loadDHCPPacket(packet, mac, subnet, serial, client_ip, relay_ip, pxe, vendor)
+    else:
+        loadDHCPPacket = conf.loadDHCPPacket
+else:
+    loadDHCPPacket = lambda *args, **kwargs : True
 del inspect
 
 #Inject namespace elements into conf.
@@ -244,21 +231,21 @@ conf.logger = logger
 del logger
 del logging
 
-import web
-conf.webAddDashboard = web.registerDashboardCallback
-conf.webRemoveDashboard = web.unregisterDashboardCallback
-conf.webAddMethod = web.registerMethodCallback
-conf.webRemoveMethod = web.unregisterMethodCallback
-del web
-
-import statistics
-conf.statsAddHandler = statistics.registerStatsCallback
-conf.statsRemoveHandler = statistics.unregisterStatsCallback
-del statistics
-
 import system
 conf.systemAddReinitHandler = system.registerReinitialisationCallback
 conf.systemRemoveReinitHandler = system.unregisterReinitialisationCallback
 conf.systemAddTickHandler = system.registerTickCallback
 conf.systemRemoveTickHandler = system.unregisterTickCallback
 del system
+
+import statistics
+conf.statsAddHandler = statistics.registerStatsCallback
+conf.statsRemoveHandler = statistics.unregisterStatsCallback
+del statistics
+
+import web
+conf.webAddDashboard = web.registerDashboardCallback
+conf.webRemoveDashboard = web.unregisterDashboardCallback
+conf.webAddMethod = web.registerMethodCallback
+conf.webRemoveMethod = web.unregisterMethodCallback
+del web

@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
-staticDHCPd module: web.resources
+staticDHCPd module: web._resources
 
 Purpose
 =======

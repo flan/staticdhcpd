@@ -104,7 +104,7 @@ def _setupLogging(logger):
         
     if staticdhcpd.config.LOG_FILE: #Determine whether disk-based logging is desired
         logger.info("Configuring file-based logging for " + staticdhcpd.config.LOG_FILE + "...")
-        if staticdhcpd.config.LOG_FILE_TIMESTAMP:
+        if staticdhcpd.config.LOG_FILE_HISTORY:
             #Rollover once per day, keeping the configured number of days' logs as history
             file_logger = logging.handlers.TimedRotatingFileHandler(
              staticdhcpd.config.LOG_FILE, 'D', 1, staticdhcpd.config.LOG_FILE_HISTORY
@@ -155,7 +155,7 @@ def _initialise():
         if staticdhcpd.config.WEB_LOG_HISTORY > 0:
             _logger.info("Webservice logging module enabled; configuring...")
             web_logger = staticdhcpd.web.methods.Logger()
-            staticdhcpd.web.registerDashboardCallback(staticdhcpd.config.SYSTEM_NAME, 'log', web_logger.render, 1000)
+            staticdhcpd.web.registerDashboardCallback(staticdhcpd.config.SYSTEM_NAME, 'events', web_logger.render, staticdhcpd.config.WEB_DASHBOARD_ORDER_LOG)
             
         if staticdhcpd.config.STATS_ENABLED: #No point in turning this on without webservices
             _logger.info("Webservice statistics enabled; configuring...")
@@ -181,7 +181,7 @@ if __name__ == '__main__':
      "----------------------------------------",
      "----------------------------------------",
      "----------------------------------------",
-     "System startup in progress",
+     "System startup in progress; PID=" + str(os.getpid()),
      "staticDHCPd version " + staticdhcpd.VERSION,
      "libpydhcpserver version " + libpydhcpserver.VERSION,
      "Continuing with subsystem initialisation",
@@ -190,18 +190,24 @@ if __name__ == '__main__':
         _logger.warn(i)
     del i
     
-    _logger.debug("Writing pidfile...")
     pidfile_recorded = False
-    try:
-        pidfile = open(staticdhcpd.config.PID_FILE, 'w')
-        pidfile.write(str(os.getpid()) + '\n')
-        pidfile.close()
-        os.chown(staticdhcpd.config.PID_FILE, staticdhcpd.config.UID, staticdhcpd.config.GID)
-    except:
-        _logger.error("Unable to write pidfile: %(file)s" % {'file': staticdhcpd.config.PID_FILE,})
-    else:
-        pidfile_recorded = True
-        
+    if staticdhcpd.config.PID_FILE:
+        _logger.debug("Writing pidfile...")
+        try:
+            if os.path.isfile(staticdhcpd.config.PID_FILE):
+                pidfile = open(staticdhcpd.config.PID_FILE, 'r')
+                _logger.warn("Pidfile already exists, with PID " + pidfile.read().strip())
+                pidfile.close()
+                
+            pidfile = open(staticdhcpd.config.PID_FILE, 'w')
+            pidfile.write(str(os.getpid()) + '\n')
+            pidfile.close()
+            os.chown(staticdhcpd.config.PID_FILE, staticdhcpd.config.UID, staticdhcpd.config.GID)
+        except:
+            _logger.error("Unable to write pidfile: %(file)s" % {'file': staticdhcpd.config.PID_FILE,})
+        else:
+            pidfile_recorded = True
+            
     try:
         #Set signal-handlers.
         signal.signal(signal.SIGHUP, _hupHandler)

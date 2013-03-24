@@ -43,10 +43,11 @@ def reinitialise():
     """
     Invokes every registered reinitialisation handler.
     
-    @rtype: float
-    @return: The number of seconds required to reinitialise the system.
+    The time taken to complete the operation is returned as a floating-point
+    number of seconds.
     
-    @raise Exception: Something went wrong; this is fatal.
+    If an exception is unhandled by a callback, the system will shut down and
+    the exception will be re-raised.
     """
     start = time.time()
     with _reinitialisation_lock:
@@ -60,33 +61,33 @@ def reinitialise():
                 raise
     return time.time() - start
     
-def registerReinitialisationCallback(func):
+def registerReinitialisationCallback(callback):
     """
     Allows for modular registration of reinitialisation callbacks, to be invoked
     in the order of registration.
     
-    @type func: callable
-    @param func: A callable that takes no arguments; if already present, it will
+    @type callback: callable
+    @param callback: A callable that takes no arguments; if already present, it will
         not be registered a second time.
     """
     with _reinitialisation_lock:
-        if func in _reinitialisation_callbacks:
-            _logger.error("Callback %(callback)r is already registered" % {'callback': func,})
+        if callback in _reinitialisation_callbacks:
+            _logger.error("Callback %(callback)r is already registered" % {'callback': callback,})
         else:
-            _reinitialisation_callbacks.append(func)
+            _reinitialisation_callbacks.append(callback)
             
-def unregisterReinitialisationCallback(func):
+def unregisterReinitialisationCallback(callback):
     """
     Allows for modular unregistration of reinitialisation callbacks.
     
-    @type func: callable
-    @param func: A callable; if not present, this is a no-op.
+    @type callback: callable
+    @param callback: A callable; if not present, this is a no-op.
     """
     with _reinitialisation_lock:
         try:
-            _reinitialisation_callbacks.remove(func)
+            _reinitialisation_callbacks.remove(callback)
         except ValueError:
-            _logger.error("Callback %(callback)r is not registered" % {'callback': func,})
+            _logger.error("Callback %(callback)r is not registered" % {'callback': callback,})
 
 def tick():
     """
@@ -99,32 +100,32 @@ def tick():
             except Exception:
                 _logger.critical("Unable to process tick-callback:\n" + traceback.format_exc())
                 
-def registerTickCallback(func):
+def registerTickCallback(callback):
     """
     Allows for modular registration of tick callbacks, to be invoked
     in the order of registration.
     
-    @type func: callable
-    @param func: A callable that takes no arguments; if already present, it will
+    @type callback: callable
+    @param callback: A callable that takes no arguments; if already present, it will
         not be registered a second time. The given callable must not block for
         any significant amount of time.
     """
     with _tick_lock:
-        if func in _tick_callbacks:
-            _logger.error("Callback %(callback)r is already registered" % {'callback': func,})
+        if callback in _tick_callbacks:
+            _logger.error("Callback %(callback)r is already registered" % {'callback': callback,})
         else:
-            _tick_callbacks.append(func)
+            _tick_callbacks.append(callback)
             
-def unregisterTickCallback(func):
+def unregisterTickCallback(callback):
     """
     Allows for modular unregistration of tick callbacks.
     
-    @type func: callable
-    @param func: A callable; if not present, this is a no-op.
+    @type callback: callable
+    @param callback: A callable; if not present, this is a no-op.
     """
     with _tick_lock:
         try:
-            _tick_callbacks.remove(func)
+            _tick_callbacks.remove(callback)
         except ValueError:
-            _logger.error("Callback %(callback)r is not registered" % {'callback': func,})
+            _logger.error("Callback %(callback)r is not registered" % {'callback': callback,})
             

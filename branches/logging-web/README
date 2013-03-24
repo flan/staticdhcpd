@@ -1,33 +1,10 @@
-Thirty-second upgrade guide for people who hate using diff
-
-Upgrading important pieces of software can be a scary process, and not just
-because new versions introduce new behaviours and the possibility of new bugs.
-No, perhaps the greatest threat (assuming you can trust the project's
-maintainers to not be clueless and you've done your research on what's changed)
-is that you'll miss copying that magical config file value that made your
-network actually work.
-
-Fortunately, staticDHCPd makes that easy: just copy your old conf.py file into
-the new version and you're good to go. Any omitted options are supplemented by
-sane defaults, new scriptable features are defined passively (you only use what
-you need), and you can add references to new options when you actually need
-them. It really couldn't be any friendlier... until it was: starting with 1.6.1,
-if you install the system using setup.py, your old config directory will be left
-intact, meaning that you just have to pull code, run setup, and go.
-
-----------------------------------------
-
-If upgrading from any version before 1.7.0, two simple changes will need to be
-made to conf.py: replace the "def" lines for loadDHCPPacket() and
-handleUnknownMAC(), if they exist at all, with the following:
-
-def loadDHCPPacket(packet, method, mac, client_ip, relay_ip, subnet, serial,\
-pxe, vendor):
-
-def handleUnknownMAC(packet, method, mac, client_ip, relay_ip, pxe, vendor):
-
-Any pre-existing code will continue to work without modification; these changes
-just give you more control over how to respond to different situations.
+Thirty-second upgrade guide for people who hate using diff:
+    Install and go. Except in very rare cases, which will be documented here,
+    your old conf.py, extensions, and scripting logic will be
+    forwards-compatible with this version.
+    
+    If coming from anything before 1.6.1, move conf.py into the conf/ directory
+    of create /etc/staticDHCPd/ and move it there. Your old file needs no TLC.
 
 -------------------------------------------------------------------------------
 
@@ -37,17 +14,17 @@ Installation instructions:
     /etc and /usr/local/bin. Follow the resulting on-screen text to integrate
     the server with your OS's daemon-management engine.
     
-    Just remember to set up conf.py and everything should just work. Before
+    Just remember to set up conf.py and everything should Just Work(TM). Before
     installing the server, though, run through the five-minute quickstart
     described below; it doesn't require that you make any permanent changes to
-    your host.
+    your host and it'll run out of the source distribution as-is.
 
 
 -------------------------------------------------------------------------------
 
 
 Five-minute "does this really work?" setup guide for busy administrators
-    Uses sqlite3 or INI files to avoid unnecessary installations
+    Uses an INI file or sqlite3 to avoid unnecessary installations
 
 (If you need more information, see the project page at
  http://uguu.ca/puukusoft/staticDHCPd/ or
@@ -106,7 +83,7 @@ Step 2: Set up the DHCP database
         
         Copy and paste the contents of samples/sqlite.sql into the prompt.
         
-        Now that your database is ready to go (SQLite is easy!), add some rules.
+        Now that your database is ready to go (SQLite is easy), add some rules.
             
             INSERT INTO subnets (
                 subnet,
@@ -147,38 +124,23 @@ Step 2: Set up the DHCP database
 Step 3: Edit conf.py
     Copy 'conf/conf.py.sample' to 'conf/conf.py'.
     
-    For now, since you'll want to see everything that goes on, set DEBUG to
-    True; 'True' must be capitalized. (In production, DEBUG should be False,
-    since it adds a little bit of overhead and it may fill system logs very
-    quickly)
-    
-    Also set DAEMON to False. If you don't, it'll do daemonsy things, which
-    aren't good for helping to identify configuration problems quickly.
-    
-    Then set LOG_FILE to point at your home directory. We'll be running this
-    test using your privileges so you don't have to create a special role
-    account, to save time. (In production, though, you'll definitely want to
-    lock this thing down, just like every daemon: long-running root processes
-    are bad)
-    
-    Set PID_FILE to point at the same directory as LOG_FILE.
-    
-    Run `id` in a terminal; this will tell you what your uid and gid are; enter
-    these values under UID and GID to restrict staticDHCPd's privileges.
-    
-    Run `ifconfig` and make note of your IPs; set DHCP_SERVER_IP and WEB_IP
-    accordingly. If you only have one IP, enter it in both fields.
-    
-    INI method:
-        After that, set DATABASE_ENGINE to 'INI'; capitalization matters.
+    Edit the file and make the following changes:
+        Set DAEMON to False. If you don't, it'll do daemonsy things, like kill
+        console output and detach from the controlling terminal, which aren't
+        good for helping to identify configuration problems quickly.
         
-        Lastly, set INI_FILE to point at the file you created in step 2.
+        Set DHCP_SERVER_IP to whichever IP you want to listen on.
         
-    SQLite method:
-        After that, set DATABASE_ENGINE to 'SQLite'; capitalization matters.
-        
-        Lastly, set SQLITE_FILE to point at the file you created in step 2.
-        
+        INI method:
+            Set DATABASE_ENGINE to 'INI'; capitalization matters.
+            
+            Add the line "INI_FILE = /home/you/that-ini-file-you-created"
+            
+        SQLite method:
+            Set DATABASE_ENGINE to 'SQLite'; capitalization matters.
+            
+            Add the line "SQLITE_FILE = /home/you/that-sqlite-file-you-created"
+            
 Step 4: Start the server
     Run `sudo python staticDHCPd`.
     
@@ -188,7 +150,7 @@ Step 4: Start the server
     Tell the device with the MAC given in step 3 to request an address and
     everything should Just Work(tm).
     
-    Go to http://<WEB_IP>:30880/ to see what the server's been doing.
+    Go to http://localhost:30880/ if you want to check out the web interface.
     
 Step 5: Kill the process
     When satisifed that the system works, hit ^C or send SIGTERM (15) to the

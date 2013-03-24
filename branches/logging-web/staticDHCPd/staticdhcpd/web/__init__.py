@@ -41,27 +41,25 @@ _WebMethod = collections.namedtuple("WebMethod", (
 
 def registerDashboardCallback(module, name, callback, ordering=None):
     """
-    Allows for modular registration of dashboard callbacks, to be invoked
-    in the order of registration.
+    Installs an element in the dashboard; at most one instance of any given
+    `callback` will be accepted.
     
-    If the given callback is already present, it will not be registered a second
-    time.
+    `module` and `name` describe how it will be presented, both as
+    human-readable strings.
     
-    @type module: basestring
-    @param module: The human-friendly name of the module to which the element
-        belongs.
-    @type name: basestring
-    @param name: The human-friendly name of the element, within the module.
-    @type callback: callbale
-    @param callback: The callable to be invoked when the dashboard is rendered;
-        must accept the parameters 'path', 'queryargs', 'mimetype', 'data', and
-        'headers'; must be tolerant of any parameters being None; must return
-        data as a string, formatted as XHTML, to be embedded inside of a <div/>,
-        or None to suppress inclusion.
-    @type ordering: number|None
-    @param ordering: A bias-specifier that controls where this element will
-        appear in relation to others. If omitted, the value will be that of the
-        highest number plus one. Negatives are valid.
+    The `callback` must accept the parameters 'path', 'queryargs', 'mimetype',
+    'data', and 'headers', with the possibility that 'mimetype' and 'data' may
+    be None; 'queryargs' is a dictionary of parsed query-string items, with
+    values expressed as lists of strings; 'headers' is a
+    `Python BasicHTTPServer` headers object.
+    
+    It must return data as a string, formatted as XHTML, to be embedded inside
+    of a <div/>, or None to suppress inclusion.
+    
+    To control where the element will appear, supply `ordering`. This is a
+    number that controls where this element will appear in relation to
+    others. If omitted, the value will be that of the highest number plus one,
+    placing it at the end; negatives are valid.
     """
     with _web_lock:
         for (i, element) in enumerate(_web_dashboard):
@@ -81,14 +79,7 @@ def registerDashboardCallback(module, name, callback, ordering=None):
             
 def unregisterDashboardCallback(callback):
     """
-    Allows for modular unregistration of dashboard callbacks.
-    
-    If the given callback is not present, this is a no-op.
-    
-    @type callback: callbale
-    @param callback: The callable to be invoked when the dashboard is rendered;
-        must not require any parameters; must return data formatted as XHTML, to
-        be embedded inside of a <div/>.
+    Removes the specified element, identified by `callback, from the dashboard.
     """
     with _web_lock:
         for (i, element) in enumerate(_web_dashboard):
@@ -100,48 +91,42 @@ def unregisterDashboardCallback(callback):
                 
 def retrieveDashboardCallbacks():
     """
-    Returns all registered callbacks.
-    
-    @rtype: tuple of L{_WebDashboardElement}s
-    @return: All registered callbacks.
+    Returns every registered callback, in display-order.
     """
     with _web_lock:
         return tuple(_web_dashboard)
         
 def registerMethodCallback(path, module, name, hidden, secure, confirm, div_content, show_in_dashboard, callback):
     """
-    Allows for modular registration of method callbacks.
+    Installs a webservice method; at most one instance of `path` will be
+    accepted.
     
-    @type path: str
-    @param path: The path at which to register this callback, typically
-        something like "ca/uguu/puukusoft/statcDHCPd/statistics/histogram.csv",
-        but as long as it's a valid URI-fragment, it's up to you.
-        If the given path is already present, it will not be overwritten.
-    @type module: basestring
-    @param module: The human-friendly name of the module to which the method
-        belongs.
-    @type name: basestring
-    @param name: The human-friendly name of the method, within the module.
-    @type hidden: bool
-    @param hidden: Whether the method should be rendered on the interface.
-    @type secure: bool
-    @param secure: Whether DIGEST authentication will be required to access the
-        method.
-    @type confirm: bool
-    @param confirm: Whether JavaScript validation will be used to prompt the
-        user to confirm that they want to perform the chosen action.
-    @type div_content: bool
-    @param div_content: Whether the returned data will be XHTML-formatted
-        content, to be placed inside of a dashboard-like <div/>.
-    @type show_in_dashboard: bool
-    @param show_in_dashboard: Whether the method's contents, if div_content,
-        should be shown alongside dashboard elements. (Good for confirmation
-        messages)
-    @type callback: callbale
-    @param callback: The callable to be invoked when the method is called; must
-        accept the parameters 'path', 'queryargs', 'mimetype', 'data', and
-        'headers'; must be tolerant of any parameters being None; must return a
-        tuple of (mimetype, data, headers), with data being a (binary) string.
+    `path` is the location at which the service may be called, like
+    "ca/uguu/puukusoft/statcDHCPd/statistics/histogram.csv".
+    
+    `module` and `name` describe how it will be presented, both as
+    human-readable strings. Only if `hidden` is False, though.
+    
+    `secure` controls whether DIGEST authentication will be required before this
+    method can be called.
+    
+    `confirm` adds JavaScript validation to ask the user if they're sure they
+    know what they're doing before the method will be invoked, if not `hidden`.
+    
+    `div_content`, if True, will place the data inside of the same sort of
+    template used by the dashboard, and `show_in_dashboard` will take it a step
+    further, rendering the returned content before the rest of the dashboard,
+    which is good for confirmation-like actions.
+    
+    
+    The `callback` must accept the parameters 'path', 'queryargs', 'mimetype',
+    'data', and 'headers', with the possibility that 'mimetype' and 'data' may
+    be None; 'queryargs' is a dictionary of parsed query-string items, with
+    values expressed as lists of strings; 'headers' is a
+    `Python BasicHTTPServer` headers object.
+    
+    It must return a tuple of (mimetype, data, headers), with data being a
+    string or bytes-like object.
     """
     with _web_lock:
         if path in _web_methods:
@@ -152,11 +137,7 @@ def registerMethodCallback(path, module, name, hidden, secure, confirm, div_cont
             
 def unregisterMethodCallback(path):
     """
-    Allows for modular unregistration of method callbacks.
-    
-    @type path: str
-    @param path: The path at which the callback was registered.
-        If the given path is not present, this is a no-op.
+    Removes the method registered at `path`.
     """
     with _web_lock:
         try:
@@ -166,23 +147,14 @@ def unregisterMethodCallback(path):
             
 def retrieveMethodCallback(path):
     """
-    Returns a registered callback, if one exists.
-    
-    @type path: basestring
-    @param path: The path at which the callback was registered.
-    
-    @rtype: L{_WebMethod}|None
-    @return: The registered method, if nay.
+    Returns the `_WebMethod` registered at `path`, if one exists.
     """
     with _web_lock:
         return _web_methods.get(path)
         
 def retrieveVisibleMethodCallbacks():
     """
-    Returns all visible method callbacks, in lexically sorted order.
-    
-    @rtype: tuple of (L{_WebMethod}, path:basestring)
-    @return: All visible method callbacks.
+    Returns all visible (`_WebMethod`, `path`)s, in lexically sorted order.
     """
     with _web_lock:
         return tuple(sorted((element, path) for (path, element) in _web_methods.items() if not element.hidden))

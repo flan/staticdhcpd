@@ -97,14 +97,13 @@ def _validateCredentials(parameters, method):
          'details': parameters,
         })
         
-        (username, password) = config.WEB_CREDENTIALS
         nonce = parameters['nonce'].lower()
         cnonce = parameters['cnonce'].lower()
         
         ha1 = hashlib.md5("%(username)s:%(realm)s:%(password)s" % {
-         'username': username,
+         'username': config.WEB_DIGEST_USERNAME,
          'realm': config.SYSTEM_NAME,
-         'password': password,
+         'password': config.WEB_DIGEST_PASSWORD,
         }).hexdigest()
         if parameters.get('algorithm', '').lower() == 'md5-sess':
             ha1 = hashlib.md5("%(ha1)s:%(nonce)s:%(cnonce)s" % {
@@ -163,7 +162,7 @@ def _isSecure(headers, method):
         raise _RequestAuthorizationRequired(_generateNonce(), False)
         
 def _validateRequest(headers, method, secure):
-    if secure:
+    if secure and (config.WEB_DIGEST_USERNAME and config.WEB_DIGEST_PASSWORD):
         _is_secure(headers, method)
         
 def _webMethod(method_type):

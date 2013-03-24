@@ -9,6 +9,7 @@ this is probably a non-issue.
 Please make changes to this module before using it in your environment. The
 default settings are almost certainly good for nobody.
 
+-For the line below, it should recommend NAK_RENEWALS instead
 Consider setting 'renewal_time_value' and 'rebinding_time_value' to some number
 very close to, if not equal to, your lease-time, to avoid having clients extend
 leases longer than necessary; if you want a more persistent dynamic solution,

@@ -65,32 +65,32 @@ def emit(statistics):
             except Exception:
                 _logger.critical("Unable to deliver statistics:\n" + traceback.format_exc())
                 
-def registerStatsCallback(func):
+def registerStatsCallback(callback):
     """
     Allows for modular registration of statistics callbacks, to be invoked
     in the order of registration.
     
-    @type func: callable
-    @param func: A callable that takes L{Statistics} as its argument; if already
+    @type callback: callable
+    @param callback: A callable that takes L{Statistics} as its argument; if already
         present, it will not be registered a second time. This function must not
         block for any significant amount of time.
     """
     with _stats_lock:
-        if func in _stats_callbacks:
-            _logger.error("Callback %(callback)r is already registered" % {'callback': func,})
+        if callback in _stats_callbacks:
+            _logger.error("Callback %(callback)r is already registered" % {'callback': callback,})
         else:
-            _stats_callbacks.append(func)
+            _stats_callbacks.append(callback)
             
-def unregisterStatsCallback(func):
+def unregisterStatsCallback(callback):
     """
     Allows for modular unregistration of stats callbacks.
     
-    @type func: callable
-    @param func: A callable; if not present, this is a no-op.
+    @type callback: callable
+    @param callback: A callable; if not present, this is a no-op.
     """
     with _stats_lock:
         try:
-            _stats_callbacks.remove(func)
+            _stats_callbacks.remove(callback)
         except ValueError:
-            _logger.error("Callback %(callback)r is not registered" % {'callback': func,})
+            _logger.error("Callback %(callback)r is not registered" % {'callback': callback,})
             

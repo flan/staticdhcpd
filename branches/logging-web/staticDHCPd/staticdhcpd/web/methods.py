@@ -29,7 +29,7 @@ import logging
 
 from .. import config
 from .. import logging_handlers
-import resources
+import _resources
 
 _logger = logging.getLogger('web.methods')
 
@@ -51,8 +51,8 @@ class Logger(object):
         return '<br/>\n'.join((cgi.escape(line) for line in self._logger.readContents()))
         
 def css(path, queryargs, mimetype, data, headers):
-    return ('text/css', resources.CSS)
+    return ('text/css', _resources.CSS)
     
 def favicon(path, queryargs, mimetype, data, headers):
-    return ('image/vnd.microsoft.icon', resources.FAVICON)
+    return ('image/vnd.microsoft.icon', _resources.FAVICON)
     

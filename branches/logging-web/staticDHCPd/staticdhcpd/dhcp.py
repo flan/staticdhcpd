@@ -53,12 +53,6 @@ _PACKET_TYPE_REQUEST_REBIND = 'REQUEST:REBIND'
 _PACKET_TYPE_REQUEST_RENEW = 'REQUEST:RENEW'
 _PACKET_TYPE_REQUEST_SELECTING = 'REQUEST:SELECTING'
 
-#Packet-response-type string-constants
-_PACKET_RESPONSE_TYPE_ACK = 'ACK'
-_PACKET_RESPONSE_TYPE_ACK_RAPID = 'ACK-rapid'
-_PACKET_RESPONSE_TYPE_OFFER = 'OFFER'
-_PACKET_RESPONSE_TYPE_NAK = 'NAK'
-
 #IP constants
 _IP_GLOB = '0.0.0.0'
 _IP_BROADCAST = '255.255.255.255'
@@ -367,8 +361,8 @@ class _PacketWrapper(object):
         self._loadDHCPPacket(definition, inform)
         process = bool(config.loadDHCPPacket(
          self.packet, self._packet_type,
-         self.mac, tuple(ipToList(definition.ip)), self.giaddr and tuple(self.giaddr),
-         definition.subnet, definition.serial,
+         self.mac, definition.subnet, definition.serial,
+         tuple(ipToList(definition.ip)), self.giaddr and tuple(self.giaddr),
          self.pxe and self.pxe_options, self.vendor_options
         ))
         if not process:
@@ -506,6 +500,10 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         if definition:
             rapid_commit = wrapper.packet.getOption('rapid_commit') is not None
             if rapid_commit:
+                _logger.info('%(type)s from %(mac)s requested rapid-commit' % {
+                 'type': wrapper.getType(),
+                 'mac': wrapper.mac,
+                })
                 wrapper.packet.transformToDHCPAckPacket()
                 wrapper.packet.forceOption('rapid_commit', [])
             else:
@@ -515,20 +513,20 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                 if rapid_commit:
                     self._sendDHCPPacket(
                      wrapper.packet, wrapper.source_address, wrapper.pxe,
-                     _PACKET_RESPONSE_TYPE_ACK_RAPID, wrapper.mac, definition.ip
+                     wrapper.mac, definition.ip
                     )
                 else:
                     self._sendDHCPPacket(
                      wrapper.packet, wrapper.source_address, wrapper.pxe,
-                     _PACKET_RESPONSE_TYPE_OFFER, wrapper.mac, definition.ip
+                     wrapper.mac, definition.ip
                     )
                 wrapper.markAddressed()
         else:
             if config.AUTHORITATIVE:
-                wrapper.packet.transformToDHCPNackPacket()
+                wrapper.packet.transformToDHCPNakPacket()
                 self._sendDHCPPacket(
                  wrapper.packet, wrapper.source_address, wrapper.pxe,
-                 _PACKET_RESPONSE_TYPE_NAK, wrapper.mac, _IP_REJECTED
+                 wrapper.mac, _IP_REJECTED
                 )
                 wrapper.markAddressed()
             else:
@@ -554,7 +552,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
             if wrapper.loadDHCPPacket(definition, inform=True):
                 self._sendDHCPPacket(
                  wrapper.packet, wrapper.source_address, wrapper.pxe,
-                 _PACKET_RESPONSE_TYPE_ACK, wrapper.mac, _toDottedQuadOrNone(wrapper.ciaddr) or _IP_REJECTED
+                 wrapper.mac, _toDottedQuadOrNone(wrapper.ciaddr) or _IP_REJECTED
                 )
                 wrapper.markAddressed()
         else:
@@ -605,14 +603,14 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                     if wrapper.loadDHCPPacket(definition):
                         self._sendDHCPPacket(
                          wrapper.packet, wrapper.source_address, wrapper.pxe,
-                         _PACKET_RESPONSE_TYPE_ACK, wrapper.mac, s_ip
+                         wrapper.mac, s_ip
                         )
                         wrapper.markAddressed()
                 else:
-                    wrapper.packet.transformToDHCPNackPacket()
+                    wrapper.packet.transformToDHCPNakPacket()
                     self._sendDHCPPacket(
                      wrapper.packet, wrapper.source_address, wrapper.pxe,
-                     _PACKET_RESPONSE_TYPE_NAK, wrapper.mac, _IP_REJECTED
+                     wrapper.mac, _IP_REJECTED
                     )
                     wrapper.markAddressed()
         elif not wrapper.sid and not wrapper.ciaddr and wrapper.ip: #INIT-REBOOT
@@ -625,14 +623,14 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                 if wrapper.loadDHCPPacket(definition):
                     self._sendDHCPPacket(
                      wrapper.packet, wrapper.source_address, wrapper.pxe,
-                     _PACKET_RESPONSE_TYPE_ACK, wrapper.mac, s_ip
+                     wrapper.mac, s_ip
                     )
                     wrapper.markAddressed()
             else:
-                wrapper.packet.transformToDHCPNackPacket()
+                wrapper.packet.transformToDHCPNakPacket()
                 self._sendDHCPPacket(
                  wrapper.packet, wrapper.source_address, wrapper.pxe,
-                 _PACKET_RESPONSE_TYPE_NAK, wrapper.mac, s_ip
+                 wrapper.mac, s_ip
                 )
                 wrapper.markAddressed()
         elif not wrapper.sid and wrapper.ciaddr and not wrapper.ip: #RENEWING or REBINDING
@@ -640,11 +638,11 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
             wrapper.setType(renew and _PACKET_TYPE_REQUEST_RENEW or _PACKET_TYPE_REQUEST_REBIND)
             wrapper.announcePacket(ip=s_ip)
             
-            if config.NAK_RENEWALS and not wrapper.pxe:
-                wrapper.packet.transformToDHCPNackPacket()
+            if config.NAK_RENEWALS and not wrapper.pxe and (renew or config.AUTHORITATIVE):
+                wrapper.packet.transformToDHCPNakPacket()
                 self._sendDHCPPacket(
                  wrapper.packet, wrapper.source_address, wrapper.pxe,
-                 _PACKET_RESPONSE_TYPE_NAK, wrapper.mac, _IP_REJECTED
+                 wrapper.mac, _IP_REJECTED
                 )
                 wrapper.markAddressed()
             else:
@@ -655,15 +653,15 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                     if wrapper.loadDHCPPacket(definition):
                         self._sendDHCPPacket(
                          wrapper.packet, (s_ciaddr, 0), wrapper.pxe,
-                         _PACKET_RESPONSE_TYPE_ACK, wrapper.mac, s_ciaddr
+                         wrapper.mac, s_ciaddr
                         )
                         wrapper.markAddressed()
                 else:
                     if renew:
-                        wrapper.packet.transformToDHCPNackPacket()
+                        wrapper.packet.transformToDHCPNakPacket()
                         self._sendDHCPPacket(
                          wrapper.packet, (s_ciaddr, 0), wrapper.pxe,
-                         _PACKET_RESPONSE_TYPE_NAK, wrapper.mac, s_ciaddr
+                         wrapper.mac, s_ciaddr
                         )
                         wrapper.markAddressed()
         else:
@@ -727,7 +725,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                         return False
         return True
         
-    def _sendDHCPPacket(self, packet, address, pxe, response_type, mac, client_ip):
+    def _sendDHCPPacket(self, packet, address, pxe, mac, client_ip):
         """
         Sends the given packet to the right destination based on its properties.
         
@@ -745,9 +743,6 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
             (host, port)
         @type pxe: bool
         @param pxe: True if the packet was received via the PXE port.
-        @type response_type: basestring
-        @param response_type: The subtype of this response: 'OFFER', 'ACK',
-            'NAK'
         @type mac: basestring
         @param mac: The MAC of the client for which this packet is destined.
         @type client_ip: basestring
@@ -774,8 +769,9 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                     
         packet.setOption('server_identifier', ipToList(self._server_address))
         bytes = self._sendDHCPPacketTo(packet, ip, port, pxe)
+        response_type = packet.getDHCPMessageTypeName()
         _logger.info('%(type)s sent to %(mac)s for %(client)s via %(ip)s:%(port)i %(pxe)s[%(bytes)i bytes]' % {
-         'type': response_type,
+         'type': response_type[response_type.find('_') + 1:],
          'mac': mac,
          'client': client_ip,
          'bytes': bytes,

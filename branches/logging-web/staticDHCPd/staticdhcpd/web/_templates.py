@@ -61,7 +61,9 @@ def _renderTemplate(elements, path, queryargs, mimetype, data, headers):
     for element in elements:
         #Render module and name with it
         try:
-            output.append(element.callback(path, queryargs, mimetype, data, headers))
+            result = element.callback(path=path, queryargs=queryargs, mimetype=mimetype, data=data, headers=headers)
+            if result is not None:
+                output.append(result)
         except Exception:
             _logger.error("Unable to render dashboard element '%(module)s' '%(name)s':\n%(error)s" % {
              'module': element.module,
@@ -73,7 +75,7 @@ def _renderTemplate(elements, path, queryargs, mimetype, data, headers):
     return ('application/xhtml+xml', ''.join(output))
     
 def renderTemplate(path, queryargs, mimetype, data, headers, element):
-    return _renderTemplate((element,), path, queryargs, mimetype, data, headers)
+    return _renderTemplate((element,), path=path, queryargs=queryargs, mimetype=mimetype, data=data, headers=headers)
     
 def renderDashboard(path, queryargs, mimetype, data, headers, featured_element=None):
     elements = retrieveDashboardCallbacks()
