@@ -356,6 +356,12 @@ class DHCPPacket(object):
             return -1
         return dhcp_message_type[0]
 
+    def getDHCPMessageTypeName(self):
+        """
+        Returns the DHCP packet-type-name of this packet as a string.
+        """
+        return DHCP_FIELDS_NAMES['dhcp_message_type].get(self._getDHCPMessageType(), 'UNKNOWN_UNKNOWN')
+        
     def isDHCPAckPacket(self):
         """
         Indicates whether this is an ACK packet.
@@ -437,7 +443,7 @@ class DHCPPacket(object):
         """
         return self._getDHCPMessageType() == 2
         
-    def isDHCPNackPacket(self):
+    def isDHCPNakPacket(self):
         """
         Indicates whether this is a NAK packet.
         
@@ -634,7 +640,7 @@ class DHCPPacket(object):
         
         self.deleteOption("ciaddr")
         
-    def transformToDHCPNackPacket(self):
+    def transformToDHCPNakPacket(self):
         """
         Transforms a DHCP packet received from a client into a NAK
         packet to be returned to the client.
