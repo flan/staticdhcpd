@@ -40,6 +40,8 @@ NTP_SERVERS = ('192.168.250.2', '192.168.250.3', '192.168.250.4') #Limit: 3
 ###############################################################################
 #Don't touch anything else, unless you want to (it's your network, after all)
 
+from staticdhcpd.databases import Definition
+
 import collections
 import logging
 import threading
@@ -119,7 +121,7 @@ def _dynamicMethod(f):
             _cleanupLeases() #Remove stale assignments
             ip = f(*args, **kwargs)
             if ip:
-                return (
+                return Definition(
                  ip, _HOSTNAME_PATTERN + ip.replace('.', '-'),
                  GATEWAY, SUBNET_MASK, BROADCAST_ADDRESS,
                  DOMAIN_NAME, _DOMAIN_NAME_SERVERS,

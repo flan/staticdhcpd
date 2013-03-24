@@ -28,6 +28,7 @@ Legal
 import logging
 
 from .. import config
+from _generic import Definition
 
 _logger = logging.getLogger('databases')
 

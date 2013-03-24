@@ -268,9 +268,9 @@ def handleUnknownMAC(packet, method, mac, client_ip, relay_ip, pxe, vendor):
     #Returning None will cause system-default behaviour to occur, which is usually
     #    ignoring the request or sending a NAK, depending on whether the server is
     #    configured to be authoritative.
-    #Returning a tuple will make the system act as though the MAC was found and
-    #    carry on, doing things as though a record exists, which subsequently
-    #    calls loadDHCPPacket.
+    #Returning an instance of L{databases._generic.Definition} will make the system
+    #    act as though the MAC was found and carry on, doing things as though a
+    #    record exists, which subsequently calls loadDHCPPacket.
     #    The form of the tuple is as follows: (
     #      '192.168.0.100', #The IPv4, as a string
     #      'guestbox', #The hostname for the client, which may be None

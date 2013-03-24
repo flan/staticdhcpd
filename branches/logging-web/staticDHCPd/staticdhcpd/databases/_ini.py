@@ -31,7 +31,7 @@ import threading
 
 from .. import config
 
-from _generic import Database
+from _generic import (Definition, Database)
 
 _logger = logging.getLogger("databases._ini")
 
@@ -231,14 +231,8 @@ class INI(Database):
         @type mac: basestring
         @param mac: The MAC address to lookup.
         
-        @rtype: tuple(11)|None
-        @return: (ip:basestring, hostname:basestring|None,
-            gateway:basestring|None, subnet_mask:basestring|None,
-            broadcast_address:basestring|None,
-            domain_name:basestring|None, domain_name_servers:basestring|None,
-            ntp_servers:basestring|None, lease_time:int,
-            subnet:basestring, serial:int) or None if no match was
-            found.
+        @rtype: Definition|None
+        @return: The definition or None, if no match was found.
         
         @raise Exception: If a problem occurs while accessing the database.
         """
@@ -253,7 +247,7 @@ class INI(Database):
             ntp_servers, domain_name_servers, domain_name
             ) = self._subnets.get(subnet)
             
-        return (
+        return Definition(
          ip, hostname,
          gateway, subnet_mask, broadcast_address,
          domain_name, domain_name_servers, ntp_servers,

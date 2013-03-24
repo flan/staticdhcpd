@@ -24,7 +24,6 @@ Legal
  
  (C) Neil Tallim, 2013 <flan@uguu.ca>
 """
-import collections
 import logging
 import select
 import threading
@@ -65,14 +64,6 @@ _IP_GLOB = '0.0.0.0'
 _IP_BROADCAST = '255.255.255.255'
 _IP_UNSPECIFIED_FILTER = (None, '', _IP_GLOB, _IP_BROADCAST)
 _IP_REJECTED = '<nil>'
-
-_Definition = collections.namedtuple('Definition', (
- 'ip', 'hostname',
- 'gateway', 'subnet_mask', 'broadcast_address',
- 'domain_name', 'domain_name_servers', 'ntp_servers',
- 'lease_time',
- 'subnet', 'serial',
-))
 
 _logger = logging.getLogger('dhcp')
 
@@ -319,7 +310,7 @@ class _PacketWrapper(object):
         """
         Sets option fields based on values returned from the database.
         
-        @type definition: _Definition
+        @type definition: L{databases._generic.Definition}
         @param definition: The value returned from the database or surrogate source.
         @type inform: bool
         @param inform: True if this is a response to an INFORM message, which
@@ -364,7 +355,7 @@ class _PacketWrapper(object):
         Loads the packet with all normally required values, then passes it
         through custom scripting to add additional fields as needed.
         
-        @type definition: Definition
+        @type definition: L{databases._generic.Definition}
         @param definition: The definition retrieved from the database.
         @type inform: bool
         @param inform: Whether this is an INFORM scenario, which omits
@@ -398,21 +389,18 @@ class _PacketWrapper(object):
         @type override_ip_value: sequence|None
         @param override_ip_value: The value to substitute for the default IP.
         
-        @rtype: Definition|None
+        @rtype: L{databases._generic.Definition}|None
         @return: The located Definition, or None if nothing was found.
         """
         ip = self.ip
         if override_ip:
             ip = override_ip_value
             
-        result = self._server.getDatabase().lookupMAC(self.mac) or config.handleUnknownMAC(
+        return self._server.getDatabase().lookupMAC(self.mac) or config.handleUnknownMAC(
          self.packet, self._packet_type,
          self.mac, ip and tuple(ip), self.giaddr and tuple(self.giaddr),
          self.pxe and self.pxe_options, self.vendor_options
         )
-        if result:
-            return _Definition(*result)
-        return None
         
 def _dhcpHandler(packet_type):
     """

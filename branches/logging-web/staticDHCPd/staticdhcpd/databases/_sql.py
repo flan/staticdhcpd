@@ -29,7 +29,7 @@ import logging
 
 from .. import config
 
-from _generic import CachingDatabase
+from _generic import (Definition, CachingDatabase)
 
 _logger = logging.getLogger("databases._sql")
 
@@ -63,14 +63,8 @@ class _DB20Broker(_SQLDatabase):
         @type mac: basestring
         @param mac: The MAC address to lookup.
         
-        @rtype: tuple(11)|None
-        @return: (ip:basestring, hostname:basestring|None,
-            gateway:basestring|None, subnet_mask:basestring|None,
-            broadcast_address:basestring|None,
-            domain_name:basestring|None, domain_name_servers:basestring|None,
-            ntp_servers:basestring|None, lease_time:int,
-            subnet:basestring, serial:int) or None if no match was
-            found.
+        @rtype: Definition|None
+        @return: The definition or None, if no match was found.
         
         @raise Exception: If a problem occurs while accessing the database.
         """
@@ -84,7 +78,7 @@ class _DB20Broker(_SQLDatabase):
             result = cur.fetchone()
             _logger.debug("Result collected")
             if result:
-                return result
+                return Definition(*result)
             return None
         finally:
             try:

@@ -25,12 +25,34 @@ Legal
  
  (C) Neil Tallim, 2013 <flan@uguu.ca>
 """
+import collections
 import logging
 import threading
 
 from .. import config
 
 _logger = logging.getLogger('databases._generic')
+
+Definition = collections.namedtuple('Definition', (
+ 'ip', 'hostname',
+ 'gateway', 'subnet_mask', 'broadcast_address',
+ 'domain_name', 'domain_name_servers', 'ntp_servers',
+ 'lease_time',
+ 'subnet', 'serial',
+))
+"""
+`ip`: '192.168.0.1'
+`hostname`: 'any-valid-hostname' or None
+`gateway`: '192.168.0.1' or None
+`subnet_mask`: '255.255.255.0' or None
+`broadcast_address`: '192.168.0.255' or None
+`domain_name`: 'example.org' or None
+`domain_name_servers`: '192.168.0.1, 192.168.0.2,192.168.0.3' or None
+`ntp_servers`: '192.168.0.1, 192.168.0.2,192.168.0.3' or None
+`lease_time`: 3600
+`subnet`: 'subnet-id`
+`serial`: 0
+"""
 
 class Database(object):
     """
@@ -44,14 +66,8 @@ class Database(object):
         @type mac: basestring
         @param mac: The MAC address to lookup.
         
-        @rtype: tuple(11)|None
-        @return: (ip:basestring, hostname:basestring|None,
-            gateway:basestring|None, subnet_mask:basestring|None,
-            broadcast_address:basestring|None,
-            domain_name:basestring|None, domain_name_servers:basestring|None,
-            ntp_servers:basestring|None, lease_time:int,
-            subnet:basestring, serial:int) or None if no match was
-            found.
+        @rtype: Definition|None
+        @return: The definition or None, if no match was found.
         
         @raise Exception: If a problem occurs while accessing the database.
         """
@@ -139,19 +155,15 @@ class CachingDatabase(Database):
                 return (ip, hostname,) + self._subnet_cache[subnet_id] + subnet_id
                 
         with self._resource_lock:
-            data = self._lookupMAC(mac)
-            if data and config.USE_CACHE:
-                (ip, hostname,
-                    gateway, subnet_mask, broadcast_address,
-                    domain_name, domain_name_servers, ntp_servers,
-                    lease_time, subnet, serial) = data
-                subnet_id = (subnet, serial)
+            definition = self._lookupMAC(mac)
+            if definition and config.USE_CACHE:
+                subnet_id = (definition.subnet, definition.serial)
                 with self._cache_lock:
-                    self._mac_cache[mac] = (ip, hostname, subnet_id,)
+                    self._mac_cache[mac] = (definition.ip, definition.hostname, subnet_id,)
                     self._subnet_cache[subnet_id] = (
-                        gateway, subnet_mask, broadcast_address,
-                        domain_name, domain_name_servers, ntp_servers,
-                        lease_time,
+                     definition.gateway, definition.subnet_mask, definition.broadcast_address,
+                     definition.domain_name, definition.domain_name_servers, definition.ntp_servers,
+                     definition.lease_time
                     )
-            return data
+            return definition
             
