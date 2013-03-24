@@ -45,9 +45,10 @@ from staticdhcpd.web import (retrieveDashboardCallbacks, retrieveVisibleMethodCa
 #        <create a new section>
 #    <add entry>
 
-def _renderTemplate(elements):
+def _renderTemplate(elements, path, queryargs, mimetype, data, headers):
     output = []
     
+    #Links
     module = None
     for (element, path) in retrieveVisibleMethodCallbacks():
         if element.module != module:
@@ -55,12 +56,14 @@ def _renderTemplate(elements):
         output.append(element.name)
         output.append(element.confirm)
         output.append(path)
-        
+    
+    #Main
     for element in elements:
+        #Render module and name with it
         try:
-            output.append(element())
+            output.append(element.callback(path, queryargs, mimetype, data, headers))
         except Exception:
-            _logger.error("Unable to render dashboard element '%(module)s'/'%(name)s':\n%(error)s" % {
+            _logger.error("Unable to render dashboard element '%(module)s' '%(name)s':\n%(error)s" % {
              'module': element.module,
              'name': element.name,
              'error': traceback.format_exc(),
@@ -70,18 +73,14 @@ def _renderTemplate(elements):
     return ('application/xhtml+xml', ''.join(output))
     
 def renderTemplate(path, queryargs, mimetype, data, headers, element):
-    return _renderTemplate((lambda : element(mimetype, data),))
+    return _renderTemplate((element,), path, queryargs, mimetype, data, headers)
     
 def renderDashboard(path, queryargs, mimetype, data, headers, featured_element=None):
-    elements = []
-    callbacks = retrieveDashboardCallbacks()
-    for c in callbacks:
-        elements.append(lambda : c(path, queryargs, mimetype, data, headers))
-        
+    elements = retrieveDashboardCallbacks()
     if featured_element:
-        elements.append(lambda : element(mimetype, data))
+        elements = list(elements) + [featured_element]
         
-    return _renderTemplate(elements)
+    return _renderTemplate(elements, path, queryargs, mimetype, data, headers)
     
     
     

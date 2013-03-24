@@ -264,7 +264,7 @@ class _PacketWrapper(object):
          'ip': ip and (" for %(ip)s" % {'ip': ip,}) or '',
          'sip': (
           self.source_address[0] not in _IP_UNSPECIFIED_FILTER and
-          " from %(address)s:%(port)i" % {'address': source_address[0], 'port': source_address[1],} or
+          " from %(address)s:%(port)i" % {'address': self.source_address[0], 'port': self.source_address[1],} or
           ''
          ),
          'pxe': self.pxe and " (PXE)" or '',
@@ -426,7 +426,7 @@ def _dhcpHandler(packet_type):
             with _PacketWrapper(self, packet, packet_type, source_address, pxe) as wrapper:
                 if not wrapper.valid:
                     return
-                f(self, wrapper, packet, source_address, pxe)
+                f(self, wrapper)
         return wrappedHandler
     return decorator
     

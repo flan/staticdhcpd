@@ -183,22 +183,21 @@ def _webMethod(method_type):
                 #First, see if it matches a registered callback
                 callback = retrieveMethodCallback(path)
                 if callback:
-                    _validate_request(self.headers, method_type, callback.secure)
-                    c = lambda mimetype, data : callback.callback(path, queryargs, mimetype, data, self.headers)
+                    _validateRequest(self.headers, method_type, callback.secure)
                     if callback.show_in_dashboard:
-                        handler = lambda mimetype, data : _templates.renderDashboard(path, queryargs, mimetype, data, self.headers, self.wfile, featured_element=c)
+                        handler = lambda path, queryargs, mimetype, data, headers : _templates.renderDashboard(path, queryargs, mimetype, data, headers, featured_element=callback)
                     elif callback.div_content:
-                        handler = lambda mimetype, data : _templates.renderTemplate(path, queryargs, mimetype, data, self.headers, self.wfile, c)
+                        handler = lambda path, queryargs, mimetype, data, headers : _templates.renderTemplate(path, queryargs, mimetype, data, headers, callback)
                     else:
-                        handler = c
+                        handler = callback.callback
                 elif path == '/':
                     _validateRequest(self.headers, method_type, config.WEB_DASHBOARD_SECURE)
-                    handler = lambda mimetype, data : _templates.renderDashboard(path, queryargs, mimetype, data, self.headers, self.wfile)
+                    handler = _templates.renderDashboard
                 else:
                     raise _NotFound(path)
                     
                 (mimetype, data) = http_method(self)
-                (mimetype, data) = handler(mimetype, data)
+                (mimetype, data) = handler(path, queryargs, mimetype, data, self.headers)
                 self.send_response(200)
                 self.send_header('Last-Modified', time.strftime('%a, %d %b %Y %H:%M:%S %Z'))
                 self.send_header('Content-Type', mimetype)
@@ -208,7 +207,7 @@ def _webMethod(method_type):
                 self.end_headers()
                 self.wfile.write(data)
             except _NotFound, e:
-                _logger.debug("Request made of unbound path: %(path)s" % {
+                _logger.debug("Request made for unbound path: %(path)s" % {
                  'path': str(e),
                 })
             except _RequestAuthorizationRequired, e:

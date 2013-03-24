@@ -68,17 +68,17 @@ def registerDashboardCallback(module, name, callback, ordering=None):
             if element.callback is callback:
                 _logger.error("%(element)r is already registered" % {'element': element,})
                 break
-            else:
-                if ordering is None:
-                    if _web_dashboard:
-                        ordering = _web_dashboard[-1].ordering + 1
-                    else:
-                        ordering = 0
-                element = _WebDashboardElement(ordering, module, name, callback)
-                _web_dashboard.append(element)
-                _web_dashboard.sort()
-                _logger.debug("Registered %(element)r" % {'element': element,})
-                
+        else:
+            if ordering is None:
+                if _web_dashboard:
+                    ordering = _web_dashboard[-1].ordering + 1
+                else:
+                    ordering = 0
+            element = _WebDashboardElement(ordering, module, name, callback)
+            _web_dashboard.append(element)
+            _web_dashboard.sort()
+            _logger.debug("Registered %(element)r" % {'element': element,})
+            
 def unregisterDashboardCallback(callback):
     """
     Allows for modular unregistration of dashboard callbacks.
@@ -106,7 +106,7 @@ def retrieveDashboardCallbacks():
     @return: All registered callbacks.
     """
     with _web_lock:
-        return tuple(self._web_dashboard)
+        return tuple(_web_dashboard)
         
 def registerMethodCallback(path, module, name, hidden, secure, confirm, div_content, show_in_dashboard, callback):
     """
