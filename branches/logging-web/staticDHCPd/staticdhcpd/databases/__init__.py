@@ -38,9 +38,14 @@ def get_database():
     @rtype: _generic.Database
     @return A database interface, usable to access DHCP information.
     """
-    _logger.debug("Loading database of type '" + config.DATABASE_ENGINE + "'...")
+    _logger.debug("Loading database of type %(type)r..." % {
+     'type': config.DATABASE_ENGINE,
+    })
     
-    if config.DATABASE_ENGINE == 'SQLite':
+    if not config.DATABASE_ENGINE:
+        from _generic import Null
+        return Null()
+    elif config.DATABASE_ENGINE == 'SQLite':
         from _sql import SQLite
         return SQLite()
     elif config.DATABASE_ENGINE == 'PostgreSQL':

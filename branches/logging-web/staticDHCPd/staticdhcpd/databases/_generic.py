@@ -41,9 +41,6 @@ class Database(object):
         Queries the database for the given MAC address and returns the IP and
         associated details if the MAC is known.
         
-        If the subclass supports caching, the cache is checked and updated by
-        this function.
-        
         @type mac: basestring
         @param mac: The MAC address to lookup.
         
@@ -67,6 +64,30 @@ class Database(object):
         a cache or reconnecting to the source.
         """
         
+class Null(Database):
+    """
+    A database that never serves anything, useful in case other modules provide
+    definitions.
+    """
+    def lookupMAC(self, mac):
+        """
+        Queries the database for the given MAC address and returns the IP and
+        associated details if the MAC is known.
+        
+        @type mac: basestring
+        @param mac: The MAC address to lookup.
+        
+        @rtype: None
+        @return: Nothing, because no data is managed.
+        """
+        return None
+        
+    def reinitialise(self):
+        """
+        Though subclass-dependent, this will generally result in some guarantee
+        that the database will provide fresh data, whether that means flushing
+        a cache or reconnecting to the source.
+        """
         
 class CachingDatabase(Database):
     """
