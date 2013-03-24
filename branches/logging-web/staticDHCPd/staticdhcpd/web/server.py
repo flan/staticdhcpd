@@ -87,7 +87,7 @@ def _parseAuthorization(authorization):
         if parameter:
             match = _AUTHORIZATION_RE.match(parameter)
             if match:
-                result[match.group('key')] = match.group('value')
+                result[match.group('key').lower()] = match.group('value')
     return result
     
 def _validateCredentials(parameters, method):
