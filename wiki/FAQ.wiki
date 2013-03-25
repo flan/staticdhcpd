@@ -55,7 +55,7 @@ Sure, that's not a problem at all.
 The default CSS is held in `web.resources` and it's served by `web.methods.css()`. Just implement your own equivalent method, then, in `init()` in `conf.py`, do something similar to the following:
 {{{
 webRemoveMethod('/css')
-webAddMethod('/css', None, None, True, False, False, False, False, _YOUR_METHOD_HERE_)
+webAddMethod('/css', _YOUR_METHOD_HERE_, cacheable=True)
 }}}
 
 Replacing the JavaScript or favicon is pretty much identical.
