@@ -40,7 +40,7 @@ _logger = logging.getLogger('web.server')
 from staticdhcpd.web import (retrieveDashboardCallbacks, retrieveVisibleMethodCallbacks)
 
 _SYSTEM_NAME = _functions.sanitise(config.SYSTEM_NAME)
-_FOOTER = """<div style="float: right;">If you benefit from this system, please <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&amp;hosted_button_id=11056045">consider supporting it</a></div>
+_FOOTER = """<div style="float: right;">If you benefit from this system, please <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&amp;hosted_button_id=11056045">support it</a></div>
 <a href="%(staticdhcpd-url)s">staticDHCPd</a> v%(staticdhcpd-version)s |
 <a href="%(libpydhcpserver-url)s">libpydhcpserver</a> v%(libpydhcpserver-version)s""" % {
  'staticdhcpd-url': _functions.sanitise(staticdhcpd.URL),
