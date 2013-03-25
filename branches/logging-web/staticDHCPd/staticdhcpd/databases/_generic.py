@@ -152,7 +152,7 @@ class CachingDatabase(Database):
                 data = self._mac_cache.get(mac)
             if data:
                 (ip, hostname, subnet_id) = data
-                return (ip, hostname,) + self._subnet_cache[subnet_id] + subnet_id
+                return definition(*((ip, hostname,) + self._subnet_cache[subnet_id] + subnet_id))
                 
         with self._resource_lock:
             definition = self._lookupMAC(mac)

@@ -80,6 +80,7 @@ def registerStatsCallback(callback):
             _logger.error("Callback %(callback)r is already registered" % {'callback': callback,})
         else:
             _stats_callbacks.append(callback)
+            _logger.debug("Registered stats-callback %(callback)r" % {'callback': callback,})
             
 def unregisterStatsCallback(callback):
     """
@@ -91,6 +92,7 @@ def unregisterStatsCallback(callback):
     with _stats_lock:
         try:
             _stats_callbacks.remove(callback)
+            _logger.debug("Unregistered stats-callback %(callback)r" % {'callback': callback,})
         except ValueError:
             _logger.error("Callback %(callback)r is not registered" % {'callback': callback,})
             

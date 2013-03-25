@@ -150,13 +150,19 @@ def _initialise():
         webservice.start()
         
         import staticdhcpd.web.methods
-        staticdhcpd.web.registerMethodCallback('/css.css', None, None, True, False, False, False, False, staticdhcpd.web.methods.css)
-        staticdhcpd.web.registerMethodCallback('/favicon.ico', None, None, True, False, False, False, False, staticdhcpd.web.methods.favicon)
         if staticdhcpd.config.WEB_LOG_HISTORY > 0:
             _logger.info("Webservice logging module enabled; configuring...")
             web_logger = staticdhcpd.web.methods.Logger()
             staticdhcpd.web.registerDashboardCallback(staticdhcpd.config.SYSTEM_NAME, 'events', web_logger.render, staticdhcpd.config.WEB_DASHBOARD_ORDER_LOG)
-            
+        staticdhcpd.web.registerMethodCallback('/css', None, None, True, False, False, False, False, staticdhcpd.web.methods.css)
+        staticdhcpd.web.registerMethodCallback('/js', None, None, True, False, False, False, False, staticdhcpd.web.methods.js)
+        staticdhcpd.web.registerMethodCallback('/favicon.ico', None, None, True, False, False, False, False, staticdhcpd.web.methods.favicon)
+        staticdhcpd.web.registerMethodCallback(
+         '/ca/uguu/puukusoft/staticDHCPd/reinitialise', staticdhcpd.config.SYSTEM_NAME, 'reinitialise', False,
+         staticdhcpd.config.WEB_REINITIALISE_SECURE, staticdhcpd.config.WEB_REINITIALISE_CONFIRM,
+         True, True, staticdhcpd.web.methods.reinitialise
+        )
+        
         if staticdhcpd.config.STATS_ENABLED: #No point in turning this on without webservices
             _logger.info("Webservice statistics enabled; configuring...")
             import staticdhcpd.statistics
@@ -182,8 +188,8 @@ if __name__ == '__main__':
      "----------------------------------------",
      "----------------------------------------",
      "System startup in progress; PID=" + str(os.getpid()),
-     "staticDHCPd version " + staticdhcpd.VERSION,
-     "libpydhcpserver version " + libpydhcpserver.VERSION,
+     "staticDHCPd version " + staticdhcpd.VERSION + " : " + staticdhcpd.URL,
+     "libpydhcpserver version " + libpydhcpserver.VERSION + " : " + libpydhcpserver.URL,
      "Continuing with subsystem initialisation",
      "----------------------------------------",
     ):

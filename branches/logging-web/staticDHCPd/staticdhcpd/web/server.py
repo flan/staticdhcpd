@@ -47,27 +47,31 @@ import _templates
 
 _logger = logging.getLogger('web.server')
 
-_AUTHORIZATION_RE = re.compile(r'^(?P<key>.+?)="?(?P<value>.+)"?$')
-_NONCE_TIMEOUT = 10.0 #: The number of seconds to wait for the client to try again.
+_AUTHORIZATION_RE = re.compile(r'^(?P<key>.+?)="?(?P<value>.+?)"?$')
+_NONCE_TIMEOUT = 120.0 #: The number of seconds to wait for the client to try again.
 _OPAQUE = uuid.uuid4().hex
 _NONCES = []
 _NONCE_LOCK = threading.Lock()
 def _flush_expired_nonces():
     current_time = time.time()
+    stale_nonces = []
     with _NONCE_LOCK:
-        for (i, (nonce, timeout)) in reversed(enumerate(_NONCES)):
+        for (i, (nonce, timeout)) in enumerate(_NONCES):
             if current_time >= timeout:
-                del _NONCES[i]
+                stale_nonces.append(i)
                 _logger.debug("Nonce %(nonce)s expired" % {
                  'nonce': nonce,
                 })
-                
+        for i in reversed(stale_nonces):
+            del _NONCES[i]
+            
 def _generateNonce():
     nonce = uuid.uuid4().hex
     timeout = time.time() + _NONCE_TIMEOUT
     with _NONCE_LOCK:
         _NONCES.append((nonce, timeout))
-        
+    return nonce
+    
 def _locateNonce(nonce, remove=False):
     with _NONCE_LOCK:
         for (i, (n, _)) in enumerate(_NONCES):
@@ -102,16 +106,10 @@ def _validateCredentials(parameters, method):
         
         ha1 = hashlib.md5("%(username)s:%(realm)s:%(password)s" % {
          'username': config.WEB_DIGEST_USERNAME,
-         'realm': config.SYSTEM_NAME,
+         'realm': config.SYSTEM_NAME.replace('"', "'"),
          'password': config.WEB_DIGEST_PASSWORD,
         }).hexdigest()
-        if parameters.get('algorithm', '').lower() == 'md5-sess':
-            ha1 = hashlib.md5("%(ha1)s:%(nonce)s:%(cnonce)s" % {
-             'ha1': ha1,
-             'nonce': nonce,
-             'cnonce': cnonce,
-            }).hexdigest()
-            
+        
         ha2 = hashlib.md5("%(method)s:%(uri)s" % {
          'method': method,
          'uri': parameters['uri']
@@ -163,7 +161,7 @@ def _isSecure(headers, method):
         
 def _validateRequest(headers, method, secure):
     if secure and (config.WEB_DIGEST_USERNAME and config.WEB_DIGEST_PASSWORD):
-        _is_secure(headers, method)
+        _isSecure(headers, method)
         
 def _webMethod(method_type):
     """
@@ -174,6 +172,12 @@ def _webMethod(method_type):
     """
     def decorator(http_method):
         def wrappedHandler(self):
+            _logger.debug("Received %(method)s from %(host)s:%(port)i for %(path)s" % {
+             'method': method_type,
+             'host': self.client_address[0],
+             'port': self.client_address[1],
+             'path': self.path,
+            })
             try:
                 (path, queryargs) = (self.path.split('?', 1) + [''])[:2]
                 queryargs = parse_qs(queryargs)
@@ -182,7 +186,7 @@ def _webMethod(method_type):
                 #First, see if it matches a registered callback
                 callback = retrieveMethodCallback(path)
                 if callback:
-                    _validateRequest(self.headers, method_type, callback.secure)
+                    _validateRequest(self.headers, method_type, callback.secure or (callback.show_in_dashboard and config.WEB_DASHBOARD_SECURE))
                     if callback.show_in_dashboard:
                         handler = lambda path, queryargs, mimetype, data, headers : _templates.renderDashboard(path, queryargs, mimetype, data, headers, featured_element=callback)
                     elif callback.div_content:
@@ -215,16 +219,18 @@ def _webMethod(method_type):
                  'nonce': e.nonce,
                 })
                 self.send_response(401)
+                auth = [
+                 ('realm', config.SYSTEM_NAME.replace('"', "'")),
+                 ('qop', 'auth'),
+                 ('algorithm', 'MD5'),
+                 ('nonce', e.nonce),
+                 ('opaque', _OPAQUE),
+                ]
+                if e.stale:
+                    auth.append(('stale', 'TRUE'))
                 self.send_header(
                  'WWW-Authenticate',
-                 'Digest ' + ', '.join('%(key)s="%(value)s' % {key, value} for (key, value) in (
-                  ('realm', config.SYSTEM_NAME),
-                  ('qop', 'auth'),
-                  ('algorithm', 'MD5,MD5-sess'),
-                  ('nonce', e.nonce),
-                  ('opaque', _OPAQUE),
-                  ('stale', str(e.stale).upper()),
-                 ))
+                 'Digest ' + ', '.join('%(key)s="%(value)s"' % {'key': key, 'value': value,} for (key, value) in auth)
                 )
                 self.end_headers()
             except Exception:

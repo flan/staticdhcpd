@@ -249,7 +249,7 @@ class _PacketWrapper(object):
          'ip': ip and (" for %(ip)s" % {'ip': ip,}) or '',
          'sip': (
           self.source_address[0] not in _IP_UNSPECIFIED_FILTER and
-          " from %(address)s:%(port)i" % {'address': self.source_address[0], 'port': self.source_address[1],} or
+          " via %(address)s:%(port)i" % {'address': self.source_address[0], 'port': self.source_address[1],} or
           ''
          ),
          'pxe': self.pxe and " (PXE)" or '',

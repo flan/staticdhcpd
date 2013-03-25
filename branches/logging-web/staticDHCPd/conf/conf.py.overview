@@ -297,6 +297,10 @@ WEB_LOG_SEVERITY : text : default='INFO'
    this important
  - One of 'DEBUG', 'INFO', 'WARN', 'ERROR', 'CRITICAL'
  
+WEB_LOG_MAX_HEIGHT : integer, None : default=400
+ - The maximum height, in pixles, of the web-log, before it scrolls
+ - A value of None disables this restriction
+ 
 WEB_DIGEST_USERNAME : text, None : default=None
  - The username to use for DIGEST-based authentication
  - If None, authentication is disabled

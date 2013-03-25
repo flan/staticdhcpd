@@ -360,7 +360,7 @@ class DHCPPacket(object):
         """
         Returns the DHCP packet-type-name of this packet as a string.
         """
-        return DHCP_FIELDS_NAMES['dhcp_message_type].get(self._getDHCPMessageType(), 'UNKNOWN_UNKNOWN')
+        return DHCP_FIELDS_NAMES['dhcp_message_type'].get(self._getDHCPMessageType(), 'UNKNOWN_UNKNOWN')
         
     def isDHCPAckPacket(self):
         """

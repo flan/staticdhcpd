@@ -56,7 +56,7 @@ class FIFOHandler(logging.Handler):
     def readContents(self):
         self.acquire()
         try:
-            return [self.format(record) for record in self._buffer]
+            return [(record.levelno, self.format(record)) for record in self._buffer]
         finally:
             self.release()
             

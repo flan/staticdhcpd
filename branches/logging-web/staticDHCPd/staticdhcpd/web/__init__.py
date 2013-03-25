@@ -28,6 +28,8 @@ import collections
 import logging
 import threading
 
+import _functions
+
 _logger = logging.getLogger('web')
 
 _web_lock = threading.Lock()
@@ -72,10 +74,10 @@ def registerDashboardCallback(module, name, callback, ordering=None):
                     ordering = _web_dashboard[-1].ordering + 1
                 else:
                     ordering = 0
-            element = _WebDashboardElement(ordering, module, name, callback)
+            element = _WebDashboardElement(ordering, _functions.sanitise(module), _functions.sanitise(name), callback)
             _web_dashboard.append(element)
             _web_dashboard.sort()
-            _logger.debug("Registered %(element)r" % {'element': element,})
+            _logger.debug("Registered dashboard element %(element)r" % {'element': element,})
             
 def unregisterDashboardCallback(callback):
     """
@@ -85,6 +87,7 @@ def unregisterDashboardCallback(callback):
         for (i, element) in enumerate(_web_dashboard):
             if element.callback is callback:
                 del _web_dashboard[i]
+                _logger.debug("Unregistered dashboard element %(element)r" % {'element': element,})
                 break
             else:
                 _logger.error("Dashboard callback %(callback)r is not registered" % {'callback': callback,})
@@ -132,8 +135,11 @@ def registerMethodCallback(path, module, name, hidden, secure, confirm, div_cont
         if path in _web_methods:
             _logger.error("'%(path)s' is already registered" % {'path': path,})
         else:
-            _web_methods[path] = _WebMethod(module, name, hidden, secure, confirm, div_content, show_in_dashboard, callback)
-            _logger.debug("Registered %(path)s" % {'path': path,})
+            _web_methods[path] = _WebMethod(
+             _functions.sanitise(module), _functions.sanitise(name),
+             hidden, secure, confirm, div_content, show_in_dashboard, callback
+            )
+            _logger.debug("Registered method %(path)s" % {'path': path,})
             
 def unregisterMethodCallback(path):
     """
@@ -142,6 +148,7 @@ def unregisterMethodCallback(path):
     with _web_lock:
         try:
             del _web_methods[path]
+            _logger.debug("Unregistered method %(path)s" % {'path': path,})
         except KeyError:
             _logger.error("'%(path)s' is not registered" % {'path': path,})
             

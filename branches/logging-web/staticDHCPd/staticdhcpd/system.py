@@ -75,6 +75,7 @@ def registerReinitialisationCallback(callback):
             _logger.error("Callback %(callback)r is already registered" % {'callback': callback,})
         else:
             _reinitialisation_callbacks.append(callback)
+            _logger.debug("Registered reinitialisation %(callback)r" % {'callback': callback,})
             
 def unregisterReinitialisationCallback(callback):
     """
@@ -86,6 +87,7 @@ def unregisterReinitialisationCallback(callback):
     with _reinitialisation_lock:
         try:
             _reinitialisation_callbacks.remove(callback)
+            _logger.debug("Unregistered reinitialisation %(callback)r" % {'callback': callback,})
         except ValueError:
             _logger.error("Callback %(callback)r is not registered" % {'callback': callback,})
 
@@ -113,6 +115,7 @@ def registerTickCallback(callback):
     with _tick_lock:
         if callback in _tick_callbacks:
             _logger.error("Callback %(callback)r is already registered" % {'callback': callback,})
+            _logger.debug("Registered tick %(callback)r" % {'callback': callback,})
         else:
             _tick_callbacks.append(callback)
             
@@ -126,6 +129,7 @@ def unregisterTickCallback(callback):
     with _tick_lock:
         try:
             _tick_callbacks.remove(callback)
+            _logger.debug("Unregistered tick %(callback)r" % {'callback': callback,})
         except ValueError:
             _logger.error("Callback %(callback)r is not registered" % {'callback': callback,})
             

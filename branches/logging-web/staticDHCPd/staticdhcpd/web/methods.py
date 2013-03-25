@@ -24,14 +24,23 @@ Legal
  
  (C) Neil Tallim, 2013 <flan@uguu.ca>
 """
-import cgi
 import logging
 
 from .. import config
 from .. import logging_handlers
+from ..import system
+import _functions
 import _resources
 
 _logger = logging.getLogger('web.methods')
+
+_SEVERITY_MAP = {
+ logging.DEBUG: 'debug',
+ logging.INFO: 'info',
+ logging.WARN: 'warn',
+ logging.ERROR: 'error',
+ logging.CRITICAL: 'critical',
+}
 
 class Logger(object):
     _logger = None
@@ -48,11 +57,43 @@ class Logger(object):
         _logger.info("Web-accessible logging online; buffer-size=" + str(config.WEB_LOG_HISTORY))
         
     def render(self, path, queryargs, mimetype, data, headers):
-        return '<br/>\n'.join((cgi.escape(line) for line in self._logger.readContents()))
+        global _SEVERITY_MAP
+        
+        output = []
+        for (severity, line) in self._logger.readContents():
+            output.append('<span class="%(severity)s">%(message)s</span>' % {
+             'severity': _SEVERITY_MAP[severity],
+             'message': _functions.sanitise(line).replace('\n', '<br/>'),
+            })
+            
+        return """
+        <div style='overflow-y: auto; overflow-x: auto; %(max-height)s'>
+        %(lines)s
+        </div>""" % {
+         'max-height': config.WEB_LOG_MAX_HEIGHT and ' max-height: %(max-height)ipx;' % {
+          'max-height': config.WEB_LOG_MAX_HEIGHT,
+         },
+         'lines': '<br/>\n'.join(output),
+        }
+        
+def reinitialise(path, queryargs, mimetype, data, headers):
+    try:
+        time_elapsed = system.reinitialise()
+    except Exception, e:
+        return '<span class="critical">Reinitilisation failed: %(error)s</span>' % {
+         'error': str(e),
+        }
+    else:
+        return 'System reinitilisation completed in %(time).4f seconds' % {
+         'time': time_elapsed,
+        }
         
 def css(path, queryargs, mimetype, data, headers):
     return ('text/css', _resources.CSS)
     
+def js(path, queryargs, mimetype, data, headers):
+    return ('text/javascript', _resources.JS)
+    
 def favicon(path, queryargs, mimetype, data, headers):
-    return ('image/vnd.microsoft.icon', _resources.FAVICON)
+    return ('image/x-icon', _resources.FAVICON)
     
