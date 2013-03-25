@@ -245,7 +245,7 @@ def _webMethod(method_type):
                  'error': error,
                 })
                 self.send_response(500)
-                self.send_header('Content-Type', 'text/plain')
+                self.send_header('Content-Type', 'text/plain; charset=utf-8')
                 self.send_header('Content-Length', len(error))
                 self.end_headers()
                 self.wfile.write(error)
