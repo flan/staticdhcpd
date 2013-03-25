@@ -49,16 +49,16 @@ And you should want to do this. Customisation is good.
 
 Every dashboard element has an ordering-bias value; those with smaller values appear first. If you have logging at a debug level, you'll see this information printed when each one gets registered; every built-in element is configurable via `conf.py`, and you can set your own bias values in any modules you write.
 
-== I want to use my own CSS/favicon for the web interface ==
+== I want to use my own CSS/JS/favicon for the web interface ==
 Sure, that's not a problem at all.
 
 The default CSS is held in `web.resources` and it's served by `web.methods.css()`. Just implement your own equivalent method, then, in `init()` in `conf.py`, do something similar to the following:
 {{{
-webRemoveMethod('/css.css')
-webAddMethod('/css.css', None, None, True, False, False, False, False, _YOUR_METHOD_HERE_)
+webRemoveMethod('/css')
+webAddMethod('/css', None, None, True, False, False, False, False, _YOUR_METHOD_HERE_)
 }}}
 
-Replacing the favicon is pretty much identical.
+Replacing the JavaScript or favicon is pretty much identical.
 
 ----
 = Platform-specific questions =
