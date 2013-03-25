@@ -22,8 +22,16 @@ If you wish to encapsulate code inside of a module, place it in the same
 directory as conf.py or in a subpackage thereof. conf.py's directory is added to
 sys.path, so imports from a relative root should work just like they usually do.
 
+In particular, if you expect to have a lot of custom code, you should create a
+file alongside conf.py named "_handlers.py" and import the main callback
+functions from there to keep conf.py clean. At the same level as the config
+directives, do something like the following:
 
-The examples here will show you how to enable dynamic provisioning using the
+from _handlers import (init, handleUnknownMAC, loadDHCPPacket)
+
+
+
+The examples below will show you how to enable dynamic provisioning using the
 included 'dynamism' module. From there, you should be able to write extension
 modules of your own. To customise DHCP behaviour, see the rules-writing guide:
 http://code.google.com/p/staticdhcpd/wiki/rules
