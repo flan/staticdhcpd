@@ -25,64 +25,50 @@ Legal
  (C) Neil Tallim, 2013 <flan@uguu.ca>
 """
 CSS = """
-body,
-html{
-    margin: 0;
-    padding: 0;
-    background: #d2d2d2;
-    font-family: sans-serif;
-    font-size: 12pt;
-}
-
 a{
     text-decoration: none;
 }
 
+body,
+html{
+    background: #d2d2d2;
+    
+    font-family: sans-serif;
+    font-size: 12pt;
+    
+    padding: 0;
+    margin: 0;
+}
+
 div#content{
-    color: #202020;
     background: #f0e0fb;
+    color: #202020;
+    
     margin-left: 6px;
     margin-right: 6px;
+}
+
+div#footer{
+    background: #ffffff;
+    
+    padding-left: 6px;
+    padding-right: 6px;
+    padding-bottom: 2px;
+    
+    border-top: 1px solid #636363;
+    
+    clear: both;
 }
 
 div#header{
     background: #000000;
     color: #ffffff;
+    
     padding-left: 6px;
     padding-right: 6px;
     padding-top: 2px;
+    
     border-bottom: 1px solid #636363;
-}
-
-div#footer{
-    background: #ffffff;
-    clear: both;
-    padding-left: 6px;
-    padding-right: 6px;
-    padding-bottom: 2px;
-    border-top: 1px solid #636363;
-}
-
-div#methods{
-    background: #4682b4;
-    float: left;
-    width: 200px;
-    border-right: 1px solid #53868b;
-    border-bottom: 1px solid #53868b;
-    padding-top: 3px;
-    padding-bottom: 3px;
-}
-
-h1.method{
-    font-size: 13pt;
-    color: #fdfdea;
-    margin: 0;
-    padding-left: 6px;
-}
-
-div.method{
-    color: #ffffe0;
-    padding-left: 25px;
 }
 
 div#main{
@@ -92,41 +78,77 @@ div#main{
     padding-bottom: 3px;
 }
 
-h1.element{
-    font-size: 13pt;
-    color: #939393;
-    margin: 0;
-}
-
-hr.element{
-    color: #838383;
-    background-color: #838383;
-    height: 4px;
+div#methods{
+    background: #4682b4;
+    
+    width: 200px;
+    
+    padding-top: 3px;
+    padding-bottom: 3px;
+    
+    border-right: 1px solid #53868b;
+    border-bottom: 1px solid #53868b;
+    
+    float: left;
 }
 
 div.element{
     background: #fdfdea;
+    
+    width: 95%;
+    
     border-top: 1px solid #838383;
     border-bottom: 1px solid #a3a3a3;
-    width: 95%;
+    
     margin: 0 auto;
 }
 
+div.method{
+    color: #ffffe0;
+    
+    padding-left: 25px;
+}
+
+h1.element{
+    color: #939393;
+    
+    font-size: 13pt;
+    
+    margin: 0;
+}
+
+h1.method{
+    color: #fdfdea;
+    
+    font-size: 13pt;
+    
+    padding-left: 6px;
+    margin: 0;
+}
+
+hr.element{
+    background-color: #838383;
+    color: #838383;
+    
+    height: 4px;
+}
+
+span.critical{
+    color: #ff0000;
+    
+    font-weight: bold;
+}
 span.debug{
     color: #939393;
+}
+span.error{
+    color: #ff0000;
 }
 span.info{
     color: #636363;
 }
 span.warn{
     color: #000000;
-}
-span.error{
-    color: #ff0000;
-}
-span.critical{
-    color: #ff0000;
-    font-weight: bold;
 }
 """
 
