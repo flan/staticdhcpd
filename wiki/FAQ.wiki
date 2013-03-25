@@ -18,7 +18,7 @@ There are no known issues at this time.
 == Can I do dynamic provisioning? ==
 Starting with 1.6.0, support for limited, non-spec-compliant dynamic provisioning is provided. `conf.py` now has an optional `handleUnknownMAC()` function, which can be used to return binding information, in the event that the database contains nothing. How you use this is up to you, since it's pretty flexible, but it will likely have unexpected results compared to real dynamic DHCP servers; problem reports are very much welcome, if only so they can be documented.
 
-To see examples of how to use this facility, see the [Dynamism dynamic configuration] page.
+To see examples of how to use this facility, see the [dynamism dynamic configuration] page.
 
 ----
 = Configuration =
