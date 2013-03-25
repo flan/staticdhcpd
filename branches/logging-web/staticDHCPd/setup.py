@@ -24,7 +24,6 @@ setup(
  data_files = [
   ('/etc/staticDHCPd', [
    'conf/conf.py.sample',
-   'conf/dynamism.py.sample',
   ]),
  ],
  scripts = [

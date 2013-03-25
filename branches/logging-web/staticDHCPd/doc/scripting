@@ -23,15 +23,13 @@ directory as conf.py or in a subpackage thereof. conf.py's directory is added to
 sys.path, so imports from a relative root should work just like they usually do.
 
 
-The examples here will show you have to enable dynamic provisioning using the
+The examples here will show you how to enable dynamic provisioning using the
 included 'dynamism' module. From there, you should be able to write extension
 modules of your own. To customise DHCP behaviour, see the rules-writing guide:
 http://code.google.com/p/staticdhcpd/wiki/rules
 
-For example, to enable dynamic provisioning, you might want to use the sample
-'dynamism' module. It is assumed that you've copied it from 'dynamism.py.sample'
-to 'dynamism.py' in the same directory as 'conf.py' and have modified its
-constants to suit your environment.
+To enable dynamic provisioning, copy contrib/dynamism.py to the same directory
+as conf.py and modify its constants to suit your environment.
 
 
 Hook-functions

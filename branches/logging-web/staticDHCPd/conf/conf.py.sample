@@ -1,5 +1,5 @@
 #For a full overview of what these parameters mean, and to further customise
-#your system, please consult conf.py.overview.
+#your system, please consult doc/configuration and doc/scripting
 
 
 # Whether to daemonise on startup (you don't want this during initial setup)
