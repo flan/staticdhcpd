@@ -27,5 +27,9 @@ Legal
 import cgi
 
 def sanitise(string):
+    """
+    `Ensures that the string, if not None or empty, is usable anywhere in an
+    HTML5 body.
+    """
     return string and cgi.escape(string).replace('"', '&quot;')
     
