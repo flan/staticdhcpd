@@ -67,7 +67,6 @@ def _hupHandler(signum, frame):
     """
     _logger.warn("Received SIGHUP")
     staticdhcpd.system.reinitialise()
-    _logger.warn("System reinitialised")
     
 def _daemonise():
     if os.fork(): #This is the parent
@@ -153,14 +152,15 @@ def _initialise():
         if staticdhcpd.config.WEB_LOG_HISTORY > 0:
             _logger.info("Webservice logging module enabled; configuring...")
             web_logger = staticdhcpd.web.methods.Logger()
-            staticdhcpd.web.registerDashboardCallback(staticdhcpd.config.SYSTEM_NAME, 'events', web_logger.render, staticdhcpd.config.WEB_DASHBOARD_ORDER_LOG)
-        staticdhcpd.web.registerMethodCallback('/css', None, None, True, False, False, False, False, staticdhcpd.web.methods.css)
-        staticdhcpd.web.registerMethodCallback('/js', None, None, True, False, False, False, False, staticdhcpd.web.methods.js)
-        staticdhcpd.web.registerMethodCallback('/favicon.ico', None, None, True, False, False, False, False, staticdhcpd.web.methods.favicon)
+            staticdhcpd.web.registerDashboardCallback('core', 'events', web_logger.render, staticdhcpd.config.WEB_DASHBOARD_ORDER_LOG)
+        staticdhcpd.web.registerMethodCallback('/css', staticdhcpd.web.methods.css, cacheable=(not staticdhcpd.config.DEBUG))
+        staticdhcpd.web.registerMethodCallback('/js', staticdhcpd.web.methods.js, cacheable=(not staticdhcpd.config.DEBUG))
+        staticdhcpd.web.registerMethodCallback('/favicon.ico', staticdhcpd.web.methods.favicon, cacheable=(not staticdhcpd.config.DEBUG))
         staticdhcpd.web.registerMethodCallback(
-         '/ca/uguu/puukusoft/staticDHCPd/reinitialise', staticdhcpd.config.SYSTEM_NAME, 'reinitialise', False,
-         staticdhcpd.config.WEB_REINITIALISE_SECURE, staticdhcpd.config.WEB_REINITIALISE_CONFIRM,
-         True, True, staticdhcpd.web.methods.reinitialise
+         '/ca/uguu/puukusoft/staticDHCPd/reinitialise', staticdhcpd.web.methods.reinitialise,
+         hidden=False, module='core', name='reinitialise',
+         secure=staticdhcpd.config.WEB_REINITIALISE_SECURE, confirm=staticdhcpd.config.WEB_REINITIALISE_CONFIRM,
+         display_mode=staticdhcpd.web.WEB_METHOD_DASHBOARD,
         )
         
         if staticdhcpd.config.STATS_ENABLED: #No point in turning this on without webservices

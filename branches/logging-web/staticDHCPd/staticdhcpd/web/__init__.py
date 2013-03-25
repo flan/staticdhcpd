@@ -38,8 +38,13 @@ _web_methods = {}
 
 _WebDashboardElement = collections.namedtuple("WebDashboardElement", ('ordering', 'module', 'name', 'callback'))
 _WebMethod = collections.namedtuple("WebMethod", (
- 'module', 'name', 'hidden', 'secure', 'confirm', 'div_content', 'show_in_dashboard', 'callback'
+ 'module', 'name', 'hidden', 'secure', 'confirm', 'display_mode', 'cacheable', 'callback'
 ))
+
+#Method-rendering constants
+WEB_METHOD_DASHBOARD = 1 #The content is rendered before the dashboard
+WEB_METHOD_TEMPLATE = 2 #The content is rendered in the same container that would normally show the dashboard, but no dashboard elements are present
+WEB_METHOD_RAW = 3 #The content is presented exactly as returned, identified by the given mimetype
 
 def registerDashboardCallback(module, name, callback, ordering=None):
     """
@@ -99,28 +104,13 @@ def retrieveDashboardCallbacks():
     with _web_lock:
         return tuple(_web_dashboard)
         
-def registerMethodCallback(path, module, name, hidden, secure, confirm, div_content, show_in_dashboard, callback):
+def registerMethodCallback(path, callback, cacheable=False, hidden=True, secure=False, module=None, name=None, confirm=False, display_mode=WEB_METHOD_RAW):
     """
     Installs a webservice method; at most one instance of `path` will be
     accepted.
     
     `path` is the location at which the service may be called, like
     "ca/uguu/puukusoft/statcDHCPd/statistics/histogram.csv".
-    
-    `module` and `name` describe how it will be presented, both as
-    human-readable strings. Only if `hidden` is False, though.
-    
-    `secure` controls whether DIGEST authentication will be required before this
-    method can be called.
-    
-    `confirm` adds JavaScript validation to ask the user if they're sure they
-    know what they're doing before the method will be invoked, if not `hidden`.
-    
-    `div_content`, if True, will place the data inside of the same sort of
-    template used by the dashboard, and `show_in_dashboard` will take it a step
-    further, rendering the returned content before the rest of the dashboard,
-    which is good for confirmation-like actions.
-    
     
     The `callback` must accept the parameters 'path', 'queryargs', 'mimetype',
     'data', and 'headers', with the possibility that 'mimetype' and 'data' may
@@ -130,16 +120,33 @@ def registerMethodCallback(path, module, name, hidden, secure, confirm, div_cont
     
     It must return a tuple of (mimetype, data, headers), with data being a
     string or bytes-like object.
+    
+    `cacheable` controls whether the client is allowed to cache the method's
+    content.
+    
+    `hidden` methods are not rendered in the side-bar.
+    
+    `secure` controls whether DIGEST authentication will be required before this
+    method can be called.
+    
+    `module` and `name` describe how it will be presented, both as
+    human-readable strings. Only if `hidden` is False, though.
+    
+    `confirm` adds JavaScript validation to ask the user if they're sure they
+    know what they're doing before the method will be invoked, if not `hidden`.
+    
+    `display_mode` is one of the WEB_METHOD_* constants, described at the start
+    of this module.
     """
     with _web_lock:
         if path in _web_methods:
             _logger.error("'%(path)s' is already registered" % {'path': path,})
         else:
-            _web_methods[path] = _WebMethod(
+            _web_methods[path] = method = _WebMethod(
              _functions.sanitise(module), _functions.sanitise(name),
-             hidden, secure, confirm, div_content, show_in_dashboard, callback
+             hidden, secure, confirm, display_mode, cacheable, callback
             )
-            _logger.debug("Registered method %(path)s" % {'path': path,})
+            _logger.debug("Registered method %(method)r at %(path)s" % {'method': method, 'path': path,})
             
 def unregisterMethodCallback(path):
     """

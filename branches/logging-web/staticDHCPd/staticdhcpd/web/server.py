@@ -44,6 +44,7 @@ from staticdhcpd.web import retrieveMethodCallback
 
 from .. import config
 import _templates
+from . import (WEB_METHOD_DASHBOARD, WEB_METHOD_TEMPLATE, WEB_METHOD_RAW)
 
 _logger = logging.getLogger('web.server')
 
@@ -182,14 +183,16 @@ def _webMethod(method_type):
                 (path, queryargs) = (self.path.split('?', 1) + [''])[:2]
                 queryargs = parse_qs(queryargs)
                 
+                cacheable = False
                 handler = None
                 #First, see if it matches a registered callback
                 callback = retrieveMethodCallback(path)
                 if callback:
-                    _validateRequest(self.headers, method_type, callback.secure or (callback.show_in_dashboard and config.WEB_DASHBOARD_SECURE))
-                    if callback.show_in_dashboard:
+                    _validateRequest(self.headers, method_type, callback.secure or (callback.display_mode == WEB_METHOD_DASHBOARD and config.WEB_DASHBOARD_SECURE))
+                    cacheable = callback.cacheable
+                    if callback.display_mode == WEB_METHOD_DASHBOARD:
                         handler = lambda path, queryargs, mimetype, data, headers : _templates.renderDashboard(path, queryargs, mimetype, data, headers, featured_element=callback)
-                    elif callback.div_content:
+                    elif callback.display_mode == WEB_METHOD_TEMPLATE:
                         handler = lambda path, queryargs, mimetype, data, headers : _templates.renderTemplate(path, queryargs, mimetype, data, headers, callback)
                     else:
                         handler = callback.callback
@@ -205,8 +208,9 @@ def _webMethod(method_type):
                 self.send_header('Last-Modified', time.strftime('%a, %d %b %Y %H:%M:%S %Z'))
                 self.send_header('Content-Type', mimetype)
                 self.send_header('Content-Length', len(data))
-                self.send_header('Expires', 'Tue, 03 Jul 2001 06:00:00 GMT')
-                self.send_header('Cache-Control', 'max-age=0, no-cache, must-revalidate, proxy-revalidate')
+                if not cacheable:
+                    self.send_header('Expires', 'Tue, 03 Jul 2001 06:00:00 GMT')
+                    self.send_header('Cache-Control', 'max-age=0, no-cache, must-revalidate, proxy-revalidate')
                 self.end_headers()
                 self.wfile.write(data)
             except _NotFound, e:

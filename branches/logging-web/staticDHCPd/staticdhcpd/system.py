@@ -50,6 +50,7 @@ def reinitialise():
     the exception will be re-raised.
     """
     start = time.time()
+    _logger.warn("System reinitilisation commencing...")
     with _reinitialisation_lock:
         for callback in _reinitialisation_callbacks:
             try:
@@ -59,6 +60,7 @@ def reinitialise():
                 ALIVE = False
                 _logger.critical("System shutdown triggered by unhandled exception:\n" + traceback.format_exc())
                 raise
+    _logger.warn("System reinitilisation complete")
     return time.time() - start
     
 def registerReinitialisationCallback(callback):

@@ -233,20 +233,26 @@ del logger
 del logging
 
 import system
-conf.systemAddReinitHandler = system.registerReinitialisationCallback
-conf.systemRemoveReinitHandler = system.unregisterReinitialisationCallback
-conf.systemAddTickHandler = system.registerTickCallback
-conf.systemRemoveTickHandler = system.unregisterTickCallback
-del system
-
 import statistics
-conf.statsAddHandler = statistics.registerStatsCallback
-conf.statsRemoveHandler = statistics.unregisterStatsCallback
-del statistics
-
 import web
-conf.webAddDashboard = web.registerDashboardCallback
-conf.webRemoveDashboard = web.unregisterDashboardCallback
-conf.webAddMethod = web.registerMethodCallback
-conf.webRemoveMethod = web.unregisterMethodCallback
+class callbacks(object):
+    systemAddReinitHandler = system.registerReinitialisationCallback
+    systemRemoveReinitHandler = system.unregisterReinitialisationCallback
+    systemAddTickHandler = system.registerTickCallback
+    systemRemoveTickHandler = system.unregisterTickCallback
+    
+    statsAddHandler = statistics.registerStatsCallback
+    statsRemoveHandler = statistics.unregisterStatsCallback
+    
+    webAddDashboard = web.registerDashboardCallback
+    webRemoveDashboard = web.unregisterDashboardCallback
+    webAddMethod = web.registerMethodCallback
+    webRemoveMethod = web.unregisterMethodCallback
+    
+    WEB_METHOD_DASHBOARD = web.WEB_METHOD_DASHBOARD
+    WEB_METHOD_TEMPLATE = web.WEB_METHOD_TEMPLATE
+    WEB_METHOD_RAW = web.WEB_METHOD_RAW
+del system
+del statistics
 del web
+conf.callbacks = callbacks

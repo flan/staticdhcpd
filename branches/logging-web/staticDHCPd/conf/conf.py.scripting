@@ -176,6 +176,8 @@ Lastly, if neither of the previous conditions were met, there's a 10% chance the
 packet will simply be dropped.
 
 
+
+
 Callback-functions
 --------------------------------------------------------------------------------
 staticDHCPd provides a number of functions you can use to integrate your code
@@ -186,7 +188,7 @@ reload config files, and get stable notification about the passage of time.
 To use these, just call them from `init()`.
 
 
-systemAddReinitHandler(callback)
+callbacks.systemAddReinitHandler(callback)
 ----------------------------------------
 Registers a callable to be invoked whenever the system is reinitialised.
 
@@ -194,7 +196,7 @@ Parameters:
     callback: The callable to be invoked; must not require any arguments
     
     
-systemRemoveReinitHandler(callback)
+callbacks.systemRemoveReinitHandler(callback)
 ----------------------------------------
 Unregisters a callable from the list of those invoked during reinitialisation.
 
@@ -202,7 +204,7 @@ Parameters:
     callback: The callable to be removed
     
     
-systemAddTickHandler(callback)
+callbacks.systemAddTickHandler(callback)
 ----------------------------------------
 Registers a callable to be invoked approximately once every second.
 
@@ -211,7 +213,7 @@ Parameters:
               must not block for any significant amount of time
               
               
-systemRemoveTickHandler(callback)
+callbacks.systemRemoveTickHandler(callback)
 ----------------------------------------
 Unregisters a callable from the list of those invoked every second.
 
@@ -219,7 +221,7 @@ Parameters:
     callback: The callable to be removed
     
     
-statsAddHandler(callback)
+callbacks.statsAddHandler(callback)
 ----------------------------------------
 Registers a callable to be invoked every time statistics information is emitted.
 
@@ -228,7 +230,7 @@ Parameters:
               must not block for any significant amount of time
               
               
-statsRemoveHandler(callback)
+callbacks.statsRemoveHandler(callback)
 ----------------------------------------
 Unregisters a callable from the list of those invoked when statistics are
 emitted.
@@ -237,14 +239,14 @@ Parameters:
     callback: The callable to be removed
     
     
-webAddDashboard(module, name, callback, ordering=None)
+callbacks.webAddDashboard(module, name, callback, ordering=None)
 ----------------------------------------
 Adds an element to the web-dashboard.
 
 Parameters: 
     module: something like "best module EVER"
     name: something like "awesomifications per second"
-    callback: the callable to be invoked when the dashboard is rendered; this is
+    callback: The callable to be invoked when the dashboard is rendered; this is
               what you'll need to implement
               It must accept the parameters 'path', 'queryargs', 'mimetype',
               'data', and 'headers', with the possibility that 'mimetype' and
@@ -259,7 +261,7 @@ Parameters:
               highest number plus one; negatives are valid
               
               
-webRemoveDashboard(callback)
+callbacks.webRemoveDashboard(callback)
 ----------------------------------------
 Removes an element from the web-dashboard.
 
@@ -267,7 +269,9 @@ Parameters:
     callback: The callback with which the element was initially registered
     
     
-webAddMethod(path, module, name, hidden, secure, confirm, div_content, show_in_dashboard, callback)
+callbacks.webAddMethod(path, callback, cacheable=False, hidden=True,
+secure=False, module=None, name=None, confirm=False,
+display_mode=callbacks.WEB_METHOD_RAW)
 ----------------------------------------
 Adds a webservice method.
 
@@ -275,18 +279,7 @@ Parameters:
     path: The path at which to register this callback, typically something like
           "ca/uguu/puukusoft/statcDHCPd/statistics/histogram.csv", but as long
           as it's a valid URI-fragment, it's up to you
-    module: something like "best module EVER"
-    name: something like "double awesomeness levels"
-    hidden: Whether the method should be rendered on the interface
-    secure: Whether DIGEST authentication will be required to access the method
-    confirm: Whether JavaScript validation will be used to prompt the user to
-             confirm that they want to perform the chosen action, if not hidden
-    div_content: Whether the returned data is meant to appear in the same sort
-                 of template as the dashboard
-    show_in_dashboard: Whether the method's contents, if div_content is set,
-                       should be shown alongside dashboard elements (Good for
-                       confirmation messages)
-    callback: the callable to be invoked when the method is called; this is
+    callback: The callable to be invoked when the method is called; this is
               what you'll need to implement
               It must accept the parameters 'path', 'queryargs', 'mimetype',
               'data', and 'headers', with the possibility that 'mimetype' and
@@ -295,9 +288,25 @@ Parameters:
               'headers' is a Python BasicHTTPServer headers object
               It must return a tuple of (mimetype, data, headers), with data
               being a string or bytes-like object
-              
-              
-webRemoveMethod(path)
+    cacheable: Whether the client should be allowed to cache the returned
+               content.
+    hidden: Whether the method should be rendered on the interface
+    secure: Whether DIGEST authentication will be required to access the method
+    module: something like "best module EVER"; optional if hidden
+    name: something like "double awesomeness levels"; optional if hidden
+    confirm: Whether JavaScript validation will be used to prompt the user to
+             confirm that they want to perform the chosen action, if not hidden
+    display_mode: One of the following:
+                   - callbacks.WEB_METHOD_RAW: The content is presented exactly
+                     as returned, identified by the given mimetype
+                   - callbacks.WEB_METHOD_TEMPLATE: The content is rendered in
+                     the same container that would normally show the dashboard,
+                     but no dashboard elements are present
+                   - callbacks.WEB_METHOD_DASHBOARD: The content is rendered
+                     before the dashboard
+                     
+                     
+callbacks.webRemoveMethod(path)
 ----------------------------------------
 Removes a webservice method.
 
