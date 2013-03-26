@@ -123,7 +123,8 @@ class DynamicPool(object):
         self._subnet = subnet
         self._serial = serial
         self._lease_time = lease_time
-        self._hostname_pattern = hostname_prefix + "-%(ip)s"
+        self._hostname_prefix = hostname_prefix
+        self._hostname_pattern = self._hostname_prefix + "-%(ip)s"
         self._subnet_mask = subnet_mask
         self._gateway = gateway
         self._broadcast_address = broadcast_address
@@ -132,14 +133,17 @@ class DynamicPool(object):
         self._ntp_servers = ntp_servers and ','.join(ntp_servers) or None
         self._discourage_renewals = discourage_renewals
         
-        self._logger = _logger.getChild(hostname_prefix)
+        self._logger = _logger.getChild(self._hostname_prefix)
         self._pool = collections.deque()
         self._map = {}
         self._lock = threading.Lock()
         
+        self._logger.info("Created dynamic provisioning pool '%(name)s'" % {'name': self._hostname_prefix})
+        
     def add_ips(self, ips):
         """
-        Adds IPs to the allocation pool.
+        Adds IPs to the allocation pool. Duplicates are filtered out, but order
+        is preserved.
         
         `ips` is a sequence of IP addresses, like
         ['192.168.0.100', '192.168.0.101'].
@@ -150,8 +154,17 @@ class DynamicPool(object):
         in a range is not generated)
         """
         with self._lock:
+            ips = [ip for ip in ips if ip not in self._pool]
             self._pool.extend(ips)
-        _logger.debug("Added IPs to the dynamic pool: %(ips)s" % {'ips': str(ips)})
+        self._logger.debug("Added IPs to dynamic pool '%(name)s': %(ips)s" % {
+         'ips': str(ips),
+         'name': self._hostname_prefix,
+        })
+        self._logger.info("Added %(count)i IPs to dynamic pool '%(name)s'; new total: %(total)i" % {
+         'count': len(ips),
+         'total': len(self._pool),
+         'name': self._hostname_prefix,
+        })
         
     def handle(self, method, packet, mac, client_ip):
         """
@@ -164,10 +177,11 @@ class DynamicPool(object):
         """
         client_ip = client_ip and '.'.join(map(str, client_ip))
         
-        self._logger.info("Dynamic %(method)s from %(mac)s%(ip)s" % {
+        self._logger.info("Dynamic %(method)s from %(mac)s%(ip)s in pool '%(name)s'" % {
          'method': method,
          'mac': mac,
          'ip': client_ip and (' for %(ip)s' % {'ip': client_ip,}) or '',
+         'name': self._hostname_prefix,
         })
         
         if method == 'DISCOVER' or method.startswith('REQUEST:'):
@@ -208,7 +222,9 @@ class DynamicPool(object):
                  'mac': mac,
                  'expiration': time.ctime(expiration),
                 })
-            elements.append('<tr><td colspan="3" style="text-align: center;">%(count)i IPs available</td></tr>' % {'count': len(self._pool)})
+            elements.append('<tr><td colspan="3" style="text-align: center;">%(count)i IPs available</td></tr>' % {
+             'count': len(self._pool),
+            })
             return """<table class="element">
                 <thead>
                     <th>IP</th>
@@ -237,9 +253,10 @@ class DynamicPool(object):
         for (mac, ip) in dead_records:
             del self._map[mac]
             self._pool.append(ip)
-            self._logger.debug("Reclaimed expired IP %(ip)s from %(mac)s" % {
+            self._logger.debug("Reclaimed expired IP %(ip)s from %(mac)s in pool '%(name)s'" % {
              'ip': ip,
              'mac': mac,
+             'name': self._hostname_prefix,
             })
             
     def _drop_lease(self, mac):
@@ -253,9 +270,10 @@ class DynamicPool(object):
             ip = match[1]
             del self._map[mac]
             self._pool.append(ip)
-            self._logger.debug("Reclaimed released IP %(ip)s from %(mac)s" % {
+            self._logger.info("Reclaimed released IP %(ip)s from %(mac)s in pool '%(name)s'" % {
              'ip': ip,
              'mac': mac,
+             'name': self._hostname_prefix,
             })
             return ip
         return None
@@ -264,8 +282,8 @@ class DynamicPool(object):
         """
         Provides an IP for `mac`, whether it's one that's already associated or
         one provisioned on the fly. If `client_ip` is provided, it will be
-	pulled from the pool if available; if it conflicts with an allocation,
-	it will invalidate the request.
+        pulled from the pool if available; if it conflicts with an allocation,
+        it will invalidate the request.
         
         Must be called from a context in which the lock is held.
         """
@@ -273,18 +291,20 @@ class DynamicPool(object):
         if match: 
             ip = match[1]
             if client_ip and ip != client_ip:
-                self._logger.debug("Rejected request for %(ip)s from %(mac)s: does not match allocation of %(aip)s" % {
+                self._logger.info("Rejected request for %(ip)s from %(mac)s in pool '%(name)s': does not match allocation of %(aip)s" % {
                  'ip': client_ip,
                  'aip': ip,
                  'mac': mac,
+                 'name': self._hostname_prefix,
                 })
                 return None
                 
             match[0] = time.time() + self._lease_time
-            self._logger.debug("Extended lease of %(ip)s to %(mac)s until %(time)s" % {
+            self._logger.info("Extended lease of %(ip)s to %(mac)s in pool '%(name)s' until %(time)s" % {
              'ip': ip,
              'mac': mac,
              'time': time.ctime(match[0]),
+             'name': self._hostname_prefix,
             })
             return ip
         else:
@@ -301,10 +321,11 @@ class DynamicPool(object):
                     
                 expiration = time.time() + self._lease_time
                 self._map[mac] = [expiration, ip]
-                self._logger.debug("Bound %(ip)s to %(mac)s until %(time)s" % {
+                self._logger.info("Bound %(ip)s to %(mac)s in pool '%(name)s' until %(time)s" % {
                  'ip': ip,
                  'mac': mac,
                  'time': time.ctime(expiration),
+                 'name': self._hostname_prefix,
                 })
                 return ip
             return None
@@ -329,8 +350,9 @@ class DynamicPool(object):
         """
         ip = self._get_lease(mac)
         if not ip:
-            self._logger.warn("No IP available for assignment to %(mac)s" % {
+            self._logger.error("No IP available for assignment to %(mac)s in pool '%(name)s'" % {
              'mac': mac,
+             'name': self._hostname_prefix,
             })
         return ip
         
@@ -353,15 +375,17 @@ class DynamicPool(object):
         """
         ip = self._query_lease(mac)
         if not ip:
-            self._logger.warn("No IP assigned to %(mac)s" % {
+            self._logger.warn("No IP assigned to %(mac)s in pool '%(name)s'" % {
              'mac': mac,
+             'name': self._hostname_prefix,
             })
             return None
         elif ip != client_ip:
-            self._logger.warn("IP assigned to %(mac)s, %(aip)s, does not match %(ip)s" % {
+            self._logger.warn("IP assigned to %(mac)s, %(aip)s, in pool '%(name)s', does not match %(ip)s" % {
              'aip': ip,
              'ip': client_ip,
              'mac': mac,
+             'name': self._hostname_prefix,
             })
             return None
         return self._drop_lease(mac)
