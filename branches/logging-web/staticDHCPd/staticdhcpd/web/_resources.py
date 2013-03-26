@@ -41,7 +41,7 @@ html{
 }
 
 div#content{
-    background: #f0e0fb;
+    background: #e6f6fd;
     color: #202020;
     
     margin-left: 6px;

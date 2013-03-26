@@ -50,7 +50,7 @@ class Logger(object):
         self._logger = logging_handlers.FIFOHandler(config.WEB_LOG_HISTORY)
         self._logger.setLevel(getattr(logging, config.WEB_LOG_SEVERITY))
         if config.DEBUG:
-            self._logger.setFormatter(logging.Formatter("%(asctime)s : %(levelname)s : %(message)s"))
+            self._logger.setFormatter(logging.Formatter("%(asctime)s : %(levelname)s : %(name)s : %(message)s"))
         else:
             self._logger.setFormatter(logging.Formatter("%(asctime)s : %(message)s"))
         _logger.root.addHandler(self._logger)
