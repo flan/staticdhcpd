@@ -99,7 +99,7 @@ def _setupLogging():
         console_logger = logging.StreamHandler()
         console_logger.setLevel(getattr(logging, staticdhcpd.config.LOG_CONSOLE_SEVERITY))
         console_logger.setFormatter(formatter)
-        logging.root..addHandler(console_logger)
+        logging.root.addHandler(console_logger)
         _logger.info("Console-based logging online")
         
     if staticdhcpd.config.LOG_FILE: #Determine whether disk-based logging is desired
@@ -161,7 +161,7 @@ def _initialise():
          '/ca/uguu/puukusoft/staticDHCPd/reinitialise', staticdhcpd.web.methods.reinitialise,
          hidden=False, module='core', name='reinitialise',
          secure=staticdhcpd.config.WEB_REINITIALISE_SECURE, confirm=staticdhcpd.config.WEB_REINITIALISE_CONFIRM,
-         display_mode=staticdhcpd.web.WEB_METHOD_DASHBOARD,
+         display_mode=staticdhcpd.web.WEB_METHOD_DASHBOARD
         )
         
         if staticdhcpd.config.STATS_ENABLED: #No point in turning this on without webservices

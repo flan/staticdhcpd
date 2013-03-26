@@ -56,9 +56,8 @@ class Logger(object):
         _logger.root.addHandler(self._logger)
         _logger.info("Web-accessible logging online; buffer-size=" + str(config.WEB_LOG_HISTORY))
         
-    def render(self, path, queryargs, mimetype, data, headers):
+    def render(self, *args, **kwargs):
         global _SEVERITY_MAP
-        
         output = []
         for (severity, line) in self._logger.readContents():
             output.append('<span class="%(severity)s">%(message)s</span>' % {
@@ -67,7 +66,7 @@ class Logger(object):
             })
             
         return """
-        <div style='overflow-y: auto; overflow-x: auto; %(max-height)s'>
+        <div style='overflow-y: auto;%(max-height)s'>
         %(lines)s
         </div>""" % {
          'max-height': config.WEB_LOG_MAX_HEIGHT and ' max-height: %(max-height)ipx;' % {
@@ -76,7 +75,7 @@ class Logger(object):
          'lines': '<br/>\n'.join(output),
         }
         
-def reinitialise(path, queryargs, mimetype, data, headers):
+def reinitialise(*args, **kwargs):
     try:
         time_elapsed = system.reinitialise()
     except Exception, e:
@@ -88,12 +87,12 @@ def reinitialise(path, queryargs, mimetype, data, headers):
          'time': time_elapsed,
         }
         
-def css(path, queryargs, mimetype, data, headers):
+def css(*args, **kwargs):
     return ('text/css', _resources.CSS)
     
-def js(path, queryargs, mimetype, data, headers):
+def js(*args, **kwargs):
     return ('text/javascript', _resources.JS)
     
-def favicon(path, queryargs, mimetype, data, headers):
+def favicon(*args, **kwargs):
     return ('image/x-icon', _resources.FAVICON)
     

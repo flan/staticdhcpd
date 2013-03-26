@@ -52,12 +52,12 @@ _BOOT_TIME = datetime.datetime.now().replace(microsecond=0)
 
 def _renderHeader():
     current_time = datetime.datetime.now().replace(microsecond=0)
-    return """<div style="float: right;">Page generated  %(current-time)s</div>
-<span style="font-weight: bold;"><a href="/" style="color: inherit;">%(name)s</a></span> online for %(uptime)s, since %(boot-time)s""" % {
-     'current-time': str(current_time),
+    return """<div style="float: right;">Page generated %(current-time)s</div>
+<a href="/" style="color: inherit; font-weight: bold;">%(name)s</a> online for %(uptime)s, since %(boot-time)s""" % {
+     'current-time': current_time.ctime(),
      'name': _SYSTEM_NAME,
      'uptime': str(current_time - _BOOT_TIME),
-     'boot-time': _BOOT_TIME,
+     'boot-time': _BOOT_TIME.ctime(),
     }
     
 def _renderFooter():
@@ -93,6 +93,8 @@ def _renderMethods():
     module = None
     for (element, path) in retrieveVisibleMethodCallbacks():
         if element.module != module:
+            if module is not None:
+                output.append('</div>')
             module = element.module
             output.append('<h1 class="method">%(module)s</h1>' % {
              'module': element.module,

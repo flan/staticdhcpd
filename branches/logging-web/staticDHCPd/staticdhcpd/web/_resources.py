@@ -29,8 +29,7 @@ a{
     text-decoration: none;
 }
 
-body,
-html{
+body, html{
     background: #d2d2d2;
     
     font-family: sans-serif;
@@ -75,7 +74,6 @@ div#main{
     margin-left: 200px;
     padding-left: 5px;
     padding-top: 3px;
-    padding-bottom: 3px;
 }
 
 div#methods{
@@ -101,6 +99,7 @@ div.element{
     border-bottom: 1px solid #a3a3a3;
     
     margin: 0 auto;
+    margin-bottom: 5px;
 }
 
 div.method{
@@ -149,6 +148,28 @@ span.info{
 }
 span.warn{
     color: #000000;
+}
+
+table.element{
+    margin: 0 auto;
+}
+table.element td, th{
+    padding: 3px;
+    border-left: 1px;
+    border-right: 1px;
+}
+table.element th{
+    background: #f0f0da;
+    
+    font-weight: bold;
+    text-align: center;
+}
+table.element td{
+    background: #f6f6dc;
+    
+    text-align: left;
+    
+    border-top: 2px;
 }
 """
 

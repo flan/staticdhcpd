@@ -236,22 +236,21 @@ import system
 import statistics
 import web
 class callbacks(object):
-    systemAddReinitHandler = system.registerReinitialisationCallback
-    systemRemoveReinitHandler = system.unregisterReinitialisationCallback
-    systemAddTickHandler = system.registerTickCallback
+    systemAddReinitHandler = staticmethod(system.registerReinitialisationCallback)
+    systemRemoveReinitHandler = staticmethod(system.unregisterReinitialisationCallback)
+    systemAddTickHandler = staticmethod(system.registerTickCallback)
     systemRemoveTickHandler = system.unregisterTickCallback
     
-    statsAddHandler = statistics.registerStatsCallback
+    statsAddHandler = staticmethod(statistics.registerStatsCallback)
     statsRemoveHandler = statistics.unregisterStatsCallback
-    
-    webAddDashboard = web.registerDashboardCallback
-    webRemoveDashboard = web.unregisterDashboardCallback
-    webAddMethod = web.registerMethodCallback
-    webRemoveMethod = web.unregisterMethodCallback
     
     WEB_METHOD_DASHBOARD = web.WEB_METHOD_DASHBOARD
     WEB_METHOD_TEMPLATE = web.WEB_METHOD_TEMPLATE
     WEB_METHOD_RAW = web.WEB_METHOD_RAW
+    webAddDashboard = staticmethod(web.registerDashboardCallback)
+    webRemoveDashboard = staticmethod(web.unregisterDashboardCallback)
+    webAddMethod = staticmethod(web.registerMethodCallback)
+    webRemoveMethod = staticmethod(web.unregisterMethodCallback)
 del system
 del statistics
 del web

@@ -348,6 +348,7 @@ the web-dashboard, which collects a fixed number of events and displays them in
 most-recent-first order, with enough information to colour them according to
 severity.
 
+
 Something nifty would be a webservice module that provides an RSS feed of
 events, of ERROR (configurable) severity or higher, so an operations team could
 be quickly notified of problems without getting spammed by e-mail if a situation

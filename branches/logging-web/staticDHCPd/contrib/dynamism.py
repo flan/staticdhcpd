@@ -16,11 +16,23 @@ To use this module, add the following to conf.py's init() function:
     _dynamic_pool = dynamism.DynamicPool(<see its __init__ for parameters>)
     #Add 192.168.250.100-200
     _dynamic_pool.add_ips(['192.168.250.' + str(i) for i in range(100, 201)])
+    
     #Expose its allocation table to the web interface
-    ...
+    callbacks.webAddMethod(
+     '/yoursite/dynamic-pool/guest/0/show', _dynamic_pool.show_leases,
+     hidden=False, module='guest-0', name='show leases',
+     display_mode=callbacks.WEB_METHOD_TEMPLATE
+    )
+    #You could also make it a permanent dashboard fixture:
+    #callbacks.webAddDashboard('guest-0', 'leases',_dynamic_pool.show_leases)
+    
     #Expose a method to flush its allocation table
-    ...
-
+    callbacks.webAddMethod(
+     '/yoursite/dynamic-pool/guest/0/flush', _dynamic_pool.drop_leases,
+     hidden=False, module='guest-0', name='drop leases',
+     secure=True, confirm=True, display_mode=callbacks.WEB_METHOD_DASHBOARD
+    )
+    
 And then add the following to conf.py's handleUnknownMAC():
     return _dynamic_pool.handle(method, packet, mac, client_ip)
     
@@ -51,6 +63,8 @@ import time
 
 from staticdhcpd.databases import Definition
 
+from libpydhcpserver.type_rfc import longToList
+
 _logger = logging.getLogger('conf.dynamism')
 
 def _dynamic_method(method):
@@ -64,7 +78,7 @@ def _dynamic_method(method):
     def wrapped_method(self, *args, **kwargs):
         with self._lock:
             self._cleanup_leases() #Remove stale assignments
-            ip = method(*args, **kwargs)
+            ip = method(self, *args, **kwargs)
             if ip:
                 return Definition(
                  ip, self._hostname_pattern % {'ip': ip.replace('.', '-'),},
@@ -179,6 +193,60 @@ class DynamicPool(object):
         })
         return None
         
+    def drop_leases(self, *args, **kwargs):
+        """
+        Drops all leases.
+        
+        Intended to be used with the web interface.
+        """
+        with self._lock:
+            for (mac, (expiration, ip)) in self._map.iteritems():
+                self._pool.append(ip)
+                self._logger.debug("Dropped lease of IP %(ip)s to %(mac)s" % {
+                 'ip': ip,
+                 'mac': mac,
+                })
+            count = len(self._map)
+            self._map.clear()
+        return "All %(count)i leases dropped" % {
+         'count': count,
+        }
+        
+    def show_leases(self, *args, **kwargs):
+        """
+        Renders a table containing all leases.
+        
+        Intended to be used with the web interface.
+        """
+        with self._lock:
+            if not self._map:
+                return "No leases yet assigned; %(count)i IPs available" % {'count': len(self._pool)}
+                
+            elements = []
+            for ((expiration, ip), mac) in sorted((v, k) for (k, v) in self._map.iteritems()):
+                elements.append("""<tr>
+                    <td>%(ip)s</td>
+                    <td>%(mac)s</td>
+                    <td>%(expiration)s</td>
+                </tr>""" % {
+                 'ip': ip,
+                 'mac': mac,
+                 'expiration': time.ctime(expiration),
+                })
+            elements.append('<tr><td colspan="3" style="text-align: center;">%(count)i IPs available</td></tr>' % {'count': len(self._pool)})
+            return """<table class="element">
+                <thead>
+                    <th>IP</th>
+                    <th>MAC</th>
+                    <th>Expires</th>
+                </thead>
+                <tbody>
+                    %(content)s
+                </tbody>
+            </table>""" % {
+             'content': '\n'.join(elements),
+            }
+            
     def _cleanup_leases(self):
         """
         Reclaims IPs for which leases have lapsed.
