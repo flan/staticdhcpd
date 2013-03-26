@@ -165,13 +165,13 @@ class DynamicPool(object):
         client_ip = client_ip and '.'.join(map(str, client_ip))
         
         self._logger.info("Dynamic %(method)s from %(mac)s%(ip)s" % {
-        'method': method,
-        'mac': mac,
-        'ip': client_ip and (' for %(ip)s' % {'ip': client_ip,}) or '',
+         'method': method,
+         'mac': mac,
+         'ip': client_ip and (' for %(ip)s' % {'ip': client_ip,}) or '',
         })
         
         if method == 'DISCOVER' or method.startswith('REQUEST:'):
-            definition = self._allocate(mac)
+            definition = self._allocate(mac, client_ip)
             if definition and self._discourage_renewals:
                 self._logger.debug("Setting T1 and T2 to match lease-time")
                 packet.setOption('renewal_time_value', longToList(definition.lease_time))
@@ -260,28 +260,45 @@ class DynamicPool(object):
             return ip
         return None
         
-    def _get_lease(self, mac):
+    def _get_lease(self, mac, client_ip):
         """
         Provides an IP for `mac`, whether it's one that's already associated or
-        one provisioned on the fly.
+        one provisioned on the fly. If `client_ip` is provided, it will be
+	pulled from the pool if available; if it conflicts with an allocation,
+	it will invalidate the request.
         
         Must be called from a context in which the lock is held.
         """
-        ip = None
         match = self._map.get(mac)
-        if match: #Renew the lease and take the IP
-            match[0] = time.time() + self._lease_time
+        if match: 
             ip = match[1]
+            if client_ip and ip != client_ip:
+                self._logger.debug("Rejected request for %(ip)s from %(mac)s: does not match allocation of %(aip)s" % {
+                 'ip': client_ip,
+                 'aip': ip,
+                 'mac': mac,
+                })
+                return None
+                
+            match[0] = time.time() + self._lease_time
             self._logger.debug("Extended lease of %(ip)s to %(mac)s until %(time)s" % {
              'ip': ip,
              'mac': mac,
              'time': time.ctime(match[0]),
             })
+            return ip
         else:
             if self._pool:
-                ip = self._pool.popleft()
-                
-            if ip:
+                if client_ip: #Search for the requested IP in the pool
+                    for (i, ip) in enumerate(self._pool):
+                        if ip == client_ip:
+                            del self._pool[i]
+                            break
+                    else:
+                        ip = self._pool.popleft()
+                else:
+                    ip = self._pool.popleft()
+                    
                 expiration = time.time() + self._lease_time
                 self._map[mac] = [expiration, ip]
                 self._logger.debug("Bound %(ip)s to %(mac)s until %(time)s" % {
@@ -289,8 +306,9 @@ class DynamicPool(object):
                  'mac': mac,
                  'time': time.ctime(expiration),
                 })
-        return ip
-        
+                return ip
+            return None
+            
     def _query_lease(self, mac):
         """
         Provides the IP associated with `mac`, if any.
