@@ -1,213 +1,307 @@
+# -*- encoding: utf-8 -*-
 """
-Import this module from conf.py and call handle(method, mac, client_ip)` to get 
-dynamic allocations, good for use in a single-DHCP-server environment. Do be
-aware that no validation is performed to ensure that the DHCP request was legal,
+Provides a simple day of defining dynamic allocation pools for more conventional
+DHCP behaviour. This module will NOT provide RFC-compliant dynamic management,
+but it's close enough to be useful and hasn't yet failed in any use-cases to
+which it has been applied.
+
+If you use this module, consider setting `NAK_RENEWALS` in conf.py, to
+discourage clients from renewing before their lease-time is up. Alternatively,
+you can set 'renewal_time_value' and 'rebinding_time_value' in the packet to
+something close to the lease-time itself, which is supported by default.
+
+To use this module, add the following to conf.py's init() function:
+    import dynamism
+    global _dynamic_pool
+    _dynamic_pool = dynamism.DynamicPool(<see its __init__ for parameters>)
+    #Add 192.168.250.100-200
+    _dynamic_pool.add_ips(['192.168.250.' + str(i) for i in range(100, 201)])
+    #Expose its allocation table to the web interface
+    ...
+    #Expose a method to flush its allocation table
+    ...
+
+And then add the following to conf.py's handleUnknownMAC():
+    return _dynamic_pool.handle(method, packet, mac, client_ip)
+    
+    
+You can define as many pools as you'd like, but deciding how to use them is
+more advanced than what will be covered here. Checking `giaddr` to determine
+the relay-source is probably the most sane method, though.
+
+Note that no validation is performed to ensure that the DHCP request was legal,
 just that it was well-formed. Malicious clients cannot compromise the server,
 but they can trigger DoS behaviour. Given that there's nothing to gain, however,
 this is probably a non-issue.
 
-Please make changes to this module before using it in your environment. The
-default settings are almost certainly good for nobody.
+If you need persistent dynamic allocations, you will need to implement the
+functionality yourself (and contribute it, please!), or otherwise set up
+another DHCP server, like the ISC's, which is meant for that, and tell
+staticDHCPd that it is not authoritative for its network. The intended use-case
+for this is giving unknown clients access to a guest subnet so they can be
+migrated to a static context. It's usable beyond that, but it is a scope-limited
+solution.
 
--For the line below, it should recommend NAK_RENEWALS instead
-Consider setting 'renewal_time_value' and 'rebinding_time_value' to some number
-very close to, if not equal to, your lease-time, to avoid having clients extend
-leases longer than necessary; if you want a more persistent dynamic solution,
-you should be using the ISC server. The best use-case for this is giving
-unknown clients access to a guest subnet so they can be migrated to a static
-context.
-
-You can identify dynamic requests by using a unique subnet/serial pair and
-checking for it in loadDHCPPacket(); the default pair this module provides is
-('guest', 0).
+(C) Neil Tallim, 2013 <flan@uguu.ca>
 """
-#Configure these variables as needed
-###############################################################################
-LEASE_TIME = 300 #seconds
-SUBNET = 'guest'
-SERIAL = 0
-
-#Add any elements you want to the list, as dotted-quad-notation IPv4 addresses
-IPS = set()
-#Use patterns like this to add blocks of IPs; this covers .11-.254
-IPS.update(['192.168.250.' + str(i) for i in xrange(11, 255)])
-
-SUBNET_MASK = '255.255.255.0'
-GATEWAY = '192.168.250.1'
-BROADCAST_ADDRESS = '192.168.250.255'
-DOMAIN_NAME = 'guestnet.example.org' #None to not have a default search-domain
-DOMAIN_NAME_SERVERS = ('192.168.250.5', '192.168.250.6', '192.168.250.7') #Limit: 3
-NTP_SERVERS = ('192.168.250.2', '192.168.250.3', '192.168.250.4') #Limit: 3
-###############################################################################
-#Don't touch anything else, unless you want to (it's your network, after all)
-
-from staticdhcpd.databases import Definition
-
 import collections
 import logging
 import threading
 import time
 
+from staticdhcpd.databases import Definition
+
 _logger = logging.getLogger('conf.dynamism')
 
-_IPS = collections.deque(sorted(IPS)) #Redefine the set of IPs as an initially-sorted deque for sanity
-_IPS_LOCK = threading.Lock()
-_DYNAMIC_MAP = {}
-_DYNAMIC_MAP_LOCK = threading.Lock()
-
-#Finalise common strings
-_DOMAIN_NAME_SERVERS = ','.join(DOMAIN_NAME_SERVERS)
-_NTP_SERVERS = ','.join(NTP_SERVERS)
-_HOSTNAME_PATTERN = SUBNET + '-' + str(SERIAL) + '-'
-
-def _cleanupLeases():
-    current_time = time.time()
-    dead_records = []
-    for (mac, (expiration, ip)) in _DYNAMIC_MAP.items():
-        if current_time - expiration > LEASE_TIME: #Kill it
-            dead_records.append(mac)
-            with _IPS_LOCK: #Put the IP back into the pool
-                _IPS.append(ip)
-                
-    for mac in dead_records:
-        del _DYNAMIC_MAP[mac]
-        
-def _dropLease(mac):
-    ip = None
-    match = _DYNAMIC_MAP.get(mac)
-    if match: #Drop the lease and reclaim the IP
-        ip = match[1]
-        del _DYNAMIC_MAP[mac]
-        with _IPS_LOCK:
-            _IPS.append(ip)
-    return ip
+def _dynamic_method(method):
+    """
+    Handles locking and response-formatting; you do not need to study this,
+    even if you are subclassing DynamicPool: you can just call the parent
+    method normally and return its result.
     
-def _getLease(mac):
-    ip = None
-    match = _DYNAMIC_MAP.get(mac)
-    if match: #Renew the lease and take the IP
-        match[0] = time.time() + LEASE_TIME
-        ip = match[1]
-        
-        _logger.debug("Extended lease of %(ip)s to %(mac)s until %(time).1f" % {
-            'ip': ip,
-            'mac': mac,
-            'time': match[0],
-        })
-    else:
-        with _IPS_LOCK:
-            if _IPS:
-                ip = _IPS.popleft()
-                
-        if ip:
-            expiration = time.time() + LEASE_TIME
-            _DYNAMIC_MAP[mac] = [expiration, ip]
-            _logger.debug("Bound %(ip)s to %(mac)s until %(time).1f" % {
-                'ip': ip,
-                'mac': mac,
-                'time': expiration,
-            })
-    return ip
-    
-def _queryLease(mac):
-    match = _DYNAMIC_MAP.get(mac)
-    if match:
-        return match[1]
-    return None
-    
-    
-def _dynamicMethod(f):
-    def wrappedMethod(*args, **kwargs):
-        with _DYNAMIC_MAP_LOCK:
-            _cleanupLeases() #Remove stale assignments
-            ip = f(*args, **kwargs)
+    This is just a decorator.
+    """
+    def wrapped_method(self, *args, **kwargs):
+        with self._lock:
+            self._cleanup_leases() #Remove stale assignments
+            ip = method(*args, **kwargs)
             if ip:
                 return Definition(
-                 ip, _HOSTNAME_PATTERN + ip.replace('.', '-'),
-                 GATEWAY, SUBNET_MASK, BROADCAST_ADDRESS,
-                 DOMAIN_NAME, _DOMAIN_NAME_SERVERS,
-                 _NTP_SERVERS, LEASE_TIME,
-                 SUBNET, SERIAL
+                 ip, self._hostname_pattern % {'ip': ip.replace('.', '-'),},
+                 self._gateway, self._subnet_mask, self._broadcast_address,
+                 self._domain_name, self._domain_name_servers,
+                 self._ntp_servers, self._lease_time,
+                 self._subnet, self._serial
                 )
             return None
-    return wrappedMethod
+    return wrapped_method
     
-@_dynamicMethod
-def _allocate(mac):
-    """
-    If you need to reject a MAC, return None.
-    """
-    ip = _getLease(mac)
-    if not ip:
-        _logger.warn("No IP available for assignment to %(mac)s" % {
-         'mac': mac,
+class DynamicPool(object):
+    def __init__(self,
+     subnet, serial, lease_time, hostname_prefix,
+     subnet_mask=None, gateway=None, broadcast_address=None,
+     domain_name=None, domain_name_servers=None, ntp_servers=None,
+     discourage_renewals=True
+    ):
+        """
+        Initialises a new pool, containing no IPs. Call `add_ips()` to add some.
+        
+        `subnet` is any string you would like to use, like 'guest', and `serial`
+        is its complement, an integer that lets you re-use the same subnet-name;
+        guest network 0, 1, 2... What you use is up to you.
+        
+        `lease_time` is the number of seconds for which a lease will be offered.
+        
+        `hostname_prefix` is the leading part of the hostname to offer to
+        clients; it should be something simple like 'guest-0'; it is completed
+        with the assigned IP, using dash-separated quads. It is also used for
+        identifying the source of logged messages.
+        
+        `subnet_mask`, `gateway`, and `broadcast_address` are what you'd expect;
+        omitting them will limit the client to link-local traffic. They're all
+        dotted-quad strings.
+        
+        `domain_name` is used to set the client's search-domain, as a string.
+        It is optional.
+        
+        `domain_name_servers` and `ntp_servers` are also both what you'd expect,
+        expressed like ['192.168.0.1', '192.168.0.2'], to a maximum of three
+        items. They are optional, too.
+        
+        `discourage_renewals` will modify packets to tell the client to hold off
+        on renewing until the lease is up. Not all clients will respect this. It
+        is enabled by default.
+        """
+        self._subnet = subnet
+        self._serial = serial
+        self._lease_time = lease_time
+        self._hostname_pattern = hostname_prefix + "-%(ip)s"
+        self._subnet_mask = subnet_mask
+        self._gateway = gateway
+        self._broadcast_address = broadcast_address
+        self._domain_name = domain_name
+        self._domain_name_servers = domain_name_servers and ','.join(domain_name_servers) or None
+        self._ntp_servers = ntp_servers and ','.join(ntp_servers) or None
+        self._discourage_renewals = discourage_renewals
+        
+        self._logger = _logger.getChild(hostname_prefix)
+        self._pool = collections.deque()
+        self._map = {}
+        self._lock = threading.Lock()
+        
+    def add_ips(self, ips):
+        """
+        Adds IPs to the allocation pool.
+        
+        `ips` is a sequence of IP addresses, like
+        ['192.168.0.100', '192.168.0.101'].
+        
+        To generate it, try calling this method in the following way:
+            .add_ips(['192.168.250.' + str(i) for i in range(11, 255)])
+        This will add 192.168.250.11-254 with minimal effort. (The last element
+        in a range is not generated)
+        """
+        with self._lock:
+            self._pool.extend(ips)
+        _logger.debug("Added IPs to the dynamic pool: %(ips)s" % {'ips': str(ips)})
+        
+    def handle(self, method, packet, mac, client_ip):
+        """
+        Processes a dynamic request, returning a synthesised lease, if possible.
+        
+        `method`, `packet`, `mac`, and `client_ip` are all passed through from
+        `handleUnknownMAC()` directly.
+        
+        The value returned is either a Definition or None, depending on success.
+        """
+        client_ip = client_ip and '.'.join(map(str, client_ip))
+        
+        self._logger.info("Dynamic %(method)s from %(mac)s%(ip)s" % {
+        'method': method,
+        'mac': mac,
+        'ip': client_ip and (' for %(ip)s' % {'ip': client_ip,}) or '',
         })
-    return ip
-    
-@_dynamicMethod
-def _inform(mac, client_ip):
-    """
-    If you need to reject a MAC, return None.
-    """
-    return client_ip
-    
-@_dynamicMethod
-def _reclaim(mac, client_ip):
-    """
-    If you need to reject a MAC, return None.
-    """
-    ip = _queryLease(mac)
-    if not ip:
-        _logger.warn("No IP assigned to %(mac)s" % {
-         'mac': mac,
+        
+        if method == 'DISCOVER' or method.startswith('REQUEST:'):
+            definition = self._allocate(mac)
+            if definition and self._discourage_renewals:
+                self._logger.debug("Setting T1 and T2 to match lease-time")
+                packet.setOption('renewal_time_value', longToList(definition.lease_time))
+                packet.setOption('rebinding_time_value', longToList(definition.lease_time))
+            return definition
+        if method == 'RELEASE' or method == 'DECLINE':
+            return self._reclaim(mac, client_ip)
+        if method == 'INFORM':
+            return self._inform(client_ip)
+            
+        self._logger.info("%(method)s is unknown to the dynamic provisioning engine" % {
+         'method': method,
         })
         return None
-    elif ip != client_ip:
-        _logger.warn("IP assigned to %(mac)s, %(aip)s, does not match %(ip)s" % {
-         'aip': ip,
-         'ip': client_ip,
-         'mac': mac,
-        })
+        
+    def _cleanup_leases(self):
+        """
+        Reclaims IPs for which leases have lapsed.
+        
+        Must be called from a context in which the lock is held.
+        """
+        current_time = time.time()
+        dead_records = []
+        for (mac, (expiration, ip)) in self._map.iteritems():
+            if current_time - expiration > self._lease_time: #Kill it
+                dead_records.append((mac, ip))
+                
+        for (mac, ip) in dead_records:
+            del self._map[mac]
+            self._pool.append(ip)
+            self._logger.debug("Reclaimed expired IP %(ip)s from %(mac)s" % {
+             'ip': ip,
+             'mac': mac,
+            })
+            
+    def _drop_lease(self, mac):
+        """
+        Frees the IP bound to `mac`, if any. The IP is returned.
+        
+        Must be called from a context in which the lock is held.
+        """
+        match = self._map.get(mac)
+        if match: #Drop the lease and reclaim the IP
+            ip = match[1]
+            del self._map[mac]
+            self._pool.append(ip)
+            self._logger.debug("Reclaimed released IP %(ip)s from %(mac)s" % {
+             'ip': ip,
+             'mac': mac,
+            })
+            return ip
         return None
-    return _dropLease(mac)
-    
-def handle(method, mac, client_ip):
-    """
-    Processes a dynamic request, returning a synthesised lease, if possible.
-    
-    @type method: basestring
-    @param method: The DHCP method being invoked.
-    @type mac: basestring
-    @param mac: A human-readable MAC address.
-    @type client_ip: tuple|None
-    @param client_ip: The client's address, if not a provisioning request.
-    
-    @rtype: tuple(11)|None
-    @return: A tuple of the following form, if processing succeeded, or None:
-        (ip:basestring, hostname:basestring|None,
-        gateway:basestring|None, subnet_mask:basestring|None,
-        broadcast_address:basestring|None,
-        domain_name:basestring|None, domain_name_servers:basestring|None,
-        ntp_servers:basestring|None, lease_time:int,
-        subnet:basestring, serial:int)
-    """
-    client_ip = client_ip and '.'.join(map(str, client_ip))
-    
-    _logger.info("Dynamic %(method)s from %(mac)s%(ip)s" % {
-     'method': method,
-     'mac': mac,
-     'ip': client_ip and (' for %(ip)s' % {'ip': client_ip,}) or '',
-    })
-    
-    if method == 'DISCOVER' or method.startswith('REQUEST:'):
-        return _allocate(mac)
-    if method == 'RELEASE' or method == 'DECLINE':
-        return _reclaim(mac, client_ip)
-    if method == 'INFORM':
-        return _inform(mac, client_ip)
-    
-    _logger.info("%(method)s is unknown to the dynamic provisioning engine" % {
-     'method': method,
-    })
-    return None
-    
+        
+    def _get_lease(self, mac):
+        """
+        Provides an IP for `mac`, whether it's one that's already associated or
+        one provisioned on the fly.
+        
+        Must be called from a context in which the lock is held.
+        """
+        ip = None
+        match = self._map.get(mac)
+        if match: #Renew the lease and take the IP
+            match[0] = time.time() + self._lease_time
+            ip = match[1]
+            self._logger.debug("Extended lease of %(ip)s to %(mac)s until %(time)s" % {
+             'ip': ip,
+             'mac': mac,
+             'time': time.ctime(match[0]),
+            })
+        else:
+            if self._pool:
+                ip = self._pool.popleft()
+                
+            if ip:
+                expiration = time.time() + self._lease_time
+                self._map[mac] = [expiration, ip]
+                self._logger.debug("Bound %(ip)s to %(mac)s until %(time)s" % {
+                 'ip': ip,
+                 'mac': mac,
+                 'time': time.ctime(expiration),
+                })
+        return ip
+        
+    def _query_lease(self, mac):
+        """
+        Provides the IP associated with `mac`, if any.
+        
+        Must be called from a context in which the lock is held.
+        """
+        match = self._map.get(mac)
+        if match:
+            return match[1]
+        return None
+        
+    @_dynamic_method
+    def _allocate(self, mac):
+        """
+        Associates or retrieves an existing associated IP to `mac`.
+        
+        A returned value of None means nothing was available.
+        """
+        ip = self._get_lease(mac)
+        if not ip:
+            self._logger.warn("No IP available for assignment to %(mac)s" % {
+             'mac': mac,
+            })
+        return ip
+        
+    @_dynamic_method
+    def _inform(self, client_ip):
+        """
+        In the case of an INFORM, no IP is provisioned, so this just returns the
+        current `client_ip`.
+        
+        Returning None will kill the request.
+        """
+        return client_ip
+        
+    @_dynamic_method
+    def _reclaim(self, mac, client_ip):
+        """
+        Releases `client_ip` if it is, indeed, bound to `mac`.
+        
+        Returning None will prevent the request from being acknowledged.
+        """
+        ip = self._query_lease(mac)
+        if not ip:
+            self._logger.warn("No IP assigned to %(mac)s" % {
+             'mac': mac,
+            })
+            return None
+        elif ip != client_ip:
+            self._logger.warn("IP assigned to %(mac)s, %(aip)s, does not match %(ip)s" % {
+             'aip': ip,
+             'ip': client_ip,
+             'mac': mac,
+            })
+            return None
+        return self._drop_lease(mac)
+        

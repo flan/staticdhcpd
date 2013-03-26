@@ -37,7 +37,7 @@ modules of your own. To customise DHCP behaviour, see the rules-writing guide:
 http://code.google.com/p/staticdhcpd/wiki/rules
 
 To enable dynamic provisioning, copy contrib/dynamism.py to the same directory
-as conf.py and modify its constants to suit your environment.
+as conf.py.
 
 
 Hook-functions
@@ -54,19 +54,24 @@ facilities required by other portions of your code.
 Example
 ------------------------------
 def init():
-    global dynamism
     import dynamism
+    global _dynamic_pool
+    _dynamic_pool = dynamism.DynamicPool('guest', 0, 300, 'guest-0')
+    _dynamic_pool.add_ips(['192.168.250.' + str(i) for i in range(100, 201)])
     
 Explanation
 --------------------
-When init() is called by staticDHCPd, this will import hte 'dynamism' module and
-make it available for use in other parts of conf.py.
+When init() is called by staticDHCPd, this will import the 'dynamism' module
+and create a dynamic allocation pool with 192.168.250.100-200 (range doesn't
+include the upper-most element), making it available for use in other parts of
+conf.py.
+
+You'll probably want to pass in different parameters, though; see dynamism.py
+for details.
 
 The 'global' line is necessary because, when init() finishes, all variables it
 declared would normally be discarded, so this says "I want to modify the variable
-'dynamism' at the conf-module level". Alternatively, you could import dynamism
-each time handleUnknownMAC() is called; they would achieve the same result, but
-this is slightly more efficient.
+'_dynamic_pool' at the conf-module level".
 
 
 handleUnknownMAC(packet, method, mac, client_ip, relay_ip, pxe, vendor)
@@ -108,13 +113,13 @@ described in detail in `staticdhcpd.databases._generic.Definition`.
 Example
 ------------------------------
 def handleUnknownMAC(packet, method, mac, client_ip, relay_ip, pxe, vendor):
-    return dynamism.handle(method, mac, client_ip)
+    return _dynamic_pool.handle(method, packet, mac, client_ip)
     
 Explanation
 --------------------
-Since 'dynamism' was imported in init() and made globally accessible, all this
-function has to do is pass a few parameters to dynamism.handle() and it will
-return either None or a Definition object, which is all you need.
+Since '_dynamic_pool' was created in init() and made globally accessible, all
+this function has to do is pass a few parameters to dynamism.handle() and it
+will return either None or a Definition object, which is all you need.
 
 
 loadDHCPPacket(packet, method, mac, subnet, serial, client_ip, relay_ip, pxe,

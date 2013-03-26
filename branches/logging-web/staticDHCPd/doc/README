@@ -62,7 +62,9 @@ Step 2: Set up the DHCP database
     the "subnet" and "serial" values match for inheritance -- you could put
     "floor 3" in as a "subnet" if you wanted to. The term "subnet" was chosen
     because it seemed like the most likely classification system for
-    administrators to use and recognise)
+    administrators to use and recognise; similarly, "serial" is also up to you,
+    it just allows for multiple definitions within the same "subnet" -- you
+    might want to use the VLAN, or maybe you'll just always make it 0)
     
     INI method:
         Create a file with the following contents; the name is up to you.
