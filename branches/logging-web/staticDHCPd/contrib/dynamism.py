@@ -25,13 +25,7 @@ To use this module, add the following to conf.py's init() function:
     )
     #You could also make it a permanent dashboard fixture:
     #callbacks.webAddDashboard('guest-0', 'leases',_dynamic_pool.show_leases)
-    
-    #Expose a method to flush its allocation table
-    callbacks.webAddMethod(
-     '/yoursite/dynamic-pool/guest/0/flush', _dynamic_pool.drop_leases,
-     hidden=False, module='guest-0', name='drop leases',
-     secure=True, confirm=True, display_mode=callbacks.WEB_METHOD_DASHBOARD
-    )
+    #Add 'ordering=N', where N is a bias value, to change its position
     
 And then add the following to conf.py's handleUnknownMAC():
     return _dynamic_pool.handle(method, packet, mac, client_ip)
@@ -192,25 +186,6 @@ class DynamicPool(object):
          'method': method,
         })
         return None
-        
-    def drop_leases(self, *args, **kwargs):
-        """
-        Drops all leases.
-        
-        Intended to be used with the web interface.
-        """
-        with self._lock:
-            for (mac, (expiration, ip)) in self._map.iteritems():
-                self._pool.append(ip)
-                self._logger.debug("Dropped lease of IP %(ip)s to %(mac)s" % {
-                 'ip': ip,
-                 'mac': mac,
-                })
-            count = len(self._map)
-            self._map.clear()
-        return "All %(count)i leases dropped" % {
-         'count': count,
-        }
         
     def show_leases(self, *args, **kwargs):
         """
