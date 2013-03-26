@@ -10,8 +10,12 @@ with any extensions you've developed, with no issues.
 
 
 Three functions are currently defined as hooks from staticDHCPd's core.
-To implement one, just create a function in conf.py with the signature described
-below.
+To implement one, just create a function in conf.py with the corresponding
+signature.
+
+In addition, a number of callbacks exist that let you hook your code into
+staticDHCPd's core functions and modules. This, and logging, are covered below,
+too.
 
 To avoid potential conflicts, any other functions you may define should be named
 with a leading underscore. Likewise, any modules you define should also be named
@@ -30,14 +34,13 @@ directives, do something like the following:
 from _handlers import (init, handleUnknownMAC, loadDHCPPacket)
 
 
-
 The examples below will show you how to enable dynamic provisioning using the
-included 'dynamism' module. From there, you should be able to write extension
-modules of your own. To customise DHCP behaviour, see the rules-writing guide:
-http://code.google.com/p/staticdhcpd/wiki/rules
+included 'dynamism' module. To make these examples work, copy
+contrib/dynamism.py to the same directory as conf.py.
 
-To enable dynamic provisioning, copy contrib/dynamism.py to the same directory
-as conf.py.
+Using dynamism as an example, you should be able to write extension modules of
+your own. To customise DHCP behaviour, see the rules-writing guide:
+http://code.google.com/p/staticdhcpd/wiki/rules
 
 
 Hook-functions
@@ -324,3 +327,28 @@ Removes a webservice method.
 Parameters:
     path: The path of the method to remove
     
+    
+    
+    
+Logging
+----------------------------------------
+staticDHCPd uses Python's standard logging package, so writing to logs is as
+easy as the following snippet:
+    import logging
+    logger = logging.getLogger('my-module')
+    logger.info("I'm writing to the loggins system!")
+    
+Similarly, if you want to capture logging events, you can hook in easily:
+    import logging
+    logging.root.addHandler(_YOUR_HANDLER_)
+    
+An example of a custom handler, from which you can pull information for your own
+purposes, can be found in logging_handlers.py. It implements the logger used by
+the web-dashboard, which collects a fixed number of events and displays them in
+most-recent-first order, with enough information to colour them according to
+severity.
+
+Something nifty would be a webservice module that provides an RSS feed of
+events, of ERROR (configurable) severity or higher, so an operations team could
+be quickly notified of problems without getting spammed by e-mail if a situation
+develops that makes lots of packets fail. Contibute it and it'll get included.
