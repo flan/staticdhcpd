@@ -596,6 +596,12 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         if not wrapper.filterPacket(): return
         wrapper.announcePacket()
         
+        #When reimplementing LEASEQUERY, create an alternative to the
+        #'Definition' model and use that to transfer data through the wrapper
+        #and handleUnknownMAC. Instead of retrieveDefinition(), it'll be
+        #retrieveLeaseDefinition() and handleUnknownMAC() will need to return
+        #that as a third result. Its None still means it had nothing, though.
+        
     @_dhcpHandler(_PACKET_TYPE_REQUEST)
     def _handleDHCPRequest(self, wrapper):
         """
