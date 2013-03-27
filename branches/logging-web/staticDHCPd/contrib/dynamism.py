@@ -7,8 +7,9 @@ which it has been applied.
 
 If you use this module, consider setting `NAK_RENEWALS` in conf.py, to
 discourage clients from renewing before their lease-time is up. Alternatively,
-you can set 'renewal_time_value' and 'rebinding_time_value' in the packet to
-something close to the lease-time itself, which is supported by default.
+leave discourage_renewals=True when setting up a pool to suggest that clients
+avoid communicating wiht the server until their lease is almost up, rather than
+at 50% and 75%, which is spec-default.
 
 To use this module, add the following to conf.py's init() function:
     import dynamism
@@ -19,13 +20,20 @@ To use this module, add the following to conf.py's init() function:
     
     #Expose its allocation table to the web interface
     callbacks.webAddMethod(
-     '/yoursite/dynamic-pool/guest/0/show', _dynamic_pool.show_leases,
+     '/yoursite/dynamic-pool/guest/0/leases', _dynamic_pool.show_leases_xhtml,
      hidden=False, module='guest-0', name='show leases',
      display_mode=callbacks.WEB_METHOD_TEMPLATE
     )
     #You could also make it a permanent dashboard fixture:
-    #callbacks.webAddDashboard('guest-0', 'leases',_dynamic_pool.show_leases)
+    #callbacks.webAddDashboard('guest-0', 'leases',_dynamic_pool.show_leases_xhtml)
     #Add 'ordering=N', where N is a bias value, to change its position
+    
+    #And a CSV form, too, in case any automated processors need the data
+    callbacks.webAddMethod(
+     '/yoursite/dynamic-pool/guest/0/leases.csv', _dynamic_pool.show_leases_csv,
+     hidden=False, module='guest-0', name='get leases (csv)',
+     display_mode=callbacks.WEB_METHOD_RAW
+    )
     
 And then add the following to conf.py's handleUnknownMAC():
     return _dynamic_pool.handle(method, packet, mac, client_ip)
@@ -40,18 +48,24 @@ just that it was well-formed. Malicious clients cannot compromise the server,
 but they can trigger DoS behaviour. Given that there's nothing to gain, however,
 this is probably a non-issue.
 
-If you need persistent dynamic allocations, you will need to implement the
+While this module will, if scapy is available, provide sufficient coherency to
+run multiple servers in an environment (provided you have decent proxy-ARP
+support if using relays), or to run a single unstable server, if you need truly
+persistent dynamic allocations, you will need to implement the
 functionality yourself (and contribute it, please!), or otherwise set up
 another DHCP server, like the ISC's, which is meant for that, and tell
 staticDHCPd that it is not authoritative for its network. The intended use-case
 for this is giving unknown clients access to a guest subnet so they can be
-migrated to a static context. It's usable beyond that, but it is a scope-limited
-solution.
+migrated to a static context. It's usable well beyond that, but it is a
+scope-limited design.
 
+Like staticDHCPd, this module under the GNU General Public License v3
 (C) Neil Tallim, 2013 <flan@uguu.ca>
 """
 import collections
+import csv
 import logging
+import StringIO
 import threading
 import time
 
@@ -70,6 +84,14 @@ except ImportError:
 else:
     _logger.info("scapy imported successfully; automatic ARPing is available")
     
+_LeaseDefinition = collections.namedtuple('LeaseDefinition', ('ip', 'mac', 'expiration', 'last_seen'))
+"""
+Provides lease-definition information for an IP.
+
+`ip` and `mac` are self-explanatory. `expiration` and `last_seen` are UNIX
+timestamps.
+"""
+
 def _dynamic_method(method):
     """
     Handles locking and response-formatting; you do not need to study this,
@@ -251,7 +273,38 @@ class DynamicPool(object):
         })
         return None
         
-    def show_leases(self, *args, **kwargs):
+    def get_leases(self, *args, **kwargs):
+        """
+        Provides every lease known to the system, as a tuple of LeaseDefinition
+        objects.
+        """
+        elements = []
+        with self._lock:
+            for (mac, (expiration, ip)) in self._map.iteritems():
+                elements.append(_LeaseDefinition(ip, mac, expiration, expiration - self._lease_time))
+            for ip in self._pool:
+                elements.append(_LeaseDefinition(ip, None, None, None))
+        return tuple(sorted(elements, key=(lambda element: map(int, element.ip.split('.')))))
+        
+    def show_leases_csv(self, *args, **kwargs):
+        """
+        Provides every lease in the system, as a CSV document.
+        """
+        output = StringIO.StringIO()
+        writer = csv.writer(output)
+        writer.writerow(('ip', 'mac', 'expiration', 'last seen'))
+        render_format = '%Y-%m-%d %H:%M:%S'
+        for lease in self.get_leases():
+            writer.writerow((
+             lease.ip,
+             lease.mac or '',
+             lease.expiration and time.strftime(render_format, time.localtime(lease.expiration)) or '',
+             lease.last_seen and time.strftime(render_format, time.localtime(lease.last_seen)) or '',
+            ))
+        output.seek(0)
+        return ('text/csv', output.read())
+        
+    def show_leases_xhtml(self, *args, **kwargs):
         """
         Renders a table containing all leases.
         
@@ -262,7 +315,7 @@ class DynamicPool(object):
                 return "No leases yet assigned; %(count)i IPs available" % {'count': len(self._pool)}
                 
             elements = []
-            for ((expiration, ip), mac) in sorted((v, k) for (k, v) in self._map.iteritems()):
+            for (mac, (expiration, ip)) in sorted(self._map.iteritems(), key=(lambda element: element[1])):
                 elements.append("""<tr>
                     <td>%(ip)s</td>
                     <td>%(mac)s</td>
