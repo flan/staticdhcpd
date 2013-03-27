@@ -151,12 +151,12 @@ class _PacketWrapper(object):
         try:
             self._evaluateSource()
             self._server.evaluateAbuse(self.mac)
-        except _PacketSourceUnacceptable, e:
+        except PacketSourceUnacceptable, e:
             _logger.warn("Request from %(ip)s ignored: %(reason)s" % {
              'ip': _toDottedQuadOrNone(self.giaddr),
              'reason': str(e),
             })
-        except _PacketSourceIgnored, e:
+        except PacketSourceIgnored, e:
             _logger.debug("Request from %(mac)s ignored: %(reason)s" % {
              'mac': self.mac,
              'reason': str(e),
@@ -222,11 +222,11 @@ class _PacketWrapper(object):
         """
         if self.giaddr: #Relayed request.
             if not config.ALLOW_DHCP_RELAYS: #Ignore it.
-                raise _PacketSourceUnacceptable("relay support not enabled")
+                raise PacketSourceUnacceptable("relay support not enabled")
             elif config.ALLOWED_DHCP_RELAYS and not _toDottedQuadOrNone(self.giaddr) in config.ALLOWED_DHCP_RELAYS:
-                raise _PacketSourceUnacceptable("relay not authorised")
+                raise PacketSourceUnacceptable("relay not authorised")
         elif not config.ALLOW_LOCAL_DHCP and not self.pxe: #Local request, but denied.
-            raise _PacketSourceUnacceptable("neither link-local traffic nor PXE is enabled")
+            raise PacketSourceUnacceptable("neither link-local traffic nor PXE is enabled")
             
     def announcePacket(self, ip=None, verbosity=logging.INFO):
         """
@@ -291,7 +291,7 @@ class _PacketWrapper(object):
          self.pxe and self.pxe_options, self.vendor_options
         )
         if result is None:
-            raise _PacketSourceBlacklist("filterPacket() returned None")
+            raise PacketSourceBlacklist("filterPacket() returned None")
         return result
         
     def _logInvalidValue(self, name, value, subnet, serial):
@@ -476,10 +476,10 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         @param wrapper: A wrapper around the packet, exposing helpful details.
         """
         if not wrapper.ip:
-            raise _PacketSourceBlacklist("conflicting IP was not specified")
+            raise PacketSourceBlacklist("conflicting IP was not specified")
             
         if not wrapper.sid:
-            raise _PacketSourceBlacklist("server-identifier was not specified")
+            raise PacketSourceBlacklist("server-identifier was not specified")
             
         if _toDottedQuadOrNone(wrapper.sid) == self._server_address: #Rejected!
             if not wrapper.filterPacket(): return
@@ -548,7 +548,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                 )
                 wrapper.markAddressed()
             else:
-                raise _PacketSourceBlacklist("unknown MAC and server is not authoritative; ignoring because rejection is impossible")
+                raise PacketSourceBlacklist("unknown MAC and server is not authoritative; ignoring because rejection is impossible")
                 
     @_dhcpHandler(_PACKET_TYPE_INFORM)
     def _handleDHCPInform(self, wrapper):
@@ -563,7 +563,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         wrapper.announcePacket(ip=_toDottedQuadOrNone(wrapper.ciaddr))
         
         if not wrapper.ciaddr:
-            raise _PacketSourceBlacklist("ciaddr was not specified")
+            raise PacketSourceBlacklist("ciaddr was not specified")
             
         definition = wrapper.retrieveDefinition(override_ip, override_ip_value=wrapper.ciaddr)
         if definition:
@@ -575,7 +575,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                 )
                 wrapper.markAddressed()
         else:
-            raise _PacketSourceBlacklist("unknown MAC")
+            raise PacketSourceBlacklist("unknown MAC")
             
     @_dhcpHandler(_PACKET_TYPE_LEASEQUERY)
     def _handleDHCPLeaseQuery(self, wrapper):
@@ -714,7 +714,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         @param wrapper: A wrapper around the packet, exposing helpful details.
         """
         if not wrapper.sid:
-            raise _PacketSourceBlacklist("server-identifier was not specified")
+            raise PacketSourceBlacklist("server-identifier was not specified")
             
         if _toDottedQuadOrNone(wrapper.sid) == self._server_address: #Released!
             if not wrapper.filterPacket(override_ip=True, override_ip_value=wrapper.ciaddr): return
@@ -842,10 +842,10 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         with self._lock:
             ignored = [timeout for (ignored_mac, timeout) in self._ignored_addresses if mac == ignored_mac]
         if ignored:
-            raise _PacketSourceIgnored("MAC is on cooldown for another %(count)i seconds" % {'count': max(ignored)})
+            raise PacketSourceIgnored("MAC is on cooldown for another %(count)i seconds" % {'count': max(ignored)})
             
         if not self._logDHCPAccess(mac):
-            raise _PacketSourceIgnored("MAC has been ignored for excessive activity")
+            raise PacketSourceIgnored("MAC has been ignored for excessive activity")
             
     def getDatabase(self):
         """
@@ -946,22 +946,22 @@ class DHCPService(threading.Thread):
         """
         self._dhcp_server.tick()
     
-class _PacketRejection(Exception):
+class PacketRejection(Exception):
     """
     The base-class for indicating that a packet could not be processed.
     """
     
-class _PacketSourceBlacklist(_PacketRejection):
+class PacketSourceBlacklist(_PacketRejection):
     """
     Indicates that the packet was added to a blacklist, based on this event.
     """
     
-class _PacketSourceIgnored(_PacketRejection):
+class PacketSourceIgnored(_PacketRejection):
     """
     Indicates that the packet's sender is currently blacklisted.
     """
     
-class _PacketSourceUnacceptable(_PacketRejection):
+class PacketSourceUnacceptable(_PacketRejection):
     """
     Indicates that the packet's sender is not permitted by policy.
     """
