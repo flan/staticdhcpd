@@ -495,11 +495,18 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                 'serial': definition.serial,
                 })
                 wrapper.markAddressed()
+            elif definition:
+                _logger.warn('%(type)s from %(mac)s for %(ip)s, but its assigned IP is %(aip)s' % {
+                 'type': wrapper.getType(),
+                 'ip': ip,
+                 'aip': definition.ip,
+                 'mac': wrapper.mac,
+                })
             else:
                 _logger.warn('%(type)s from %(mac)s for %(ip)s, but the MAC is unknown' % {
-                'type': wrapper.getType(),
-                'ip': ip,
-                'mac': wrapper.mac,
+                 'type': wrapper.getType(),
+                 'ip': ip,
+                 'mac': wrapper.mac,
                 })
                 
     @_dhcpHandler(_PACKET_TYPE_DISCOVER)
