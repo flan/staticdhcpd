@@ -175,13 +175,7 @@ class _PacketWrapper(object):
         """
         try:
             if isinstance(value, _PacketSourceBlacklist):
-                _logger.warn('%(mac)s was temporarily blacklisted, for %(time)i seconds, following %(packet_type)s: %(reason)s' % {
-                 'mac': self.mac,
-                 'time': config.UNAUTHORIZED_CLIENT_TIMEOUT,
-                 'packet_type': self._packet_type,
-                 'reason': str(value),
-                })
-                self._server.addToTempBlacklist(self.mac)
+                self._server.addToTempBlacklist(self.mac, packet_type, str(value))
                 return True
             elif isinstance(value, Exception):
                 _logger.critical("Unable to handle %(type)s from  %(mac)s:\n%(error)s" % {
@@ -279,6 +273,27 @@ class _PacketWrapper(object):
         """
         self._discarded = False
         
+    def filterPacket(self, override_ip=False, override_ip_value=None):
+        """
+        @type override_ip: bool
+        @param override_ip: If True, override_ip_value will be used instead of
+            the packet's "requested_ip_address" field.
+        @type override_ip_value: sequence|None
+        @param override_ip_value: The value to substitute for the default IP.
+        """
+        ip = self.ip
+        if override_ip:
+            ip = override_ip_value
+            
+        result = config.filterPacket(
+         self.packet, self._packet_type,
+         self.mac, ip and tuple(ip), self.giaddr and tuple(self.giaddr),
+         self.pxe and self.pxe_options, self.vendor_options
+        )
+        if result is None:
+            raise _PacketSourceBlacklist("filterPacket() returned None")
+        return result
+        
     def _logInvalidValue(self, name, value, subnet, serial):
         """
         Makes a note of invalid values fround in a lease definition.
@@ -293,11 +308,11 @@ class _PacketWrapper(object):
         @param serial: The serial in which the value was found.
         """
         _logger.error("Invalid value for %(subnet)s:%(serial)i:%(mac)s %(name)s: %(value)r" % {
-            'subnet': subnet,
-            'serial': serial,
-            'mac': self.mac,
-            'name': name,
-            'value': value,
+         'subnet': subnet,
+         'serial': serial,
+         'mac': self.mac,
+         'name': name,
+         'value': value,
         })
         
     def _loadDHCPPacket(self, definition, inform):
@@ -467,22 +482,24 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
             raise _PacketSourceBlacklist("server-identifier was not specified")
             
         if _toDottedQuadOrNone(wrapper.sid) == self._server_address: #Rejected!
+            if not wrapper.filterPacket(): return
+            
             definition = wrapper.retrieveDefinition()
             ip = _toDottedQuadOrNone(wrapper.ip)
             if definition and definition.ip == ip: #Known client.
                 _logger.error('%(type)s from %(mac)s for %(ip)s on (%(subnet)s, %(serial)i)' % {
-                 'type': wrapper.getType(),
-                 'ip': ip,
-                 'mac': wrapper.mac,
-                 'subnet': definition.subnet,
-                 'serial': definition.serial,
+                'type': wrapper.getType(),
+                'ip': ip,
+                'mac': wrapper.mac,
+                'subnet': definition.subnet,
+                'serial': definition.serial,
                 })
                 wrapper.markAddressed()
             else:
                 _logger.warn('%(type)s from %(mac)s for %(ip)s, but the MAC is unknown' % {
-                 'type': wrapper.getType(),
-                 'ip': ip,
-                 'mac': wrapper.mac,
+                'type': wrapper.getType(),
+                'ip': ip,
+                'mac': wrapper.mac,
                 })
                 
     @_dhcpHandler('DISCOVER')
@@ -494,6 +511,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         @type wrapper: L{_PacketWrapper}
         @param wrapper: A wrapper around the packet, exposing helpful details.
         """
+        if not wrapper.filterPacket(override_ip=True, override_ip_value=None): return
         wrapper.announcePacket()
         
         definition = wrapper.retrieveDefinition(override_ip=True, override_ip_value=None)
@@ -541,6 +559,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         @type wrapper: L{_PacketWrapper}
         @param wrapper: A wrapper around the packet, exposing helpful details.
         """
+        if not wrapper.filterPacket(override_ip=True, override_ip_value=wrapper.ciaddr): return
         wrapper.announcePacket(ip=_toDottedQuadOrNone(wrapper.ciaddr))
         
         if not wrapper.ciaddr:
@@ -567,6 +586,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         @type wrapper: L{_PacketWrapper}
         @param wrapper: A wrapper around the packet, exposing helpful details.
         """
+        if not wrapper.filterPacket(): return
         wrapper.announcePacket()
         
     @_dhcpHandler(_PACKET_TYPE_REQUEST)
@@ -595,6 +615,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         if wrapper.sid and not wrapper.ciaddr: #SELECTING
             wrapper.setType(_PACKET_TYPE_REQUEST_SELECTING)
             if s_sid == self._server_address: #Chosen!
+                if not wrapper.filterPacket(): return
                 wrapper.announcePacket(ip=s_ip)
                 
                 definition = wrapper.retrieveDefinition()
@@ -615,6 +636,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                     wrapper.markAddressed()
         elif not wrapper.sid and not wrapper.ciaddr and wrapper.ip: #INIT-REBOOT
             wrapper.setType(_PACKET_TYPE_REQUEST_INIT_REBOOT)
+            if not wrapper.filterPacket(): return
             wrapper.announcePacket(ip=s_ip)
             
             definition = wrapper.retrieveDefinition()
@@ -636,6 +658,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         elif not wrapper.sid and wrapper.ciaddr and not wrapper.ip: #RENEWING or REBINDING
             renew = wrapper.source_address[0] not in _IP_UNSPECIFIED_FILTER
             wrapper.setType(renew and _PACKET_TYPE_REQUEST_RENEW or _PACKET_TYPE_REQUEST_REBIND)
+            if not wrapper.filterPacket(): return
             wrapper.announcePacket(ip=s_ip)
             
             if config.NAK_RENEWALS and not wrapper.pxe and (renew or config.AUTHORITATIVE):
@@ -685,6 +708,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
             raise _PacketSourceBlacklist("server-identifier was not specified")
             
         if _toDottedQuadOrNone(wrapper.sid) == self._server_address: #Released!
+            if not wrapper.filterPacket(override_ip=True, override_ip_value=wrapper.ciaddr): return
             definition = wrapper.retrieveDefinition(override_ip=True, override_ip_value=wrapper.ciaddr)
             ip = _toDottedQuadOrNone(wrapper.ciaddr)
             if definition and definition.ip == ip: #Known client.
@@ -781,7 +805,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         })
         return bytes
         
-    def addToTempBlacklist(self, mac):
+    def addToTempBlacklist(self, mac, packet_type, reason):
         """
         Marks a MAC as ignorable for a nominal amount of time.
         
@@ -790,7 +814,13 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         """
         with self._lock:
             self._ignored_addresses.append([mac, config.UNAUTHORIZED_CLIENT_TIMEOUT])
-            
+        _logger.warn('%(mac)s was temporarily blacklisted, for %(time)i seconds, following %(packet_type)s: %(reason)s' % {
+         'mac': mac,
+         'time': config.UNAUTHORIZED_CLIENT_TIMEOUT,
+         'packet_type': packet_type,
+         'reason': reason,
+        })
+        
     def evaluateAbuse(self, mac):
         """
         Determines whether the MAC is, or should be, blacklisted.

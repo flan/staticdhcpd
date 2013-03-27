@@ -9,7 +9,7 @@ with any extensions you've developed, with no issues.
 (Check the changelog, though)
 
 
-Three functions are currently defined as hooks from staticDHCPd's core.
+Several functions are currently defined as hooks from staticDHCPd's core.
 To implement one, just create a function in conf.py with the corresponding
 signature.
 
@@ -77,13 +77,67 @@ declared would normally be discarded, so this says "I want to modify the variabl
 '_dynamic_pool' at the conf-module level".
 
 
+filterPacket(packet, method, mac, client_ip, relay_ip, pxe, vendor)
+----------------------------------------
+Provides a means of writing your own blacklist logic, excluding packets from
+sources you don't trust, that have done weird things, or under any other
+conceivable circumstance.
+
+It is called before the MAC is looked up in the database or by
+handleUnknownMAC(). Returning True  will cause the MAC to proceed through the
+chain as normal, while returning False will cause it to be discarded. Returning
+None will put it into the temporary blacklist, like other MACs that trip
+staticDHCPd's configurable thresholds.
+
+Parameters
+------------------------------
+    packet: the packet received from the client, an instance of
+            `libpydhcpserver.dhcp_packet.DHCPPacket`
+    method: a string describing the type of DHCP request the packet represents,
+            one of 'DECLINE', 'DISCOVER', 'INFORM', 'RELEASE',
+            'REQUEST:INIT-REBOOT','REQUEST:REBIND', 'REQUEST:RENEW',
+            'REQUEST:SELECTING'
+    mac: a human-readable MAC string, lower-case, separated by colons
+    client_ip: a quadruple of octets, like (192, 168, 1, 1), or None, if the
+               request didn't specify an address to associate with the client
+    relay_ip: either None or an address as a quadruple of octets, representing
+              the server that relayed this request
+    pxe: False if not applicable; else, a triple containing, in order, option 93
+         (client_system) as a sequence of ints, option 94 (client_ndi) as a
+         sequence of three bytes, and option 97 (uuid_guid) as digested data:
+         (type:byte, data:[byte])
+         Any unset options are presented as None
+    vendor: a four-tuple containing, in order, option 43
+            (vendor_specific_information) as a string of bytes, option 60
+            (vendor_class_identifier) as a string, and both option 124
+            (vendor_class) and option 125 (vendor_specific) as digested data:
+            [(enterprise_number:int, data:string)] and
+            [(enterprise_number:int, [(subopt_code:byte, data:string)])],
+            respectively
+            Any unset options are presented as None
+
+Example
+------------------------------
+def filterPacket(packet, method, mac, client_ip, relay_ip, pxe, vendor):
+    import random
+    return random.random() < 0.5
+    
+Explanation
+--------------------
+This will just fake a lossy network, dropping 50% of all packets received.
+
+You'd probably want to do something more interesting, like checking a database
+or adding to some sort of global counter.
+
+
 handleUnknownMAC(packet, method, mac, client_ip, relay_ip, pxe, vendor)
 ----------------------------------------
 If staticDHCPd gets a request to serve a MAC that it does not recognise, this
 function will be invoked, allowing you to query databases of your own to fill in
 the blanks.
 
-The parameters received are as follows:
+Parameters
+------------------------------
     packet: the packet received from the client, an instance of
             `libpydhcpserver.dhcp_packet.DHCPPacket`
     method: a string describing the type of DHCP request the packet represents,
@@ -133,7 +187,8 @@ you to modify the packet, adding or removing options and setting values as
 needed for your environment's specific requirements. Or even allowing you to
 define your own blacklist rules and behaviour.
 
-The parameters received are as follows:
+Parameters
+------------------------------
     packet: the packet received from the client, an instance of
             `libpydhcpserver.dhcp_packet.DHCPPacket`
     method: a string describing the type of DHCP request the packet represents,
@@ -206,7 +261,8 @@ callbacks.systemAddReinitHandler(callback)
 ----------------------------------------
 Registers a callable to be invoked whenever the system is reinitialised.
 
-Parameters:
+Parameters
+------------------------------
     callback: The callable to be invoked; must not require any arguments
     
     
@@ -214,7 +270,8 @@ callbacks.systemRemoveReinitHandler(callback)
 ----------------------------------------
 Unregisters a callable from the list of those invoked during reinitialisation.
 
-Parameters:
+Parameters
+------------------------------
     callback: The callable to be removed
     
     
@@ -222,7 +279,8 @@ callbacks.systemAddTickHandler(callback)
 ----------------------------------------
 Registers a callable to be invoked approximately once every second.
 
-Parameters:
+Parameters
+------------------------------
     callback: The callable to be invoked; must not require any arguments;
               must not block for any significant amount of time
               
@@ -231,7 +289,8 @@ callbacks.systemRemoveTickHandler(callback)
 ----------------------------------------
 Unregisters a callable from the list of those invoked every second.
 
-Parameters:
+Parameters
+------------------------------
     callback: The callable to be removed
     
     
@@ -239,7 +298,8 @@ callbacks.statsAddHandler(callback)
 ----------------------------------------
 Registers a callable to be invoked every time statistics information is emitted.
 
-Parameters:
+Parameters
+------------------------------
     callback: A callable that accepts an instance of statistics.Statistics;
               must not block for any significant amount of time
               
@@ -249,7 +309,8 @@ callbacks.statsRemoveHandler(callback)
 Unregisters a callable from the list of those invoked when statistics are
 emitted.
 
-Parameters:
+Parameters
+------------------------------
     callback: The callable to be removed
     
     
@@ -257,7 +318,8 @@ callbacks.webAddDashboard(module, name, callback, ordering=None)
 ----------------------------------------
 Adds an element to the web-dashboard.
 
-Parameters: 
+Parameters
+------------------------------
     module: something like "best module EVER"
     name: something like "awesomifications per second"
     callback: The callable to be invoked when the dashboard is rendered; this is
@@ -279,7 +341,8 @@ callbacks.webRemoveDashboard(callback)
 ----------------------------------------
 Removes an element from the web-dashboard.
 
-Parameters:
+Parameters
+------------------------------
     callback: The callback with which the element was initially registered
     
     
@@ -289,7 +352,8 @@ display_mode=callbacks.WEB_METHOD_RAW)
 ----------------------------------------
 Adds a webservice method.
 
-Parameters:
+Parameters
+------------------------------
     path: The path at which to register this callback, typically something like
           "ca/uguu/puukusoft/statcDHCPd/statistics/histogram.csv", but as long
           as it's a valid URI-fragment, it's up to you
@@ -324,7 +388,8 @@ callbacks.webRemoveMethod(path)
 ----------------------------------------
 Removes a webservice method.
 
-Parameters:
+Parameters
+------------------------------
     path: The path of the method to remove
     
     
@@ -342,14 +407,5 @@ Similarly, if you want to capture logging events, you can hook in easily:
     import logging
     logging.root.addHandler(_YOUR_HANDLER_)
     
-An example of a custom handler, from which you can pull information for your own
-purposes, can be found in logging_handlers.py. It implements the logger used by
-the web-dashboard, which collects a fixed number of events and displays them in
-most-recent-first order, with enough information to colour them according to
-severity.
-
-
-Something nifty would be a webservice module that provides an RSS feed of
-events, of ERROR (configurable) severity or higher, so an operations team could
-be quickly notified of problems without getting spammed by e-mail if a situation
-develops that makes lots of packets fail. Contibute it and it'll get included.
+An example of a custom handler, and application thereof, can be found in
+contrib/feedservice.py

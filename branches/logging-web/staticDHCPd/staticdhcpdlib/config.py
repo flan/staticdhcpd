@@ -178,7 +178,11 @@ import inspect
 if hasattr(conf, 'init'):
     init = conf.init
 else:
-    init = lambda : None
+    init = lambda *args, **kwargs : None
+if hasattr(conf, 'filterPacket'):
+    init = conf.filterPacket
+else:
+    init = lambda *args, **kwargs : None
 if hasattr(conf, 'handleUnknownMAC'):
     if inspect.getargspec(conf.handleUnknownMAC).args == ['mac']:
         #It's pre-2.0.0, so wrap it for backwards-compatibility
