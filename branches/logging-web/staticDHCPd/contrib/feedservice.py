@@ -37,11 +37,8 @@ FEED_TITLE = config.SYSTEM_NAME
 #The path at which individual records will be served
 PATH_RECORD = '/ca/uguu/puukusoft/staticDHCPd/contrib/feedservice/record'
 
-#The path at which to serve RSSv2 (None to disable)
-PATH_RSS_2 = '/ca/uguu/puukusoft/staticDHCPd/contrib/feedservice/rss2'
-
-#The path at which to serve ATOMv1 (None to disable)
-PATH_ATOM_1 = '/ca/uguu/puukusoft/staticDHCPd/contrib/feedservice/atom1'
+#The path at which to serve Atom (None to disable)
+PATH_ATOM = '/ca/uguu/puukusoft/staticDHCPd/contrib/feedservice/atom'
 
 #Whether feeds should be advertised in the dashboard's headers
 ADVERTISE = True
@@ -66,7 +63,7 @@ import xml.etree.ElementTree as ET
 _logger = logging.getLogger('contrib.feedservice')
 
 _SERVER_ROOT = SERVER_BASE + '/'
-_RECORD_URI = SERVER_BASE + PATH_RECORD + "?record=%(uid)s"
+_RECORD_URI = SERVER_BASE + PATH_RECORD + "?uid=%(uid)s"
 
 _last_update = int(time.time())
 
@@ -88,6 +85,10 @@ class _FeedHandler(logging.Handler):
         })
         
     def _clearOldRecords(self):
+        """
+        Non-Handler method: removes any records older than the maximum permitted
+        age.
+        """
         max_age = time.time() - self._max_age
         dead_records = 0
         self.acquire()
@@ -128,6 +129,9 @@ class _FeedHandler(logging.Handler):
         logging.Handler.close(self)
         
     def presentRecord(self, path, queryargs, mimetype, data, headers):
+        """
+        Non-Handler method: renders the requested record for the web interface.
+        """
         uids = queryargs.get('uid')
         if uids:
             uid = uids[0]
@@ -148,6 +152,9 @@ class _FeedHandler(logging.Handler):
         return self.format(record)
         
     def enumerateRecords(self):
+        """
+        Non-Handler method: Enumerates every tracked record.
+        """
         self._clearOldRecords()
         
         self.acquire()
@@ -157,6 +164,10 @@ class _FeedHandler(logging.Handler):
             self.release()
             
 def _format_title(element):
+    """
+    Formats the given `element`, returning a string suitable for display in a
+    feed's header.
+    """
     return "%(severity)s at %(time)s in %(module)s:%(line)i" % {
      'severity': element.severity,
      'time': time.ctime(element.timestamp),
@@ -165,6 +176,9 @@ def _format_title(element):
     }
     
 def _feed_presenter(feed_type):
+    """
+    A decorator that tracks time taken to render a feed and handles exceptions.
+    """
     def decorator(f):
         def function(*args, **kwargs):
             start_time = time.time()
@@ -189,42 +203,13 @@ def _feed_presenter(feed_type):
         return function
     return decorator
     
-_RSS_TIMESTAMP_FORMAT = '%a, %d %b %Y %H:%M:%S %z'
-@_feed_presenter('RSSv2.0')
-def _present_rss_2(logger):
-    global _RSS_TIMESTAMP_FORMAT
-    
-    rss = ET.Element('rss')
-    rss.attrib['version'] = '2.0'
-    
-    channel = ET.SubElement(rss, 'channel')
-    
-    title = ET.SubElement(channel, 'title')
-    title.text = FEED_TITLE
-    link = ET.SubElement(channel, 'link')
-    link.text = _SERVER_ROOT
-    last_build_date = ET.SubElement(channel, 'lastBuildDate')
-    last_build_date.text = time.strftime(_RSS_TIMESTAMP_FORMAT, time.localtime(_last_update))
-    ttl = ET.SubElement(channel, 'ttl')
-    ttl.text = '60'
-    
-    for element in logger.enumerateRecords():
-        item = ET.SubElement(channel, 'item')
-        
-        title = ET.SubElement(item, 'title')
-        title.text = _format_title(element)
-        link = ET.SubElement(item, 'link')
-        link.attrib['href'] = _RECORD_URI % {'uid': element.uid}
-        guid = ET.SubElement(item, 'guid')
-        guid.text = element.uid
-        pub_date = ET.SubElement(item, 'pubDate')
-        pub_date.text = time.strftime(_RSS_TIMESTAMP_FORMAT, time.localtime(element.timestamp))
-    return ('application/rss+xml', '<?xml version="1.0" encoding="utf-8"?>' + ET.tostring(rss))
-    
 _ATOM_ID_FORMAT = 'urn:uuid:%(id)s'
 _FEED_ID = _ATOM_ID_FORMAT % {'id': FEED_ID}
-@_feed_presenter('ATOMv1.0')
-def _present_atom_1(logger):
+@_feed_presenter('Atom')
+def _present_atom(logger):
+    """
+    Assembles an Atom-compliant feed, drawing elements from `logger`.
+    """
     feed = ET.Element('feed')
     feed.attrib['xmlns'] = 'http://www.w3.org/2005/Atom'
     
@@ -268,29 +253,16 @@ _logger.info("Registering record-access-point at '%(path)s'..." % {
 })
 config.callbacks.webAddMethod(PATH_RECORD, _LOGGER.presentRecord, display_mode=config.callbacks.WEB_METHOD_TEMPLATE)
 
-if PATH_RSS_2:
-    _logger.info("Registering RSSv2 feed at '%(path)s'..." % {
-     'path': PATH_RSS_2,
+if PATH_ATOM:
+    _logger.info("Registering Atom feed at '%(path)s'..." % {
+     'path': PATH_ATOM,
     })
     config.callbacks.webAddMethod(
-     PATH_RSS_2, lambda *args, **kwargs: _present_rss_2(_LOGGER),
+     PATH_ATOM, lambda *args, **kwargs: _present_atom(_LOGGER),
      display_mode=config.callbacks.WEB_METHOD_RAW
     )
     if ADVERTISE:
-        _logger.info("Adding reference to RSSv2 feed to headers...")
-        rss2_header = '<link href="' + PATH_RSS_2 + '" type="application/rss+xml" rel="alternate"/>'
-        config.callbacks.webAddHeader(lambda *args, **kwargs: rss2_header)
-        
-if PATH_ATOM_1:
-    _logger.info("Registering ATOMv1 feed at '%(path)s'..." % {
-     'path': PATH_ATOM_1,
-    })
-    config.callbacks.webAddMethod(
-     PATH_ATOM_1, lambda *args, **kwargs: _present_atom_1(_LOGGER),
-     display_mode=config.callbacks.WEB_METHOD_RAW
-    )
-    if ADVERTISE:
-        _logger.info("Adding reference to ATOMv1 feed to headers...")
-        atom1_header = '<link href="' + PATH_ATOM_1 + '" type="application/atom+xml" rel="alternate"/>'
-        config.callbacks.webAddHeader(lambda *args, **kwargs: atom1_header)
+        _logger.info("Adding reference to Atom feed to headers...")
+        atom_header = '<link href="' + PATH_ATOM + '" type="application/atom+xml" rel="alternate" title="' + config.SYSTEM_NAME + ' Atom"/>'
+        config.callbacks.webAddHeader(lambda *args, **kwargs: atom_header)
         
