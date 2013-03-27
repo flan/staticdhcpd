@@ -61,7 +61,7 @@ callbacks.webAddHeader(myHeaders)
 }}}
 You can use lambdas, too, if that's your thing. However you do it, this will add another line to the `<head/>` section, so you can add a link to your own stylesheet or just embed code directly. As with the other web-callbacks, the standard set of parameters are passed to your callback, so you can do different things depending on what was requested or what was received via POST; you just have to return a string or `None`, which suppresses output.
 
-Anything you add, like a CSS class or JavaScript function, should be prefixed with a leading underscore, where possible, to avoid potential future conflicts with staticDHCPd's core code.
+Anything you add, like a CSS class or !JavaScript function, should be prefixed with a leading underscore, where possible, to avoid potential future conflicts with staticDHCPd's core code.
 
 If you want to completely remove one of the standard headers, they are defined in `web.headers`, so you can kill them with the following code:
 {{{
@@ -75,7 +75,7 @@ If you want to replace the CSS or favicon completely, you'll find their definiti
 callbacks.webRemoveMethod('/css')
 callbacks.webAddMethod('/css', _YOUR_METHOD_HERE_, cacheable=True)
 }}}
-Replacing the favicon is pretty much identical. Replacing the JavaScript is discouraged, but also roughly the same; extend that, rather than replace it.
+Replacing the favicon is pretty much identical. Replacing the !JavaScript is discouraged, but also roughly the same; extend that, rather than replace it.
 
 ----
 = Platform-specific questions =
