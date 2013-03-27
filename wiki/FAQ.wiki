@@ -2,12 +2,7 @@
 
 = Release errata =
 == [http://www.rfc-archive.org/getrfc.php?rfc=4388 RFC4388] ==
-The featureset described by this RFC, LEASEQUERY, is untested, yet has been included in versions 1.4.0+.
-
-If you have an opportunity to try this out, please let us know if it works as expected. We have no means of testing it in a realistic environment and are therefore unwilling to declare it production-stable without real-world feedback.
-
-In the event of any problems, no service will be disrupted -- the rest of the network will simply believe the DHCP server does not support this extension.
-You'll just get e-mail about a problem with the server, which is what we need to see to get everything working right. So if you just enabled LEASEQUERY on a device in your network and things aren't going smoothly, go ahead and open an issue, pasting the stack trace as documentation -- we'll deal with it as soon as possible and work with you to get the bugs ironed out.
+The featureset described by this RFC, LEASEQUERY, is untested, yet has been included in versions 1.4.0+, but was removed in 1.6.3, because its implementation was wrong. It will likely return soon, but better to leave out bad code than try to hack it into a semi-working state.
 
 ----
 = Known issues =
