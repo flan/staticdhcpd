@@ -142,7 +142,12 @@ _defaults.update({
  'WEB_DASHBOARD_SECURE': False,
  'WEB_REINITIALISE_CONFIRM': True,
  'WEB_REINITIALISE_SECURE': False,
+ 'WEB_REINITIALISE_HIDDEN': False,
+ 'WEB_REINITIALISE_ENABLED': True,
  'WEB_DASHBOARD_ORDER_LOG': 1000,
+ 'WEB_HEADER_TITLE': True,
+ 'WEB_HEADER_CSS': True,
+ 'WEB_HEADER_FAVICON': True,
 })
 
 #Statistics settings
@@ -180,9 +185,9 @@ if hasattr(conf, 'init'):
 else:
     init = lambda *args, **kwargs : None
 if hasattr(conf, 'filterPacket'):
-    init = conf.filterPacket
+    filterPacket = conf.filterPacket
 else:
-    init = lambda *args, **kwargs : None
+    filterPacket = lambda *args, **kwargs : True
 if hasattr(conf, 'handleUnknownMAC'):
     if inspect.getargspec(conf.handleUnknownMAC).args == ['mac']:
         #It's pre-2.0.0, so wrap it for backwards-compatibility
@@ -251,6 +256,8 @@ class callbacks(object):
     WEB_METHOD_DASHBOARD = web.WEB_METHOD_DASHBOARD
     WEB_METHOD_TEMPLATE = web.WEB_METHOD_TEMPLATE
     WEB_METHOD_RAW = web.WEB_METHOD_RAW
+    webAddHeader = staticmethod(web.registerHeaderCallback)
+    webRemoveHeader = staticmethod(web.unregisterHeaderCallback)
     webAddDashboard = staticmethod(web.registerDashboardCallback)
     webRemoveDashboard = staticmethod(web.unregisterDashboardCallback)
     webAddMethod = staticmethod(web.registerMethodCallback)

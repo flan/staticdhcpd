@@ -33,6 +33,7 @@ import _functions
 _logger = logging.getLogger('web')
 
 _web_lock = threading.Lock()
+_web_headers = []
 _web_dashboard = []
 _web_methods = {}
 
@@ -46,6 +47,46 @@ WEB_METHOD_DASHBOARD = 1 #The content is rendered before the dashboard
 WEB_METHOD_TEMPLATE = 2 #The content is rendered in the same container that would normally show the dashboard, but no dashboard elements are present
 WEB_METHOD_RAW = 3 #The content is presented exactly as returned, identified by the given mimetype
 
+def registerHeaderCallback(callback):
+    """
+    Installs an element in the headers; at most one instance of any given
+    `callback` will be accepted.
+    
+    The `callback` must accept the parameters 'path', 'queryargs', 'mimetype',
+    'data', and 'headers', with the possibility that 'mimetype' and 'data' may
+    be None; 'queryargs' is a dictionary of parsed query-string items, with
+    values expressed as lists of strings; 'headers' is a
+    `Python BasicHTTPServer` headers object.
+    
+    It must return data as a string, formatted as XHTML, to be embedded inside
+    of <head/>, or None to suppress inclusion.
+    """
+    with _web_lock:
+        if callback in _web_headers:
+            _logger.error("%(callback)r is already registered" % {'callback': callback,})
+        else:
+            _web_headers.append(callback)
+            _logger.debug("Registered header %(callback)r" % {'callback': callback,})
+            
+def unregisterHeaderCallback(callback):
+    """
+    Removes the specified element, identified by `callback, from the headers.
+    """
+    with _web_lock:
+        try:
+            _web_headers.remove(callback)
+        except ValueError:
+            _logger.error("header %(callback)r is not registered" % {'callback': callback,})
+        else:
+            _logger.error("header %(callback)r unregistered" % {'callback': callback,})
+            
+def retrieveHeaderCallbacks():
+    """
+    Returns every registered callback, in registration-order.
+    """
+    with _web_lock:
+        return tuple(_web_headers)
+        
 def registerDashboardCallback(module, name, callback, ordering=None):
     """
     Installs an element in the dashboard; at most one instance of any given

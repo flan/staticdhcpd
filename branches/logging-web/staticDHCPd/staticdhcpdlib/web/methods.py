@@ -90,7 +90,7 @@ def reinitialise(*args, **kwargs):
 def css(*args, **kwargs):
     return ('text/css', _resources.CSS)
     
-def js(*args, **kwargs):
+def javascript(*args, **kwargs):
     return ('text/javascript', _resources.JS)
     
 def favicon(*args, **kwargs):

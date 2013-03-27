@@ -318,8 +318,24 @@ WEB_REINITIALISE_CONFIRM : boolean : default=True
 WEB_REINITIALISE_SECURE : boolean : default=False
  - Whether authentication is requires to reinitialise the server
  
+WEB_REINITIALISE_HIDDEN : boolean : default=False
+ - Whether the reinitilise element should be hidden
+ 
+WEB_REINITIALISE_ENABLED : boolean : default=True
+ - Whether the reinitilise option should be available at all
+ 
 WEB_DASHBOARD_ORDER_LOG : integer : default=1000
  - Sets the ordering bias of the log in the web-dashboard
+ 
+WEB_HEADER_TITLE : boolean : default=True
+ - Whether the default title should be included in the web interface
+ - This is just the value you supplied for SYSTEM_NAME
+ 
+WEB_HEADER_CSS : boolean : default=True
+ - Whether the defualt CSS should be included in the web interface
+ 
+WEB_HEADER_FAVICON : boolean : default=True
+ - Whether the defualt favicon should be included in the web interface
  
  
 Statistics

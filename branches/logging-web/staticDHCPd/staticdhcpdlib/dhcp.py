@@ -175,7 +175,7 @@ class _PacketWrapper(object):
         """
         try:
             if isinstance(value, _PacketSourceBlacklist):
-                self._server.addToTempBlacklist(self.mac, packet_type, str(value))
+                self._server.addToTempBlacklist(self.mac, self._packet_type, str(value))
                 return True
             elif isinstance(value, Exception):
                 _logger.critical("Unable to handle %(type)s from  %(mac)s:\n%(error)s" % {
@@ -620,9 +620,9 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         s_ciaddr = _toDottedQuadOrNone(wrapper.ciaddr)
         
         if wrapper.sid and not wrapper.ciaddr: #SELECTING
-            self._handleDHCPRequest_SELECTING(self, wrapper, s_ip, s_sid)
+            self._handleDHCPRequest_SELECTING(wrapper, s_ip, s_sid)
         elif not wrapper.sid and not wrapper.ciaddr and wrapper.ip: #INIT-REBOOT
-            self._handleDHCPRequest_INIT_REBOOT(self, wrapper, s_ip)
+            self._handleDHCPRequest_INIT_REBOOT(wrapper, s_ip)
         elif not wrapper.sid and wrapper.ciaddr and not wrapper.ip: #RENEWING or REBINDING
             self._handleDHCPRequest_RENEW_REBIND(wrapper, s_ip, s_ciaddr)
         else:

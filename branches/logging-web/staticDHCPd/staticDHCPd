@@ -150,20 +150,35 @@ def _initialise():
         webservice.start()
         
         import staticdhcpdlib.web.methods
+        import staticdhcpdlib.web.headers
+        staticdhcpdlib.web.registerHeaderCallback(staticdhcpdlib.web.headers.contentType)
+        staticdhcpdlib.web.registerMethodCallback('/javascript', staticdhcpdlib.web.methods.javascript, cacheable=(not staticdhcpdlib.config.DEBUG))
+        staticdhcpdlib.web.registerHeaderCallback(staticdhcpdlib.web.headers.javascript)
+        
         if staticdhcpdlib.config.WEB_LOG_HISTORY > 0:
             _logger.info("Webservice logging module enabled; configuring...")
             web_logger = staticdhcpdlib.web.methods.Logger()
             staticdhcpdlib.web.registerDashboardCallback('core', 'events', web_logger.render, staticdhcpdlib.config.WEB_DASHBOARD_ORDER_LOG)
-        staticdhcpdlib.web.registerMethodCallback('/css', staticdhcpdlib.web.methods.css, cacheable=(not staticdhcpdlib.config.DEBUG))
-        staticdhcpdlib.web.registerMethodCallback('/js', staticdhcpdlib.web.methods.js, cacheable=(not staticdhcpdlib.config.DEBUG))
-        staticdhcpdlib.web.registerMethodCallback('/favicon.ico', staticdhcpdlib.web.methods.favicon, cacheable=(not staticdhcpdlib.config.DEBUG))
-        staticdhcpdlib.web.registerMethodCallback(
-         '/ca/uguu/puukusoft/staticDHCPd/reinitialise', staticdhcpdlib.web.methods.reinitialise,
-         hidden=False, module='core', name='reinitialise',
-         secure=staticdhcpdlib.config.WEB_REINITIALISE_SECURE, confirm=staticdhcpdlib.config.WEB_REINITIALISE_CONFIRM,
-         display_mode=staticdhcpdlib.web.WEB_METHOD_DASHBOARD
-        )
         
+        if staticdhcpdlib.config.WEB_REINITIALISE_ENABLED:
+            staticdhcpdlib.web.registerMethodCallback(
+            '/ca/uguu/puukusoft/staticDHCPd/reinitialise', staticdhcpdlib.web.methods.reinitialise,
+            hidden=staticdhcpdlib.config.WEB_REINITIALISE_HIDDEN, module='core', name='reinitialise',
+            secure=staticdhcpdlib.config.WEB_REINITIALISE_SECURE, confirm=staticdhcpdlib.config.WEB_REINITIALISE_CONFIRM,
+            display_mode=staticdhcpdlib.web.WEB_METHOD_DASHBOARD
+            )
+            
+        if staticdhcpdlib.config.WEB_HEADER_TITLE:
+            staticdhcpdlib.web.registerHeaderCallback(staticdhcpdlib.web.headers.title)
+            
+        if staticdhcpdlib.config.WEB_HEADER_CSS:
+            staticdhcpdlib.web.registerMethodCallback('/css', staticdhcpdlib.web.methods.css, cacheable=(not staticdhcpdlib.config.DEBUG))
+            staticdhcpdlib.web.registerHeaderCallback(staticdhcpdlib.web.headers.css)
+            
+        if staticdhcpdlib.config.WEB_HEADER_FAVICON:
+            staticdhcpdlib.web.registerMethodCallback('/favicon.ico', staticdhcpdlib.web.methods.favicon, cacheable=(not staticdhcpdlib.config.DEBUG))
+            staticdhcpdlib.web.registerHeaderCallback(staticdhcpdlib.web.headers.favicon)
+            
         if staticdhcpdlib.config.STATS_ENABLED: #No point in turning this on without webservices
             _logger.info("Webservice statistics enabled; configuring...")
             import staticdhcpdlib.statistics

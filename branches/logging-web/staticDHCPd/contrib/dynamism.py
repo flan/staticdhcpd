@@ -172,9 +172,14 @@ class DynamicPool(object):
         with self._lock:
             allocated_ips = set(ip for (_, ip) in self._map.itervalues())
             ips = [ip for ip in ips if ip not in self._pool and ip not in allocated_ips]
-            if scapy: #Try to ARP addresses
+            if arp_addresses and scapy: #Try to ARP addresses
                 expiration = time.time() + self._lease_time
                 mapped_ips = 0
+                self._logger.info("Beginning ARP-lookup for %(count)i IPs in pool '%(name)s', with timeout=%(timeout).3fs" % {
+                 'count': len(ips),
+                 'timeout': arp_timeout,
+                 'name': self._hostname_prefix,
+                })
                 (answered, unanswered) = scapy.arping(ips, verbose=0, timeout=arp_timeout)
                 for answer in answered:
                     try:
@@ -267,20 +272,25 @@ class DynamicPool(object):
                  'mac': mac,
                  'expiration': time.ctime(expiration),
                 })
-            elements.append('<tr><td colspan="3" style="text-align: center;">%(count)i IPs available</td></tr>' % {
-             'count': len(self._pool),
-            })
             return """<table class="element">
                 <thead>
-                    <th>IP</th>
-                    <th>MAC</th>
-                    <th>Expires</th>
+                    <tr>
+                        <th>IP</th>
+                        <th>MAC</th>
+                        <th>Expires</th>
+                    </tr>
                 </thead>
+                <tfoot>
+                    <tr>
+                        <td colspan="3" style="text-align: center;">%(count)i IPs available</td>
+                    </tr>
+                </tfoot>
                 <tbody>
                     %(content)s
                 </tbody>
             </table>""" % {
              'content': '\n'.join(elements),
+             'count': len(self._pool),
             }
             
     def _cleanup_leases(self):
