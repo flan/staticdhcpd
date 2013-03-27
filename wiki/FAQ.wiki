@@ -15,6 +15,11 @@ Starting with 1.6.0, support for limited, non-spec-compliant dynamic provisionin
 
 To see examples of how to use this facility, see the [dynamism dynamic configuration] page.
 
+== How stable are dynamic leases? ==
+With 1.6.0, not very. If you were to restart the server, everything would be lost. You'd get some DECLINEs, then stuff would start working again.
+
+With 2.0.0, they should be pretty consistent: when IPs are added to the pool, if [http://www.secdev.org/projects/scapy/ scapy] is available, and if the optional scan option is left enabled, the server will ARP for each address (in parallel, so it's not slow), setting up leases as hits are found, making your network a living database. Additionally, if a client requests a specific IP after the server is already online (clients often do this when rebooting), that address will be plucked if available.
+
 ----
 = Configuration =
 == I need to boot clients over my network. How can I set up PXE? ==
