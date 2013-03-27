@@ -502,7 +502,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                 'mac': wrapper.mac,
                 })
                 
-    @_dhcpHandler('DISCOVER')
+    @_dhcpHandler(_PACKET_TYPE_DISCOVER)
     def _handleDHCPDiscover(self, wrapper):
         """
         Evaluates a DISCOVER request from a client and determines whether an
