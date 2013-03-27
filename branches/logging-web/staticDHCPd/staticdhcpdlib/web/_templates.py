@@ -32,19 +32,19 @@ import traceback
 from .. import config
 import _functions
 
-import staticdhcpd
+import staticdhcpdlib
 import libpydhcpserver
 
 _logger = logging.getLogger('web.server')
 
-from staticdhcpd.web import (retrieveDashboardCallbacks, retrieveVisibleMethodCallbacks)
+from staticdhcpdlib.web import (retrieveDashboardCallbacks, retrieveVisibleMethodCallbacks)
 
 _SYSTEM_NAME = _functions.sanitise(config.SYSTEM_NAME)
 _FOOTER = """<div style="float: right;">If you benefit from this system, please <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&amp;hosted_button_id=11056045">support it</a></div>
 <a href="%(staticdhcpd-url)s">staticDHCPd</a> v%(staticdhcpd-version)s |
 <a href="%(libpydhcpserver-url)s">libpydhcpserver</a> v%(libpydhcpserver-version)s""" % {
- 'staticdhcpd-url': _functions.sanitise(staticdhcpd.URL),
- 'staticdhcpd-version': _functions.sanitise(staticdhcpd.VERSION),
+ 'staticdhcpd-url': _functions.sanitise(staticdhcpdlib.URL),
+ 'staticdhcpd-version': _functions.sanitise(staticdhcpdlib.VERSION),
  'libpydhcpserver-url': _functions.sanitise(libpydhcpserver.URL),
  'libpydhcpserver-version': _functions.sanitise(libpydhcpserver.VERSION),
 }

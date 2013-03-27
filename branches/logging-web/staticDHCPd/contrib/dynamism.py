@@ -55,7 +55,7 @@ import logging
 import threading
 import time
 
-from staticdhcpd.databases import Definition
+from staticdhcpdlib.databases import Definition
 
 from libpydhcpserver.type_rfc import longToList
 

@@ -40,7 +40,7 @@ try:
 except:
     from cgi import parse_qs
 
-from staticdhcpd.web import retrieveMethodCallback
+from staticdhcpdlib.web import retrieveMethodCallback
 
 from .. import config
 import _templates

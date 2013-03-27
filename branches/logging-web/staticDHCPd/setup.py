@@ -5,7 +5,7 @@ Deployment script for staticDHCPd.
 from distutils.core import setup
 import platform
 
-from staticdhcpd import VERSION
+from staticdhcpdlib import VERSION
 
 setup(
  name = 'staticDHCPd',
@@ -16,10 +16,10 @@ setup(
  license = 'GPLv3',
  url = 'http://staticdhcpd.googlecode.com/',
  packages = [
-  'staticdhcpd',
-  'staticdhcpd.databases',
-  'staticdhcpd.statistics',
-  'staticdhcpd.web',
+  'staticdhcpdlib',
+  'staticdhcpdlib.databases',
+  'staticdhcpdlib.statistics',
+  'staticdhcpdlib.web',
  ],
  data_files = [
   ('/etc/staticDHCPd', [
