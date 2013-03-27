@@ -127,7 +127,10 @@ Explanation
 This will just fake a lossy network, dropping 50% of all packets received.
 
 You'd probably want to do something more interesting, like checking a database
-or adding to some sort of global counter.
+or adding to some sort of global counter. This database could be an in-memory
+construct that you populate with a custom web-method that takes the MAC to
+block as a query-argument, described below, to make it easy to write a module
+that does this on-the-fly.
 
 
 handleUnknownMAC(packet, method, mac, client_ip, relay_ip, pxe, vendor)
