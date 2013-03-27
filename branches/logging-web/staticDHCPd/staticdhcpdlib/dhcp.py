@@ -613,34 +613,28 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         s_ciaddr = _toDottedQuadOrNone(wrapper.ciaddr)
         
         if wrapper.sid and not wrapper.ciaddr: #SELECTING
-            wrapper.setType(_PACKET_TYPE_REQUEST_SELECTING)
-            if s_sid == self._server_address: #Chosen!
-                if not wrapper.filterPacket(): return
-                wrapper.announcePacket(ip=s_ip)
-                
-                definition = wrapper.retrieveDefinition()
-                if definition and (not wrapper.ip or definition.ip == s_ip):
-                    wrapper.packet.transformToDHCPAckPacket()
-                    if wrapper.loadDHCPPacket(definition):
-                        self._sendDHCPPacket(
-                         wrapper.packet, wrapper.source_address, wrapper.pxe,
-                         wrapper.mac, s_ip
-                        )
-                        wrapper.markAddressed()
-                else:
-                    wrapper.packet.transformToDHCPNakPacket()
-                    self._sendDHCPPacket(
-                     wrapper.packet, wrapper.source_address, wrapper.pxe,
-                     wrapper.mac, _IP_REJECTED
-                    )
-                    wrapper.markAddressed()
+            self._handleDHCPRequest_SELECTING(self, wrapper, s_ip, s_sid)
         elif not wrapper.sid and not wrapper.ciaddr and wrapper.ip: #INIT-REBOOT
-            wrapper.setType(_PACKET_TYPE_REQUEST_INIT_REBOOT)
+            self._handleDHCPRequest_INIT_REBOOT(self, wrapper, s_ip)
+        elif not wrapper.sid and wrapper.ciaddr and not wrapper.ip: #RENEWING or REBINDING
+            self._handleDHCPRequest_RENEW_REBIND(wrapper, s_ip, s_ciaddr)
+        else:
+            _logger.warn('%(type)s (%(sid)s|%(ciaddr)s|%(ip)s) from %(mac)s unhandled: packet not compliant with DHCP spec' % {
+             'type': wrapper.getType(),
+             'sid': s_sid,
+             'ciaddr': s_ciaddr,
+             'ip': s_ip,
+             'mac': wrapper.mac,
+            })
+            
+    def _handleDHCPRequest_SELECTING(self, wrapper, s_ip, s_sid):
+        wrapper.setType(_PACKET_TYPE_REQUEST_SELECTING)
+        if s_sid == self._server_address: #Chosen!
             if not wrapper.filterPacket(): return
             wrapper.announcePacket(ip=s_ip)
             
             definition = wrapper.retrieveDefinition()
-            if definition and definition.ip == s_ip:
+            if definition and (not wrapper.ip or definition.ip == s_ip):
                 wrapper.packet.transformToDHCPAckPacket()
                 if wrapper.loadDHCPPacket(definition):
                     self._sendDHCPPacket(
@@ -652,50 +646,65 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                 wrapper.packet.transformToDHCPNakPacket()
                 self._sendDHCPPacket(
                  wrapper.packet, wrapper.source_address, wrapper.pxe,
-                 wrapper.mac, s_ip
-                )
-                wrapper.markAddressed()
-        elif not wrapper.sid and wrapper.ciaddr and not wrapper.ip: #RENEWING or REBINDING
-            renew = wrapper.source_address[0] not in _IP_UNSPECIFIED_FILTER
-            wrapper.setType(renew and _PACKET_TYPE_REQUEST_RENEW or _PACKET_TYPE_REQUEST_REBIND)
-            if not wrapper.filterPacket(): return
-            wrapper.announcePacket(ip=s_ip)
-            
-            if config.NAK_RENEWALS and not wrapper.pxe and (renew or config.AUTHORITATIVE):
-                wrapper.packet.transformToDHCPNakPacket()
-                self._sendDHCPPacket(
-                 wrapper.packet, wrapper.source_address, wrapper.pxe,
                  wrapper.mac, _IP_REJECTED
                 )
                 wrapper.markAddressed()
-            else:
-                definition = wrapper.retrieveDefinition()
-                if definition and definition.ip == s_ciaddr:
-                    wrapper.packet.transformToDHCPAckPacket()
-                    wrapper.packet.setOption('yiaddr', wrapper.ciaddr)
-                    if wrapper.loadDHCPPacket(definition):
-                        self._sendDHCPPacket(
-                         wrapper.packet, (s_ciaddr, 0), wrapper.pxe,
-                         wrapper.mac, s_ciaddr
-                        )
-                        wrapper.markAddressed()
-                else:
-                    if renew:
-                        wrapper.packet.transformToDHCPNakPacket()
-                        self._sendDHCPPacket(
-                         wrapper.packet, (s_ciaddr, 0), wrapper.pxe,
-                         wrapper.mac, s_ciaddr
-                        )
-                        wrapper.markAddressed()
+                
+    def _handleDHCPRequest_INIT_REBOOT(self, wrapper, s_ip):
+        wrapper.setType(_PACKET_TYPE_REQUEST_INIT_REBOOT)
+        if not wrapper.filterPacket(): return
+        wrapper.announcePacket(ip=s_ip)
+        
+        definition = wrapper.retrieveDefinition()
+        if definition and definition.ip == s_ip:
+            wrapper.packet.transformToDHCPAckPacket()
+            if wrapper.loadDHCPPacket(definition):
+                self._sendDHCPPacket(
+                 wrapper.packet, wrapper.source_address, wrapper.pxe,
+                 wrapper.mac, s_ip
+                )
+                wrapper.markAddressed()
         else:
-            _logger.warn('%(type)s (%(sid)s|%(ciaddr)s|%(ip)s) from %(mac)s unhandled: packet not compliant with DHCP spec' % {
-             'type': wrapper.getType(),
-             'sid': s_sid,
-             'ciaddr': s_ciaddr,
-             'ip': s_ip,
-             'mac': wrapper.mac,
-            })
+            wrapper.packet.transformToDHCPNakPacket()
+            self._sendDHCPPacket(
+             wrapper.packet, wrapper.source_address, wrapper.pxe,
+             wrapper.mac, s_ip
+            )
+            wrapper.markAddressed()
             
+    def _handleDHCPRequest_RENEW_REBIND(self, wrapper, s_ip, s_ciaddr):
+        renew = wrapper.source_address[0] not in _IP_UNSPECIFIED_FILTER
+        wrapper.setType(renew and _PACKET_TYPE_REQUEST_RENEW or _PACKET_TYPE_REQUEST_REBIND)
+        if not wrapper.filterPacket(): return
+        wrapper.announcePacket(ip=s_ip)
+        
+        if config.NAK_RENEWALS and not wrapper.pxe and (renew or config.AUTHORITATIVE):
+            wrapper.packet.transformToDHCPNakPacket()
+            self._sendDHCPPacket(
+             wrapper.packet, wrapper.source_address, wrapper.pxe,
+             wrapper.mac, _IP_REJECTED
+            )
+            wrapper.markAddressed()
+        else:
+            definition = wrapper.retrieveDefinition()
+            if definition and definition.ip == s_ciaddr:
+                wrapper.packet.transformToDHCPAckPacket()
+                wrapper.packet.setOption('yiaddr', wrapper.ciaddr)
+                if wrapper.loadDHCPPacket(definition):
+                    self._sendDHCPPacket(
+                     wrapper.packet, (s_ciaddr, 0), wrapper.pxe,
+                     wrapper.mac, s_ciaddr
+                    )
+                    wrapper.markAddressed()
+            else:
+                if renew:
+                    wrapper.packet.transformToDHCPNakPacket()
+                    self._sendDHCPPacket(
+                     wrapper.packet, (s_ciaddr, 0), wrapper.pxe,
+                     wrapper.mac, s_ciaddr
+                    )
+                    wrapper.markAddressed()
+                    
     @_dhcpHandler(_PACKET_TYPE_RELEASE)
     def _handleDHCPRelease(self, wrapper):
         """
