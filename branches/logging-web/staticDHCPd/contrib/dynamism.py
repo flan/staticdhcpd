@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
-Provides a simple day of defining dynamic allocation pools for more conventional
+Provides a simple way of defining dynamic allocation pools for more conventional
 DHCP behaviour. This module will NOT provide RFC-compliant dynamic management,
 but it's close enough to be useful and hasn't yet failed in any use-cases to
 which it has been applied.
@@ -73,7 +73,7 @@ from staticdhcpdlib.databases import Definition
 
 from libpydhcpserver.type_rfc import longToList
 
-_logger = logging.getLogger('conf.dynamism')
+_logger = logging.getLogger('contrib.dynamism')
 
 _logger.info("Attempting to import scapy; scapy-specific logging output may follow")
 try:

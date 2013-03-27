@@ -29,23 +29,23 @@ import logging
 
 class FIFOHandler(logging.Handler):
     """
-    A handler that always holds a fixed number of records, with FIFO behaviour.
+    A handler that holds a fixed number of records, with FIFO behaviour.
     """
     def __init__(self, capacity):
         logging.Handler.__init__(self)
-        self._buffer = collections.deque(maxlen=capacity)
+        self._records = collections.deque(maxlen=capacity)
         
     def emit(self, record):
         self.acquire()
         try:
-            self._buffer.appendleft(record)
+            self._records.appendleft(record)
         finally:
             self.release()
             
     def flush(self):
         self.acquire()
         try:
-            self._buffer.clear()
+            self._records.clear()
         finally:
             self.release()
             
@@ -56,7 +56,7 @@ class FIFOHandler(logging.Handler):
     def readContents(self):
         self.acquire()
         try:
-            return [(record.levelno, self.format(record)) for record in self._buffer]
+            return [(record.levelno, self.format(record)) for record in self._records]
         finally:
             self.release()
             
