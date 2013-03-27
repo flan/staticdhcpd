@@ -18,5 +18,6 @@ To use this module, copy it to the same directory as `conf.py`, the follow the d
 
 That should be it for the basic use-case.  If you want to do anything cool, like send a JSON message to a webservice when an unknown MAC appears or block clients after they renew five times, subclass DynamicPool or just hack it in-place. It's simple code and it's your environment, so just apply what you find in tutorials on the Internet and have fun.
 
-== Others ==
-A Postgres or MySQL module contribution would be very much appreciated, since a lot of sites will need to run multiple servers for HA purposes and be able to handle fault-tolerance without a bunch of DECLINEs. Writing such a module shouldn't be hard, and if you submit one in any form, staticDHCPd's maintainer won't mind stripping out sensitive information and generalising it. (Time does not, unfortunately, permit creating one upstream in the near future)
+
+----
+Mention how the pool behaves, borrowing from the FAQ entry.
