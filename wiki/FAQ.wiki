@@ -63,13 +63,6 @@ You can use lambdas, too, if that's your thing. However you do it, this will add
 
 Anything you add, like a CSS class or !JavaScript function, should be prefixed with a leading underscore, where possible, to avoid potential future conflicts with staticDHCPd's core code.
 
-If you want to completely remove one of the standard headers, they are defined in `web.headers`, so you can kill them with the following code:
-{{{
-import staticdhcpdlib.web.headers
-callbacks.webRemoveHeader(staticdhcpdlib.web.headers.css)
-}}}
-Do be aware that this couples your logic to a specific version of staticDHCPd. While it's unlikely that these modules will change too dramatically, no guarantees are made that your code will be future-proof.
-
 If you want to replace the CSS or favicon completely, you'll find their definitions in  `web.resources` and handlers in `web.methods`. Just implement your own equivalent method, then, in `init()` in `conf.py`, do something similar to the following:
 {{{
 callbacks.webRemoveMethod('/css')
