@@ -40,7 +40,7 @@ PATH_RECORD = '/ca/uguu/puukusoft/staticDHCPd/contrib/feedservice/record'
 #The path at which to serve Atom (None to disable)
 PATH_ATOM = '/ca/uguu/puukusoft/staticDHCPd/contrib/feedservice/atom'
 
-#Whether feeds should be advertised in the dashboard's headers
+#Whether feeds should be advertised in the web interface's headers
 ADVERTISE = True
 
 #The ID that uniquely identifies this feed
