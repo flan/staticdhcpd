@@ -225,15 +225,15 @@ if __name__ == '__main__':
         #Initialise all system resources
         _initialise()
         
+        _logger.info("Initialising custom code...")
+        staticdhcpdlib.config.init()
+        
         _logger.info("Changing runtime permissions to UID=%(uid)i, GID=%(gid)i..." % {
          'uid': staticdhcpdlib.config.UID,
          'gid': staticdhcpdlib.config.GID,
         })
         os.setregid(staticdhcpdlib.config.GID, staticdhcpdlib.config.GID)
         os.setreuid(staticdhcpdlib.config.UID, staticdhcpdlib.config.UID)
-        
-        _logger.info("Initialising custom code...")
-        staticdhcpdlib.config.init()
         
         _logger.warn("----------------------------------------")
         _logger.warn("All subsystems initialised; now serving")

@@ -61,6 +61,15 @@ from libpydhcpserver.type_rfc import longToList
 
 _logger = logging.getLogger('conf.dynamism')
 
+_logger.info("Attempting to import scapy; scapy-specific logging output may follow")
+try:
+    import scapy.all as scapy
+except ImportError:
+    _logger.warn("scapy is unavailable; addresses added to pools cannot be automatically ARPed")
+    scapy = None
+else:
+    _logger.info("scapy imported successfully; automatic ARPing is available")
+    
 def _dynamic_method(method):
     """
     Handles locking and response-formatting; you do not need to study this,
@@ -140,7 +149,7 @@ class DynamicPool(object):
         
         self._logger.info("Created dynamic provisioning pool '%(name)s'" % {'name': self._hostname_prefix})
         
-    def add_ips(self, ips):
+    def add_ips(self, ips, arp_addresses=True, arp_timeout=1.0):
         """
         Adds IPs to the allocation pool. Duplicates are filtered out, but order
         is preserved.
@@ -152,17 +161,53 @@ class DynamicPool(object):
             .add_ips(['192.168.250.' + str(i) for i in range(11, 255)])
         This will add 192.168.250.11-254 with minimal effort. (The last element
         in a range is not generated)
+        
+        `arp_addresses` will, if True, the default, try to use scapy, if
+        installed, to ARP every supplied address, building a lease-map for
+        already-allocated IPs, which should minimise unnecessary DECLINEs.
+        
+        `arp_timeout` is the number of seconds to wait for a addresses to
+        respond.
         """
         with self._lock:
-            ips = [ip for ip in ips if ip not in self._pool]
+            allocated_ips = set(ip for (_, ip) in self._map.itervalues())
+            ips = [ip for ip in ips if ip not in self._pool and ip not in allocated_ips]
+            if scapy: #Try to ARP addresses
+                expiration = time.time() + self._lease_time
+                mapped_ips = 0
+                (answered, unanswered) = scapy.arping(ips, verbose=0, timeout=arp_timeout)
+                for answer in answered:
+                    try:
+                        ip = answer[0].payload.fields['pdst']
+                        mac = answer[1].fields['src'].lower()
+                        ips.remove(ip)
+                    except Exception, e:
+                        self._logger.debug("Unable to use ARP-discovered binding %(binding)r: %(error)s" % {
+                         'binding': answer,
+                         'error': str(e),
+                        })
+                    else:
+                        mapped_ips += 1
+                        self._map[mac] = [expiration, ip]
+                        self._logger.info("ARP-discovered %(ip)s bound to %(mac)s in pool '%(name)s'; providing lease until %(time)s" % {
+                         'ip': ip,
+                         'mac': mac,
+                         'time': time.ctime(expiration),
+                         'name': self._hostname_prefix,
+                        })
+                self._logger.info("%(count)i IPs automatically bound in pool '%(name)s'" % {
+                 'count': mapped_ips,
+                 'name': self._hostname_prefix,
+                })
             self._pool.extend(ips)
+            total = len(self._pool) + len(self._map)
         self._logger.debug("Added IPs to dynamic pool '%(name)s': %(ips)s" % {
          'ips': str(ips),
          'name': self._hostname_prefix,
         })
         self._logger.info("Added %(count)i IPs to dynamic pool '%(name)s'; new total: %(total)i" % {
          'count': len(ips),
-         'total': len(self._pool),
+         'total': total,
          'name': self._hostname_prefix,
         })
         
@@ -342,13 +387,13 @@ class DynamicPool(object):
         return None
         
     @_dynamic_method
-    def _allocate(self, mac):
+    def _allocate(self, mac, client_ip):
         """
         Associates or retrieves an existing associated IP to `mac`.
         
         A returned value of None means nothing was available.
         """
-        ip = self._get_lease(mac)
+        ip = self._get_lease(mac, client_ip)
         if not ip:
             self._logger.error("No IP available for assignment to %(mac)s in pool '%(name)s'" % {
              'mac': mac,
