@@ -54,7 +54,7 @@ Sure, that's not a problem at all.
 
 You can inject your own lines into `<head/>` by using a tiny bit of code in init():
 {{{
-def myHeaders(*args, **kwargs):
+def myHeaders(path, queryargs, mimetype, data, headers):
     return "<!-- anything you want to see appear in the <head/> section, as a valid XHTML fragment -->"
     
 callbacks.webAddHeader(myHeaders)
