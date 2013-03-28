@@ -23,7 +23,6 @@ Legal
  along with this program. If not, see <http://www.gnu.org/licenses/>.
  
  (C) Neil Tallim, 2013 <flan@uguu.ca>
- (C) Matthew Boedicker, 2011 <matthewm@boedicker.org>
 """
 from .. import config
 
