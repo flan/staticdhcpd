@@ -1,5 +1,8 @@
 #summary What's changed -- change is good
 
+= 1.5.8, 1.6.3 =
+ * Fixed a long-standing issue in which PXE clients that sent broadcast packets containing `ciaddr` were responded to via broadcast, rather than unicast to that `ciaddr` value.
+----
 = 1.6.2 : staticDHCPd =
  * Refactored the database component, breaking coupling to SQL
  * Implemented support for using an INI file as an alternative to an SQL-based database, borrowing from contributions by John Stowers
