@@ -33,6 +33,9 @@ MAX_EVENTS_TOTAL = 100
 #The maximum age of an event that can be included in a feed
 MAX_AGE = 60 * 60 * 24
 
+#Whether feed items should be removed when the system is reinitialised
+CLEAR_ON_REINIT = True
+
 #The name to give the feed
 FEED_TITLE = config.SYSTEM_NAME
 
@@ -227,6 +230,10 @@ _logger.info("Feed-handler logging-level set to %(level)s" % {
 })
 _logger.root.addHandler(_LOGGER)
 
+if CLEAR_ON_REINIT:
+    _logger.info("Registering callback handler to clear feeds on reinitialisation...")
+    config.callbacks.systemAddReinitHandler(_LOGGER.flush)
+    
 _logger.info("Registering record-access-point at '%(path)s'..." % {
  'path': PATH_RECORD,
 })
