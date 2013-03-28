@@ -27,9 +27,11 @@ SERVER_BASE = 'http://' + _server_ip + ':' + str(config.WEB_PORT)
 LOGGING_LEVEL = 'ERROR'
 
 #The number of events to serve in a feed
-MAX_EVENTS = 20
-#The upper limit on how long an event will be served, in seconds
-MAX_AGE = 60 * 60 * 24 * 7
+MAX_EVENTS_FEED = 10
+#The number of events to retain for linking purposes
+MAX_EVENTS_TOTAL = 100
+#The maximum age of an event that can be included in a feed
+MAX_AGE = 60 * 60 * 24
 
 #The name to give the feed
 FEED_TITLE = config.SYSTEM_NAME
@@ -67,47 +69,17 @@ _RECORD_URI = SERVER_BASE + PATH_RECORD + "?uid=%(uid)s"
 
 _last_update = int(time.time())
 
-_Event = collections.namedtuple('Event', ('severity', 'timestamp', 'module', 'line', 'uid'))
+_Event = collections.namedtuple('Event', ('summary', 'severity', 'timestamp', 'module', 'line', 'uid'))
 
 class _FeedHandler(logging.Handler):
     """
     A handler that holds a fixed number of records, allowing index-based
-    retrieval and time-based removal.
+    retrieval.
     """
-    def __init__(self, capacity, max_age):
+    def __init__(self, capacity):
         logging.Handler.__init__(self)
         self._records = collections.deque(maxlen=capacity)
-        self._max_age = max_age
         
-        _logger.info("Prepared a feed-handler with support for %(count)i records, with max-age=%(age)i seconds" % {
-         'count': capacity,
-         'age': max_age,
-        })
-        
-    def _clearOldRecords(self):
-        """
-        Non-Handler method: removes any records older than the maximum permitted
-        age.
-        """
-        max_age = time.time() - self._max_age
-        dead_records = 0
-        self.acquire()
-        try:
-            for i in reversed(self._records):
-                if i[0].created <= max_age:
-                    dead_records += 1
-                else: #Sorted in chronological order
-                    break
-                    
-            for i in xrange(dead_records):
-                self._records.pop()
-            if dead_records:
-                _logger.debug("Culled %(count)i expired records" % {
-                 'count': dead_records,
-                })
-        finally:
-            self.release()
-            
     def emit(self, record):
         global _last_update
         _last_update = int(record.created)
@@ -141,6 +113,9 @@ class _FeedHandler(logging.Handler):
         record = None
         self.acquire()
         try:
+            #This should, in general, be efficient enough
+            #The overhead of a dictionary seems unnecessary for all practical
+            #use-cases
             for (record, uuid) in self._records:
                 if uuid == uid:
                     break
@@ -151,15 +126,13 @@ class _FeedHandler(logging.Handler):
             
         return self.format(record)
         
-    def enumerateRecords(self):
+    def enumerateRecords(self, limit):
         """
-        Non-Handler method: Enumerates every tracked record.
+        Non-Handler method: Enumerates every tracked record, up to `limit`.
         """
-        self._clearOldRecords()
-        
         self.acquire()
         try:
-            return [_Event(record.levelname, record.created, record.name, record.lineno, uid) for (record, uid) in self._records]
+            return [_Event(record.msg, record.levelname, record.created, record.name, record.lineno, uid) for (record, uid) in self._records[:limit]]
         finally:
             self.release()
             
@@ -187,7 +160,7 @@ def _feed_presenter(feed_type):
              'time': time.time() - start_time,
             })
             try:
-                result = f(*args, **kwargs)
+                result = f(start_time - MAX_AGE, *args, **kwargs)
             except Exception:
                 _logger.error("Unable to render %(type)s feed:\n%(error)s" % {
                  'type': feed_type,
@@ -206,7 +179,7 @@ def _feed_presenter(feed_type):
 _ATOM_ID_FORMAT = 'urn:uuid:%(id)s'
 _FEED_ID = _ATOM_ID_FORMAT % {'id': FEED_ID}
 @_feed_presenter('Atom')
-def _present_atom(logger):
+def _present_atom(max_age, logger):
     """
     Assembles an Atom-compliant feed, drawing elements from `logger`.
     """
@@ -223,7 +196,10 @@ def _present_atom(logger):
     id.text = _FEED_ID
     
     global _ATOM_ID_FORMAT
-    for element in logger.enumerateRecords():
+    for element in logger.enumerateRecords(MAX_EVENTS_FEED):
+        if element.timestamp < max_age: #Anything after this is also too old
+            break
+            
         entry = ET.SubElement(feed, 'entry')
         
         title = ET.SubElement(entry, 'title')
@@ -234,16 +210,19 @@ def _present_atom(logger):
         id.text = _ATOM_ID_FORMAT % {'id': element.uid}
         updated = ET.SubElement(entry, 'updated')
         updated.text = datetime.datetime.fromtimestamp(element.timestamp).isoformat()
+        summary = ET.SubElement(entry, 'summary')
+        summary.text = element.summary
     return ('application/atom+xml', '<?xml version="1.0" encoding="utf-8"?>' + ET.tostring(feed))
     
 #Setup happens here
 ################################################################################
-_LOGGER = _FeedHandler(MAX_EVENTS, MAX_AGE)
+_LOGGER = _FeedHandler(MAX_EVENTS_TOTAL)
+_logger.info("Prepared feed-handler")
 _LOGGER.setFormatter(logging.Formatter("""%(asctime)s : %(levelname)s : %(name)s:%(lineno)d[%(threadName)s]
 <br/><br/>
 %(message)s"""))
 _LOGGER.setLevel(getattr(logging, LOGGING_LEVEL))
-_logger.info("Logging level set to %(level)s" % {
+_logger.info("Feed-handler logging-level set to %(level)s" % {
  'level': LOGGING_LEVEL,
 })
 _logger.root.addHandler(_LOGGER)
