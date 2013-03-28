@@ -793,7 +793,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         @param mac: The MAC of the client for which this packet is destined.
         @type client_ip: basestring
         @param client_ip: The IP being assigned to the client.
-        
+            
         @rtype: int
         @return: The number of bytes transmitted.
         """
@@ -809,6 +809,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
             else: #Request directly from client, routed or otherwise.
                 ip = address[0]
                 if pxe:
+                    ip = _extractIPOrNone(packet, 'ciaddr') or ip
                     port = address[1] or self._client_port #BSD doesn't seem to preserve port information
                 else:
                     port = self._client_port
