@@ -10,7 +10,7 @@ from staticdhcpdlib import VERSION
 setup(
  name = 'staticDHCPd',
  version = VERSION,
- description = "A static-lease-managing DHCP server",
+ description = "Highly customisable, static-lease-focused DHCP server",
  author = 'Neil Tallim',
  author_email = 'flan@uguu.ca',
  license = 'GPLv3',
@@ -18,7 +18,6 @@ setup(
  packages = [
   'staticdhcpdlib',
   'staticdhcpdlib.databases',
-  'staticdhcpdlib.statistics',
   'staticdhcpdlib.web',
  ],
  data_files = [

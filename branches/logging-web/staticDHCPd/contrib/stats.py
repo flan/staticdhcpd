@@ -1,46 +1,33 @@
 # -*- encoding: utf-8 -*-
 """
-staticDHCPd module: statistics.basic_engines
+Processes and exposes runtime statistics information about the DHCP server.
 
-Purpose
-=======
- Defines a statistics-processing module to track the activity of the system.
- 
-Legal
-=====
- This file is part of staticDHCPd.
- staticDHCPd is free software; you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation; either version 3 of the License, or
- (at your option) any later version.
-
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program. If not, see <http://www.gnu.org/licenses/>.
- 
- (C) Neil Tallim, 2013 <flan@uguu.ca>
+To use this module, customise the constants below, then add the following to
+conf.py's init() function:
+    import stats
+    
+Like staticDHCPd, this module under the GNU General Public License v3
+(C) Neil Tallim, 2013 <flan@uguu.ca>
 """
+
+#Do not touch anything below this line
+################################################################################
 import collections
 import logging
 import threading
 import time
 
-from .. import config
-
-from .. import dhcp
+from staticdhcpdlib import config
+from staticdhcpdlib import dhcp
 _METHODS = tuple(sorted(getattr(dhcp, key) for key in dir(dhcp) if key.startswith('_PACKET_TYPE_')))
 
-_logger = logging.getLogger('statistics.basic_engines')
+_logger = logging.getLogger('contrib.stats')
 
 _Histogram = collections.namedtuple('Histogram', (
  'dhcp_packets', 'dhcp_packets_discarded', 'other_packets', 'processing_time',
 ))
 
-def _generateDHCPPacketsDict():
+def _generate_dhcp_packets_dict():
     return dict((method, 0) for method in _METHODS)
     
 class DHCPStatistics(object):
@@ -133,3 +120,87 @@ class DHCPStatistics(object):
 #When there's a gap in all activity, a numm histogram should be generated (None?) so that the collection will be consistent
 #For CSV export, use the current time and subtract one quantisation interval for each line, to provide timestamps
 #Remember to subtract the request sub-classifications from the parent-type-count when they become known
+
+
+
+The netbook defined additional config parameters, like whether the web
+interface should display lifetime stats, and stats-averaging windows:
+[0, 1, 2, 3, 4]
+That would display average throughput in the current frame (0), the
+past one frame, the past two frames, and so forth, all aggregated.
+
+Of course, there also needs to be an option for rendering a histograph
+and a pair for exposing a CSV download of the histograph.
+
+
+http://41j.com/blog/2012/04/simple-histogram-in-pythonmatplotlib-no-display-write-to-png/
+
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+"""
+        Renders the current state of the memory-log as HTML for consumption by
+        the client.
+        try:
+            self.send_response(200)
+            self.send_header('Content-type', 'text/html')
+            self.send_header('Last-modified', time.strftime('%a, %d %b %Y %H:%M:%S %Z'))
+            self.end_headers()
+            
+            self.wfile.write('<html><head><title>%(name)s log</title></head><body>' % {'name': config.SYSTEM_NAME,})
+            self.wfile.write('<div style="width: 950px; margin-left: auto; margin-right: auto; border: 1px solid black;">')
+            
+            self.wfile.write('<div>Statistics:<div style="text-size: 0.9em; margin-left: 20px;">')
+            for (timestamp, packets, discarded, time_taken, ignored_macs) in logging.readPollRecords():
+                if packets:
+                    turnaround = time_taken / packets
+                else:
+                    turnaround = 0.0
+                self.wfile.write("%(time)s : received: %(received)i; discarded: %(discarded)i; turnaround: %(turnaround)fs/pkt; ignored MACs: %(ignored)i<br/>" % {
+                 'time': time.ctime(timestamp),
+                 'received': packets,
+                 'discarded': discarded,
+                 'turnaround': turnaround,
+                 'ignored': ignored_macs,
+                })
+            self.wfile.write("</div></div><br/>")
+            
+            self.wfile.write('<div>Events:<div style="text-size: 0.9em; margin-left: 20px;">')
+            for line in _web_logger.readContent():
+                self.wfile.write("%(line)s<br/>" % {
+                 'line': cgi.escape(line),
+                })
+            self.wfile.write("</div></div><br/>")
+            
+            self.wfile.write('<div style="text-align: center;">')
+            self.wfile.write('<small>Summary generated %(time)s</small><br/>' % {
+             'time': time.asctime(),
+            })
+            self.wfile.write('<small>%(server)s:%(port)i | PID: %(pid)i | v%(core_version)s | <a href="http://uguu.ca/" onclick="window.open(this.href); return false;">uguu.ca</a></small><br/>' % {
+             'pid': os.getpid(),
+             'server': config.DHCP_SERVER_IP,
+             'port': config.DHCP_SERVER_PORT,
+             'core_version': VERSION,
+            })
+            self.wfile.write('<form action="/" method="post"><div style="display: inline;">')
+            self.wfile.write('<label for="key">Key: </label><input type="password" name="key" id="key"/>')
+            if config.USE_CACHE:
+                self.wfile.write('<input type="submit" value="Flush cache and write log to disk"/>')
+            else:
+                self.wfile.write('<input type="submit" value="Write log to disk"/>')
+            self.wfile.write('</div></form>')
+            self.wfile.write('</div>')
+            
+            self.wfile.write("</div></body></html>")
+        except Exception:
+            _logger.error("Problem while serving Response:\n" + traceback.format_exc())
+"""

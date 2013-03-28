@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
-staticDHCPd package: statistics
+staticDHCPd module: statistics
 
 Purpose
 =======
