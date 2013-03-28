@@ -9,35 +9,62 @@ conf.py's init() function:
 Like staticDHCPd, this module under the GNU General Public License v3
 (C) Neil Tallim, 2013 <flan@uguu.ca>
 """
+#The name of the module to which these elements belong
+MODULE = 'stats'
 
-#Statistics settings
-#######################################
-_defaults.update({
- 'STATS_ENABLED': True,
- 'STATS_QUANTISATION': 60 * 5,
- 'STATS_RETENTION_COUNT': 288 * 2,
-})
+#Whether lifetime stats should be made available
+LIFETIME_STATS_ENABLED = True
+#Whether lifetime stats should be included in the web dashboard
+LIFETIME_STATS_DISPLAY = True
+#The ordering-bias value to apply, as an integer; if None, appended to the end
+LIFETIME_STATS_ORDERING = None
+#If not available via the dashboard, they can be accessed at this path
+LIFETIME_STATS_PATH = '/ca/uguu/puukusoft/staticDHCPd/contrib/stats/lifetime'
+#The name of the component; if None and not displayed in the dashboard, the
+#method link will be hidden
+LIFETIME_STATS_NAME = 'lifetime'
 
-Statistics
-----------------------------------------
-STATS_ENABLED : boolean : default=True
- - Whether the built-in statistics engine should be enabled
- - If the web-module is disabled, the engine is disabled, too
- - Any custom scripting that registers for statistics events will receive data
-   in either case, however
-   
-STATS_QUANTISATION : integer : default=(60 * 5)
- - The number of seconds over which statistics are gathered, before being
-   stored as a histogram
- - The default is once every five minutes
- - Setting this value to something low will increase resolution, at the cost
-   of more memory
-   
-STATS_RETENTION_COUNT : integer : default=(288 * 2)
- - The number of histograms to retain for analysis purposes
- - The default is two days' worth
- - Setting this value to something high will hold more data for
-   pattern-analysis, at the cost of more memory and increased processing time
+#Whether averaging values should be made available
+AVERAGES_ENABLED = True
+#The periods, as quantised periods, over which statistics should be averaged
+#0 represents the current frame
+AVERAGES_WINDOWS = [0, 1, 2, 3, 12, 72, 288]
+#Whether averages should be included in the web dashboard
+AVERAGES_DISPLAY = True
+#The ordering-bias value to apply, as an integer; if None, appended to the end
+AVERAGES_ORDERING = None
+#If not available via the dashboard, they can be accessed at this path
+AVERAGES_PATH = '/ca/uguu/puukusoft/staticDHCPd/contrib/stats/averages'
+#The name of the component; if None and not displayed in the dashboard, the
+#method link will be hidden
+AVERAGES_NAME = 'averages'
+
+#Whether histograph generation should be made available
+#This component depends on matplotlib
+HISTOGRAPH_ENABLED = True
+#Whether the histograph should be rendered in the web dashboard
+HISTOGRAPH_DISPLAY = True
+#The ordering-bias value to apply, as an integer; if None, appended to the end
+HISTOGRAPH_ORDERING = None
+#If not available via the dashboard, it can be accessed at this path
+HISTOGRAPH_PATH = '/ca/uguu/puukusoft/staticDHCPd/contrib/stats/histograph'
+#The name of the component; if None and not displayed in the dashboard, the
+#method link will be hidden
+HISTOGRAPH_NAME = 'histograph'
+#The path at which a CSV version of the histograph may be obtained; None to
+#disable
+HISTOGRAPH_CSV_PATH = '/ca/uguu/puukusoft/staticDHCPd/contrib/stats/histograph.csv'
+#The name of the component; if None, the method link will be hidden
+HISTOGRAPH_CSV_NAME = 'histograph (csv)'
+
+#The number of seconds over which to quantise data
+#Lower values will increase resolution, but consume more memory
+QUANTISATION_INTERVAL = 60 * 5
+
+#The number of quantised elements to retain for statistical evaluation
+#Higher values will increase the amount of data that can be interpreted,
+#at the cost of more memory and processing time
+RETENTION_COUNT = 288 * 2 #At five minutes, 288 is a day
 
 #Do not touch anything below this line
 ################################################################################
@@ -151,20 +178,9 @@ class DHCPStatistics(object):
 #Remember to subtract the request sub-classifications from the parent-type-count when they become known
 
 
-
-The netbook defined additional config parameters, like whether the web
-interface should display lifetime stats, and stats-averaging windows:
-[0, 1, 2, 3, 4]
-That would display average throughput in the current frame (0), the
-past one frame, the past two frames, and so forth, all aggregated.
-
-Of course, there also needs to be an option for rendering a histograph
-and a pair for exposing a CSV download of the histograph.
-
-
 http://41j.com/blog/2012/04/simple-histogram-in-pythonmatplotlib-no-display-write-to-png/
 
-
+http://bespokeblog.wordpress.com/2011/07/11/basic-data-plotting-with-matplotlib-part-3-histograms/
     
     
     
@@ -234,7 +250,8 @@ http://41j.com/blog/2012/04/simple-histogram-in-pythonmatplotlib-no-display-writ
             _logger.error("Problem while serving Response:\n" + traceback.format_exc())
 """
 
-
+#Setup happens here
+################################################################################
 
 if staticdhcpdlib.config.STATS_ENABLED: #No point in turning this on without webservices
             _logger.info("Webservice statistics enabled; configuring...")

@@ -36,6 +36,8 @@ METHOD_PATH = '/ca/uguu/puukusoft/staticDHCPd/contrib/recent-activity/render'
 MODULE = 'recent activity'
 #The name of this component
 NAME = 'dhcp'
+#If either of these are None and the module is not to be rendered in the
+#dashboard, the method-link will be hidden
 
 #Do not touch anything below this line
 ################################################################################
@@ -162,7 +164,7 @@ else:
     })
     config.callbacks.webAddMethod(
      METHOD_PATH, _render,
-     hidden=False, module=MODULE, name=NAME,
+     hidden=(MODULE is None or NAME is None), module=MODULE, name=NAME,
      display_mode=config.callbacks.WEB_METHOD_TEMPLATE
     )
     

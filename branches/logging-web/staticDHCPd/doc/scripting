@@ -358,8 +358,8 @@ Adds a webservice method.
 Parameters
 ------------------------------
     path: The path at which to register this callback, typically something like
-          "ca/uguu/puukusoft/statcDHCPd/statistics/histogram.csv", but as long
-          as it's a valid URI-fragment, it's up to you
+          "/ca/uguu/puukusoft/staticDHCPd/contrib/stats/histograph.csv", but as
+          long as it's a valid URI-fragment, it's up to you
     callback: The callable to be invoked when the method is called; this is
               what you'll need to implement
               It must accept the parameters 'path', 'queryargs', 'mimetype',
