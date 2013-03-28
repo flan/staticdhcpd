@@ -4,7 +4,7 @@ Thirty-second upgrade guide for people who hate using diff:
     forwards-compatible with this version.
     
     If coming from anything before 1.6.1, move conf.py into the conf/ directory
-    of create /etc/staticDHCPd/ and move it there. Your old file needs no TLC.
+    or create /etc/staticDHCPd/ and move it there. Your old file needs no TLC.
 
 -------------------------------------------------------------------------------
 
