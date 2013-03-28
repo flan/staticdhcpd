@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
-staticDHCPd module: web
+staticDHCPd module: src.web
 
 Purpose
 =======
@@ -22,7 +22,7 @@ Legal
  You should have received a copy of the GNU General Public License
  along with this program. If not, see <http://www.gnu.org/licenses/>.
  
- (C) Neil Tallim, 2013 <flan@uguu.ca>
+ (C) Neil Tallim, 2009 <red.hamsterx@gmail.com>
 """
 import BaseHTTPServer
 import cgi
@@ -37,10 +37,10 @@ try:
 except:
 	from cgi import parse_qs
 
-import config
-import dhcp
-import logging
-from staticdhcpd import VERSION
+import src.conf_buffer as conf
+import src.dhcp
+import src.logging
+import src
 
 class _WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
     """
@@ -74,7 +74,7 @@ class _WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
             self.send_header('Last-modified', time.strftime('%a, %d %b %Y %H:%M:%S %Z'))
             self.end_headers()
         except Exception, e:
-            logging.writeLog("Problem while processing HEAD in Web module: %(error)s" % {'error': str(e),})
+            src.logging.writeLog("Problem while processing HEAD in Web module: %(error)s" % {'error': str(e),})
             
     def do_POST(self):
         """
@@ -89,16 +89,16 @@ class _WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
                 query = parse_qs(self.rfile.read(int(self.headers.getheader('content-length'))))
                 key = query.get('key')
                 if key:
-                    if hashlib.md5(key[0]).hexdigest() == config.WEB_RELOAD_KEY:
-                        dhcp.flushCache()
-                        if logging.logToDisk():
-                            logging.writeLog("Wrote log to '%(log)s'" % {'log': config.LOG_FILE,})
+                    if hashlib.md5(key[0]).hexdigest() == conf.WEB_RELOAD_KEY:
+                        src.dhcp.flushCache()
+                        if src.logging.logToDisk():
+                            src.logging.writeLog("Wrote log to '%(log)s'" % {'log': conf.LOG_FILE,})
                         else:
-                            logging.writeLog("Unable to write log to '%(log)s'" % {'log': config.LOG_FILE,})
+                            src.logging.writeLog("Unable to write log to '%(log)s'" % {'log': conf.LOG_FILE,})
                     else:
-                        logging.writeLog("Invalid Web-access-key provided")
+                        src.logging.writeLog("Invalid Web-access-key provided")
         except Exception, e:
-            logging.writeLog("Problem while processing POST in Web module: %(error)s" % {'error': str(e),})
+            src.logging.writeLog("Problem while processing POST in Web module: %(error)s" % {'error': str(e),})
         self._doResponse()
         
     def _doResponse(self):
@@ -112,11 +112,11 @@ class _WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
             self.send_header('Last-modified', time.strftime('%a, %d %b %Y %H:%M:%S %Z'))
             self.end_headers()
             
-            self.wfile.write('<html><head><title>%(name)s log</title></head><body>' % {'name': config.SYSTEM_NAME,})
+            self.wfile.write('<html><head><title>%(name)s log</title></head><body>' % {'name': conf.SYSTEM_NAME,})
             self.wfile.write('<div style="width: 950px; margin-left: auto; margin-right: auto; border: 1px solid black;">')
             
             self.wfile.write('<div>Statistics:<div style="text-size: 0.9em; margin-left: 20px;">')
-            for (timestamp, packets, discarded, time_taken, ignored_macs) in logging.readPollRecords():
+            for (timestamp, packets, discarded, time_taken, ignored_macs) in src.logging.readPollRecords():
                 if packets:
                     turnaround = time_taken / packets
                 else:
@@ -131,7 +131,7 @@ class _WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
             self.wfile.write("</div></div><br/>")
             
             self.wfile.write('<div>Events:<div style="text-size: 0.9em; margin-left: 20px;">')
-            for (timestamp, line) in logging.readLog():
+            for (timestamp, line) in src.logging.readLog():
                 self.wfile.write("%(time)s : %(line)s<br/>" % {
                  'time': time.ctime(timestamp),
                  'line': cgi.escape(line),
@@ -144,13 +144,13 @@ class _WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
             })
             self.wfile.write('<small>%(server)s:%(port)i | PID: %(pid)i | v%(core_version)s | <a href="http://uguu.ca/" onclick="window.open(this.href); return false;">uguu.ca</a></small><br/>' % {
              'pid': os.getpid(),
-             'server': config.DHCP_SERVER_IP,
-             'port': config.DHCP_SERVER_PORT,
-             'core_version': VERSION,
+             'server': conf.DHCP_SERVER_IP,
+             'port': conf.DHCP_SERVER_PORT,
+             'core_version': src.VERSION,
             })
             self.wfile.write('<form action="/" method="post"><div style="display: inline;">')
             self.wfile.write('<label for="key">Key: </label><input type="password" name="key" id="key"/>')
-            if config.USE_CACHE:
+            if conf.USE_CACHE:
                 self.wfile.write('<input type="submit" value="Flush cache and write log to disk"/>')
             else:
                 self.wfile.write('<input type="submit" value="Write log to disk"/>')
@@ -159,7 +159,7 @@ class _WebServer(BaseHTTPServer.BaseHTTPRequestHandler):
             
             self.wfile.write("</div></body></html>")
         except Exception, e:
-            logging.writeLog("Problem while serving response in Web module: %(error)s" % {'error': str(e),})
+            src.logging.writeLog("Problem while serving response in Web module: %(error)s" % {'error': str(e),})
 
     def log_message(*args):
         """
@@ -185,13 +185,13 @@ class WebService(threading.Thread):
         
         self._web_server = BaseHTTPServer.HTTPServer(
          (
-          '.'.join([str(int(o)) for o in config.WEB_IP.split('.')]),
-          int(config.WEB_PORT)
+          '.'.join([str(int(o)) for o in conf.WEB_IP.split('.')]),
+          int(conf.WEB_PORT)
          ),
          _WebServer
         )
         
-        logging.writeLog('Configured Web server')
+        src.logging.writeLog('Configured Web server')
         
     def run(self):
         """
@@ -200,12 +200,12 @@ class WebService(threading.Thread):
         In the event of an unexpected error, e-mail will be sent and processing
         will continue with the next request.
         """
-        logging.writeLog('Running Web server')
+        src.logging.writeLog('Running Web server')
         while True:
             try:
                 self._web_server.handle_request()
             except select.error:
-                logging.writeLog('Suppressed non-fatal select() error in Web module')
+                src.logging.writeLog('Suppressed non-fatal select() error in Web module')
             except Exception, e:
-                logging.sendErrorReport('Unhandled exception', e)
+                src.logging.sendErrorReport('Unhandled exception', e)
                 

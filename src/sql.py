@@ -1,10 +1,11 @@
 # -*- encoding: utf-8 -*-
 """
-staticDHCPd module: databases._sql
+staticDHCPd module: src.sql
 
 Purpose
 =======
- Provides a uniform datasource API, implementing multiple SQL-based backends.
+ Provides a uniform datasource API, selecting from multiple backends,
+ for a staticDHCPd server.
  
 Legal
 =====
@@ -22,17 +23,28 @@ Legal
  You should have received a copy of the GNU General Public License
  along with this program. If not, see <http://www.gnu.org/licenses/>.
  
- (C) Neil Tallim, 2013 <flan@uguu.ca>
+ (C) Neil Tallim, 2011 <red.hamsterx@gmail.com>
  (C) Matthew Boedicker, 2011 <matthewm@boedicker.org>
 """
-from .. import config
+################################################################################
+#   The decision of which engine to use occurs at the bottom of this module    #
+# The chosen class is made accessible via the module-level SQL_BROKER variable #
+#   The chosen module is accessible via the module-level SQL_MODULE variable   #
+################################################################################
+import threading
 
-from _generic import Database
+import src.conf_buffer as conf
+import src.logging
 
-class _SQLDatabase(Database):
+class _SQLBroker(object):
     """
-    A stub documenting the features an _SQLDatabase object must provide.
+    A stub documenting the features an _SQLBroker object must provide.
     """
+    _resource_lock = None #: A lock used to prevent the database from being overwhelmed.
+    _cache_lock = None #: A lock used to prevent multiple simultaneous cache updates.
+    _mac_cache = None #: A cache used to prevent unnecessary database hits.
+    _subnet_cache = None #: A cache used to prevent unnecessary database hits.
+    
     def _getConnection(self):
         """
         Provides a connection to the database.
@@ -43,7 +55,95 @@ class _SQLDatabase(Database):
         """
         raise NotImplementedError("_getConnection must be overridden")
         
-class _DB20Broker(_SQLDatabase):
+    def _setupBroker(self, concurrency_limit):
+        """
+        Sets up common attributes of broker objects.
+        
+        @type concurrency_limit: int
+        @param concurrent_limit: The number of concurrent database hits to
+            permit.
+        """
+        self._resource_lock = threading.BoundedSemaphore(concurrency_limit)
+        self._setupCache()
+        
+    def _setupCache(self):
+        """
+        Sets up the SQL broker cache.
+        """
+        self._cache_lock = threading.Lock()
+        self._mac_cache = {}
+        self._subnet_cache = {}
+        
+    def flushCache(self):
+        """
+        Resets the cache to an empty state, forcing all lookups to pull fresh
+        data.
+        """
+        if conf.USE_CACHE:
+            self._cache_lock.acquire()
+            try:
+                self._mac_cache = {}
+                self._subnet_cache = {}
+                src.logging.writeLog("Flushed DHCP cache")
+            finally:
+                self._cache_lock.release()
+                
+    def lookupMAC(self, mac):
+        """
+        Queries the database for the given MAC address and returns the IP and
+        associated details if the MAC is known.
+        
+        If enabled, the cache is checked and updated by this function.
+        
+        @type mac: basestring
+        @param mac: The MAC address to lookup.
+        
+        @rtype: tuple(11)|None
+        @return: (ip:basestring, hostname:basestring|None,
+            gateway:basestring|None, subnet_mask:basestring|None,
+            broadcast_address:basestring|None,
+            domain_name:basestring|None, domain_name_servers:basestring|None,
+            ntp_servers:basestring|None, lease_time:int,
+            subnet:basestring, serial:int) or None if no match was
+            found.
+        
+        @raise Exception: If a problem occurs while accessing the database.
+        """
+        if conf.USE_CACHE:
+            self._cache_lock.acquire()
+            try:
+                data = self._mac_cache.get(mac)
+                if data:
+                    (ip, hostname, subnet_id) = data
+                    return (ip, hostname,) + self._subnet_cache[subnet_id] + subnet_id
+            finally:
+                self._cache_lock.release()
+                
+        self._resource_lock.acquire()
+        try:
+            data = self._lookupMAC(mac)
+            if conf.USE_CACHE:
+                if data:
+                    (ip, hostname,
+                     gateway, subnet_mask, broadcast_address,
+                     domain_name, domain_name_servers, ntp_servers,
+                     lease_time, subnet, serial) = data
+                    subnet_id = (subnet, serial)
+                    self._cache_lock.acquire()
+                    try:
+                        self._mac_cache[mac] = (ip, hostname, subnet_id,)
+                        self._subnet_cache[subnet_id] = (
+                         gateway, subnet_mask, broadcast_address,
+                         domain_name, domain_name_servers, ntp_servers,
+                         lease_time,
+                        )
+                    finally:
+                        self._cache_lock.release()
+            return data
+        finally:
+            self._resource_lock.release()
+            
+class _DB20Broker(_SQLBroker):
     """
     Defines bevahiour for a DB API 2.0-compatible broker.
     """
@@ -111,7 +211,7 @@ class _PoolingBroker(_DB20Broker):
         """
         _DB20Broker._setupBroker(self, concurrency_limit)
 
-        if config.USE_POOL:
+        if conf.USE_POOL:
             try:
                 import eventlet.db_pool
                 self._eventlet__db_pool = eventlet.db_pool
@@ -119,7 +219,7 @@ class _PoolingBroker(_DB20Broker):
                 return
             else:
                 self._pool = self._eventlet__db_pool.ConnectionPool(
-                 self._module,
+                 SQL_MODULE,
                  max_size=concurrency_limit, max_idle=30, max_age=600, connect_timeout=5,
                  **self._connection_details
                 )
@@ -135,7 +235,7 @@ class _PoolingBroker(_DB20Broker):
         if not self._pool is None:
             return self._eventlet__db_pool.PooledConnectionWrapper(self._pool.get(), self._pool)
         else:
-            return self._module.connect(**self._connection_details)
+            return SQL_MODULE.connect(**self._connection_details)
             
 class _NonPoolingBroker(_DB20Broker):
     """
@@ -151,9 +251,9 @@ class _NonPoolingBroker(_DB20Broker):
         
         @raise Exception: If a problem occurs while accessing the database.
         """
-        return self._module.connect(**self._connection_details)
+        return SQL_MODULE.connect(**self._connection_details)
         
-class MySQL(_PoolingBroker):
+class _MySQL(_PoolingBroker):
     """
     Implements a MySQL broker.
     """
@@ -172,23 +272,20 @@ class MySQL(_PoolingBroker):
         """
         Constructs the broker.
         """
-        import MySQLdb
-        self._module = MySQLdb
-        
         self._connection_details = {
-         'db': config.MYSQL_DATABASE,
-         'user': config.MYSQL_USERNAME,
-         'passwd': config.MYSQL_PASSWORD,
+         'db': conf.MYSQL_DATABASE,
+         'user': conf.MYSQL_USERNAME,
+         'passwd': conf.MYSQL_PASSWORD,
         }
-        if config.MYSQL_HOST is None:
+        if conf.MYSQL_HOST is None:
             self._connection_details['host'] = 'localhost'
         else:
-            self._connection_details['host'] = config.MYSQL_HOST
-            self._connection_details['port'] = config.MYSQL_PORT
+            self._connection_details['host'] = conf.MYSQL_HOST
+            self._connection_details['port'] = conf.MYSQL_PORT
             
-        self._setupBroker(config.MYSQL_MAXIMUM_CONNECTIONS)
+        self._setupBroker(conf.MYSQL_MAXIMUM_CONNECTIONS)
         
-class PostgreSQL(_PoolingBroker):
+class _PostgreSQL(_PoolingBroker):
     """
     Implements a PostgreSQL broker.
     """
@@ -207,22 +304,19 @@ class PostgreSQL(_PoolingBroker):
         """
         Constructs the broker.
         """
-        import psycopg2
-        self._module = psycopg2
-        
         self._connection_details = {
-         'database': config.POSTGRESQL_DATABASE,
-         'user': config.POSTGRESQL_USERNAME,
-         'password': config.POSTGRESQL_PASSWORD,
+         'database': conf.POSTGRESQL_DATABASE,
+         'user': conf.POSTGRESQL_USERNAME,
+         'password': conf.POSTGRESQL_PASSWORD,
         }
-        if not config.POSTGRESQL_HOST is None:
-            self._connection_details['host'] = config.POSTGRESQL_HOST
-            self._connection_details['port'] = config.POSTGRESQL_PORT
-            self._connection_details['sslmode'] = config.POSTGRESQL_SSLMODE
+        if not conf.POSTGRESQL_HOST is None:
+            self._connection_details['host'] = conf.POSTGRESQL_HOST
+            self._connection_details['port'] = conf.POSTGRESQL_PORT
+            self._connection_details['sslmode'] = conf.POSTGRESQL_SSLMODE
             
-        self._setupBroker(config.POSTGRESQL_MAXIMUM_CONNECTIONS)
+        self._setupBroker(conf.POSTGRESQL_MAXIMUM_CONNECTIONS)
         
-class Oracle(_PoolingBroker):
+class _Oracle(_PoolingBroker):
     """
     Implements an Oracle broker.
     """
@@ -241,18 +335,15 @@ class Oracle(_PoolingBroker):
         """
         Constructs the broker.
         """
-        import cx_Oracle
-        self._module = cx_Oracle
-        
         self._connection_details = {
-         'user': config.ORACLE_USERNAME,
-         'password': config.ORACLE_PASSWORD,
-         'dsn': config.ORACLE_DATABASE,
+         'user': conf.ORACLE_USERNAME,
+         'password': conf.ORACLE_PASSWORD,
+         'dsn': conf.ORACLE_DATABASE,
         }
 
-        self._setupBroker(config.ORACLE_MAXIMUM_CONNECTIONS)
+        self._setupBroker(conf.ORACLE_MAXIMUM_CONNECTIONS)
 
-class SQLite(_NonPoolingBroker):
+class _SQLite(_NonPoolingBroker):
     """
     Implements a SQLite broker.
     """
@@ -271,11 +362,31 @@ class SQLite(_NonPoolingBroker):
         """
         Constructs the broker.
         """
-        import sqlite3
-        self._module = sqlite3
-        
         self._connection_details = {
-         'database': config.SQLITE_FILE,
+         'database': conf.SQLITE_FILE,
         }
         
         self._setupBroker(1)
+        
+        
+#Decide which SQL engine to use and store the class in SQL_BROKER
+#################################################################
+SQL_BROKER = None #: The class of the SQL engine to use.
+SQL_MODULE = None #: The module of the SQL engine to use.
+if conf.DATABASE_ENGINE == 'MySQL':
+    import MySQLdb as SQL_MODULE
+    SQL_BROKER = _MySQL
+elif conf.DATABASE_ENGINE == 'PostgreSQL':
+    import psycopg2 as SQL_MODULE
+    SQL_BROKER = _PostgreSQL
+elif conf.DATABASE_ENGINE == 'Oracle':
+    import cx_Oracle as SQL_MODULE
+    SQL_BROKER = _Oracle
+elif conf.DATABASE_ENGINE == 'SQLite':
+    import sqlite3 as SQL_MODULE
+    SQL_BROKER = _SQLite
+else:
+    raise ValueError("Unknown database engine: %(engine)s" % {
+     'engine': conf.DATABASE_ENGINE
+    })
+    

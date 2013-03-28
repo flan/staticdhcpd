@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
-staticDHCPd package
+staticDHCPd package: src
 
 Purpose
 =======
@@ -22,6 +22,6 @@ Legal
  You should have received a copy of the GNU General Public License
  along with this program. If not, see <http://www.gnu.org/licenses/>.
  
- (C) Neil Tallim, 2013 <flan@uguu.ca>
+ (C) Neil Tallim, 2011 <red.hamsterx@gmail.com>
 """
-VERSION = '1.6.2'
+VERSION = '1.5.6'

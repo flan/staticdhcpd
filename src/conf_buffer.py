@@ -1,22 +1,11 @@
 # -*- encoding: utf-8 -*-
 """
-staticDHCPd module: config
-
-WARNING
-=======
- If you are attempting to customise your environment, edit conf.py instead.
- If testing, it will likely be in conf/, if installed, in /etc/staticDHCPd/,
- or, if upgrading from an older version, in the same directory as main.py.
- 
- This file is intended for internal use only and modifications here will
- probably lead to headaches later.
+staticDHCPd module: src.conf
 
 Purpose
 =======
  Provides a buffer to seed options with default values to make upgrading easier
  for end users who do not need to manage any newly added features.
- 
- Also handles the process of determining where config values should be accessed.
  
 Legal
 =====
@@ -34,36 +23,10 @@ Legal
  You should have received a copy of the GNU General Public License
  along with this program. If not, see <http://www.gnu.org/licenses/>.
  
- (C) Neil Tallim, 2013 <flan@uguu.ca>
+ (C) Neil Tallim, 2011 <red.hamsterx@gmail.com>
 """
-#Get the "conf" module from somewhere
-conf = None
-import os
-import sys
-import imp
-conf_path = os.path.join(os.getcwd(), 'conf')
-sys.path.append(conf_path)
-try: #Look for a 'conf/' subdirectory
-    conf = imp.load_source('conf', os.path.join(conf_path, 'conf.py'))
-except IOError:
-    sys.path.remove(conf_path)
-    
-    etc_path = '/etc/staticDHCPd'
-    sys.path.append(etc_path)
-    try: #If that fails, try /etc/staticDHCPd/
-        conf = imp.load_source('conf', os.path.join(etc_path, 'conf.py'))
-    except IOError:
-        sys.path.remove(etc_path)
-        
-        raise ImportError("Unable to find a suitable copy of conf.py")
-    finally:
-        del etc_path
-finally:
-    del conf_path
-    del os
-    del sys
-    del imp
-    
+import conf
+
 #Options passed through from conf.py
 #For explanations, please consult that file.
 ##############################################################################
@@ -73,7 +36,6 @@ _defaults = {}
 #######################################
 _defaults.update({
  'DEBUG': False,
- 'DAEMON': False,
  
  'POLLING_INTERVAL': 30,
  'LOG_CAPACITY': 1000,
@@ -112,7 +74,12 @@ _defaults.update({
 
  'USE_POOL': True,
 
- 'SQLITE_FILE': '/etc/staticDHCPd/dhcp.sqlite3',
+ 'MYSQL_DATABASE': 'dhcp',
+ 'MYSQL_USERNAME': 'dhcp_user',
+ 'MYSQL_PASSWORD': 'dhcp_pass',
+ 'MYSQL_HOST': None,
+ 'MYSQL_PORT': 3306,
+ 'MYSQL_MAXIMUM_CONNECTIONS': 4,
 
  'POSTGRESQL_DATABASE': 'dhcp',
  'POSTGRESQL_USERNAME': 'dhcp_user',
@@ -126,15 +93,8 @@ _defaults.update({
  'ORACLE_USERNAME': 'dhcp_user',
  'ORACLE_PASSWORD': 'dhcp_pass',
  'ORACLE_MAXIMUM_CONNECTIONS': 4,
- 
- 'MYSQL_DATABASE': 'dhcp',
- 'MYSQL_USERNAME': 'dhcp_user',
- 'MYSQL_PASSWORD': 'dhcp_pass',
- 'MYSQL_HOST': None,
- 'MYSQL_PORT': 3306,
- 'MYSQL_MAXIMUM_CONNECTIONS': 4,
- 
- 'INI_FILE': '/etc/staticDHCPd/dhcp.ini',
+
+ 'SQLITE_FILE': '/etc/staticDHCPd/dhcp.sqlite3',
 })
 
 #E-mail settings
@@ -160,18 +120,8 @@ for (key, value) in _defaults.iteritems():
         globals()[key] = value
 del _defaults
 
-if hasattr(conf, 'init'):
-    init = conf.init
-else:
-    init = lambda : None
-if hasattr(conf, 'loadDHCPPacket'):
-    loadDHCPPacket = conf.loadDHCPPacket
-else:
-    loadDHCPPacket = lambda *args, **kwargs : True
-if hasattr(conf, 'handleUnknownMAC'):
-    handleUnknownMAC = conf.handleUnknownMAC
-else:
-    handleUnknownMAC = lambda *args, **kwargs : None
+init = conf.init
+loadDHCPPacket = conf.loadDHCPPacket
 
 #Inject namespace elements into conf.
 ##############################################################################
@@ -204,3 +154,4 @@ del type_rfc
 import logging
 conf.writeLog = logging.writeLog
 del logging
+

@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
-staticDHCPd module: logging
+staticDHCPd module: src.logging
 
 Purpose
 =======
@@ -22,7 +22,7 @@ Legal
  You should have received a copy of the GNU General Public License
  along with this program. If not, see <http://www.gnu.org/licenses/>.
  
- (C) Neil Tallim, 2013 <flan@uguu.ca>
+ (C) Neil Tallim, 2009 <red.hamsterx@gmail.com>
 """
 import email
 import smtplib
@@ -30,7 +30,7 @@ import traceback
 import threading
 import time
 
-import config
+import conf_buffer as conf #For whatever reason, src.conf_buffer makes this fail.
 
 _LOG_LOCK = threading.Lock() #: A lock used to synchronize access to the memory-log.
 _LOG = [] #: The memory-log.
@@ -51,14 +51,17 @@ def writeLog(data):
     """
     global _LOG
     
-    with _LOG_LOCK:
-        _LOG = [(time.time(), data)] + _LOG[:config.LOG_CAPACITY - 1]
-        if config.DEBUG:
+    _LOG_LOCK.acquire()
+    try:
+        _LOG = [(time.time(), data)] + _LOG[:conf.LOG_CAPACITY - 1]
+        if conf.DEBUG:
             print '%(time)s : %(event)s' % {
              'time': time.asctime(),
              'event': data,
             }
-            
+    finally:
+        _LOG_LOCK.release()
+        
 def readLog():
     """
     Returns a static, immutable copy of the memory-log.
@@ -68,8 +71,11 @@ def readLog():
         (timestamp:float, details:basestring) values, in reverse-chronological
         order.
     """
-    with _LOG_LOCK:
+    _LOG_LOCK.acquire()
+    try:
         return tuple(_LOG)
+    finally:
+        _LOG_LOCK.release()
         
 def writePollRecord(packets, discarded, time_taken, ignored_macs):
     """
@@ -88,8 +94,11 @@ def writePollRecord(packets, discarded, time_taken, ignored_macs):
     """
     global _POLL_RECORDS
     
-    with _POLL_RECORDS_LOCK:
-        _POLL_RECORDS = [(time.time(), packets, discarded, time_taken, ignored_macs)] + _POLL_RECORDS[:config.POLL_INTERVALS_TO_TRACK - 1]
+    _POLL_RECORDS_LOCK.acquire()
+    try:
+        _POLL_RECORDS = [(time.time(), packets, discarded, time_taken, ignored_macs)] + _POLL_RECORDS[:conf.POLL_INTERVALS_TO_TRACK - 1]
+    finally:
+        _POLL_RECORDS_LOCK.release()
         
 def readPollRecords():
     """
@@ -101,8 +110,11 @@ def readPollRecords():
         processing_time:float, ignored_macs:int) values, in reverse-chronological
         order.
     """
-    with _POLL_RECORDS_LOCK:
+    _POLL_RECORDS_LOCK.acquire()
+    try:
         return tuple(_POLL_RECORDS)
+    finally:
+        _POLL_RECORDS_LOCK.release()
         
 #Logging functions
 def logToDisk():
@@ -117,10 +129,10 @@ def logToDisk():
     """
     try:
         log_file = None
-        if config.LOG_FILE_TIMESTAMP:
-            log_file = open(config.LOG_FILE + time.strftime(".%Y%m%d%H%M%S"), 'w')
+        if conf.LOG_FILE_TIMESTAMP:
+            log_file = open(conf.LOG_FILE + time.strftime(".%Y%m%d%H%M%S"), 'w')
         else:
-            log_file = open(config.LOG_FILE, 'w')
+            log_file = open(conf.LOG_FILE, 'w')
             
         log_file.write("Summary generated %(time)s\n" % {'time': time.asctime(),})
         
@@ -159,13 +171,14 @@ def emailTimeoutCooldown():
     """
     global _EMAIL_TIMEOUT
     
-    with _EMAIL_LOCK:
-        _EMAIL_TIMEOUT = max(0, _EMAIL_TIMEOUT - config.POLLING_INTERVAL)
-        
+    _EMAIL_LOCK.acquire()
+    _EMAIL_TIMEOUT = max(0, _EMAIL_TIMEOUT - conf.POLLING_INTERVAL)
+    _EMAIL_LOCK.release()
+    
 def _buildEmail(subject, report):
     message = email.MIMEMultipart.MIMEMultipart()
-    message['From'] = config.EMAIL_SOURCE
-    message['To'] = config.EMAIL_DESTINATION
+    message['From'] = conf.EMAIL_SOURCE
+    message['To'] = conf.EMAIL_DESTINATION
     message['Date'] = email.Utils.formatdate(localtime=True)
     message['Subject'] = subject
     message.attach(email.MIMEText.MIMEText(report))
@@ -182,15 +195,15 @@ def _sendEmail(message):
     @raise Exception: A problem occurred while sending the message.
     """
     smtp_server = smtplib.SMTP(
-     host=config.EMAIL_SERVER,
-     port=(hasattr(conf, 'EMAIL_PORT') and config.EMAIL_PORT or 25),
-     timeout=(hasattr(conf, 'EMAIL_TIMEOUT') and config.EMAIL_TIMEOUT or 10)
+     host=conf.EMAIL_SERVER,
+     port=(hasattr(conf, 'EMAIL_PORT') and conf.EMAIL_PORT or 25),
+     timeout=(hasattr(conf, 'EMAIL_TIMEOUT') and conf.EMAIL_TIMEOUT or 10)
     )
-    if config.EMAIL_USER:
-        smtp_server.login(config.EMAIL_USER, config.EMAIL_PASSWORD)
+    if conf.EMAIL_USER:
+        smtp_server.login(conf.EMAIL_USER, conf.EMAIL_PASSWORD)
     smtp_server.sendmail(
-     config.EMAIL_SOURCE,
-     (config.EMAIL_DESTINATION,),
+     conf.EMAIL_SOURCE,
+     (conf.EMAIL_DESTINATION,),
      message.as_string()
     )
     smtp_server.close()
@@ -228,25 +241,28 @@ Exception details:
 Exception traceback:
 %(traceback)s
 """ % {
-     'server': config.DHCP_SERVER_IP,
+     'server': conf.DHCP_SERVER_IP,
      'summary': summary,
      'type': str(type(exception)),
      'details': str(exception),
      'traceback': traceback.format_exc(),
     }
     
-    if config.DEBUG:
+    if conf.DEBUG:
         print report
         
-    if not config.EMAIL_ENABLED:
+    if not conf.EMAIL_ENABLED:
         writeLog(report)
         return
         
     global _EMAIL_TIMEOUT
-    with _EMAIL_LOCK:
+    _EMAIL_LOCK.acquire()
+    try:
         if _EMAIL_TIMEOUT > 0:
             return
-        _EMAIL_TIMEOUT = config.EMAIL_TIMEOUT
+        _EMAIL_TIMEOUT = conf.EMAIL_TIMEOUT
+    finally:
+        _EMAIL_LOCK.release()
         
     try:
         _sendEmail(
@@ -258,7 +274,7 @@ Exception traceback:
         
         writeLog("E-mail about '%(error)s' sent to %(destination)s" % {
          'error': str(exception),
-         'destination': config.EMAIL_DESTINATION,
+         'destination': conf.EMAIL_DESTINATION,
         })
     except Exception, e:
         writeLog("Unable to send e-mail about '%(error)s': %(e)s" % {
@@ -296,17 +312,17 @@ Affected IPv4:
 Subnet:
 \t(%(subnet)s, %(subnet_serial)i)
 """ % {
-     'server': config.DHCP_SERVER_IP,
+     'server': conf.DHCP_SERVER_IP,
      'mac': mac,
      'ip_4': ip_4,
      'subnet': subnet,
      'subnet_serial': subnet_serial,
     }
     
-    if config.DEBUG:
+    if conf.DEBUG:
         print report
         
-    if not config.EMAIL_ENABLED:
+    if not conf.EMAIL_ENABLED:
         writeLog(report)
         return
         
@@ -320,7 +336,7 @@ Subnet:
         
         writeLog("E-mail about DHCPDECLINE from '%(mac)s' sent to %(destination)s" % {
          'mac': mac,
-         'destination': config.EMAIL_DESTINATION,
+         'destination': conf.EMAIL_DESTINATION,
         })
     except Exception, e:
         writeLog("Unable to send e-mail about DHCPDECLINE from '%(mac)s': %(e)s" % {

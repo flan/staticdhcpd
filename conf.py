@@ -1,16 +1,10 @@
 #This file is interpreted by Python and it may be extended with any Python code
 #you wish, allowing you to do things like query web services to get values.
 
-#With very few exceptions, any unnecessary declarations in this file, including
-#the function declarations near the end, may be omitted, if desired, with sane,
-#typicially no-op, behaviours assumed instead.
-
 #General settings
 #######################################
 #If True, all events will be printed to console.
 DEBUG = False
-#If True, runs as a daemon (you usually don't want this during setup)
-DAEMON = True
 
 #The name to use when referring to this system.
 SYSTEM_NAME = 'staticDHCPd'
@@ -88,9 +82,8 @@ WEB_RELOAD_KEY = '5f4dcc3b5aa765d61d8327deb882cf99'
 
 #Database settings
 #######################################
-#Allowed values: SQLite, PostgreSQL, Oracle, MySQL, INI
-DATABASE_ENGINE = 'SQLite'
-#You may remove configuration sections pertaining to other database engines.
+#Allowed values: MySQL, PostgreSQL, Oracle, SQLite
+DATABASE_ENGINE = 'MySQL'
 
 #Controls whether DHCP data gleaned from database lookups should be cached until
 #manually flushed; consumes more resources and adds a step before a MAC can be
@@ -98,15 +91,24 @@ DATABASE_ENGINE = 'SQLite'
 #performance under heavy loads.
 USE_CACHE = False
 
-#Controls whether database connections are pooled.
-#This only applies to engines that both support and benefit from pooling.
-#For PostgreSQL, Oracle, and MySQL, this requires that the eventlet library
-#has been installed.
+#Controls whether SQL daemon connections are pooled. This only works if the
+#eventlet library has been installed and you've chosen a pooling-friendly
+#engine, which excludes SQLite.
 USE_POOL = True
 
-#SQLITE_* values used only with 'SQLite' engine.
-#The file that contains your SQLite database.
-SQLITE_FILE = '/etc/staticDHCPd/dhcp.sqlite3'
+#MYSQL_* values used only with 'MySQL' engine.
+#The name of your database.
+MYSQL_DATABASE = 'dhcp'
+#The name of a user with SELECT access.
+MYSQL_USERNAME = 'dhcp_user'
+#The password of the user.
+MYSQL_PASSWORD = 'dhcp_pass'
+#The host on which MySQL is running. None for 'localhost'.
+MYSQL_HOST = None
+#The port on which MySQL is running; ignored when HOST is None.
+MYSQL_PORT = 3306
+#The number of threads that may read the database at once.
+MYSQL_MAXIMUM_CONNECTIONS = 4
 
 #POSTGRESQL_* values used only with 'PostgreSQL' engine.
 #The name of your database.
@@ -135,23 +137,9 @@ ORACLE_PASSWORD = 'dhcp_pass'
 #The number of threads that may read the database at once.
 ORACLE_MAXIMUM_CONNECTIONS = 4
 
-#MYSQL_* values used only with 'MySQL' engine.
-#The name of your database.
-MYSQL_DATABASE = 'dhcp'
-#The name of a user with SELECT access.
-MYSQL_USERNAME = 'dhcp_user'
-#The password of the user.
-MYSQL_PASSWORD = 'dhcp_pass'
-#The host on which MySQL is running. None for 'localhost'.
-MYSQL_HOST = None
-#The port on which MySQL is running; ignored when HOST is None.
-MYSQL_PORT = 3306
-#The number of threads that may read the database at once.
-MYSQL_MAXIMUM_CONNECTIONS = 4
-
-#INI_* values used only with 'INI' engine.
-#The file that contains your INI database.
-INI_FILE = '/etc/staticDHCPd/dhcp.ini'
+#SQLITE_* values used only with 'SQLite' engine.
+#The file that contains your SQLite database.
+SQLITE_FILE = '/etc/staticDHCPd/dhcp.sqlite3'
 
 #E-mail settings
 #######################################
@@ -180,16 +168,6 @@ EMAIL_TIMEOUT = 600
 #######################################
 def init():
     #Perform any required imports or setup operations within this function.
-    #If importing another module (whether something you created or something
-    #native, declare it in the global namespace if it's to be used in either
-    #loadDHCPPacket() or handledUnknownMAC, using "global <module>" first.
-    #Or you can import it again in the appropriate function; either way works.
-    
-    #Copy samples/dynamism.py to this directory and uncomment the following
-    #lines to expose a simple dynamic-address-provisioning engine.
-    #global dynamism
-    #import dynamism
-    
     pass
     
 def loadDHCPPacket(packet, mac, client_ip, relay_ip, subnet, serial, pxe, vendor):
@@ -220,47 +198,4 @@ def loadDHCPPacket(packet, mac, client_ip, relay_ip, subnet, serial, pxe, vendor
     #    [(enterprise_number:int, [(subopt_code:byte, data:string)])],
     #    respectively. Any unset options are presented as None.
     return True
-    
-def handleUnknownMAC(mac):
-    #This is a custom function, called when a request is made by a MAC for which
-    #no binding exists. You can use this to do things like dynamic addressing,
-    #using your own domain-specific logic.
-    #
-    ##### PARAMETERS #####
-    #mac is a human-readable MAC string, lower-case, separated by colons.
-    #
-    ##### Return #####
-    #Returning None will cause system-default behaviour to occur, which is usually
-    #    ignoring the request or sending a NAK, depending on whether the server is
-    #    configured to be authoritative.
-    #Returning a tuple will make the system act as though the MAC was found and
-    #    carry on, doing things as though a record exists, which subsequently
-    #    calls loadDHCPPacket.
-    #    The form of the tuple is as follows: (
-    #      '192.168.0.100', #The IPv4, as a string
-    #      'guestbox', #The hostname for the client, which may be None
-    #      '255.255.255.0', #The subnetmask of the client, as an IPv4 netmask,
-    #                       #which may be None if you want to provision a host-
-    #                       #to-host link, nonsensical as that might be in a
-    #                       #DHCP context, but you could notify the other host
-    #                       #to add a route here if that's your thing.
-    #      '192.168.0.255', #The subnet's broadcast address, which may be None
-    #      'guestbox.example.org.', #The FQDN for the box to assume, or None
-    #      '192.168.0.5,192.168.0.6,192.168.0.7', #Up to three servers that
-    #                                             #can be used for DNS, or None
-    #      '192.168.0.8,192.168.0.9', #Up to three servers that can be used for
-    #                                 #NTP, or None
-    #      600, #The number of seconds for which to grant the lease
-    #      '192.168.0.0/24', #Any string that helps you identify the subnet later
-    #                        #in the flow (loadDHCPPacket); could also be "guest"
-    #      0, #Any integer that can be used to differentiate between colliding
-    #         #subnet names; if your names are distinct, 0 is fine; if not,
-    #         #using the VLAN ID is probably a good idea
-    #    )
-    
-    #If 'dynamism' was imported in init(), and you've customised that file for your
-    #site, uncomment the following line to enable basic dynamic provisioning.
-    #return dynamism.provisionDynamic(mac)
-    
-    return None
     
