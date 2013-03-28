@@ -338,28 +338,6 @@ WEB_HEADER_FAVICON : boolean : default=True
  - Whether the defualt favicon should be included in the web interface
  
  
-Statistics
-----------------------------------------
-STATS_ENABLED : boolean : default=True
- - Whether the built-in statistics engine should be enabled
- - If the web-module is disabled, the engine is disabled, too
- - Any custom scripting that registers for statistics events will receive data
-   in either case, however
-   
-STATS_QUANTISATION : integer : default=(60 * 5)
- - The number of seconds over which statistics are gathered, before being
-   stored as a histogram
- - The default is once every five minutes
- - Setting this value to something low will increase resolution, at the cost
-   of more memory
-   
-STATS_RETENTION_COUNT : integer : default=(288 * 2)
- - The number of histograms to retain for analysis purposes
- - The default is two days' worth
- - Setting this value to something high will hold more data for
-   pattern-analysis, at the cost of more memory and increased processing time
-   
-   
 E-mail
 ----------------------------------------
 EMAIL_ENABLED : boolean : False

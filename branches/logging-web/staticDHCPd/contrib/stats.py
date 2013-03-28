@@ -10,6 +10,35 @@ Like staticDHCPd, this module under the GNU General Public License v3
 (C) Neil Tallim, 2013 <flan@uguu.ca>
 """
 
+#Statistics settings
+#######################################
+_defaults.update({
+ 'STATS_ENABLED': True,
+ 'STATS_QUANTISATION': 60 * 5,
+ 'STATS_RETENTION_COUNT': 288 * 2,
+})
+
+Statistics
+----------------------------------------
+STATS_ENABLED : boolean : default=True
+ - Whether the built-in statistics engine should be enabled
+ - If the web-module is disabled, the engine is disabled, too
+ - Any custom scripting that registers for statistics events will receive data
+   in either case, however
+   
+STATS_QUANTISATION : integer : default=(60 * 5)
+ - The number of seconds over which statistics are gathered, before being
+   stored as a histogram
+ - The default is once every five minutes
+ - Setting this value to something low will increase resolution, at the cost
+   of more memory
+   
+STATS_RETENTION_COUNT : integer : default=(288 * 2)
+ - The number of histograms to retain for analysis purposes
+ - The default is two days' worth
+ - Setting this value to something high will hold more data for
+   pattern-analysis, at the cost of more memory and increased processing time
+
 #Do not touch anything below this line
 ################################################################################
 import collections
@@ -204,3 +233,12 @@ http://41j.com/blog/2012/04/simple-histogram-in-pythonmatplotlib-no-display-writ
         except Exception:
             _logger.error("Problem while serving Response:\n" + traceback.format_exc())
 """
+
+
+
+if staticdhcpdlib.config.STATS_ENABLED: #No point in turning this on without webservices
+            _logger.info("Webservice statistics enabled; configuring...")
+            import staticdhcpdlib.statistics
+            import staticdhcpdlib.statistics.basic_engines
+            statistics_dhcp = staticdhcpdlib.statistics.basic_engines.DHCPStatistics()
+            staticdhcpdlib.statistics.registerStatsCallback(statistics_dhcp.process)

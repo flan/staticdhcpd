@@ -150,14 +150,6 @@ _defaults.update({
  'WEB_HEADER_FAVICON': True,
 })
 
-#Statistics settings
-#######################################
-_defaults.update({
- 'STATS_ENABLED': True,
- 'STATS_QUANTISATION': 60 * 5,
- 'STATS_RETENTION_COUNT': 288 * 2,
-})
-
 #E-mail settings
 #######################################
 _defaults.update({

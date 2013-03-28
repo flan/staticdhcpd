@@ -174,13 +174,6 @@ def _initialise():
             staticdhcpdlib.web.registerMethodCallback('/favicon.ico', staticdhcpdlib.web.methods.favicon, cacheable=(not staticdhcpdlib.config.DEBUG))
             staticdhcpdlib.web.registerHeaderCallback(staticdhcpdlib.web.headers.favicon)
             
-        if staticdhcpdlib.config.STATS_ENABLED: #No point in turning this on without webservices
-            _logger.info("Webservice statistics enabled; configuring...")
-            import staticdhcpdlib.statistics
-            import staticdhcpdlib.statistics.basic_engines
-            statistics_dhcp = staticdhcpdlib.statistics.basic_engines.DHCPStatistics()
-            staticdhcpdlib.statistics.registerStatsCallback(statistics_dhcp.process)
-            
 def _initialiseDHCP():
     import staticdhcpdlib.system
     
