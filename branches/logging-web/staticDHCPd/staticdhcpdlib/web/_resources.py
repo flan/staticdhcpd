@@ -171,6 +171,9 @@ table.element td{
     
     border-top: 2px;
 }
+table.element tfoot td{
+    text-align: center;
+}
 """
 
 JS = """

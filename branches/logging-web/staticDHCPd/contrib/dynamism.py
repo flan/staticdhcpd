@@ -335,7 +335,7 @@ class DynamicPool(object):
                 </thead>
                 <tfoot>
                     <tr>
-                        <td colspan="3" style="text-align: center;">%(count)i IPs available</td>
+                        <td colspan="3">%(count)i IPs available</td>
                     </tr>
                 </tfoot>
                 <tbody>
