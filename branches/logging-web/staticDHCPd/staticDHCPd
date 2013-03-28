@@ -137,11 +137,6 @@ def _setupLogging():
 def _initialise():
     import staticdhcpdlib.system
     
-    #Ready the database.
-    import staticdhcpdlib.databases
-    database = staticdhcpdlib.databases.get_database()
-    staticdhcpdlib.system.registerReinitialisationCallback(database.reinitialise)
-    
     if staticdhcpdlib.config.WEB_ENABLED:
         _logger.info("Webservice module enabled; configuring...")
         import staticdhcpdlib.web
@@ -186,7 +181,15 @@ def _initialise():
             statistics_dhcp = staticdhcpdlib.statistics.basic_engines.DHCPStatistics()
             staticdhcpdlib.statistics.registerStatsCallback(statistics_dhcp.process)
             
-    #Start DHCP server.
+def _initialiseDHCP():
+    import staticdhcpdlib.system
+    
+    #Ready the database.
+    import staticdhcpdlib.databases
+    database = staticdhcpdlib.databases.get_database()
+    staticdhcpdlib.system.registerReinitialisationCallback(database.reinitialise)
+    
+    #Start the DHCP server.
     import staticdhcpdlib.dhcp
     dhcp = staticdhcpdlib.dhcp.DHCPService(database)
     dhcp.start()
@@ -242,6 +245,9 @@ if __name__ == '__main__':
         
         _logger.info("Initialising custom code...")
         staticdhcpdlib.config.init()
+        
+        #Initialise the DHCP server
+        _initialiseDHCP()
         
         _logger.info("Changing runtime permissions to UID=%(uid)i, GID=%(gid)i..." % {
          'uid': staticdhcpdlib.config.UID,

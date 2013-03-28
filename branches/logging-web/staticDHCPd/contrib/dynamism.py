@@ -25,7 +25,7 @@ To use this module, add the following to conf.py's init() function:
      display_mode=callbacks.WEB_METHOD_TEMPLATE
     )
     #You could also make it a permanent dashboard fixture:
-    #callbacks.webAddDashboard('guest-0', 'leases',_dynamic_pool.show_leases_xhtml)
+    #callbacks.webAddDashboard('guest-0', 'leases', _dynamic_pool.show_leases_xhtml)
     #Add 'ordering=N', where N is a bias value, to change its position
     
     #And a CSV form, too, in case any automated processors need the data
@@ -316,7 +316,8 @@ class DynamicPool(object):
                 
             elements = []
             for (mac, (expiration, ip)) in sorted(self._map.iteritems(), key=(lambda element: element[1])):
-                elements.append("""<tr>
+                elements.append("""
+                <tr>
                     <td>%(ip)s</td>
                     <td>%(mac)s</td>
                     <td>%(expiration)s</td>
@@ -325,7 +326,8 @@ class DynamicPool(object):
                  'mac': mac,
                  'expiration': time.ctime(expiration),
                 })
-            return """<table class="element">
+            return """
+            <table class="element">
                 <thead>
                     <tr>
                         <th>IP</th>
