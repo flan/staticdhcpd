@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
-Integrates Atom feeds into the webservice module, allowing you to subscribe to
+Integrates an Atom feed into the webservice module, allowing you to subscribe to
 events of importance, without all the noise that often accompanies e-mail
 updates, especially when something fails on every single request, like someone
 pulling a cable they shouldn't have touched.
@@ -133,12 +133,16 @@ class _FeedHandler(logging.Handler):
         """
         Non-Handler method: Enumerates every tracked record, up to `limit`.
         """
+        events = []
         self.acquire()
         try:
-            return [_Event(record.msg, record.levelname, record.created, record.name, record.lineno, uid) for (record, uid) in self._records[:limit]]
+            for i in xrange(min(limit, len(self._records))):
+                (record, uid) = self._records[i]
+                events.append(_Event(record.msg, record.levelname, record.created, record.name, record.lineno, uid))
         finally:
             self.release()
-            
+        return events
+        
 def _format_title(element):
     """
     Formats the given `element`, returning a string suitable for display in a
