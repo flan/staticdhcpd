@@ -243,7 +243,7 @@ class Statistics(object):
                     'label': 'Time in intervals of %(time)s seconds; ticks mark hours' % {'time': self._gram_size,},
                 },
                 'y': {
-                    'tickCount': int((dimensions[1] - 35) / 20),
+                    'tickCount': int(dimensions[1] / 20),
                     'label': 'Packets per second',
                     'range': (0, max_value),
                 },
