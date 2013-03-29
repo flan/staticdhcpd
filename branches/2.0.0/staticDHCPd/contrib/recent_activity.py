@@ -5,11 +5,7 @@ device is self-configuring properly without needing to read through the logs.
 
 To use this module, customise the constants below, then add the following to
 conf.py's init() function:
-    global recent_activity
     import recent_activity
-    
-And the following to conf.py's loadDHCPPacket() function:
-    recent_activity.update(method, mac, subnet, serial, client_ip, pxe)
     
 Like staticDHCPd, this module under the GNU General Public License v3
 (C) Neil Tallim, 2013 <flan@uguu.ca>
@@ -103,7 +99,7 @@ def _render(*args, **kwargs):
              'event': event.method,
              'pxe': event.pxe and 'Yes' or 'No',
              'mac': event.mac,
-             'ip': event.ip and '.'.join(map(str, event.ip)) or '-',
+             'ip': event.ip or '-',
              'subnet': event.subnet,
              'serial': event.serial,
              'time': time.ctime(event.time),
@@ -128,25 +124,22 @@ def _render(*args, **kwargs):
          'content': '\n'.join(elements),
         }
         
-def update(method, mac, subnet, serial, client_ip, pxe):
+def _update(statistics):
     """
     Removes any previous event from `mac`, then adds the event to the
     collection.
     """
-    _logger.debug("Tracking %(method)s activity for %(mac)s" % {
-     'method': method,
-     'mac': mac,
-    })
     with _lock:
         for (i, event) in enumerate(_events):
-            if event.mac == mac:
+            if event.mac == statistics.mac:
                 del _events[i]
                 break
                 
-        _events.appendleft(_Event(time.time(), mac, client_ip, subnet, serial, method, pxe))
+        _events.appendleft(_Event(time.time(), statistics.mac, statistics.client_ip, statistics.subnet, statistics.serial, statistics.method, statistics.pxe))
         
 #Setup happens here
 ################################################################################
+config.callbacks.statsAddHandler(_update)
 _logger.info("Prepared recent-activity-tracker for up to %(count)i events, %(max-age)i seconds old" % {
  'count': MAX_EVENTS,
  'max-age': MAX_AGE,

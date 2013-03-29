@@ -101,6 +101,8 @@ class _PacketWrapper(object):
     _packet_type = None #:The type of packet being wrapped.
     _discarded = True #:Whether the packet is in a discarded state.
     _start_time = None #:The time at which processing began.
+    _associated_ip = None #:The client-ip associated with this request.
+    _definition = None #The definition associated with this request.
     
     valid = False #:Whether the packet passed basic sanity-tests.
     source_address = None #:The (address, port) of the packet's origin.
@@ -198,8 +200,15 @@ class _PacketWrapper(object):
              'seconds': time_taken,
             })
             
+            if self._definition:
+                ip = self._definition.ip
+                subnet = self._definition.subnet
+                serial = self._definition.serial
+            else:
+                subnet = serial = None
+                ip = _toDottedQuadOrNone(self._associated_ip)
             statistics.emit(statistics.Statistics(
-             self.source_address, self.mac, self._packet_type, time_taken, not self._discarded, self.pxe,
+             self.source_address, self.mac, ip, subnet, serial, self._packet_type, time_taken, not self._discarded, self.pxe,
             ))
             
     def _extractInterestingFields(self):
@@ -211,6 +220,7 @@ class _PacketWrapper(object):
         self.ip = _extractIPOrNone(self.packet, "requested_ip_address")
         self.sid = _extractIPOrNone(self.packet, "server_identifier")
         self.ciaddr = _extractIPOrNone(self.packet, "ciaddr")
+        self._associated_ip = self.ciaddr
         self.giaddr = _extractIPOrNone(self.packet, "giaddr")
         self.pxe_options = self.packet.extractPXEOptions()
         self.vendor_options = self.packet.extractVendorOptions()
@@ -284,6 +294,7 @@ class _PacketWrapper(object):
         ip = self.ip
         if override_ip:
             ip = override_ip_value
+            self._associated_ip = ip
             
         result = config.filterPacket(
          self.packet, self._packet_type,
@@ -404,12 +415,14 @@ class _PacketWrapper(object):
         ip = self.ip
         if override_ip:
             ip = override_ip_value
+            self._associated_ip = ip
             
-        return self._server.getDatabase().lookupMAC(self.mac) or config.handleUnknownMAC(
+        self._definition = self._server.getDatabase().lookupMAC(self.mac) or config.handleUnknownMAC(
          self.packet, self._packet_type,
          self.mac, ip and tuple(ip), self.giaddr and tuple(self.giaddr),
          self.pxe and self.pxe_options, self.vendor_options
         )
+        return self._definition
         
 def _dhcpHandler(packet_type):
     """
@@ -876,7 +889,9 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         """
         (dhcp_received, source_address) = self._getNextDHCPPacket()
         if not dhcp_received and source_address:
-            statistics.emit(statistics.Statistics(source_address, None, None, 0.0, False, False))
+            statistics.emit(statistics.Statistics(
+             source_address, None, None, None, None, None, 0.0, False, False
+            ))
             
     def tick(self):
         """

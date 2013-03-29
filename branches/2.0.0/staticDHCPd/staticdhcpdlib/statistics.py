@@ -35,9 +35,11 @@ _stats_lock = threading.Lock()
 _stats_callbacks = []
 
 Statistics = collections.namedtuple("Statistics", (
- 'source_address', 'mac', 'method', 'processing_time', 'processed', 'pxe',
+ 'source_address', 'mac', 'client_ip', 'subnet', 'serial', 'method', 'processing_time', 'processed', 'pxe',
 ))
 """
+#REWRITE: does not include everything
+
 @type source_address: tuple(2)
 @param source_address: The (address:basestring, port:int) of the sender.
 @type mac: basestring|None
