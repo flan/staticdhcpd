@@ -92,27 +92,21 @@ def _generate_dhcp_packets_dict():
     return dict((method, 0) for method in _METHODS)
     
 class Statistics(object):
-    _graph = None
-    _gram_size = None
-    
-    _lock = None
-    
-    _other_packets = 0
-    _pxe_packets = 0
-    _dhcp_packets = None
-    _dhcp_packets_discarded = None
-    _processing_time = 0.0
-    
-    _current_gram = None
-    _gram_start_time = None
-    _activity = False
-    
+    """
+    Tracks statistics and provides methods for visualising data.
+    """
     def __init__(self, graph_size, gram_size):
-        self._graph = collections.deque((None for i in xrange(graph_size)), maxlen=graph_size)
-        self._gram_size = gram_size
+        self._activity = False
         
         self._dhcp_packets = _generate_dhcp_packets_dict()
         self._dhcp_packets_discarded = _generate_dhcp_packets_dict()
+        self._pxe_packets = 0
+        self._other_packets = 0
+        
+        self._processing_time = 0.0
+        
+        self._graph = collections.deque((None for i in xrange(graph_size)), maxlen=graph_size)
+        self._gram_size = gram_size
         
         self._lock = threading.Lock()
         
@@ -181,6 +175,10 @@ class Statistics(object):
             self._current_gram['processing-time'] += statistics.processing_time
             
     def graph_csv(self):
+        """
+        Returns a CSV file containing the time at which the stats were recorded
+        and the events that occurred during the corresponding period.
+        """
         self._update_graph()
         
         import csv
@@ -213,6 +211,10 @@ class Statistics(object):
         return ('text/csv', output.read())
         
     def graph(self, dimensions):
+        """
+        Uses pycha to render a graph of average DHCP activity, returned as a
+        PNG.
+        """
         self._update_graph()
         
         import StringIO
@@ -286,6 +288,10 @@ class Statistics(object):
         return ('image/png', output.read())
         
     def lifetime_stats(self):
+        """
+        Provides launch-to-now statistics for what the server has handled,
+        rendered as an XHTML fragment.
+        """
         self._update_graph()
         
         received_total = 0
@@ -332,6 +338,10 @@ class Statistics(object):
             }
             
     def averages(self, windows):
+        """
+        Provides the average load that the server has handled in every averaging
+        period specified in `windows`, rendered as an XHTML fragment.
+        """
         self._update_graph()
         
         current_time = time.time()

@@ -24,5 +24,5 @@ Legal
  
  (C) Neil Tallim, 2013 <flan@uguu.ca>
 """
-VERSION = '1.7.4'
+VERSION = '2.0.0-beta-1'
 URL = 'http://uguu.ca/'
