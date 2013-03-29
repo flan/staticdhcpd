@@ -54,7 +54,7 @@ GRAPH_RENDER_PATH = '/ca/uguu/puukusoft/staticDHCPd/contrib/stats/graph.png'
 GRAPH_RENDER_DIMENSIONS = (1536, 168)
 #The name of the component; if None and not displayed in the dashboard, the
 #method link will be hidden
-GRAPH_NAME = 'graph'
+GRAPH_NAME = 'packets per second'
 #The path at which a CSV version of the graph may be obtained; None to
 #disable (this is independent of GRAPH_ENABLED)
 GRAPH_CSV_PATH = '/ca/uguu/puukusoft/staticDHCPd/contrib/stats/graph.csv'
@@ -219,7 +219,7 @@ class Statistics(object):
         
         import StringIO
         data = []
-        max_value = 10
+        max_value = 0.01
         with self._lock:
             #This would add the current frame, but it doesn't average well and would skew Y
             #data = [sum(self._current_gram['dhcp-packets'].values()) / (time.time() - self._gram_start_time)]
@@ -240,7 +240,7 @@ class Statistics(object):
                 'x': {
                     'tickCount': int((len(self._graph) * self._gram_size) / 3600),
                     'interval': int(3600 / self._gram_size),
-                    'label': 'Time in intervals of %(time)s seconds; ticks every hour' % {'time': self._gram_size,},
+                    'label': 'Time in intervals of %(time)s seconds; ticks mark hours' % {'time': self._gram_size,},
                 },
                 'y': {
                     'tickCount': int((dimensions[1] - 35) / 20),

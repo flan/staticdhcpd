@@ -257,8 +257,11 @@ class DynamicPool(object):
         if method == 'DISCOVER' or method.startswith('REQUEST:'):
             definition = self._allocate(mac, client_ip)
             if definition and self._discourage_renewals:
-                self._logger.debug("Setting T1 and T2 to 97.5% of lease-time")
                 target_time = int(definition.lease_time * 0.975)
+                self._logger.debug("Setting T1 and T2 to 97.5%% of lease-time=%(lease)i: %(target)i seconds" % {
+                 'lease': definition.lease_time,
+                 'target': target_time,
+                })
                 packet.setOption('renewal_time_value', longToList(target_time))
                 packet.setOption('rebinding_time_value', longToList(target_time))
             return definition
