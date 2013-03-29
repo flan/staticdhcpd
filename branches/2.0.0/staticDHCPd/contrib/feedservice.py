@@ -162,7 +162,7 @@ def _feed_presenter(feed_type):
     def decorator(f):
         def function(*args, **kwargs):
             try:
-                return f(start_time - MAX_AGE, *args, **kwargs)
+                return f(*args, **kwargs)
             except Exception:
                 _logger.error("Unable to render %(type)s feed:\n%(error)s" % {
                  'type': feed_type,
@@ -175,7 +175,7 @@ def _feed_presenter(feed_type):
 _ATOM_ID_FORMAT = 'urn:uuid:%(id)s'
 _FEED_ID = _ATOM_ID_FORMAT % {'id': FEED_ID}
 @_feed_presenter('Atom')
-def _present_atom(max_age, logger):
+def _present_atom(logger):
     """
     Assembles an Atom-compliant feed, drawing elements from `logger`.
     """
@@ -192,6 +192,7 @@ def _present_atom(max_age, logger):
     id.text = _FEED_ID
     
     global _ATOM_ID_FORMAT
+    max_age = time.time() - MAX_AGE
     for element in logger.enumerateRecords(MAX_EVENTS_FEED):
         if element.timestamp < max_age: #Anything after this is also too old
             break
