@@ -25,11 +25,15 @@ Legal
  (C) Neil Tallim, 2013 <flan@uguu.ca>
  (C) Matthew Boedicker, 2011 <matthewm@boedicker.org>
 """
+import logging
+
 from .. import config
 
-from _generic import Database
+from _generic import (Definition, CachingDatabase)
 
-class _SQLDatabase(Database):
+_logger = logging.getLogger("databases._sql")
+
+class _SQLDatabase(CachingDatabase):
     """
     A stub documenting the features an _SQLDatabase object must provide.
     """
@@ -59,35 +63,32 @@ class _DB20Broker(_SQLDatabase):
         @type mac: basestring
         @param mac: The MAC address to lookup.
         
-        @rtype: tuple(11)|None
-        @return: (ip:basestring, hostname:basestring|None,
-            gateway:basestring|None, subnet_mask:basestring|None,
-            broadcast_address:basestring|None,
-            domain_name:basestring|None, domain_name_servers:basestring|None,
-            ntp_servers:basestring|None, lease_time:int,
-            subnet:basestring, serial:int) or None if no match was
-            found.
+        @rtype: Definition|None
+        @return: The definition or None, if no match was found.
         
         @raise Exception: If a problem occurs while accessing the database.
         """
         try:
+            _logger.debug("Connecting to database...")
             db = self._getConnection()
             cur = db.cursor()
             
+            _logger.debug("Fetching data...")
             cur.execute(self._query_mac, (mac,))
             result = cur.fetchone()
+            _logger.debug("Result collected")
             if result:
-                return result
+                return Definition(*result)
             return None
         finally:
             try:
                 cur.close()
             except Exception:
-                pass
+                _logger.warn("Unable to close cursor")
             try:
                 db.close()
             except Exception:
-                pass
+                _logger.warn("Unable to close connection")
                 
 class _PoolingBroker(_DB20Broker):
     """
@@ -97,11 +98,9 @@ class _PoolingBroker(_DB20Broker):
     _pool = None #: The database connection pool.
     _eventlet__db_pool = None #: A reference to the eventlet.db_pool module.
     
-    def _setupBroker(self, concurrency_limit):
+    def __init__(self, concurrency_limit):
         """
         Sets up connection-pooling, if it's supported by the environment.
-        
-        Also completes the broker-setup process.
         
         L{_connection_details} must be defined before calling this function.
         
@@ -109,13 +108,15 @@ class _PoolingBroker(_DB20Broker):
         @param concurrent_limit: The number of concurrent database hits to
             permit.
         """
-        _DB20Broker._setupBroker(self, concurrency_limit)
+        _DB20Broker.__init__(self, concurrency_limit)
 
         if config.USE_POOL:
+            _logger.debug("Configuring connection-pooling...")
             try:
                 import eventlet.db_pool
                 self._eventlet__db_pool = eventlet.db_pool
             except ImportError:
+                _logger.warn("eventlet is not available; falling back to unpooled mode")
                 return
             else:
                 self._pool = self._eventlet__db_pool.ConnectionPool(
@@ -132,7 +133,7 @@ class _PoolingBroker(_DB20Broker):
         
         @raise Exception: If a problem occurs while accessing the database.
         """
-        if not self._pool is None:
+        if self._pool is not None:
             return self._eventlet__db_pool.PooledConnectionWrapper(self._pool.get(), self._pool)
         else:
             return self._module.connect(**self._connection_details)
@@ -172,6 +173,8 @@ class MySQL(_PoolingBroker):
         """
         Constructs the broker.
         """
+        _PoolingBroker.__init__(self, config.MYSQL_MAXIMUM_CONNECTIONS)
+        
         import MySQLdb
         self._module = MySQLdb
         
@@ -186,7 +189,7 @@ class MySQL(_PoolingBroker):
             self._connection_details['host'] = config.MYSQL_HOST
             self._connection_details['port'] = config.MYSQL_PORT
             
-        self._setupBroker(config.MYSQL_MAXIMUM_CONNECTIONS)
+        _logger.debug("MySQL configured; connection-details: " + str(self._connection_details))
         
 class PostgreSQL(_PoolingBroker):
     """
@@ -207,6 +210,8 @@ class PostgreSQL(_PoolingBroker):
         """
         Constructs the broker.
         """
+        _PoolingBroker.__init__(self, config.POSTGRESQL_MAXIMUM_CONNECTIONS)
+        
         import psycopg2
         self._module = psycopg2
         
@@ -220,7 +225,7 @@ class PostgreSQL(_PoolingBroker):
             self._connection_details['port'] = config.POSTGRESQL_PORT
             self._connection_details['sslmode'] = config.POSTGRESQL_SSLMODE
             
-        self._setupBroker(config.POSTGRESQL_MAXIMUM_CONNECTIONS)
+        _logger.debug("PostgreSQL configured; connection-details: " + str(self._connection_details))
         
 class Oracle(_PoolingBroker):
     """
@@ -241,6 +246,8 @@ class Oracle(_PoolingBroker):
         """
         Constructs the broker.
         """
+        _PoolingBroker.__init__(self, config.ORACLE_MAXIMUM_CONNECTIONS)
+        
         import cx_Oracle
         self._module = cx_Oracle
         
@@ -249,8 +256,8 @@ class Oracle(_PoolingBroker):
          'password': config.ORACLE_PASSWORD,
          'dsn': config.ORACLE_DATABASE,
         }
-
-        self._setupBroker(config.ORACLE_MAXIMUM_CONNECTIONS)
+        
+        _logger.debug("Oracle configured; connection-details: " + str(self._connection_details))
 
 class SQLite(_NonPoolingBroker):
     """
@@ -271,6 +278,8 @@ class SQLite(_NonPoolingBroker):
         """
         Constructs the broker.
         """
+        _NonPoolingBroker.__init__(self, 1)
+        
         import sqlite3
         self._module = sqlite3
         
@@ -278,4 +287,4 @@ class SQLite(_NonPoolingBroker):
          'database': config.SQLITE_FILE,
         }
         
-        self._setupBroker(1)
+        _logger.debug("SQLite configured; connection-details: " + str(self._connection_details))

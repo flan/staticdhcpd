@@ -1,10 +1,10 @@
 # -*- encoding: utf-8 -*-
 """
-staticDHCPd package
+staticDHCPd module: web._functions
 
 Purpose
 =======
- Provides the logical implementation of a staticDHCPd daemon.
+ Provides functions required to transform content for web-presentation.
  
 Legal
 =====
@@ -24,4 +24,12 @@ Legal
  
  (C) Neil Tallim, 2013 <flan@uguu.ca>
 """
-VERSION = '1.6.2'
+import cgi
+
+def sanitise(string):
+    """
+    `Ensures that the string, if not None or empty, is usable anywhere in an
+    HTML5 body.
+    """
+    return string and cgi.escape(string).replace('"', '&quot;')
+    

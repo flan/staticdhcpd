@@ -1,0 +1,163 @@
+Thirty-second upgrade guide for people who hate using diff:
+    Install and go. Except in very rare cases, which will be documented here,
+    your old conf.py, extensions, and scripting logic will be
+    forwards-compatible with this version.
+    
+    If coming from anything before 1.6.1, move conf.py into the conf/ directory
+    or create /etc/staticDHCPd/ and move it there. Your old file needs no TLC.
+
+-------------------------------------------------------------------------------
+
+
+Installation instructions:
+    Run install.sh with privileges that can create content in
+    /etc and /usr/local/bin. Follow the resulting on-screen text to integrate
+    the server with your OS's daemon-management engine.
+    
+    Just remember to set up conf.py and everything should Just Work(TM). Before
+    installing the server, though, run through the five-minute quickstart
+    described below; it doesn't require that you make any permanent changes to
+    your host and it'll run out of the source distribution as-is.
+
+
+-------------------------------------------------------------------------------
+
+
+Five-minute "does this really work?" setup guide for busy administrators
+    Uses an INI file or sqlite3 to avoid unnecessary installations
+
+(If you need more information, see the project page at
+ http://uguu.ca/puukusoft/staticDHCPd/ or
+ http://code.google.com/p/staticdhcpd/)
+
+
+Step 1: Gather resources
+    You need the code, which came with this lovely text file, and a computer
+    on which to run it. Since this is a Unix-formatted file, you've probably
+    already got that, too. You'll also need sqlite3 to manage the DHCP
+    database. Chances are it's already installed, but check anyway. (Also
+    Python 2.5+, but no modern Unix-like system is without that)
+    
+    The last thing you need is enough access to bind to the DHCP ports.
+    Since there's no way you're going to just run this server on a production
+    box without testing it first, you've almost certainly satisfied this
+    requirement, too.
+    
+    So you're done. That was easy.
+    
+Step 2: Set up the DHCP database
+    (This example assumes your network is similar to that of a typical home
+    user; if this is not the case, you will need to adjust things, but you
+    probably wouldn't be playing with a DHCP server if you were a typical home
+    user anyway)
+    
+    The example values below will give the MAC 'aa:bb:cc:dd:ee:ff' the IP
+    '192.168.0.197' and no hostname. You'll notice that non-host-specific
+    parameters are inherited from its subnet-classification, specifically
+    things like lease-time and basic routing parameters. DNS, NTP, and
+    other properties aren't specified in this example, but are in the samples/
+    directory.
+    
+    (The term "subnet" is used loosely here: the only thing that matters is that
+    the "subnet" and "serial" values match for inheritance -- you could put
+    "floor 3" in as a "subnet" if you wanted to. The term "subnet" was chosen
+    because it seemed like the most likely classification system for
+    administrators to use and recognise; similarly, "serial" is also up to you,
+    it just allows for multiple definitions within the same "subnet" -- you
+    might want to use the VLAN, or maybe you'll just always make it 0)
+    
+    INI method:
+        Create a file with the following contents; the name is up to you.
+            
+            [192.168.0.0/24|0]
+            lease-time: 14400
+            gateway: 192.168.0.1
+            subnet-mask: 255.255.255.0
+            broadcast-address: 192.168.0.255
+
+            [aa:bb:cc:dd:ee:ff]
+            ip: 192.168.0.197
+            subnet: 192.168.0.0/24
+            serial: 0
+            
+    SQLite method:
+        Open a terminal and run `sqlite3 dhcp.sqlite3`
+        
+        Copy and paste the contents of samples/sqlite.sql into the prompt.
+        
+        Now that your database is ready to go (SQLite is easy), add some rules.
+            
+            INSERT INTO subnets (
+                subnet,
+                serial,
+                lease_time,
+                gateway,
+                subnet_mask,
+                broadcast_address,
+                ntp_servers,
+                domain_name_servers,
+                domain_name
+            ) VALUES (
+                '192.168.0.0/24',
+                0,
+                14400,
+                '192.168.0.1',
+                '255.255.255.0',
+                '192.168.0.255',
+                NULL,
+                NULL,
+                NULL
+            );
+            
+            INSERT INTO maps (
+                mac,
+                ip,
+                hostname,
+                subnet,
+                serial
+            ) VALUES (
+                'aa:bb:cc:dd:ee:ff',
+                '192.168.0.197',
+                NULL,
+                '192.168.0.0/24',
+                0
+            );
+            
+Step 3: Set up conf.py
+    Copy 'conf/conf.py.sample' to 'conf/conf.py'.
+    
+    Edit the file and make the following changes:
+        Set DAEMON to False. If you don't, it'll do daemonsy things, like kill
+        console output and detach from the controlling terminal, which aren't
+        good for helping to identify configuration problems quickly.
+        
+        Set DHCP_SERVER_IP to whichever IP you want to listen on.
+        
+        INI method:
+            Set DATABASE_ENGINE to 'INI'; capitalization matters.
+            
+            Add the line "INI_FILE = '/home/you/that-ini-file-you-created'"
+            
+        SQLite method:
+            Set DATABASE_ENGINE to 'SQLite'; capitalization matters.
+            
+            Add the line "SQLITE_FILE = '/home/you/that-sqlite-file-you-created'"
+            
+Step 4: Start the server
+    Run `sudo python staticDHCPd`.
+    
+    You should see a bunch of lines appear, explaining that the server is now
+    running.
+    
+    Tell the device with the MAC given in step 3 to request an address and
+    everything should Just Work(tm).
+    
+    Go to http://localhost:30880/ if you want to check out the web interface.
+    
+Step 5: Kill the process
+    When satisifed that the system works, hit ^C or send SIGTERM (15) to the
+    process.
+    
+    
+You now have proof that what you have in your proverbial hands is a functional,
+ready-to-customise DHCP server.

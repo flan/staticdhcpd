@@ -22,7 +22,7 @@ Legal
  You should have received a copy of the GNU General Public License
  along with this program. If not, see <http://www.gnu.org/licenses/>.
  
- (C) Neil Tallim, 2010 <red.hamsterx@gmail.com>
+ (C) Neil Tallim, 2013 <flan@uguu.ca>
  (C) Mathieu Ignacio, 2008 <mignacio@april.org>
 """
 import operator
@@ -356,6 +356,21 @@ class DHCPPacket(object):
             return -1
         return dhcp_message_type[0]
 
+    def getDHCPMessageTypeName(self):
+        """
+        Returns the DHCP packet-type-name of this packet as a string.
+        """
+        return DHCP_FIELDS_NAMES['dhcp_message_type'].get(self._getDHCPMessageType(), 'UNKNOWN_UNKNOWN')
+        
+    def isDHCPAckPacket(self):
+        """
+        Indicates whether this is an ACK packet.
+        
+        @rtype: bool
+        @return: True if this is an ACK packet.
+        """
+        return self._getDHCPMessageType() == 5
+
     def isDHCPDeclinePacket(self):
         """
         Indicates whether this is a DECLINE packet.
@@ -383,6 +398,15 @@ class DHCPPacket(object):
         """
         return self._getDHCPMessageType() == 8
         
+    def isDHCPLeaseActivePacket(self):
+        """
+        Indicates whether this is a LEASEACTIVE packet.
+        
+        @rtype: bool
+        @return: True if this is a LEASEACTIVE packet.
+        """
+        return self._getDHCPMessageType() == 13
+        
     def isDHCPLeaseQueryPacket(self):
         """
         Indicates whether this is a LEASEQUERY packet.
@@ -391,6 +415,42 @@ class DHCPPacket(object):
         @return: True if this is a LEASEQUERY packet.
         """
         return self._getDHCPMessageType() == 10
+        
+    def isDHCPLeaseUnassignedPacket(self):
+        """
+        Indicates whether this is a LEASEUNASSIGNED packet.
+        
+        @rtype: bool
+        @return: True if this is a LEASEUNASSIGNED packet.
+        """
+        return self._getDHCPMessageType() == 11
+        
+    def isDHCPLeaseUnknownPacket(self):
+        """
+        Indicates whether this is a LEASEUNKNOWN packet.
+        
+        @rtype: bool
+        @return: True if this is a LEASEUNKNOWN packet.
+        """
+        return self._getDHCPMessageType() == 12
+        
+    def isDHCPOfferPacket(self):
+        """
+        Indicates whether this is an OFFER packet.
+        
+        @rtype: bool
+        @return: True if this is an OFFER packet.
+        """
+        return self._getDHCPMessageType() == 2
+        
+    def isDHCPNakPacket(self):
+        """
+        Indicates whether this is a NAK packet.
+        
+        @rtype: bool
+        @return: True if this is a NAK packet.
+        """
+        return self._getDHCPMessageType() == 6
         
     def isDHCPReleasePacket(self):
         """
@@ -409,7 +469,7 @@ class DHCPPacket(object):
         @return: True if this is a REQUEST packet.
         """
         return self._getDHCPMessageType() == 3
-
+        
     def extractPXEOptions(self):
         """
         Strips out PXE-specific options from the packet, returning them
@@ -544,6 +604,19 @@ class DHCPPacket(object):
         self.deleteOption("file")
         self.deleteOption("sname")
         
+    def transformToDHCPLeaseUnassignedPacket(self):
+        """
+        Transforms a DHCP packet received from a client into a LEASEUNASSIGNED
+        packet to be returned to the client.
+        """
+        self._transformBase()
+        self.setOption("dhcp_message_type", [11])
+        
+        self.deleteOption("ciaddr")
+        
+        self.deleteOption("file")
+        self.deleteOption("sname")
+        
     def transformToDHCPLeaseUnknownPacket(self):
         """
         Transforms a DHCP packet received from a client into a LEASEUNKNOWN
@@ -567,7 +640,7 @@ class DHCPPacket(object):
         
         self.deleteOption("ciaddr")
         
-    def transformToDHCPNackPacket(self):
+    def transformToDHCPNakPacket(self):
         """
         Transforms a DHCP packet received from a client into a NAK
         packet to be returned to the client.

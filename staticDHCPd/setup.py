@@ -5,24 +5,24 @@ Deployment script for staticDHCPd.
 from distutils.core import setup
 import platform
 
-from staticdhcpd import VERSION
+from staticdhcpdlib import VERSION
 
 setup(
  name = 'staticDHCPd',
  version = VERSION,
- description = "A static-lease-managing DHCP server",
+ description = "Highly customisable, static-lease-focused DHCP server",
  author = 'Neil Tallim',
  author_email = 'flan@uguu.ca',
  license = 'GPLv3',
  url = 'http://staticdhcpd.googlecode.com/',
  packages = [
-  'staticdhcpd',
-  'staticdhcpd.databases',
+  'staticdhcpdlib',
+  'staticdhcpdlib.databases',
+  'staticdhcpdlib.web',
  ],
  data_files = [
   ('/etc/staticDHCPd', [
    'conf/conf.py.sample',
-   'conf/dynamism.py.sample',
   ]),
  ],
  scripts = [
@@ -41,7 +41,7 @@ instructions = [
 ]
 if platform.linux_distribution()[0] in ('Debian', 'Ubuntu', 'Mint',):
     instructions.extend([
-"Debian-like (" + platform.linux_distribution()[0] + ")",
+"Debian-like (" + platform.linux_distribution()[0] + ":" + platform.linux_distribution()[1] + ")",
 "\tCopy samples/staticDHCPd to /etc/init.d/staticDHCPd",
 "\tRun '/bin/chmod a+x /etc/init.d/staticDHCPd'",
 "\tRun '/usr/sbin/update-rc.d staticDHCPd defaults'",
@@ -58,4 +58,3 @@ else:
 
 for i in instructions:
     print(i)
-    

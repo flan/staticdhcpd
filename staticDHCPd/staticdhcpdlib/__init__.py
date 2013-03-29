@@ -1,15 +1,15 @@
 # -*- encoding: utf-8 -*-
 """
-libpydhcpserver package
+staticDHCPd package
 
 Purpose
 =======
- Provides the pythonic core of a DHCP server.
+ Provides the logical implementation of a staticDHCPd daemon.
  
 Legal
 =====
- This file is part of libpydhcpserver.
- libpydhcpserver is free software; you can redistribute it and/or modify
+ This file is part of staticDHCPd.
+ staticDHCPd is free software; you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
  the Free Software Foundation; either version 3 of the License, or
  (at your option) any later version.
@@ -23,7 +23,6 @@ Legal
  along with this program. If not, see <http://www.gnu.org/licenses/>.
  
  (C) Neil Tallim, 2013 <flan@uguu.ca>
- (C) Mathieu Ignacio, 2008 <mignacio@april.org>
 """
-VERSION = '1.1.7'
+VERSION = '2.0.0-beta-1'
 URL = 'http://uguu.ca/'

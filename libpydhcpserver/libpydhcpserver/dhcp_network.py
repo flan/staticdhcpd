@@ -122,10 +122,13 @@ class DHCPNetwork(object):
         @type timeout: int
         @param timeout: The number of seconds to wait before returning.
         
-        @rtype: bool
-        @return: True if something was received; False otherwise.
+        @rtype: tuple(2)
+        @return: (received:bool, (address:basestring, port:int)|None), with received
+            indicating whether a DHCP packet was received or not and the tuple
+            reflecting the source of the received packet, if any.
         """
         active_sockets = None
+        source_address = None
         if self._pxe_socket:
             active_sockets = select.select([self._dhcp_socket, self._pxe_socket], [], [], timeout)[0]
         else:
@@ -149,8 +152,8 @@ class DHCPNetwork(object):
                         threading.Thread(target=self._handleDHCPDecline, args=(packet, source_address, pxe)).start()
                     elif packet.isDHCPLeaseQueryPacket():
                         threading.Thread(target=self._handleDHCPLeaseQuery, args=(packet, source_address, pxe)).start()
-                    return True
-        return False
+                    return (True, source_address)
+        return (False, source_address)
         
     def _handleDHCPDecline(self, packet, source_address, pxe):
         """
@@ -164,7 +167,6 @@ class DHCPNetwork(object):
         @type pxe: bool
         @param pxe: True if the packet was received on the PXE port.
         """
-        pass
         
     def _handleDHCPDiscover(self, packet, source_address, pxe):
         """
@@ -178,7 +180,6 @@ class DHCPNetwork(object):
         @type pxe: bool
         @param pxe: True if the packet was received on the PXE port.
         """
-        pass
         
     def _handleDHCPInform(self, packet, source_address, pxe):
         """
@@ -192,7 +193,6 @@ class DHCPNetwork(object):
         @type pxe: bool
         @param pxe: True if the packet was received on the PXE port.
         """
-        pass
         
     def _handleDHCPLeaseQuery(self, packet, source_address, pxe):
         """
@@ -206,7 +206,6 @@ class DHCPNetwork(object):
         @type pxe: bool
         @param pxe: True if the packet was received on the PXE port.
         """
-        pass
         
     def _handleDHCPRelease(self, packet, source_address):
         """
@@ -218,7 +217,6 @@ class DHCPNetwork(object):
         @param source_address: The address (host, port) from which the request
             was received.
         """
-        pass
         
     def _handleDHCPRequest(self, packet, source_address, pxe):
         """
@@ -232,7 +230,6 @@ class DHCPNetwork(object):
         @type pxe: bool
         @param pxe: True if the packet was received on the PXE port.
         """
-        pass
         
     def _sendDHCPPacketTo(self, packet, ip, port, pxe):
         """

@@ -23,13 +23,18 @@ Legal
  along with this program. If not, see <http://www.gnu.org/licenses/>.
  
  (C) Neil Tallim, 2013 <flan@uguu.ca>
+ Inspiration derived from a discussion with John Stowers
 """
 import ConfigParser
+import logging
 import re
+import threading
 
 from .. import config
 
-from _generic import Database
+from _generic import (Definition, Database)
+
+_logger = logging.getLogger("databases._ini")
 
 class _Config(ConfigParser.RawConfigParser):
     """
@@ -117,6 +122,7 @@ class INI(Database):
     """
     _maps = None
     _subnets = None
+    _lock = None
     
     def __init__(self):
         """
@@ -124,14 +130,22 @@ class INI(Database):
         """
         self._maps = {}
         self._subnets = {}
-        self._parse_ini()
+        self._lock = threading.Lock()
         
-        self._setupBroker(65536) #Effectively no limit on the number of simultaneous readers
+        self.reinitialise()
+        
+    def reinitialise(self):
+        with self._lock:
+            self._maps.clear()
+            self._subnets.clear()
+            self._parse_ini()
+        _logger.info("INI-file contents parsed and loaded into memory")
         
     def _parse_ini(self):
         """
         Creates an optimal in-memory representation of the data in the INI file.
         """
+        _logger.info("Preparing to read '%(ini)s'..." % {'ini': config.INI_FILE,})
         reader = _Config()
         if not reader.read(config.INI_FILE):
             raise ValueError("Unable to read '%(file)s'" % {
@@ -150,11 +164,13 @@ class INI(Database):
                 if mac_re.match(mac):
                     self._process_map(reader, section, mac)
                 else:
-                    pass #Log as unknown entry
+                    _logger.warn("Unrecognised section encountered: " + section)
                     
         self._validate_references()
         
     def _process_subnet(self, reader, section, subnet, serial):
+        _logger.debug("Processing subnet: " + section)
+        
         lease_time = reader.getint(section, 'lease-time', None)
         if not lease_time:
             raise ValueError("Field 'lease-time' unspecified for '%(section)s'" % {
@@ -174,6 +190,8 @@ class INI(Database):
         )
         
     def _process_map(self, reader, section, mac):
+        _logger.debug("Processing map: " + section)
+        
         ip = reader.get(section, 'ip', None)
         if not ip:
             raise ValueError("Field 'ip' unspecified for '%(section)s'" % {
@@ -206,7 +224,7 @@ class INI(Database):
                  'serial': subnet[1],
                 })
                 
-    def _lookupMAC(self, mac):
+    def lookupMAC(self, mac):
         """
         Queries the database for the given MAC address and returns the IP and
         associated details if the MAC is known.
@@ -214,30 +232,26 @@ class INI(Database):
         @type mac: basestring
         @param mac: The MAC address to lookup.
         
-        @rtype: tuple(11)|None
-        @return: (ip:basestring, hostname:basestring|None,
-            gateway:basestring|None, subnet_mask:basestring|None,
-            broadcast_address:basestring|None,
-            domain_name:basestring|None, domain_name_servers:basestring|None,
-            ntp_servers:basestring|None, lease_time:int,
-            subnet:basestring, serial:int) or None if no match was
-            found.
+        @rtype: Definition|None
+        @return: The definition or None, if no match was found.
         
         @raise Exception: If a problem occurs while accessing the database.
         """
-        map = self._maps.get(mac)
-        if not map:
-            return None
+        with self._lock:
+            map = self._maps.get(mac)
+            if not map:
+                return None
+                
+            (ip, hostname, subnet) = map
+            (lease_time,
+            gateway, subnet_mask, broadcast_address,
+            ntp_servers, domain_name_servers, domain_name
+            ) = self._subnets.get(subnet)
             
-        (ip, hostname, subnet) = map
-        (lease_time,
-         gateway, subnet_mask, broadcast_address,
-         ntp_servers, domain_name_servers, domain_name
-        ) = self._subnets.get(subnet)
-        
-        return (
+        return Definition(
          ip, hostname,
          gateway, subnet_mask, broadcast_address,
          domain_name, domain_name_servers, ntp_servers,
          lease_time, subnet[0], subnet[1]
         )
+        

@@ -25,22 +25,21 @@ Legal
  
  (C) Neil Tallim, 2013 <flan@uguu.ca>
 """
+import logging
+import logging.handlers
 import os
 import signal
 import sys
 import time
+import traceback
 
-import staticdhcpd.config
-import staticdhcpd.dhcp
-import staticdhcpd.logging
-import staticdhcpd.web
+import staticdhcpdlib
+import libpydhcpserver
+import staticdhcpdlib.config
 
-if not staticdhcpd.config.DEBUG: #Suppress all unnecessary prints. 
-    sys.stdout = sys.stderr = open('/dev/null', 'w')
-else:
-    sys.stdout = sys.stderr
-    
-def _quitHandler(signum, frame):
+_logger = logging.getLogger('main')
+
+def _termHandler(signum, frame):
     """
     Cleanly shuts down this daemon upon receipt of a SIGTERM.
     
@@ -51,19 +50,13 @@ def _quitHandler(signum, frame):
     @param frame: The stack-frame in which the kill-signal was received.
         This is not used.
     """
-    #Remove PID.
-    try:
-        os.unlink(staticdhcpd.config.PID_FILE)
-    except:
-        pass
-        
-    staticdhcpd.logging.logToDisk()
+    _logger.warn("Received SIGTERM")
+    staticdhcpdlib.system.ALIVE = False
+    _logger.warn("System shutdown in progress")
     
-    exit(0)
-    
-def _logHandler(signum, frame):
+def _hupHandler(signum, frame):
     """
-    Flushes DHCP cache and writes log to disk upon receipt of a SIGHUP.
+    Reinitialises the system upon receipt of a SIGHUP.
     
     @type signum: int
     @param signum: The kill-signal constant received. This will always be
@@ -72,12 +65,9 @@ def _logHandler(signum, frame):
     @param frame: The stack-frame in which the kill-signal was received.
         This is not used.
     """
-    staticdhcpd.dhcp.flushCache()
-    if not staticdhcpd.logging.logToDisk():
-        staticdhcpd.logging.writeLog("Unable to write logfile: %(log)s" % {'log': staticdhcpd.config.LOG_FILE,})
-    else:
-        staticdhcpd.logging.writeLog("Wrote log to '%(log)s'" % {'log': staticdhcpd.config.LOG_FILE,})
-        
+    _logger.warn("Received SIGHUP")
+    staticdhcpdlib.system.reinitialise()
+    
 def _daemonise():
     if os.fork(): #This is the parent
         sys.exit(0)
@@ -89,54 +79,195 @@ def _daemonise():
     os.dup2(open('/dev/null', 'a+').fileno(), sys.stdout.fileno())
     os.dup2(open('/dev/null', 'a+', 0).fileno(), sys.stderr.fileno())
     
-if __name__ == '__main__':
-    #Ensure that pre-setup tasks are taken care of.
-    staticdhcpd.config.init()
+def _setupLogging():
+    """
+    Attaches handlers to the root logger, allowing for universal access to resources.
+    """
+    logging.root.setLevel(logging.DEBUG)
     
-    if staticdhcpd.config.DAEMON:
+    if staticdhcpdlib.config.DEBUG:
+        formatter = logging.Formatter(
+         "%(asctime)s : %(levelname)s : %(name)s:%(lineno)d[%(threadName)s] : %(message)s"
+        )
+    else:
+        formatter = logging.Formatter(
+         "%(asctime)s : %(levelname)s : %(message)s"
+        )
+        
+    if not staticdhcpdlib.config.DAEMON: #Daemon-style execution disables console-based logging
+        _logger.info("Configuring console-based logging...")
+        console_logger = logging.StreamHandler()
+        console_logger.setLevel(getattr(logging, staticdhcpdlib.config.LOG_CONSOLE_SEVERITY))
+        console_logger.setFormatter(formatter)
+        logging.root.addHandler(console_logger)
+        _logger.info("Console-based logging online")
+        
+    if staticdhcpdlib.config.LOG_FILE: #Determine whether disk-based logging is desired
+        _logger.info("Configuring file-based logging for " + staticdhcpdlib.config.LOG_FILE + "...")
+        if staticdhcpdlib.config.LOG_FILE_HISTORY:
+            #Rollover once per day, keeping the configured number of days' logs as history
+            file_logger = logging.handlers.TimedRotatingFileHandler(
+             staticdhcpdlib.config.LOG_FILE, 'D', 1, staticdhcpdlib.config.LOG_FILE_HISTORY
+            )
+            _logger.info("Configured rotation-based logging for file, with history=" + str(staticdhcpdlib.config.LOG_FILE_HISTORY) + " days")
+        else:
+            #Keep writing to the specified file forever
+            file_logger = logging.FileHandler(staticdhcpdlib.config.LOG_FILE)
+            _logger.info("Configured indefinite-growth logging for file")
+        file_logger.setLevel(getattr(logging, staticdhcpdlib.config.LOG_FILE_SEVERITY))
+        file_logger.setFormatter(formatter)
+        logging.root.addHandler(file_logger)
+        _logger.info("File-based logging online")
+        
+    if staticdhcpdlib.config.EMAIL_ENABLED: #Add an SMTP handler
+        smtp_handler = logging.handlers.SMTPHandler(
+         (staticdhcpdlib.config.EMAIL_SERVER, staticdhcpdlib.config.EMAIL_PORT),
+         staticdhcpdlib.config.EMAIL_SOURCE,
+         staticdhcpdlib.config.EMAIL_DESTINATION,
+         staticdhcpdlib.config.EMAIL_SUBJECT,
+         credentials=(staticdhcpdlib.config.EMAIL_USER and (staticdhcpdlib.config.EMAIL_USER, staticdhcpdlib.config.EMAIL_PASSWORD) or None),
+         timeout=staticdhcpdlib.config.EMAIL_TIMEOUT
+        )
+        logger.info("Configured SMTP-based logging for " + staticdhcpdlib.config.EMAIL_DESTINATION + " via " + staticdhcpdlib.config.EMAIL_SERVER + ":" + str(staticdhcpdlib.config.EMAIL_PORT))
+        smtp_handler.setLevel(logging.CRITICAL)
+        smtp_handler.setFormatter(formatter)
+        logging.root.addHandler(smtp_handler)
+        _logger.info("SMTP-based logging online")
+        
+def _initialise():
+    import staticdhcpdlib.system
+    
+    if staticdhcpdlib.config.WEB_ENABLED:
+        _logger.info("Webservice module enabled; configuring...")
+        import staticdhcpdlib.web
+        import staticdhcpdlib.web.server
+        webservice = staticdhcpdlib.web.server.WebService()
+        webservice.start()
+        
+        import staticdhcpdlib.web.methods
+        import staticdhcpdlib.web.headers
+        staticdhcpdlib.web.registerHeaderCallback(staticdhcpdlib.web.headers.contentType)
+        staticdhcpdlib.web.registerMethodCallback('/javascript', staticdhcpdlib.web.methods.javascript, cacheable=(not staticdhcpdlib.config.DEBUG))
+        staticdhcpdlib.web.registerHeaderCallback(staticdhcpdlib.web.headers.javascript)
+        
+        if staticdhcpdlib.config.WEB_LOG_HISTORY > 0:
+            _logger.info("Webservice logging module enabled; configuring...")
+            web_logger = staticdhcpdlib.web.methods.Logger()
+            staticdhcpdlib.web.registerDashboardCallback('core', 'events', web_logger.render, staticdhcpdlib.config.WEB_DASHBOARD_ORDER_LOG)
+        
+        if staticdhcpdlib.config.WEB_REINITIALISE_ENABLED:
+            staticdhcpdlib.web.registerMethodCallback(
+            '/ca/uguu/puukusoft/staticDHCPd/reinitialise', staticdhcpdlib.web.methods.reinitialise,
+            hidden=staticdhcpdlib.config.WEB_REINITIALISE_HIDDEN, module='core', name='reinitialise',
+            secure=staticdhcpdlib.config.WEB_REINITIALISE_SECURE, confirm=staticdhcpdlib.config.WEB_REINITIALISE_CONFIRM,
+            display_mode=staticdhcpdlib.web.WEB_METHOD_DASHBOARD
+            )
+            
+        if staticdhcpdlib.config.WEB_HEADER_TITLE:
+            staticdhcpdlib.web.registerHeaderCallback(staticdhcpdlib.web.headers.title)
+            
+        if staticdhcpdlib.config.WEB_HEADER_CSS:
+            staticdhcpdlib.web.registerMethodCallback('/css', staticdhcpdlib.web.methods.css, cacheable=(not staticdhcpdlib.config.DEBUG))
+            staticdhcpdlib.web.registerHeaderCallback(staticdhcpdlib.web.headers.css)
+            
+        if staticdhcpdlib.config.WEB_HEADER_FAVICON:
+            staticdhcpdlib.web.registerMethodCallback('/favicon.ico', staticdhcpdlib.web.methods.favicon, cacheable=(not staticdhcpdlib.config.DEBUG))
+            staticdhcpdlib.web.registerHeaderCallback(staticdhcpdlib.web.headers.favicon)
+            
+def _initialiseDHCP():
+    import staticdhcpdlib.system
+    
+    #Ready the database.
+    import staticdhcpdlib.databases
+    database = staticdhcpdlib.databases.get_database()
+    staticdhcpdlib.system.registerReinitialisationCallback(database.reinitialise)
+    
+    #Start the DHCP server.
+    import staticdhcpdlib.dhcp
+    dhcp = staticdhcpdlib.dhcp.DHCPService(database)
+    dhcp.start()
+    staticdhcpdlib.system.registerTickCallback(dhcp.tick)
+    
+if __name__ == '__main__':
+    if staticdhcpdlib.config.DAEMON:
         _daemonise()
         
-    #Start Web server.
-    if staticdhcpd.config.WEB_ENABLED:
-        web_thread = staticdhcpd.web.WebService()
-        web_thread.start()
-        
-    #Start DHCP server.
-    dhcp_thread = staticdhcpd.dhcp.DHCPService()
-    dhcp_thread.start()
+    _setupLogging()
+    for i in (
+     "----------------------------------------",
+     "----------------------------------------",
+     "----------------------------------------",
+     "----------------------------------------",
+     "----------------------------------------",
+     "System startup in progress; PID=" + str(os.getpid()),
+     "staticDHCPd version " + staticdhcpdlib.VERSION + " : " + staticdhcpdlib.URL,
+     "libpydhcpserver version " + libpydhcpserver.VERSION + " : " + libpydhcpserver.URL,
+     "Continuing with subsystem initialisation",
+     "----------------------------------------",
+    ):
+        _logger.warn(i)
+    del i
     
-    #Record PID.
-    try:
-        pidfile = open(staticdhcpd.config.PID_FILE, 'w')
-        pidfile.write(str(os.getpid()) + '\n')
-        pidfile.close()
-        os.chown(staticdhcpd.config.PID_FILE, staticdhcpd.config.UID, staticdhcpd.config.GID)
-    except:
-        staticdhcpd.logging.writeLog("Unable to write pidfile: %(file)s" % {'file': staticdhcpd.config.PID_FILE,})
-        
-    #Touch logfile.
-    try:
-        open(staticdhcpd.config.LOG_FILE, 'a').close()
-        os.chown(staticdhcpd.config.LOG_FILE, staticdhcpd.config.UID, staticdhcpd.config.GID)
-    except:
-        staticdhcpd.logging.writeLog("Unable to write pidfile: %(file)s" % {'file': staticdhcpd.config.PID_FILE,})
-        
-    #Set signal-handlers.
-    signal.signal(signal.SIGHUP, _logHandler)
-    signal.signal(signal.SIGTERM, _quitHandler)
-    
-    #Set proper permissions for execution
-    os.setregid(staticdhcpd.config.GID, staticdhcpd.config.GID)
-    os.setreuid(staticdhcpd.config.UID, staticdhcpd.config.UID)
-    
-    #Serve until interrupted.
-    tick = 0
-    while True:
-        time.sleep(1)
-        
-        tick += 1
-        if tick >= staticdhcpd.config.POLLING_INTERVAL: #Perform periodic cleanup.
-            dhcp_thread.pollStats()
-            staticdhcpd.logging.emailTimeoutCooldown()
-            tick = 0
+    pidfile_recorded = False
+    if staticdhcpdlib.config.PID_FILE:
+        _logger.debug("Writing pidfile...")
+        try:
+            if os.path.isfile(staticdhcpdlib.config.PID_FILE):
+                pidfile = open(staticdhcpdlib.config.PID_FILE, 'r')
+                _logger.warn("Pidfile already exists, with PID " + pidfile.read().strip())
+                pidfile.close()
+                
+            pidfile = open(staticdhcpdlib.config.PID_FILE, 'w')
+            pidfile.write(str(os.getpid()) + '\n')
+            pidfile.close()
+            os.chown(staticdhcpdlib.config.PID_FILE, staticdhcpdlib.config.UID, staticdhcpdlib.config.GID)
+        except:
+            _logger.error("Unable to write pidfile: %(file)s" % {'file': staticdhcpdlib.config.PID_FILE,})
+        else:
+            pidfile_recorded = True
             
+    try:
+        #Set signal-handlers.
+        signal.signal(signal.SIGHUP, _hupHandler)
+        _logger.debug("Installed SIGHUP handler")
+        signal.signal(signal.SIGTERM, _termHandler)
+        _logger.debug("Installed SIGTERM handler")
+        
+        #Initialise all system resources
+        _initialise()
+        
+        _logger.info("Initialising custom code...")
+        staticdhcpdlib.config.init()
+        
+        #Initialise the DHCP server
+        _initialiseDHCP()
+        
+        _logger.info("Changing runtime permissions to UID=%(uid)i, GID=%(gid)i..." % {
+         'uid': staticdhcpdlib.config.UID,
+         'gid': staticdhcpdlib.config.GID,
+        })
+        os.setregid(staticdhcpdlib.config.GID, staticdhcpdlib.config.GID)
+        os.setreuid(staticdhcpdlib.config.UID, staticdhcpdlib.config.UID)
+        
+        _logger.warn("----------------------------------------")
+        _logger.warn("All subsystems initialised; now serving")
+        _logger.warn("----------------------------------------")
+        sleep_offset = 0
+        while staticdhcpdlib.system.ALIVE:
+            time.sleep(max(0.0, 1.0 - sleep_offset))
+            
+            start_time = time.time()
+            staticdhcpdlib.system.tick()
+            sleep_offset = time.time() - start_time
+    except KeyboardInterrupt:
+        _logger.warn("System shutdown requested via keyboard interrupt")
+    except Exception:
+        _logger.critical("System shutdown triggered by unhandled exception:\n" + traceback.format_exc())
+    finally:
+        if pidfile_recorded:
+            _logger.debug("Unlinking pidfile...")
+            try:
+                os.unlink(staticdhcpdlib.config.PID_FILE)
+            except:
+                _logger.error("Unable to unlink pidfile: %(file)s" % {'file': staticdhcpdlib.config.PID_FILE,})
+                

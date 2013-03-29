@@ -73,36 +73,15 @@ _defaults = {}
 #######################################
 _defaults.update({
  'DEBUG': False,
- 'DAEMON': False,
- 
- 'POLLING_INTERVAL': 30,
- 'LOG_CAPACITY': 1000,
- 'POLL_INTERVALS_TO_TRACK': 20,
+ 'DAEMON': True,
+ 'SYSTEM_NAME': 'staticDHCPd',
+ 'PID_FILE': None,
 })
 
 #Server settings
 #######################################
 _defaults.update({
  'PXE_PORT': None,
-})
-
-#Server behaviour settings
-#######################################
-_defaults.update({
- 'ALLOW_LOCAL_DHCP': True,
- 'ALLOW_DHCP_RELAYS': False,
- 'ALLOWED_DHCP_RELAYS': (),
-
- 'AUTHORITATIVE': False,
-
- 'NAK_RENEWALS': False,
-
- 'UNAUTHORIZED_CLIENT_TIMEOUT': 60,
- 'MISBEHAVING_CLIENT_TIMEOUT': 150,
- 'ENABLE_SUSPEND': True,
- 'SUSPEND_THRESHOLD': 10,
-
- 'WEB_RELOAD_KEY': '5f4dcc3b5aa765d61d8327deb882cf99',
 })
 
 #Database settings
@@ -112,41 +91,73 @@ _defaults.update({
 
  'USE_POOL': True,
 
- 'SQLITE_FILE': '/etc/staticDHCPd/dhcp.sqlite3',
-
- 'POSTGRESQL_DATABASE': 'dhcp',
- 'POSTGRESQL_USERNAME': 'dhcp_user',
- 'POSTGRESQL_PASSWORD': 'dhcp_pass',
  'POSTGRESQL_HOST': None,
  'POSTGRESQL_PORT': 5432,
  'POSTGRESQL_SSLMODE': 'disabled',
  'POSTGRESQL_MAXIMUM_CONNECTIONS': 4,
 
- 'ORACLE_DATABASE': 'dhcp',
- 'ORACLE_USERNAME': 'dhcp_user',
- 'ORACLE_PASSWORD': 'dhcp_pass',
  'ORACLE_MAXIMUM_CONNECTIONS': 4,
  
- 'MYSQL_DATABASE': 'dhcp',
- 'MYSQL_USERNAME': 'dhcp_user',
- 'MYSQL_PASSWORD': 'dhcp_pass',
  'MYSQL_HOST': None,
  'MYSQL_PORT': 3306,
  'MYSQL_MAXIMUM_CONNECTIONS': 4,
- 
- 'INI_FILE': '/etc/staticDHCPd/dhcp.ini',
+})
+
+#Server behaviour settings
+#######################################
+_defaults.update({
+ 'ALLOW_LOCAL_DHCP': True,
+ 'ALLOW_DHCP_RELAYS': False,
+ 'ALLOWED_DHCP_RELAYS': [],
+
+ 'AUTHORITATIVE': False,
+ 'NAK_RENEWALS': False,
+
+ 'UNAUTHORIZED_CLIENT_TIMEOUT': 60,
+ 'MISBEHAVING_CLIENT_TIMEOUT': 150,
+ 'ENABLE_SUSPEND': True,
+ 'SUSPEND_THRESHOLD': 10,
+})
+
+#Logging settings
+#######################################
+_defaults.update({
+ 'LOG_FILE': None,
+ 'LOG_FILE_HISTORY': 7,
+ 'LOG_FILE_SEVERITY': 'WARN',
+ 'LOG_CONSOLE_SEVERITY': 'INFO',
+})
+
+#Webservice settings
+#######################################
+_defaults.update({
+ 'WEB_ENABLED': True,
+ 'WEB_IP': '0.0.0.0',
+ 'WEB_PORT': 30880,
+ 'WEB_LOG_HISTORY': 200,
+ 'WEB_LOG_SEVERITY': 'INFO',
+ 'WEB_LOG_MAX_HEIGHT': 400,
+ 'WEB_DIGEST_USERNAME': None,
+ 'WEB_DIGEST_PASSWORD': None,
+ 'WEB_DASHBOARD_SECURE': False,
+ 'WEB_REINITIALISE_CONFIRM': True,
+ 'WEB_REINITIALISE_SECURE': False,
+ 'WEB_REINITIALISE_HIDDEN': False,
+ 'WEB_REINITIALISE_ENABLED': True,
+ 'WEB_DASHBOARD_ORDER_LOG': 1000,
+ 'WEB_HEADER_TITLE': True,
+ 'WEB_HEADER_CSS': True,
+ 'WEB_HEADER_FAVICON': True,
 })
 
 #E-mail settings
 #######################################
 _defaults.update({
  'EMAIL_ENABLED': False,
- 'EMAIL_SERVER': 'mail.yourdomain.com',
- 'EMAIL_SOURCE': 'you@yourdomain.com',
- 'EMAIL_DESTINATION': 'problems@yourdomain.com',
- 'EMAIL_USER': 'you',
- 'EMAIL_PASSWORD': 'password',
- 'EMAIL_TIMEOUT': 600,
+ 'EMAIL_PORT': 25,
+ 'EMAIL_TIMEOUT': 4.0,
+ 'EMAIL_SUBJECT': "staticDHCPd encountered a problem",
+ 'EMAIL_USER': None,
 })
 
 
@@ -160,18 +171,32 @@ for (key, value) in _defaults.iteritems():
         globals()[key] = value
 del _defaults
 
+import inspect
 if hasattr(conf, 'init'):
     init = conf.init
 else:
-    init = lambda : None
-if hasattr(conf, 'loadDHCPPacket'):
-    loadDHCPPacket = conf.loadDHCPPacket
+    init = lambda *args, **kwargs : None
+if hasattr(conf, 'filterPacket'):
+    filterPacket = conf.filterPacket
 else:
-    loadDHCPPacket = lambda *args, **kwargs : True
+    filterPacket = lambda *args, **kwargs : True
 if hasattr(conf, 'handleUnknownMAC'):
-    handleUnknownMAC = conf.handleUnknownMAC
+    if inspect.getargspec(conf.handleUnknownMAC).args == ['mac']:
+        #It's pre-2.0.0, so wrap it for backwards-compatibility
+        handleUnknownMAC = lambda packet, method, mac, client_ip, relay_ip, pxe, vendor : conf.handleUnknownMAC(mac)
+    else:
+        handleUnknownMAC = conf.handleUnknownMAC
 else:
     handleUnknownMAC = lambda *args, **kwargs : None
+if hasattr(conf, 'loadDHCPPacket'):
+    if inspect.getargspec(conf.handleUnknownMAC).args == ['packet', 'mac', 'client_ip', 'relay_ip', 'subnet', 'serial', 'pxe', 'vendor']:
+        #It's pre-2.0.0, so wrap it for backwards-compatibility
+        loadDHCPPacket = lambda packet, method, mac, client_ip, relay_ip, subnet, serial, pxe, vendor : conf.loadDHCPPacket(packet, mac, subnet, serial, client_ip, relay_ip, pxe, vendor)
+    else:
+        loadDHCPPacket = conf.loadDHCPPacket
+else:
+    loadDHCPPacket = lambda *args, **kwargs : True
+del inspect
 
 #Inject namespace elements into conf.
 ##############################################################################
@@ -202,5 +227,34 @@ conf.rfc5678_140 = type_rfc.rfc5678_140
 del type_rfc
 
 import logging
-conf.writeLog = logging.writeLog
+logger = logging.getLogger('conf')
+conf.writeLog = logger.warn
+conf.logger = logger
+del logger
 del logging
+
+import system
+import statistics
+import web
+class callbacks(object):
+    systemAddReinitHandler = staticmethod(system.registerReinitialisationCallback)
+    systemRemoveReinitHandler = staticmethod(system.unregisterReinitialisationCallback)
+    systemAddTickHandler = staticmethod(system.registerTickCallback)
+    systemRemoveTickHandler = system.unregisterTickCallback
+    
+    statsAddHandler = staticmethod(statistics.registerStatsCallback)
+    statsRemoveHandler = statistics.unregisterStatsCallback
+    
+    WEB_METHOD_DASHBOARD = web.WEB_METHOD_DASHBOARD
+    WEB_METHOD_TEMPLATE = web.WEB_METHOD_TEMPLATE
+    WEB_METHOD_RAW = web.WEB_METHOD_RAW
+    webAddHeader = staticmethod(web.registerHeaderCallback)
+    webRemoveHeader = staticmethod(web.unregisterHeaderCallback)
+    webAddDashboard = staticmethod(web.registerDashboardCallback)
+    webRemoveDashboard = staticmethod(web.unregisterDashboardCallback)
+    webAddMethod = staticmethod(web.registerMethodCallback)
+    webRemoveMethod = staticmethod(web.unregisterMethodCallback)
+del system
+del statistics
+del web
+conf.callbacks = callbacks
