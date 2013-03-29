@@ -251,7 +251,7 @@ def _webMethod(method_type):
                 self.end_headers()
                 self.wfile.write(error)
             finally:
-                _logger.debug("Processed %(method)s from %(host)s:%(port)i for %(path)s in %(time).3f seconds" % {
+                _logger.debug("Processed %(method)s from %(host)s:%(port)i for %(path)s in %(time).4f seconds" % {
                  'method': method_type,
                  'host': self.client_address[0],
                  'port': self.client_address[1],
