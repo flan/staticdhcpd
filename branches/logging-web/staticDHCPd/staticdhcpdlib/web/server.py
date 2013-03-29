@@ -173,6 +173,7 @@ def _webMethod(method_type):
     """
     def decorator(http_method):
         def wrappedHandler(self):
+            start_time = time.time()
             _logger.debug("Received %(method)s from %(host)s:%(port)i for %(path)s" % {
              'method': method_type,
              'host': self.client_address[0],
@@ -249,6 +250,14 @@ def _webMethod(method_type):
                 self.send_header('Content-Length', len(error))
                 self.end_headers()
                 self.wfile.write(error)
+            finally:
+                _logger.debug("Processed %(method)s from %(host)s:%(port)i for %(path)s in %(time).3f seconds" % {
+                 'method': method_type,
+                 'host': self.client_address[0],
+                 'port': self.client_address[1],
+                 'path': self.path,
+                 'time': time.time() - start_time,
+                })
         return wrappedHandler
     return decorator
     

@@ -9,7 +9,7 @@ conf.py's init() function:
     import recent_activity
     
 And the following to conf.py's loadDHCPPacket() function:
-    recent_activity.update(method, mac, subnet, serial, client_ip)
+    recent_activity.update(method, mac, subnet, serial, client_ip, pxe)
     
 Like staticDHCPd, this module under the GNU General Public License v3
 (C) Neil Tallim, 2013 <flan@uguu.ca>
@@ -53,7 +53,7 @@ _logger = logging.getLogger('contrib.recent_activity')
 _events = collections.deque(maxlen=MAX_EVENTS)
 _lock = threading.Lock()
 
-_Event = collections.namedtuple('Event', ('time', 'mac', 'ip', 'subnet', 'serial', 'method'))
+_Event = collections.namedtuple('Event', ('time', 'mac', 'ip', 'subnet', 'serial', 'method', 'pxe'))
 
 def _drop_old_events():
     """
@@ -93,6 +93,7 @@ def _render(*args, **kwargs):
             elements.append("""
             <tr>
                 <td>%(event)s</td>
+                <td>%(pxe)s</td>
                 <td>%(mac)s</td>
                 <td>%(ip)s</td>
                 <td>%(subnet)s</td>
@@ -100,6 +101,7 @@ def _render(*args, **kwargs):
                 <td>%(time)s</td>
             </tr>""" % {
              'event': event.method,
+             'pxe': event.pxe and 'Yes' or 'No',
              'mac': event.mac,
              'ip': event.ip and '.'.join(map(str, event.ip)) or '-',
              'subnet': event.subnet,
@@ -111,6 +113,7 @@ def _render(*args, **kwargs):
             <thead>
                 <tr>
                     <th>Event</th>
+                    <th>PXE</th>
                     <th>MAC</th>
                     <th>IP</th>
                     <th>Subnet</th>
@@ -125,7 +128,7 @@ def _render(*args, **kwargs):
          'content': '\n'.join(elements),
         }
         
-def update(method, mac, subnet, serial, client_ip):
+def update(method, mac, subnet, serial, client_ip, pxe):
     """
     Removes any previous event from `mac`, then adds the event to the
     collection.
@@ -140,7 +143,7 @@ def update(method, mac, subnet, serial, client_ip):
                 del _events[i]
                 break
                 
-        _events.appendleft(_Event(time.time(), mac, client_ip, subnet, serial, method))
+        _events.appendleft(_Event(time.time(), mac, client_ip, subnet, serial, method, pxe))
         
 #Setup happens here
 ################################################################################

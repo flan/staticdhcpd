@@ -161,25 +161,14 @@ def _feed_presenter(feed_type):
     """
     def decorator(f):
         def function(*args, **kwargs):
-            start_time = time.time()
-            _logger.debug("%(type)s feed being generated..." % {
-             'type': feed_type,
-             'time': time.time() - start_time,
-            })
             try:
-                result = f(start_time - MAX_AGE, *args, **kwargs)
+                return f(start_time - MAX_AGE, *args, **kwargs)
             except Exception:
                 _logger.error("Unable to render %(type)s feed:\n%(error)s" % {
                  'type': feed_type,
                  'error': traceback.format_exc(),
                 })
                 raise
-            else:
-                _logger.debug("%(type)s feed generated in %(time).3f seconds" % {
-                 'type': feed_type,
-                 'time': time.time() - start_time,
-                })
-                return result
         return function
     return decorator
     

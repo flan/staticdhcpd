@@ -199,7 +199,7 @@ class _PacketWrapper(object):
             })
             
             statistics.emit(statistics.Statistics(
-             self.source_address, self.mac, self._packet_type, time_taken, not self._discarded
+             self.source_address, self.mac, self._packet_type, time_taken, not self._discarded, self.pxe,
             ))
             
     def _extractInterestingFields(self):
@@ -876,7 +876,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         """
         (dhcp_received, source_address) = self._getNextDHCPPacket()
         if not dhcp_received and source_address:
-            statistics.emit(statistics.Statistics(source_address, None, None, 0.0, False))
+            statistics.emit(statistics.Statistics(source_address, None, None, 0.0, False, False))
             
     def tick(self):
         """

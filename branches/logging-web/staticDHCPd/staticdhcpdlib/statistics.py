@@ -35,7 +35,7 @@ _stats_lock = threading.Lock()
 _stats_callbacks = []
 
 Statistics = collections.namedtuple("Statistics", (
- 'source_address', 'mac', 'method', 'processing_time', 'processed',
+ 'source_address', 'mac', 'method', 'processing_time', 'processed', 'pxe',
 ))
 """
 @type source_address: tuple(2)
@@ -48,6 +48,7 @@ Statistics = collections.namedtuple("Statistics", (
 @param processing_time: The amount of time, in seconds, required for processing.
 @type processed: bool
 @param processed: Whether the packet was processed or discarded for any reason.
+`pxe` indicates whether the request arrived via PXE.
 """
 
 def emit(statistics):
