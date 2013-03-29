@@ -157,7 +157,7 @@ def _format_title(element):
     
 def _feed_presenter(feed_type):
     """
-    A decorator that tracks time taken to render a feed and handles exceptions.
+    A decorator that handles exceptions.
     """
     def decorator(f):
         def function(*args, **kwargs):
