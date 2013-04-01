@@ -89,6 +89,9 @@ WEB_RELOAD_KEY = '5f4dcc3b5aa765d61d8327deb882cf99'
 #Database settings
 #######################################
 #Allowed values: SQLite, PostgreSQL, Oracle, MySQL, INI
+#You may alternatively supply a zero-arg callable (a class reference or a
+#function/lambda) that returns an instance of databases.Database, if
+#you want to implement your own engine without messing with core code.
 DATABASE_ENGINE = 'SQLite'
 #You may remove configuration sections pertaining to other database engines.
 

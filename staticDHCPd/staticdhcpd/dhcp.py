@@ -743,6 +743,9 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
             else: #Request directly from client, routed or otherwise.
                 ip = address[0]
                 if pxe:
+                    ciaddr = packet.getOption("ciaddr")
+                    if ciaddr and ciaddr not in ([255, 255, 255, 255], [0, 0, 0, 0]):
+                        ip = '.'.join(map(str, ciaddr))
                     port = address[1] or self._client_port #BSD doesn't seem to preserve port information
                 else:
                     port = self._client_port

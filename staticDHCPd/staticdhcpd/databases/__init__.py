@@ -26,6 +26,7 @@ Legal
  (C) Neil Tallim, 2013 <flan@uguu.ca>
 """
 from .. import config
+from _generic import Database
 
 def get_database():
     """
@@ -34,6 +35,9 @@ def get_database():
     @rtype: _generic.Database
     @return A database interface, usable to access DHCP information.
     """
+    if callable(config.DATABASE_ENGINE):
+        return config.DATABASE_ENGINE()
+        
     if config.DATABASE_ENGINE == 'SQLite':
         from _sql import SQLite
         return SQLite()
