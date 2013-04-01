@@ -25,12 +25,8 @@ Legal
  
  (C) Neil Tallim, 2013 <flan@uguu.ca>
 """
-import logging
-
 from .. import config
-from _generic import (Definition, Database)
-
-_logger = logging.getLogger('databases')
+from _generic import Database
 
 def get_database():
     """
@@ -40,17 +36,9 @@ def get_database():
     @return A database interface, usable to access DHCP information.
     """
     if callable(config.DATABASE_ENGINE):
-        _logger.debug("Custom database engine supplied; initialising...")
         return config.DATABASE_ENGINE()
         
-    _logger.debug("Loading database of type %(type)r..." % {
-     'type': config.DATABASE_ENGINE,
-    })
-    
-    if not config.DATABASE_ENGINE:
-        from _generic import Null
-        return Null()
-    elif config.DATABASE_ENGINE == 'SQLite':
+    if config.DATABASE_ENGINE == 'SQLite':
         from _sql import SQLite
         return SQLite()
     elif config.DATABASE_ENGINE == 'PostgreSQL':
@@ -69,4 +57,3 @@ def get_database():
     raise ValueError("Unknown database engine: %(engine)s" % {
      'engine': config.DATABASE_ENGINE
     })
-    
