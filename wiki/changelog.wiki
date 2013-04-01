@@ -1,5 +1,8 @@
 #summary What's changed -- change is good
 
+= 1.6.4 =
+ * Backported a feature from 2.0.0 that lets users define their own custom database engines without needing to touch the core code.
+----
 = 1.5.8, 1.6.3 =
  * Fixed a long-standing issue in which PXE clients that sent broadcast packets containing `ciaddr` were responded to via broadcast, rather than unicast to that `ciaddr` value.
 ----
