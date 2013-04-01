@@ -86,8 +86,17 @@ Database
 DATABASE_ENGINE : text, None : MUST BE SPECIFIED
  - The database-engine to use for handling static lease data
    - None, 'SQLite', 'PostgreSQL', 'Oracle', 'MySQL', 'INI'
- - Once parameters related to the chosen database engine need to be supplied
- 
+ - Only parameters related to the chosen database engine need to be supplied
+ - You may alternatively supply a callable that returns an instance of
+   databases.Database, if you want to implement your own engine without messing
+   with core code
+   - The callable must require no arguments
+   - To keep conf.py clean, define your engine in a separate module, like
+     _mydb.py and import it just before DATABASE_ENGINE is set, referencing a
+     function declared therein
+   - If you need to configure it differently for each server, declare a lambda
+     or short function in conf.py and make changes to that as needed
+     
 Database:None
 ------------------------------
 No parameters here: this database is only useful if you are exclusively using
