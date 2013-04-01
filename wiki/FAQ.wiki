@@ -15,6 +15,11 @@ Starting with 1.6.0, support for limited, non-spec-compliant dynamic provisionin
 
 To see examples of how to use this facility, see the [dynamism dynamic configuration] page.
 
+== Can I connect to an unsupported database, like a webservice? ==
+Absolutely.
+
+Starting with 1.6.4, you can define your own database engine, as long as it implements staticDHCPd's database interface, and reference it in `conf.py`, with no need to carry patches against the core codebase.
+
 ----
 = Configuration =
 == I need to boot clients over my network. How can I set up PXE? ==
