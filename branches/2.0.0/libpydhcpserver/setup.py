@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Deployment script for libpydhcpserver without staticDHCPd.
+Deployment script for libpydhcpserver.
 """
 from distutils.core import setup
 

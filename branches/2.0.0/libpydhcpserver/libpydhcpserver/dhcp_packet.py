@@ -33,7 +33,6 @@ import warnings
 from dhcp_constants import *
 from type_hwmac import hwmac
 from type_ipv4 import ipv4
-from type_strlist import strlist
 from type_rfc import *
 
 class DHCPPacket(object):

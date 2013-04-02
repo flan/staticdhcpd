@@ -25,7 +25,6 @@ Legal
  (C) Neil Tallim, 2010 <red.hamsterx@gmail.com>
 """
 import type_ipv4
-import type_strlist
 
 def ipToList(ip):
     """
@@ -126,8 +125,8 @@ def strToList(s):
     @rtype: list
     @return: An encoded byte version of the given string.
     """
-    return type_strlist.strlist(str(s)).list()
-
+    return map(ord, s)
+    
 def strToPaddedList(s, l):
     """
     Converts the given string into an encoded byte format, exactly equal to the
