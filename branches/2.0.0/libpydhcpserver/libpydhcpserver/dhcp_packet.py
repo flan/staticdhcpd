@@ -31,7 +31,7 @@ from struct import pack
 import warnings
 
 from dhcp_constants import *
-from type_hwmac import hwmac
+from types.mac import MAC
 from type_ipv4 import ipv4
 from type_rfc import *
 
@@ -658,16 +658,14 @@ class DHCPPacket(object):
         
     def getHardwareAddress(self):
         """
-        Extracts the client's MAC address from the DHCP packet.
-        
-        @rtype: str
-        @return: The client's MAC address.
+        Extracts the client's MAC address from the DHCP packet, as a
+        `types.mac.MAC` object.
         """
         length = self.getOption("hlen")[0]
         full_hw = self.getOption("chaddr")
         if length and length < len(full_hw):
-            return hwmac(full_hw[0:length]).str()
-        return hwmac(full_hw).str()
+            return MAC(full_hw[0:length])
+        return MAC(full_hw)
         
     def getRequestedOptions(self):
         """

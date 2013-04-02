@@ -25,7 +25,7 @@ Legal
  (C) Neil Tallim, 2010 <red.hamsterx@gmail.com>
  (C) Mathieu Ignacio, 2008 <mignacio@april.org>
 """
-MAGIC_COOKIE = [99,130,83,99] #: The DHCP magic cookie value, defined in RFC 1048.
+MAGIC_COOKIE = [99, 130, 83, 99] #The DHCP magic cookie value, per RFC 1048
 
 DHCP_FIELDS_NAMES = {
  'op': {0: 'ERROR_UNDEF', 1: 'BOOTREQUEST', 2: 'BOOTREPLY',},
@@ -440,4 +440,4 @@ DHCP_OPTIONS = {
  'end': 255
 } #: Maps human-readable DHCP option names to integer values.
 
-DHCP_OPTIONS_REVERSE = dict([(v, k) for (k, v) in DHCP_OPTIONS.iteritems()]) #: Maps integer values to human-readable DHCP option names.
+DHCP_OPTIONS_REVERSE = dict((v, k) for (k, v) in DHCP_OPTIONS.iteritems()) #: Maps integer values to human-readable DHCP option names.

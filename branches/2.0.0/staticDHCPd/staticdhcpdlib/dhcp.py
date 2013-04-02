@@ -216,7 +216,7 @@ class _PacketWrapper(object):
         Pulls commonly needed fields out of the packet, to avoid line-noise in
         the handling functions.
         """
-        self.mac = self.packet.getHardwareAddress()
+        self.mac = str(self.packet.getHardwareAddress())
         self.ip = _extractIPOrNone(self.packet, "requested_ip_address")
         self.sid = _extractIPOrNone(self.packet, "server_identifier")
         self.ciaddr = _extractIPOrNone(self.packet, "ciaddr")
