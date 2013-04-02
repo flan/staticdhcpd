@@ -4,7 +4,7 @@ libpydhcpserver package
 
 Purpose
 =======
- Provides the pythonic core of a DHCP server.
+ Provides the Pythonic core of a DHCP server.
  
 Legal
 =====
@@ -25,5 +25,5 @@ Legal
  (C) Neil Tallim, 2013 <flan@uguu.ca>
  (C) Mathieu Ignacio, 2008 <mignacio@april.org>
 """
-VERSION = '1.1.7'
+VERSION = '1.1.8'
 URL = 'http://uguu.ca/'
