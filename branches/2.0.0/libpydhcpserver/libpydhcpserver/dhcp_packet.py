@@ -25,15 +25,17 @@ Legal
  (C) Neil Tallim, 2013 <flan@uguu.ca>
  (C) Mathieu Ignacio, 2008 <mignacio@april.org>
 """
+import logging
 import operator
-from struct import unpack
+from struct import (pack, unpack)
 from struct import pack
-import warnings
 
 from dhcp_constants import *
 from types.mac import MAC
 from type_ipv4 import ipv4
 from type_rfc import *
+
+_logger = logging.getLogger('libpydhcpserver.types.packet')
 
 class DHCPPacket(object):
     """
@@ -85,7 +87,7 @@ class DHCPPacket(object):
                 try:
                     self._options_data[DHCP_OPTIONS_REVERSE[opt_id]] = opt_val
                 except Exception, e:
-                    warnings.warn("Unable to assign '%(value)s' to '%(id)s': %(error)s" % {
+                    _logger.warn("Unable to assign '%(value)s' to '%(id)s': %(error)s" % {
                      'value': opt_val,
                      'id': opt_id,
                      'error': str(e),
