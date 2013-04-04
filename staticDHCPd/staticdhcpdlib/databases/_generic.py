@@ -147,6 +147,7 @@ class CachingDatabase(Database):
             _logger.info("Database cache cleared")
             
     def lookupMAC(self, mac):
+        mac = str(mac)
         if config.USE_CACHE:
             with self._cache_lock:
                 data = self._mac_cache.get(mac)

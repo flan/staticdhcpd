@@ -30,6 +30,8 @@ import logging
 import re
 import threading
 
+from libpydhcpserver.dhcp_types.mac import MAC
+
 from .. import config
 
 from _generic import (Definition, Database)
@@ -153,18 +155,18 @@ class INI(Database):
             })
             
         subnet_re = re.compile(r"^(?P<subnet>.+?)\|(?P<serial>\d+)$")
-        mac_re = re.compile(r"^[0-9a-f]{12}$")
         
         for section in reader.sections():
             m = subnet_re.match(section)
             if m:
                 self._process_subnet(reader, section, m.group('subnet'), int(m.group('serial')))
             else:
-                mac = section.replace(':', '').lower()
-                if mac_re.match(mac):
-                    self._process_map(reader, section, mac)
-                else:
+                try:
+                    mac = MAC(section)
+                except Exception:
                     _logger.warn("Unrecognised section encountered: " + section)
+                else:
+                    self._process_map(reader, section, mac)
                     
         self._validate_references()
         
@@ -209,8 +211,7 @@ class INI(Database):
              'section': section,
             })
         
-        mac = ':'.join([mac[0:2], mac[2:4], mac[4:6], mac[6:8], mac[8:10], mac[10:12]])
-        self._maps[mac] = (ip, hostname, (subnet, serial))
+        self._maps[str(mac)] = (ip, hostname, (subnet, serial))
         
     def _validate_references(self):
         """
@@ -238,7 +239,7 @@ class INI(Database):
         @raise Exception: If a problem occurs while accessing the database.
         """
         with self._lock:
-            map = self._maps.get(mac)
+            map = self._maps.get(str(mac))
             if not map:
                 return None
                 
