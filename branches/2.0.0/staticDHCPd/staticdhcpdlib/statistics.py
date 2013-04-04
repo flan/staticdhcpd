@@ -42,7 +42,7 @@ Statistics = collections.namedtuple("Statistics", (
 
 @type source_address: tuple(2)
 @param source_address: The (address:basestring, port:int) of the sender.
-@type mac: basestring|None
+@type mac: libpydhcpserver.dhcp_types.mac.MAC
 @param mac: If a DHCP packet, the MAC for which it was sent; None otherwise.
 @type method: basestring|None
 @param method: A DHCP method, or None if the packet was not DHCP-compliant.

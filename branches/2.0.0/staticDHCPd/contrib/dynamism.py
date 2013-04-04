@@ -245,6 +245,7 @@ class DynamicPool(object):
         
         The value returned is either a Definition or None, depending on success.
         """
+        mac = str(mac)
         client_ip = client_ip and '.'.join(map(str, client_ip))
         
         self._logger.info("Dynamic %(method)s from %(mac)s%(ip)s in pool '%(name)s'" % {
