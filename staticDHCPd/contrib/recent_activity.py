@@ -129,13 +129,14 @@ def _update(statistics):
     Removes any previous event from `mac`, then adds the event to the
     collection.
     """
+    mac = str(statistics.mac)
     with _lock:
         for (i, event) in enumerate(_events):
-            if event.mac == statistics.mac:
+            if event.mac == mac:
                 del _events[i]
                 break
                 
-        _events.appendleft(_Event(time.time(), statistics.mac, statistics.client_ip, statistics.subnet, statistics.serial, statistics.method, statistics.pxe))
+        _events.appendleft(_Event(time.time(), mac, statistics.client_ip, statistics.subnet, statistics.serial, statistics.method, statistics.pxe))
         
 #Setup happens here
 ################################################################################

@@ -216,7 +216,7 @@ class _PacketWrapper(object):
         Pulls commonly needed fields out of the packet, to avoid line-noise in
         the handling functions.
         """
-        self.mac = str(self.packet.getHardwareAddress())
+        self.mac = self.packet.getHardwareAddress()
         self.ip = _extractIPOrNone(self.packet, "requested_ip_address")
         self.sid = _extractIPOrNone(self.packet, "server_identifier")
         self.ciaddr = _extractIPOrNone(self.packet, "ciaddr")
@@ -768,19 +768,20 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         @rtype: bool
         @return: True if the MAC's request should be processed.
         """
+        minimal_mac = tuple(mac)
         if config.ENABLE_SUSPEND:
             with self._lock:
-                actions = self._dhcp_actions.get(mac)
+                actions = self._dhcp_actions.get(minimal_mac)
                 if not actions:
-                    self._dhcp_actions[mac] = 1
+                    self._dhcp_actions[minimal_mac] = 1
                 else:
-                    self._dhcp_actions[mac] += 1
+                    self._dhcp_actions[minimal_mac] += 1
                     if actions + 1 > config.SUSPEND_THRESHOLD:
                         _logger.warn('%(mac)s is issuing too many requests; ignoring for %(time)i seconds' % {
                          'mac': mac,
                          'time': config.MISBEHAVING_CLIENT_TIMEOUT,
                         })
-                        self._ignored_addresses.append([mac, config.MISBEHAVING_CLIENT_TIMEOUT])
+                        self._ignored_addresses.append([minimal_mac, config.MISBEHAVING_CLIENT_TIMEOUT])
                         return False
         return True
         
@@ -849,7 +850,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         @param mac: The MAC to be ignored.
         """
         with self._lock:
-            self._ignored_addresses.append([mac, config.UNAUTHORIZED_CLIENT_TIMEOUT])
+            self._ignored_addresses.append([tuple(mac), config.UNAUTHORIZED_CLIENT_TIMEOUT])
         _logger.warn('%(mac)s was temporarily blacklisted, for %(time)i seconds, following %(packet_type)s: %(reason)s' % {
          'mac': mac,
          'time': config.UNAUTHORIZED_CLIENT_TIMEOUT,

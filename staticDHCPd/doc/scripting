@@ -97,7 +97,9 @@ Parameters
             one of 'DECLINE', 'DISCOVER', 'INFORM', 'RELEASE',
             'REQUEST:INIT-REBOOT','REQUEST:REBIND', 'REQUEST:RENEW',
             'REQUEST:SELECTING'
-    mac: a human-readable MAC string, lower-case, separated by colons
+    mac: an instance of libpydhcpserver.dhcp_types.mac.MAC, which can be coerced
+         into a human-readable, lower-case, colon-delimited string or a sequence
+         of bytes, or compared directly against either
     client_ip: a quadruple of octets, like (192, 168, 1, 1), or None, if the
                request didn't specify an address to associate with the client
     relay_ip: either None or an address as a quadruple of octets, representing
@@ -147,7 +149,9 @@ Parameters
             one of 'DECLINE', 'DISCOVER', 'INFORM', 'RELEASE',
             'REQUEST:INIT-REBOOT','REQUEST:REBIND', 'REQUEST:RENEW',
             'REQUEST:SELECTING'
-    mac: a human-readable MAC string, lower-case, separated by colons
+    mac: an instance of libpydhcpserver.dhcp_types.mac.MAC, which can be coerced
+         into a human-readable, lower-case, colon-delimited string or a sequence
+         of bytes, or compared directly against either
     client_ip: a quadruple of octets, like (192, 168, 1, 1), or None, if the
                request didn't specify an address to associate with the client
     relay_ip: either None or an address as a quadruple of octets, representing
@@ -198,7 +202,9 @@ Parameters
             one of 'DECLINE', 'DISCOVER', 'INFORM', 'RELEASE',
             'REQUEST:INIT-REBOOT','REQUEST:REBIND', 'REQUEST:RENEW',
             'REQUEST:SELECTING'
-    mac: a human-readable MAC string, lower-case, separated by colons
+    mac: an instance of libpydhcpserver.dhcp_types.mac.MAC, which can be coerced
+         into a human-readable, lower-case, colon-delimited string or a sequence
+         of bytes, or compared directly against either
     subnet: the subnet-string associated with the lease's definition
     serial: the serial-integer associated with the lease's definition
     client_ip: a quadruple of octets, like (192, 168, 1, 1)
