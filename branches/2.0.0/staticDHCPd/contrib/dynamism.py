@@ -75,10 +75,11 @@ _logger = logging.getLogger('contrib.dynamism')
 
 _logger.info("Attempting to import scapy; scapy-specific logging output may follow")
 try:
-    import scapy.all as scapy
+    import scapy.route
+    from scapy.layer.l2 import arping
 except ImportError:
     _logger.warn("scapy is unavailable; addresses added to pools cannot be automatically ARPed")
-    scapy = None
+    arping = None
 else:
     _logger.info("scapy imported successfully; automatic ARPing is available")
     
@@ -192,7 +193,7 @@ class DynamicPool(object):
         with self._lock:
             allocated_ips = set(ip for (_, ip) in self._map.itervalues())
             ips = [ip for ip in ips if ip not in self._pool and ip not in allocated_ips]
-            if arp_addresses and scapy: #Try to ARP addresses
+            if arp_addresses and arping: #Try to ARP addresses
                 expiration = time.time() + self._lease_time
                 mapped_ips = 0
                 self._logger.info("Beginning ARP-lookup for %(count)i IPs in pool '%(name)s', with timeout=%(timeout).3fs" % {
@@ -200,7 +201,7 @@ class DynamicPool(object):
                  'timeout': arp_timeout,
                  'name': self._hostname_prefix,
                 })
-                (answered, unanswered) = scapy.arping(ips, verbose=0, timeout=arp_timeout)
+                (answered, unanswered) = arping(ips, verbose=0, timeout=arp_timeout)
                 for answer in answered:
                     try:
                         ip = answer[0].payload.fields['pdst']
