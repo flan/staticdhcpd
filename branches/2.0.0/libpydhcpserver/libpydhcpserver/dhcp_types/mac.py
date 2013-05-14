@@ -23,13 +23,17 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 (C) Neil Tallim, 2013 <flan@uguu.ca>
 (C) Mathieu Ignacio, 2008 <mignacio@april.org>
 """
-from types import StringTypes
-
+try:
+    from types import StringTypes
+except ImportError: #py3k
+    StringTypes = (str,)
+    
 class MAC(object):
     """
     Provides a standardised way of representing MACs.
     """
     _mac = None #The MAC encapsulated by this object, as a tuple of bytes
+    _mac_string = None #The MAC as a colon-delimited, lower-case string
     
     def __init__(self, address):
         """
@@ -52,6 +56,8 @@ class MAC(object):
                 raise ValueError("Expected a sequence of six bytes as a MAC identifier; received " + repr(self._mac))
                 
     def __cmp__(self, other):
+        if isinstance(other, MAC):
+            return cmp(self._mac, other._mac)
         if isinstance(other, StringTypes):
             return cmp(str(self), other.lower())
         return cmp(self._mac, other)
@@ -69,5 +75,7 @@ class MAC(object):
         return str(self)
         
     def __str__(self):
-        return "%02x:%02x:%02x:02x:%02x:%02x" % self._mac
+        if self._mac_string is None:
+            self._mac_string = "%02x:%02x:%02x:02x:%02x:%02x" % self._mac
+        return self._mac_string
         
