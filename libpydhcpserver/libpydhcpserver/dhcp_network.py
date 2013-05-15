@@ -231,7 +231,7 @@ class DHCPNetwork(object):
         @param pxe: True if the packet was received on the PXE port.
         """
         
-    def _sendDHCPPacketTo(self, packet, ip, port, pxe):
+    def _sendDHCPPacket(self, packet, ip, port, pxe):
         """
         Encodes and sends a DHCP packet to its destination.
         
