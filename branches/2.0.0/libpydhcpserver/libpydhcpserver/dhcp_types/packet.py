@@ -28,10 +28,10 @@ import operator
 from struct import (pack, unpack)
 from struct import pack
 
-from dhcp_constants import *
+from ..dhcp_constants import *
 from mac import MAC
 from ipv4 import IPv4
-from type_rfc import *
+from rfc import *
 
 _logger = logging.getLogger('libpydhcpserver.types.packet')
 
