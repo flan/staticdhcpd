@@ -413,7 +413,7 @@ class _PacketWrapper(object):
             
         definition = self._server.getDatabase().lookupMAC(self.mac) or config.handleUnknownMAC(
          self.packet, self._packet_type,
-         self.mac, ip and tuple(ip), self.giaddr and tuple(self.giaddr),
+         self.mac, ip, self.giaddr,
          self.pxe and self.pxe_options, self.vendor_options
         )
         self._definition = Definition(
