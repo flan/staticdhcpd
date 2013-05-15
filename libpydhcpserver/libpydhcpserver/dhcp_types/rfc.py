@@ -29,7 +29,7 @@ try:
 except ImportError: #py3k
     StringTypes = (str,)
     
-from dhcp_types.ipv4 import IPv4
+from ipv4 import IPv4
 
 def ipToList(ip):
     """
