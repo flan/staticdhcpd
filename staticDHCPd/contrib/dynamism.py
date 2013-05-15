@@ -70,6 +70,7 @@ import time
 from staticdhcpdlib.databases import Definition
 
 from libpydhcpserver.type_rfc import longToList
+from libpydhcpserver.dhcp_types.ipv4 import IPv4
 
 _logger = logging.getLogger('contrib.dynamism')
 
@@ -247,7 +248,6 @@ class DynamicPool(object):
         The value returned is either a Definition or None, depending on success.
         """
         mac = str(mac)
-        client_ip = client_ip and '.'.join(map(str, client_ip))
         
         self._logger.info("Dynamic %(method)s from %(mac)s%(ip)s in pool '%(name)s'" % {
          'method': method,
@@ -285,10 +285,10 @@ class DynamicPool(object):
         elements = []
         with self._lock:
             for (mac, (expiration, ip)) in self._map.iteritems():
-                elements.append(_LeaseDefinition(ip, mac, expiration, expiration - self._lease_time))
+                elements.append(_LeaseDefinition(IPv4(ip), mac, expiration, expiration - self._lease_time))
             for ip in self._pool:
-                elements.append(_LeaseDefinition(ip, None, None, None))
-        return tuple(sorted(elements, key=(lambda element: map(int, element.ip.split('.')))))
+                elements.append(_LeaseDefinition(IPv4(ip), None, None, None))
+        return tuple(sorted(elements))
         
     def show_leases_csv(self, *args, **kwargs):
         """
@@ -303,7 +303,7 @@ class DynamicPool(object):
         render_format = '%Y-%m-%d %H:%M:%S'
         for lease in self.get_leases():
             writer.writerow((
-             lease.ip,
+             str(lease.ip),
              lease.mac or '',
              lease.expiration and time.strftime(render_format, time.localtime(lease.expiration)) or '',
              lease.last_seen and time.strftime(render_format, time.localtime(lease.last_seen)) or '',
