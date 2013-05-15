@@ -115,7 +115,7 @@ class _PacketWrapper(object):
         
         @type server: L{_DHCPServer}
         @param server: The server associated with this packet.
-        @type packet: L{libpydhcpserver.dhcp_packet.DHCPPacket}
+        @type packet: L{libpydhcpserver.dhcp_types.packet.DHCPPacket}
         @param packet: The packet being wrapped.
         @type packet_type: basestring
         @param packet_type: The type of packet being wrapped.
@@ -791,7 +791,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         If it was picked up as a broadcast packet, it is sent to the local subnet
         via the same mechanism, but to the 'client port'.
         
-        @type packet: L{libpydhcpserver.dhcp_packet.DHCPPacket}
+        @type packet: L{libpydhcpserver.dhcp_types.packet.DHCPPacket}
         @param packet: The packet to be transmitted.
         @type address: tuple
         @param address: The address from which the packet was received:
