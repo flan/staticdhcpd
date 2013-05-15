@@ -56,10 +56,10 @@ class MAC(object):
                 raise ValueError("Expected a sequence of six bytes as a MAC identifier; received " + repr(self._mac))
                 
     def __cmp__(self, other):
+        if isinstance(other, StringTypes):
+            other = MAC(other)
         if isinstance(other, MAC):
             return cmp(str(self), str(other))
-        if isinstance(other, StringTypes):
-            return cmp(str(self), other.lower())
         return cmp(self._mac, other)
         
     def __hash__(self):

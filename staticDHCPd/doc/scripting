@@ -97,13 +97,16 @@ Parameters
             one of 'DECLINE', 'DISCOVER', 'INFORM', 'RELEASE',
             'REQUEST:INIT-REBOOT','REQUEST:REBIND', 'REQUEST:RENEW',
             'REQUEST:SELECTING'
-    mac: an instance of libpydhcpserver.dhcp_types.mac.MAC, which can be coerced
-         into a human-readable, lower-case, colon-delimited string or a sequence
-         of bytes, or compared directly against either
-    client_ip: a quadruple of octets, like (192, 168, 1, 1), or None, if the
-               request didn't specify an address to associate with the client
-    relay_ip: either None or an address as a quadruple of octets, representing
-              the server that relayed this request
+    mac: an object that emulates the properties of a sextuple
+         (0, 38, 199, 214, 5, 200) and a string ("00:26:c7:d6:05:c8"), which may
+         be compared against either, including any strings parseable as MACs
+         (case/delimiter-insensitive)
+    client_ip: an object that emulates the properties of a quadruple of octets
+               (192, 168, 0, 1), a dotted quad ("192.168.0.1"), and an integer
+               (3232235521), or None, if the request didn't specify an address
+               to associate with the client
+    relay_ip: either None or an object of the type described in client_ip,
+              representing the server that relayed this request
     pxe: False if not applicable; else, a triple containing, in order, option 93
          (client_system) as a sequence of ints, option 94 (client_ndi) as a
          sequence of three bytes, and option 97 (uuid_guid) as digested data:
@@ -149,13 +152,16 @@ Parameters
             one of 'DECLINE', 'DISCOVER', 'INFORM', 'RELEASE',
             'REQUEST:INIT-REBOOT','REQUEST:REBIND', 'REQUEST:RENEW',
             'REQUEST:SELECTING'
-    mac: an instance of libpydhcpserver.dhcp_types.mac.MAC, which can be coerced
-         into a human-readable, lower-case, colon-delimited string or a sequence
-         of bytes, or compared directly against either
-    client_ip: a quadruple of octets, like (192, 168, 1, 1), or None, if the
-               request didn't specify an address to associate with the client
-    relay_ip: either None or an address as a quadruple of octets, representing
-              the server that relayed this request
+    mac: an object that emulates the properties of a sextuple
+         (0, 38, 199, 214, 5, 200) and a string ("00:26:c7:d6:05:c8"), which may
+         be compared against either, including any strings parseable as MACs
+         (case/delimiter-insensitive)
+    client_ip: an object that emulates the properties of a quadruple of octets
+               (192, 168, 0, 1), a dotted quad ("192.168.0.1"), and an integer
+               (3232235521), or None, if the request didn't specify an address
+               to associate with the client
+    relay_ip: either None or an object of the type described in client_ip,
+              representing the server that relayed this request
     pxe: False if not applicable; else, a triple containing, in order, option 93
          (client_system) as a sequence of ints, option 94 (client_ndi) as a
          sequence of three bytes, and option 97 (uuid_guid) as digested data:
@@ -201,14 +207,20 @@ Parameters
             one of 'DECLINE', 'DISCOVER', 'INFORM', 'RELEASE',
             'REQUEST:INIT-REBOOT','REQUEST:REBIND', 'REQUEST:RENEW',
             'REQUEST:SELECTING'
-    mac: an instance of libpydhcpserver.dhcp_types.mac.MAC, which can be coerced
+    mac: an object that emulates the properties of a sextuple
+         (0, 38, 199, 214, 5, 200) and a string ("00:26:c7:d6:05:c8"), which may
+         be compared against either, including any strings parseable as MACs
+         (case/delimiter-insensitive)
+    instance of libpydhcpserver.dhcp_types.mac.MAC, which can be coerced
          into a human-readable, lower-case, colon-delimited string or a sequence
          of bytes, or compared directly against either
     subnet: the subnet-string associated with the lease's definition
     serial: the serial-integer associated with the lease's definition
-    client_ip: a quadruple of octets, like (192, 168, 1, 1)
-    relay_ip: either None or an address as a quadruple of octets, representing
-              the server that relayed this request
+    client_ip: an object that emulates the properties of a quadruple of octets
+               (192, 168, 0, 1), a dotted quad ("192.168.0.1"), and an integer
+               (3232235521)
+    relay_ip: either None or an object of the type described in client_ip,
+              representing the server that relayed this request
     pxe: False if not applicable; else, a triple containing, in order, option 93
          (client_system) as a sequence of ints, option 94 (client_ndi) as a
          sequence of three bytes, and option 97 (uuid_guid) as digested data:
@@ -417,3 +429,4 @@ Similarly, if you want to capture logging events, you can hook in easily:
     
 An example of a custom handler, and application thereof, can be found in
 contrib/feedservice.py
+
