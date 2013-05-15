@@ -137,15 +137,15 @@ class DynamicPool(object):
         identifying the source of logged messages.
         
         `subnet_mask`, `gateway`, and `broadcast_address` are what you'd expect;
-        omitting them will limit the client to link-local traffic. They're all
-        dotted-quad strings.
+        omitting them will limit the client to link-local traffic. They should
+        be dotted-quad strings, but may be integers or quadruples.
         
         `domain_name` is used to set the client's search-domain, as a string.
         It is optional.
         
         `domain_name_servers` and `ntp_servers` are also both what you'd expect,
-        expressed like ['192.168.0.1', '192.168.0.2'], to a maximum of three
-        items. They are optional, too.
+        expressed like ['192.168.0.1', '192.168.0.2'], or as integers or quadruples,
+        to a maximum of three items. They are optional, too.
         
         `discourage_renewals` will modify packets to tell the client to hold off
         on renewing until the lease is up. Not all clients will respect this. It
@@ -156,12 +156,12 @@ class DynamicPool(object):
         self._lease_time = lease_time
         self._hostname_prefix = hostname_prefix
         self._hostname_pattern = self._hostname_prefix + "-%(ip)s"
-        self._subnet_mask = subnet_mask
-        self._gateway = gateway
-        self._broadcast_address = broadcast_address
+        self._subnet_mask = subnet_mask and tuple(IPv4(subnet_mask)) or None
+        self._gateway = gateway and tuple(IPv4(gateway)) or None
+        self._broadcast_address = broadcast_address and tuple(IPv4(broadcast_address)) or None
         self._domain_name = domain_name
-        self._domain_name_servers = domain_name_servers and ','.join(domain_name_servers) or None
-        self._ntp_servers = ntp_servers and ','.join(ntp_servers) or None
+        self._domain_name_servers = domain_name_servers or None
+        self._ntp_servers = ntp_servers or None
         self._discourage_renewals = discourage_renewals
         
         self._logger = _logger.getChild(self._hostname_prefix)
@@ -177,7 +177,7 @@ class DynamicPool(object):
         is preserved.
         
         `ips` is a sequence of IP addresses, like
-        ['192.168.0.100', '192.168.0.101'].
+        ['192.168.0.100', '192.168.0.101'], or integers or quadruples.
         
         To generate it, try calling this method in the following way:
             .add_ips(['192.168.250.' + str(i) for i in range(11, 255)])
