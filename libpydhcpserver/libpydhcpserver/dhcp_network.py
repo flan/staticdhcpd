@@ -30,7 +30,7 @@ import select
 import socket
 import threading
 
-import dhcp_packet
+from dhcp_types.packet import DHCPPacket
 
 class DHCPNetwork(object):
     """
@@ -137,7 +137,7 @@ class DHCPNetwork(object):
             active_socket = active_sockets[0]
             (data, source_address) = active_socket.recvfrom(4096)
             if data:
-                packet = dhcp_packet.DHCPPacket(data)
+                packet = DHCPPacket(data)
                 if packet.isDHCPPacket():
                     pxe = active_socket == self._pxe_socket
                     if packet.isDHCPRequestPacket():
@@ -159,7 +159,7 @@ class DHCPNetwork(object):
         """
         Processes a DECLINE packet.
         
-        @type packet: L{dhcp_packet.DHCPPacket}
+        @type packet: L{dhcp_types.packet.DHCPPacket}
         @param packet: The packet to be processed.
         @type source_address: tuple
         @param source_address: The address (host, port) from which the request
@@ -172,7 +172,7 @@ class DHCPNetwork(object):
         """
         Processes a DISCOVER packet.
         
-        @type packet: L{dhcp_packet.DHCPPacket}
+        @type packet: L{dhcp_types.packet.DHCPPacket}
         @param packet: The packet to be processed.
         @type source_address: tuple
         @param source_address: The address (host, port) from which the request
@@ -185,7 +185,7 @@ class DHCPNetwork(object):
         """
         Processes an INFORM packet.
         
-        @type packet: L{dhcp_packet.DHCPPacket}
+        @type packet: L{dhcp_types.packet.DHCPPacket}
         @param packet: The packet to be processed.
         @type source_address: tuple
         @param source_address: The address (host, port) from which the request
@@ -198,7 +198,7 @@ class DHCPNetwork(object):
         """
         Processes a LEASEQUERY packet.
         
-        @type packet: L{dhcp_packet.DHCPPacket}
+        @type packet: L{dhcp_types.packet.DHCPPacket}
         @param packet: The packet to be processed.
         @type source_address: tuple
         @param source_address: The address (host, port) from which the request
@@ -211,7 +211,7 @@ class DHCPNetwork(object):
         """
         Processes a RELEASE packet.
         
-        @type packet: L{dhcp_packet.DHCPPacket}
+        @type packet: L{dhcp_types.packet.DHCPPacket}
         @param packet: The packet to be processed.
         @type source_address: tuple
         @param source_address: The address (host, port) from which the request
@@ -222,7 +222,7 @@ class DHCPNetwork(object):
         """
         Processes a REQUEST packet.
         
-        @type packet: L{dhcp_packet.DHCPPacket}
+        @type packet: L{dhcp_types.packet.DHCPPacket}
         @param packet: The packet to be processed.
         @type source_address: tuple
         @param source_address: The address (host, port) from which the request
@@ -235,7 +235,7 @@ class DHCPNetwork(object):
         """
         Encodes and sends a DHCP packet to its destination.
         
-        @type packet: L{dhcp_packet.DHCPPacket}
+        @type packet: L{dhcp_types.packet.DHCPPacket}
         @param packet: The packet to be sent.
         @type ip: basestring
         @param ip: The IP address to which the packet is to be sent.
