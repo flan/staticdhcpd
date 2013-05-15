@@ -256,6 +256,7 @@ class DHCPNetwork(object):
         # If self._dhcp_socket is anonymously bound, the two sockets will
         # actually be one and the same, so this change has no potentially
         # damaging effects.
+        ip = str(ip)
         if not ip == '255.255.255.255':
             if pxe:
                 return self._pxe_socket.sendto(packet_encoded, (ip, port))

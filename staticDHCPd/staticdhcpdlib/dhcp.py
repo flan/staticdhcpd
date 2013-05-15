@@ -77,33 +77,13 @@ Like the database version, only with IPv4 objects.
 
 def _extractIPOrNone(packet, parameter):
     """
-    Extracts the identified IP and returns it if it is defined, None otherwise.
-    
-    @type packet: L{libpydhcpserver.dhcp_packet.DHCPPacket}
-    @param packet: The packet to be evaluated.
-    @type parameter: basestring
-    @param parameter: The parameter to be extracted.
-        
-    @rtype: IPv4|None
-    @return: The requested IP.
+    Extracts the identified packet-field-IP and returns it if it is defined,
+    None otherwise.
     """
     addr = packet.getOption(parameter)
     if not addr or not any(addr):
         return None
     return IPv4(addr)
-    
-def _toDottedQuadOrNone(ip):
-    """
-    Converts a sequence of integers into a human-readable IP.
-    
-    @type ip: list|tuple|None
-    @param ip: The IP to be converted.
-    
-    @rtype: string|None
-    @return: The converted value.
-    """
-    return ip and '.'.join(map(str, ip))
-    
     
 class _PacketWrapper(object):
     """
@@ -247,7 +227,7 @@ class _PacketWrapper(object):
         if self.giaddr: #Relayed request.
             if not config.ALLOW_DHCP_RELAYS: #Ignore it.
                 raise _PacketSourceUnacceptable("relay support not enabled")
-            elif config.ALLOWED_DHCP_RELAYS and not _toDottedQuadOrNone(self.giaddr) in config.ALLOWED_DHCP_RELAYS:
+            elif config.ALLOWED_DHCP_RELAYS and not self.giaddr in config.ALLOWED_DHCP_RELAYS:
                 raise _PacketSourceUnacceptable("relay not authorised")
         elif not config.ALLOW_LOCAL_DHCP and not self.pxe: #Local request, but denied.
             raise _PacketSourceUnacceptable("neither link-local traffic nor PXE is enabled")
@@ -312,7 +292,7 @@ class _PacketWrapper(object):
             
         result = config.filterPacket(
          self.packet, self._packet_type,
-         self.mac, ip and tuple(ip), self.giaddr and tuple(self.giaddr),
+         self.mac, ip, self.giaddr,
          self.pxe and self.pxe_options, self.vendor_options
         )
         if result is None:
@@ -402,7 +382,7 @@ class _PacketWrapper(object):
         process = bool(config.loadDHCPPacket(
          self.packet, self._packet_type,
          self.mac, definition.subnet, definition.serial,
-         tuple(ipToList(definition.ip)), self.giaddr and tuple(self.giaddr),
+         definition.ip, self.giaddr,
          self.pxe and self.pxe_options, self.vendor_options
         ))
         if not process:
@@ -516,15 +496,14 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         if not wrapper.sid:
             raise _PacketSourceBlacklist("server-identifier was not specified")
             
-        if _toDottedQuadOrNone(wrapper.sid) == self._server_address: #Rejected!
+        if wrapper.sid == self._server_address: #Rejected!
             if not wrapper.filterPacket(): return
             
             definition = wrapper.retrieveDefinition()
-            ip = _toDottedQuadOrNone(wrapper.ip)
-            if definition and definition.ip == ip: #Known client.
+            if definition and definition.ip == wrapper.ip: #Known client.
                 _logger.error('%(type)s from %(mac)s for %(ip)s on (%(subnet)s, %(serial)i)' % {
                 'type': wrapper.getType(),
-                'ip': ip,
+                'ip': wrapper.ip,
                 'mac': wrapper.mac,
                 'subnet': definition.subnet,
                 'serial': definition.serial,
@@ -533,14 +512,14 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
             elif definition:
                 _logger.warn('%(type)s from %(mac)s for %(ip)s, but its assigned IP is %(aip)s' % {
                  'type': wrapper.getType(),
-                 'ip': ip,
+                 'ip': wrapper.ip,
                  'aip': definition.ip,
                  'mac': wrapper.mac,
                 })
             else:
                 _logger.warn('%(type)s from %(mac)s for %(ip)s, but the MAC is unknown' % {
                  'type': wrapper.getType(),
-                 'ip': ip,
+                 'ip': wrapper.ip,
                  'mac': wrapper.mac,
                 })
                 
@@ -602,7 +581,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         @param wrapper: A wrapper around the packet, exposing helpful details.
         """
         if not wrapper.filterPacket(override_ip=True, override_ip_value=wrapper.ciaddr): return
-        wrapper.announcePacket(ip=_toDottedQuadOrNone(wrapper.ciaddr))
+        wrapper.announcePacket(ip=wrapper.ciaddr)
         
         if not wrapper.ciaddr:
             raise _PacketSourceBlacklist("ciaddr was not specified")
@@ -613,7 +592,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
             if wrapper.loadDHCPPacket(definition, inform=True):
                 self._sendDHCPPacket(
                  wrapper.packet, wrapper.source_address, wrapper.pxe,
-                 wrapper.mac, _toDottedQuadOrNone(wrapper.ciaddr) or _IP_REJECTED
+                 wrapper.mac, wrapper.ciaddr or _IP_REJECTED
                 )
                 wrapper.markAddressed()
         else:
@@ -656,38 +635,34 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         @type wrapper: L{_PacketWrapper}
         @param wrapper: A wrapper around the packet, exposing helpful details.
         """
-        s_ip = _toDottedQuadOrNone(wrapper.ip)
-        s_sid = _toDottedQuadOrNone(wrapper.sid)
-        s_ciaddr = _toDottedQuadOrNone(wrapper.ciaddr)
-        
         if wrapper.sid and not wrapper.ciaddr: #SELECTING
-            self._handleDHCPRequest_SELECTING(wrapper, s_ip, s_sid)
+            self._handleDHCPRequest_SELECTING(wrapper)
         elif not wrapper.sid and not wrapper.ciaddr and wrapper.ip: #INIT-REBOOT
-            self._handleDHCPRequest_INIT_REBOOT(wrapper, s_ip)
+            self._handleDHCPRequest_INIT_REBOOT(wrapper)
         elif not wrapper.sid and wrapper.ciaddr and not wrapper.ip: #RENEWING or REBINDING
-            self._handleDHCPRequest_RENEW_REBIND(wrapper, s_ip, s_ciaddr)
+            self._handleDHCPRequest_RENEW_REBIND(wrapper)
         else:
             _logger.warn('%(type)s (%(sid)s|%(ciaddr)s|%(ip)s) from %(mac)s unhandled: packet not compliant with DHCP spec' % {
              'type': wrapper.getType(),
-             'sid': s_sid,
-             'ciaddr': s_ciaddr,
-             'ip': s_ip,
+             'sid': wrapper.sid,
+             'ciaddr': wrapper.ciaddr,
+             'ip': wrapper.ip,
              'mac': wrapper.mac,
             })
             
-    def _handleDHCPRequest_SELECTING(self, wrapper, s_ip, s_sid):
+    def _handleDHCPRequest_SELECTING(self, wrapper):
         wrapper.setType(_PACKET_TYPE_REQUEST_SELECTING)
-        if s_sid == self._server_address: #Chosen!
+        if wrapper.sid == self._server_address: #Chosen!
             if not wrapper.filterPacket(): return
-            wrapper.announcePacket(ip=s_ip)
+            wrapper.announcePacket(ip=wrapper.ip)
             
             definition = wrapper.retrieveDefinition()
-            if definition and (not wrapper.ip or definition.ip == s_ip):
+            if definition and (not wrapper.ip or definition.ip == wrapper.ip):
                 wrapper.packet.transformToDHCPAckPacket()
                 if wrapper.loadDHCPPacket(definition):
                     self._sendDHCPPacket(
                      wrapper.packet, wrapper.source_address, wrapper.pxe,
-                     wrapper.mac, s_ip
+                     wrapper.mac, wrapper.ip
                     )
                     wrapper.markAddressed()
             else:
@@ -698,33 +673,33 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                 )
                 wrapper.markAddressed()
                 
-    def _handleDHCPRequest_INIT_REBOOT(self, wrapper, s_ip):
+    def _handleDHCPRequest_INIT_REBOOT(self, wrapper):
         wrapper.setType(_PACKET_TYPE_REQUEST_INIT_REBOOT)
         if not wrapper.filterPacket(): return
-        wrapper.announcePacket(ip=s_ip)
+        wrapper.announcePacket(ip=wrapper.ip)
         
         definition = wrapper.retrieveDefinition()
-        if definition and definition.ip == s_ip:
+        if definition and definition.ip == wrapper.ip:
             wrapper.packet.transformToDHCPAckPacket()
             if wrapper.loadDHCPPacket(definition):
                 self._sendDHCPPacket(
                  wrapper.packet, wrapper.source_address, wrapper.pxe,
-                 wrapper.mac, s_ip
+                 wrapper.mac, wrapper.ip
                 )
                 wrapper.markAddressed()
         else:
             wrapper.packet.transformToDHCPNakPacket()
             self._sendDHCPPacket(
              wrapper.packet, wrapper.source_address, wrapper.pxe,
-             wrapper.mac, s_ip
+             wrapper.mac, wrapper.ip
             )
             wrapper.markAddressed()
             
-    def _handleDHCPRequest_RENEW_REBIND(self, wrapper, s_ip, s_ciaddr):
+    def _handleDHCPRequest_RENEW_REBIND(self, wrapper):
         renew = wrapper.source_address[0] not in _IP_UNSPECIFIED_FILTER
         wrapper.setType(renew and _PACKET_TYPE_REQUEST_RENEW or _PACKET_TYPE_REQUEST_REBIND)
         if not wrapper.filterPacket(): return
-        wrapper.announcePacket(ip=s_ip)
+        wrapper.announcePacket(ip=wrapper.ip)
         
         if config.NAK_RENEWALS and not wrapper.pxe and (renew or config.AUTHORITATIVE):
             wrapper.packet.transformToDHCPNakPacket()
@@ -735,21 +710,21 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
             wrapper.markAddressed()
         else:
             definition = wrapper.retrieveDefinition()
-            if definition and definition.ip == s_ciaddr:
+            if definition and definition.ip == wrapper.ciaddr:
                 wrapper.packet.transformToDHCPAckPacket()
                 wrapper.packet.setOption('yiaddr', wrapper.ciaddr)
                 if wrapper.loadDHCPPacket(definition):
                     self._sendDHCPPacket(
-                     wrapper.packet, (s_ciaddr, 0), wrapper.pxe,
-                     wrapper.mac, s_ciaddr
+                     wrapper.packet, (wrapper.ciaddr, 0), wrapper.pxe,
+                     wrapper.mac, wrapper.ciaddr
                     )
                     wrapper.markAddressed()
             else:
                 if renew:
                     wrapper.packet.transformToDHCPNakPacket()
                     self._sendDHCPPacket(
-                     wrapper.packet, (s_ciaddr, 0), wrapper.pxe,
-                     wrapper.mac, s_ciaddr
+                     wrapper.packet, (wrapper.ciaddr, 0), wrapper.pxe,
+                     wrapper.mac, wrapper.ciaddr
                     )
                     wrapper.markAddressed()
                     
@@ -764,17 +739,16 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         if not wrapper.sid:
             raise _PacketSourceBlacklist("server-identifier was not specified")
             
-        if _toDottedQuadOrNone(wrapper.sid) == self._server_address: #Released!
+        if wrapper.sid == self._server_address: #Released!
             if not wrapper.filterPacket(override_ip=True, override_ip_value=wrapper.ciaddr): return
             definition = wrapper.retrieveDefinition(override_ip=True, override_ip_value=wrapper.ciaddr)
-            ip = _toDottedQuadOrNone(wrapper.ciaddr)
-            if definition and definition.ip == ip: #Known client.
-                wrapper.announcePacket(ip=ip)
+            if definition and definition.ip == wrapper.ciaddr: #Known client.
+                wrapper.announcePacket(ip=wrapper.ciaddr)
                 wrapper.markAddressed()
             else:
                 _logger.warn('%(type)s from %(mac)s for %(ip)s, but no assignment is known' % {
                  'type': wrapper.getType(),
-                 'ip': ip,
+                 'ip': wrapper.ciaddr,
                  'mac': wrapper.mac,
                 })
                 
@@ -838,9 +812,8 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
             ip = _IP_BROADCAST
             port = self._client_port
         else: #Unicast
-            giaddr = _extractIPOrNone(packet, "giaddr")
+            giaddr = _extractIPOrNone(packet, 'giaddr')
             if giaddr: #Relayed request.
-                ip = _toDottedQuadOrNone(giaddr)
                 port = self._server_port
             else: #Request directly from client, routed or otherwise.
                 ip = address[0]

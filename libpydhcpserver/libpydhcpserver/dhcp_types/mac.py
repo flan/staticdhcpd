@@ -57,7 +57,7 @@ class MAC(object):
                 
     def __cmp__(self, other):
         if isinstance(other, MAC):
-            return cmp(self._mac, other._mac)
+            return cmp(str(self), str(other))
         if isinstance(other, StringTypes):
             return cmp(str(self), other.lower())
         return cmp(self._mac, other)
