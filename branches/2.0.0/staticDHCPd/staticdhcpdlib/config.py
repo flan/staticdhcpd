@@ -200,31 +200,33 @@ del inspect
 
 #Inject namespace elements into conf.
 ##############################################################################
-import libpydhcpserver.type_rfc as type_rfc
-conf.rfc3046_decode = type_rfc.rfc3046_decode
-conf.rfc1035_plus = type_rfc.rfc1035_plus
+import libpydhcpserver.dhcp_types.rfc as rfc
+conf.rfc3046_decode = rfc.rfc3046_decode
+conf.rfc1035_plus = rfc.rfc1035_plus
 
-conf.ipToList = type_rfc.ipToList
-conf.ipsToList = type_rfc.ipsToList
-conf.intToList = type_rfc.intToList
-conf.intsToList = type_rfc.intsToList
-conf.longToList = type_rfc.longToList
-conf.longsToList = type_rfc.longsToList
-conf.strToList = type_rfc.strToList
-conf.strToPaddedList = type_rfc.strToPaddedList
+conf.ipToList = rfc.ipToList
+conf.ipsToList = rfc.ipsToList
+conf.listToInt = rfc.listToInt
+conf.listToLong = rfc.listToLong
+conf.intToList = rfc.intToList
+conf.intsToList = rfc.intsToList
+conf.longToList = rfc.longToList
+conf.longsToList = rfc.longsToList
+conf.strToList = rfc.strToList
+conf.strToPaddedList = rfc.strToPaddedList
 
-conf.rfc2610_78 = type_rfc.rfc2610_78
-conf.rfc2610_79 = type_rfc.rfc2610_79
-conf.rfc3361_120 = type_rfc.rfc3361_120
-conf.rfc3397_119 = type_rfc.rfc3397_119
-conf.rfc3925_124 = type_rfc.rfc3925_124
-conf.rfc3925_125 = type_rfc.rfc3925_125
-conf.rfc4174_83 = type_rfc.rfc4174_83
-conf.rfc4280_88 = type_rfc.rfc4280_88
-conf.rfc5223_137 = type_rfc.rfc5223_137
-conf.rfc5678_139 = type_rfc.rfc5678_139
-conf.rfc5678_140 = type_rfc.rfc5678_140
-del type_rfc
+conf.rfc2610_78 = rfc.rfc2610_78
+conf.rfc2610_79 = rfc.rfc2610_79
+conf.rfc3361_120 = rfc.rfc3361_120
+conf.rfc3397_119 = rfc.rfc3397_119
+conf.rfc3925_124 = rfc.rfc3925_124
+conf.rfc3925_125 = rfc.rfc3925_125
+conf.rfc4174_83 = rfc.rfc4174_83
+conf.rfc4280_88 = rfc.rfc4280_88
+conf.rfc5223_137 = rfc.rfc5223_137
+conf.rfc5678_139 = rfc.rfc5678_139
+conf.rfc5678_140 = rfc.rfc5678_140
+del rfc
 
 import logging
 logger = logging.getLogger('conf')

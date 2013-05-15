@@ -69,7 +69,7 @@ import time
 
 from staticdhcpdlib.databases import Definition
 
-from libpydhcpserver.type_rfc import longToList
+from libpydhcpserver.dhcp_types.rfc import longToList
 from libpydhcpserver.dhcp_types.ipv4 import IPv4
 
 _logger = logging.getLogger('contrib.dynamism')
