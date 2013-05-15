@@ -24,6 +24,7 @@ Legal
  
  (C) Neil Tallim, 2013 <flan@uguu.ca>
 """
+import collections
 import logging
 import select
 import threading
@@ -62,6 +63,17 @@ _IP_UNSPECIFIED_FILTER = (None, '', _IP_GLOB, _IP_BROADCAST)
 _IP_REJECTED = '<nil>'
 
 _logger = logging.getLogger('dhcp')
+
+Definition = collections.namedtuple('Definition', (
+ 'ip', 'hostname',
+ 'gateway', 'subnet_mask', 'broadcast_address',
+ 'domain_name', 'domain_name_servers', 'ntp_servers',
+ 'lease_time',
+ 'subnet', 'serial',
+))
+"""
+Like the database version, only with IPv4 objects.
+"""
 
 def _extractIPOrNone(packet, parameter):
     """
@@ -411,7 +423,7 @@ class _PacketWrapper(object):
         @type override_ip_value: sequence|None
         @param override_ip_value: The value to substitute for the default IP.
         
-        @rtype: L{databases._generic.Definition}|None
+        @rtype: L{Definition}|None
         @return: The located Definition, or None if nothing was found.
         """
         ip = self.ip
@@ -419,11 +431,19 @@ class _PacketWrapper(object):
             ip = override_ip_value
             self._associated_ip = ip
             
-        self._definition = self._server.getDatabase().lookupMAC(self.mac) or config.handleUnknownMAC(
+        definition = self._server.getDatabase().lookupMAC(self.mac) or config.handleUnknownMAC(
          self.packet, self._packet_type,
          self.mac, ip and tuple(ip), self.giaddr and tuple(self.giaddr),
          self.pxe and self.pxe_options, self.vendor_options
         )
+        self._definition = Definition(
+         IPv4(definition.ip), definition.hostname,
+         definition.gateway and IPv4(definition.gateway), definition.subnet_mask and IPv4(definition.subnet_mask), definition.broadcast_address and IPv4(definition.broadcast_address),
+         definition.domain_name, [IPv4(i) for i in definition.domain_name_servers.split(',')], [IPv4(i) for i in definition.ntp_servers.split(',')],
+         definition.lease_time,
+         definition.subnet, definition.serial,
+        )
+        
         return self._definition
         
 def _dhcpHandler(packet_type):
