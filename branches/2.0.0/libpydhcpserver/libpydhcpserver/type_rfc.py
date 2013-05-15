@@ -24,7 +24,12 @@ Legal
  
  (C) Neil Tallim, 2010 <red.hamsterx@gmail.com>
 """
-import type_ipv4
+try:
+    from types import StringTypes
+except ImportError: #py3k
+    StringTypes = (str,)
+    
+from dhcp_types.ipv4 import IPv4
 
 def ipToList(ip):
     """
@@ -36,6 +41,8 @@ def ipToList(ip):
     @rtype: list
     @return: The IPv4 expressed as bytes.
     """
+    if isinstance(ip, IPv4):
+        return list(ip)
     return [int(i) for i in ip.split('.')]
     
 def ipsToList(ips):
@@ -48,10 +55,15 @@ def ipsToList(ips):
     @rtype: list
     @return: A collection of bytes corresponding to the given IPv4s.
     """
-    quads = []
-    for ip in ips.split(','):
-        quads += ipToList(ip.strip())
-    return quads
+    if isinstance(ips, StringTypes):
+        tokens = ips.split(',')
+    else:
+        tokens = ips
+        
+    bytes = []
+    for ip in ips:
+        bytes += ipToList(ip)
+    return bytes
     
 def intToList(i):
     """
@@ -101,7 +113,7 @@ def longToList(l):
     
 def longsToList(l):
     """
-    A convenience function that converts a sequence of longs into quads of
+    A convenience function that converts a sequence of longs into a list of
     bytes.
     
     @type l: sequence
@@ -110,10 +122,10 @@ def longsToList(l):
     @rtype: list
     @return: The converted bytes.
     """
-    quads = []
+    bytes = []
     for i in l:
-        quads += longToList(i)
-    return quads
+        bytes += longToList(i)
+    return bytes
     
 def strToList(s):
     """
@@ -235,7 +247,7 @@ class rfc2610_78(RFC):
         """
         self._value = [int(mandatory)]
         for token in [tok for tok in [t.strip() for t in data.split(',')] if tok]:
-            self._value += type_ipv4.ipv4(token).list()
+            self._value += IPv4(token)
             
 class rfc2610_79(RFC):
     def __init__(self, mandatory, data):
@@ -267,7 +279,7 @@ class rfc3361_120(RFC):
         self._value = []
         for token in [tok for tok in [t.strip() for t in data.split(',')] if tok]:
             try:
-                self._value += type_ipv4.ipv4(token).list()
+                self._value += IPv4(token)
                 ip_4_mode = True
             except ValueError:
                 self._value += _rfc1035Parse(token)
@@ -344,7 +356,7 @@ class rfc4174_83(RFC):
         
         self._value = isns_functions + dd_access + admin_flags + isns_security
         for token in [tok for tok in [t.strip() for t in ips.split(',')] if tok]:
-            self._value += type_ipv4.ipv4(token).list()
+            self._value += IPv4(token)
             
             
 class rfc4280_88(rfc1035_plus): pass
@@ -365,7 +377,7 @@ class rfc5678_139(RFC):
         for (code, addresses) in values:
             self._value.append(code)
             for token in [tok for tok in [address.strip() for address in addresses.split(',')] if tok]:
-                self._value += type_ipv4.ipv4(token).list()
+                self._value += IPv4(token)
                 
 class rfc5678_140(RFC):
     def __init__(self, values):
