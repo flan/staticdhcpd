@@ -191,10 +191,21 @@ class DynamicPool(object):
         `arp_timeout` is the number of seconds to wait for a addresses to
         respond.
         """
+        ips = dict((ip, IPv4(ip)) for ip in ips)
         with self._lock:
+            #Filter out duplicates
             allocated_ips = set(ip for (_, ip) in self._map.itervalues())
-            ips = [ip for ip in ips if ip not in self._pool and ip not in allocated_ips]
-            if arp_addresses and arping: #Try to ARP addresses
+            duplicate_ips = []
+            for (ip, ip_obj) in ips.iteritems():
+                if ip_obj in self._pool or ip_obj in allocated_ips:
+                    duplicate_ips.append(ip)
+            if duplicate_ips:
+                for ip in duplicate_ips:
+                    del ips[ip]
+                self._logger.warn("Pruned duplicate IPs: %(ips)r" % {'ips': duplicate_ips,})
+                
+            #Try to ARP addresses
+            if arp_addresses and arping:
                 expiration = time.time() + self._lease_time
                 mapped_ips = 0
                 self._logger.info("Beginning ARP-lookup for %(count)i IPs in pool '%(name)s', with timeout=%(timeout).3fs" % {
@@ -202,12 +213,12 @@ class DynamicPool(object):
                  'timeout': arp_timeout,
                  'name': self._hostname_prefix,
                 })
-                (answered, unanswered) = arping(ips, verbose=0, timeout=arp_timeout)
+                (answered, unanswered) = arping(ips.keys(), verbose=0, timeout=arp_timeout)
                 for answer in answered:
                     try:
                         ip = answer[0].payload.fields['pdst']
                         mac = answer[1].fields['src'].lower()
-                        ips.remove(ip)
+                        ip_obj = ips.pop(ip)
                     except Exception, e:
                         self._logger.debug("Unable to use ARP-discovered binding %(binding)r: %(error)s" % {
                          'binding': answer,
@@ -215,9 +226,9 @@ class DynamicPool(object):
                         })
                     else:
                         mapped_ips += 1
-                        self._map[mac] = [expiration, ip]
+                        self._map[mac] = [expiration, ip_obj]
                         self._logger.info("ARP-discovered %(ip)s bound to %(mac)s in pool '%(name)s'; providing lease until %(time)s" % {
-                         'ip': ip,
+                         'ip': ip_obj,
                          'mac': mac,
                          'time': time.ctime(expiration),
                          'name': self._hostname_prefix,
@@ -226,13 +237,13 @@ class DynamicPool(object):
                  'count': mapped_ips,
                  'name': self._hostname_prefix,
                 })
-            self._pool.extend(ips)
+            self._pool.extend(ips.itervalues())
             total = len(self._pool) + len(self._map)
         self._logger.debug("Added IPs to dynamic pool '%(name)s': %(ips)s" % {
-         'ips': str(ips),
+         'ips': str(list(sorted(ips.values()))),
          'name': self._hostname_prefix,
         })
-        self._logger.info("Added %(count)i IPs to dynamic pool '%(name)s'; new total: %(total)i" % {
+        self._logger.info("Added %(count)i available IPs to dynamic pool '%(name)s'; new total: %(total)i" % {
          'count': len(ips),
          'total': total,
          'name': self._hostname_prefix,
@@ -285,9 +296,9 @@ class DynamicPool(object):
         elements = []
         with self._lock:
             for (mac, (expiration, ip)) in self._map.iteritems():
-                elements.append(_LeaseDefinition(IPv4(ip), mac, expiration, expiration - self._lease_time))
+                elements.append(_LeaseDefinition(ip, mac, expiration, expiration - self._lease_time))
             for ip in self._pool:
-                elements.append(_LeaseDefinition(IPv4(ip), None, None, None))
+                elements.append(_LeaseDefinition(ip, None, None, None))
         return tuple(sorted(elements))
         
     def show_leases_csv(self, *args, **kwargs):
