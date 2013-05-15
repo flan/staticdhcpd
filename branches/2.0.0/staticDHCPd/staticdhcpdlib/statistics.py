@@ -51,6 +51,8 @@ Statistics = collections.namedtuple("Statistics", (
 @type processed: bool
 @param processed: Whether the packet was processed or discarded for any reason.
 `pxe` indicates whether the request arrived via PXE.
+
+client_ip is an IPv4
 """
 
 def emit(statistics):

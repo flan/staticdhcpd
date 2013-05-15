@@ -34,6 +34,8 @@ import config
 import statistics
 
 import libpydhcpserver.dhcp_network
+from libpydhcpserver.dhcp_types.ipv4 import IPv4
+from libpydhcpserver.dhcp_types.mac import MAC
 from libpydhcpserver.type_rfc import (
  ipToList, ipsToList,
  intToList, intsToList,
@@ -70,13 +72,13 @@ def _extractIPOrNone(packet, parameter):
     @type parameter: basestring
     @param parameter: The parameter to be extracted.
         
-    @rtype: list|None
+    @rtype: IPv4|None
     @return: The requested IP.
     """
     addr = packet.getOption(parameter)
     if not addr or not any(addr):
         return None
-    return addr
+    return IPv4(addr)
     
 def _toDottedQuadOrNone(ip):
     """
@@ -155,7 +157,7 @@ class _PacketWrapper(object):
             self._server.evaluateAbuse(self.mac)
         except _PacketSourceUnacceptable, e:
             _logger.warn("Request from %(ip)s ignored: %(reason)s" % {
-             'ip': _toDottedQuadOrNone(self.giaddr),
+             'ip': self.giaddr,
              'reason': str(e),
             })
         except _PacketSourceIgnored, e:
@@ -206,7 +208,7 @@ class _PacketWrapper(object):
                 serial = self._definition.serial
             else:
                 subnet = serial = None
-                ip = _toDottedQuadOrNone(self._associated_ip)
+                ip = self._associated_ip
             statistics.emit(statistics.Statistics(
              self.source_address, self.mac, ip, subnet, serial, self._packet_type, time_taken, not self._discarded, self.pxe,
             ))
