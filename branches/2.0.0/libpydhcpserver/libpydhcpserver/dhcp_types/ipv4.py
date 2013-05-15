@@ -34,6 +34,8 @@ try:
 except ImportError: #py3k
     pass
     
+import rfc
+
 class IPv4(object):
     """
     Evaluates and encodes an IPv4 for use as part of a DHCP packet. 
@@ -53,12 +55,7 @@ class IPv4(object):
                  'ip': address,
                 })
                 self._ip = int(address)
-                self._ip_tuple = (
-                 self._ip >> 24 & 0xFF,
-                 self._ip_long >> 16 & 0xFF,
-                 self._ip_long >> 8 & 0xFF,
-                 self._ip_long & 0xFF,
-                )
+                self._ip_tuple = tuple(rfc.longToList(self._ip))
         else:
             if isinstance(address, StringTypes):
                 octets = (i.strip() for i in address.split('.'))
@@ -91,7 +88,7 @@ class IPv4(object):
             return cmp(str(self), str(other))
         if isinstance(other, IntegerTypes):
             return cmp(int(self), other)
-        return cmp(self._ip_tuple, other)
+        return cmp(self._ip_tuple, tuple(other))
         
     def __hash__(self):
         return hash(self._ip_tuple)
@@ -104,9 +101,7 @@ class IPv4(object):
         
     def __int__(self):
         if self._ip is None:
-            self._ip = 0
-            for (i, v) in enumerate(reversed(self._ip_tuple)):
-                self._ip += v * (256 ** i)
+            self._ip = rfc.listToLong(self._ip_tuple)
         return self._ip
         
     def __long__(self):

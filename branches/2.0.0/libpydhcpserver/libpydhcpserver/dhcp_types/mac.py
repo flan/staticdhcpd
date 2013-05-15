@@ -60,7 +60,7 @@ class MAC(object):
             other = MAC(other)
         if isinstance(other, MAC):
             return cmp(str(self), str(other))
-        return cmp(self._mac, other)
+        return cmp(self._mac, tuple(other))
         
     def __hash__(self):
         return hash(self._mac)

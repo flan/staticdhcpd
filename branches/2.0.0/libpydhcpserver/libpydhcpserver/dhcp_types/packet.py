@@ -1,29 +1,27 @@
 # -*- encoding: utf-8 -*-
 """
-libpydhcpserver module: dhcp_packet
+types.packet
+============
+An encapsulation of a DHCP packet, allowing for easy access and manipulation.
 
-Purpose
-=======
- Extended class to offer convenience functions and processing for DHCP packets.
- 
 Legal
-=====
- This file is part of libpydhcpserver.
- libpydhcpserver is free software; you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation; either version 3 of the License, or
- (at your option) any later version.
+-----
+This file is part of libpydhcpserver.
+libpydhcpserver is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 3 of the License, or
+(at your option) any later version.
 
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
- You should have received a copy of the GNU General Public License
- along with this program. If not, see <http://www.gnu.org/licenses/>.
- 
- (C) Neil Tallim, 2013 <flan@uguu.ca>
- (C) Mathieu Ignacio, 2008 <mignacio@april.org>
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+(C) Neil Tallim, 2013 <flan@uguu.ca>
+(C) Mathieu Ignacio, 2008 <mignacio@april.org>
 """
 import logging
 import operator
@@ -31,8 +29,8 @@ from struct import (pack, unpack)
 from struct import pack
 
 from dhcp_constants import *
-from types.mac import MAC
-from type_ipv4 import ipv4
+from mac import MAC
+from ipv4 import IPv4
 from type_rfc import *
 
 _logger = logging.getLogger('libpydhcpserver.types.packet')
@@ -736,7 +734,7 @@ class DHCPPacket(object):
                         break
                 result = ''.join(result)
             elif DHCP_FIELDS_TYPES[opt] == "ipv4":
-                result = ipv4(data).str()
+                result = str(IPv4(data))
             elif DHCP_FIELDS_TYPES[opt] == "hwmac":
                 result = []
                 hexsym = ('0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f',)
@@ -785,7 +783,7 @@ class DHCPPacket(object):
             elif DHCP_OPTIONS_TYPES[optnum] in ("ipv4", "ipv4+", "ipv4*"):
                 result = []
                 for i in xrange(0, len(data), 4):
-                    result.append(ipv4(data[i:i+4]).str())
+                    result.append(str(IPv4(data[i:i+4])))
                 result = ', '.join(result)
             else:
                 result = str(data)

@@ -92,7 +92,7 @@ staticDHCPd's configurable thresholds.
 Parameters
 ------------------------------
     packet: the packet received from the client, an instance of
-            `libpydhcpserver.dhcp_packet.DHCPPacket`
+            `libpydhcpserver.dhcp_types.packet.DHCPPacket`
     method: a string describing the type of DHCP request the packet represents,
             one of 'DECLINE', 'DISCOVER', 'INFORM', 'RELEASE',
             'REQUEST:INIT-REBOOT','REQUEST:REBIND', 'REQUEST:RENEW',
@@ -147,7 +147,7 @@ the blanks.
 Parameters
 ------------------------------
     packet: the packet received from the client, an instance of
-            `libpydhcpserver.dhcp_packet.DHCPPacket`
+            `libpydhcpserver.dhcp_types.packet.DHCPPacket`
     method: a string describing the type of DHCP request the packet represents,
             one of 'DECLINE', 'DISCOVER', 'INFORM', 'RELEASE',
             'REQUEST:INIT-REBOOT','REQUEST:REBIND', 'REQUEST:RENEW',
@@ -202,7 +202,7 @@ define your own blacklist rules and behaviour.
 Parameters
 ------------------------------
     packet: the packet received from the client, an instance of
-            `libpydhcpserver.dhcp_packet.DHCPPacket`
+            `libpydhcpserver.dhcp_types.packet.DHCPPacket`
     method: a string describing the type of DHCP request the packet represents,
             one of 'DECLINE', 'DISCOVER', 'INFORM', 'RELEASE',
             'REQUEST:INIT-REBOOT','REQUEST:REBIND', 'REQUEST:RENEW',
