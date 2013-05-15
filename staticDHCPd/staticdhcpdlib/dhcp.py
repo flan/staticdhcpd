@@ -37,7 +37,7 @@ import statistics
 import libpydhcpserver.dhcp_network
 from libpydhcpserver.dhcp_types.ipv4 import IPv4
 from libpydhcpserver.dhcp_types.mac import MAC
-from libpydhcpserver.type_rfc import (
+from libpydhcpserver.dhcp_types.rfc import (
  ipToList, ipsToList,
  longToList,
  strToList,
