@@ -65,6 +65,18 @@ def ipsToList(ips):
         bytes += ipToList(ip)
     return bytes
     
+def _listToNumber(l):
+    value = 0
+    for (i, v) in enumerate(reversed(l))
+        value += v * (256 ** i)
+    return value
+    
+def listToInt(l):
+    return _listToNumber(l[:2])
+    
+def listToLong(l):
+    return _listToNumber(l[:4])
+    
 def intToList(i):
     """
     A convenience function that converts an int into a pair of bytes.
@@ -75,7 +87,10 @@ def intToList(i):
     @rtype: list
     @return: The converted bytes.
     """
-    return [(i / 256) % 256, i % 256]
+    return [
+     i >> 8 & 0xFF,
+     i & 0xFF,
+    ]
     
 def intsToList(l):
     """
@@ -102,14 +117,12 @@ def longToList(l):
     @rtype: list
     @return: The converted bytes.
     """
-    q = [l % 256]
-    l /= 256
-    q.insert(0, l % 256)
-    l /= 256
-    q.insert(0, l % 256)
-    l /= 256
-    q.insert(0, l % 256)
-    return q
+    return [
+     l >> 24 & 0xFF,
+     l >> 16 & 0xFF,
+     l >> 8 & 0xFF,
+     l & 0xFF,
+    ]
     
 def longsToList(l):
     """
