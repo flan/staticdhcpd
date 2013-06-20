@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
-libpydhcpserver module: dhcp_constants
+libpydhcpserver module: constants
 
 Purpose
 =======
