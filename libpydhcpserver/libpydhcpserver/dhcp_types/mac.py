@@ -56,7 +56,7 @@ class MAC(object):
                 raise ValueError("Expected a sequence of six bytes as a MAC identifier; received " + repr(self._mac))
                 
     def __cmp__(self, other):
-        if other is None:
+        if not other:
             return 1
         if isinstance(other, StringTypes):
             other = MAC(other)
