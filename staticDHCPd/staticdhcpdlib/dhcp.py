@@ -585,7 +585,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         if not wrapper.ciaddr:
             raise _PacketSourceBlacklist("ciaddr was not specified")
             
-        definition = wrapper.retrieveDefinition(override_ip, override_ip_value=wrapper.ciaddr)
+        definition = wrapper.retrieveDefinition(override_ip=True, override_ip_value=wrapper.ciaddr)
         if definition:
             wrapper.packet.transformToDHCPAckPacket()
             if wrapper.loadDHCPPacket(definition, inform=True):

@@ -75,9 +75,12 @@ def _daemonise():
     os.chdir('/') #Avoid holding references to unstable resources
     
     #And lastly, clean up the base descriptors
-    os.dup2(open('/dev/null', 'r').fileno(), sys.stdin.fileno())
-    os.dup2(open('/dev/null', 'a+').fileno(), sys.stdout.fileno())
-    os.dup2(open('/dev/null', 'a+', 0).fileno(), sys.stderr.fileno())
+    si = open('/dev/null', 'r')
+    so = open('/dev/null', 'a+')
+    se = open('/dev/null', 'a+', 0)
+    os.dup2(si.fileno(), sys.stdin.fileno())
+    os.dup2(so.fileno(), sys.stdout.fileno())
+    os.dup2(se.fileno(), sys.stderr.fileno())
     
     if os.fork(): #The second fork, to ensure TTY cannot be reacquired
         sys.exit(0)

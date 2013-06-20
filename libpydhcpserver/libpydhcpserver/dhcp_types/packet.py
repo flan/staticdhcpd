@@ -28,7 +28,7 @@ import operator
 from struct import (pack, unpack)
 from struct import pack
 
-from ..dhcp_constants import *
+from constants import *
 from mac import MAC
 from ipv4 import IPv4
 from rfc import *
@@ -53,7 +53,7 @@ class DHCPPacket(object):
         """
         self._options_data = {}
         if not data: #Just create a blank packet and bail.
-            self._packet_data = [0]*240
+            self._packet_data = [0] * 240
             self._packet_data[236:240] = MAGIC_COOKIE
             return
             
@@ -531,7 +531,7 @@ class DHCPPacket(object):
         if opt_124:
             data = []
             while opt_124:
-                enterprise_number = ipv4(opt_124[:4]).int()
+                enterprise_number = int(IPv4(opt_124[:4]))
                 opt_124 = opt_124[4:]
                 payload_size = ord(opt_124[0])
                 payload = opt_124[1:1 + payload_size]
@@ -543,7 +543,7 @@ class DHCPPacket(object):
         if opt_125:
             data = []
             while opt_125:
-                enterprise_number = ipv4(opt_125[:4]).int()
+                enterprise_number = int(IPv4(opt_125[:4]))
                 opt_125 = opt_125[4:]
                 payload_size = ord(opt_125[0])
                 payload = opt_125[1:1 + payload_size]
@@ -724,7 +724,7 @@ class DHCPPacket(object):
             elif DHCP_FIELDS_TYPES[opt] == "16-bits":
                 result = str(data[0] * 256 + data[1])
             elif DHCP_FIELDS_TYPES[opt] == "32-bits":
-                result = str(ipv4(data).int())
+                result = str(int(IPv4(data)))
             elif DHCP_FIELDS_TYPES[opt] == "string":
                 result = []
                 for c in data:
@@ -736,11 +736,7 @@ class DHCPPacket(object):
             elif DHCP_FIELDS_TYPES[opt] == "ipv4":
                 result = str(IPv4(data))
             elif DHCP_FIELDS_TYPES[opt] == "hwmac":
-                result = []
-                hexsym = ('0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f',)
-                for iterator in xrange(6):
-                    result.append(str(hexsym[data[iterator] / 16] + hexsym[data[iterator] % 16]))
-                result = ':'.join(result)
+                result = str(MAC(data))
             output.append("%(opt)s: %(result)s" % {
              'opt': opt,
              'result': result,
@@ -778,7 +774,7 @@ class DHCPPacket(object):
             elif DHCP_OPTIONS_TYPES[optnum] in ("32-bits", "32-bits+"):
                 result = []
                 for i in xrange(0, len(data), 4):
-                    result.append(str(ipv4(data[i:i+4]).int()))
+                    result.append(str(int(IPv4(data[i:i+4]))))
                 result = ', '.join(result)
             elif DHCP_OPTIONS_TYPES[optnum] in ("ipv4", "ipv4+", "ipv4*"):
                 result = []
