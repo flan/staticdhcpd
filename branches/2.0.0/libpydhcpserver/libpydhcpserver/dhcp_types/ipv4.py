@@ -69,7 +69,7 @@ class IPv4(object):
                  'ip': address,
                 })
             else:
-                if len(x) < 4:
+                if len(octets) < 4:
                     raise ValueError("%(ip)r is not a valid IPv4: length < 4" % {
                      'ip': address,
                     })
@@ -82,6 +82,8 @@ class IPv4(object):
                 self._ip_tuple = tuple(octets)
                 
     def __cmp__(self, other):
+        if other is None:
+            return 1
         if isinstance(other, StringTypes):
             other = IPv4(other)
         if isinstance(other, IPv4):

@@ -67,7 +67,7 @@ def ipsToList(ips):
     
 def _listToNumber(l):
     value = 0
-    for (i, v) in enumerate(reversed(l))
+    for (i, v) in enumerate(reversed(l)):
         value += v * (256 ** i)
     return value
     

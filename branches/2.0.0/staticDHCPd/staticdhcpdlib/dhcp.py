@@ -418,7 +418,9 @@ class _PacketWrapper(object):
         self._definition = Definition(
          IPv4(definition.ip), definition.hostname,
          definition.gateway and IPv4(definition.gateway), definition.subnet_mask and IPv4(definition.subnet_mask), definition.broadcast_address and IPv4(definition.broadcast_address),
-         definition.domain_name, [IPv4(i) for i in definition.domain_name_servers.split(',')], [IPv4(i) for i in definition.ntp_servers.split(',')],
+         definition.domain_name,
+         definition.domain_name_servers and [IPv4(i) for i in definition.domain_name_servers.split(',')],
+         definition.ntp_servers and [IPv4(i) for i in definition.ntp_servers.split(',')],
          definition.lease_time,
          definition.subnet, definition.serial,
         )
