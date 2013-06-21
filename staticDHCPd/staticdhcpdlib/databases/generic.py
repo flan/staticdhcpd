@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
-staticDHCPd module: databases._generic
+staticDHCPd module: databases.generic
 
 Purpose
 =======

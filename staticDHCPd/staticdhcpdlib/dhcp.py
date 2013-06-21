@@ -323,7 +323,7 @@ class _PacketWrapper(object):
         """
         Sets option fields based on values returned from the database.
         
-        @type definition: L{databases._generic.Definition}
+        @type definition: L{databases.generic.Definition}
         @param definition: The value returned from the database or surrogate source.
         @type inform: bool
         @param inform: True if this is a response to an INFORM message, which
@@ -368,7 +368,7 @@ class _PacketWrapper(object):
         Loads the packet with all normally required values, then passes it
         through custom scripting to add additional fields as needed.
         
-        @type definition: L{databases._generic.Definition}
+        @type definition: L{databases.generic.Definition}
         @param definition: The definition retrieved from the database.
         @type inform: bool
         @param inform: Whether this is an INFORM scenario, which omits
@@ -468,7 +468,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         @type pxe_port: int|NoneType
         @param pxe_port: The port on which to listen for PXE requests, or a
             NoneType if PXE support is disabled.
-        @type database: L{databases._generic.Database}
+        @type database: L{databases.generic.Database}
         @param database: The database to use for retrieving lease definitions.
         
         @raise Exception: If a problem occurs while initializing the sockets
@@ -875,7 +875,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         """
         Returns the database this server is configured to use.
         
-        @rtype: L{databases._generic.Database}
+        @rtype: L{databases.generic.Database}
         @return: The database to use for retrieving lease definitions.
         """
         return self._database
@@ -924,7 +924,7 @@ class DHCPService(threading.Thread):
         """
         Sets up the DHCP server.
         
-        @type database: L{databases._generic.Database}
+        @type database: L{databases.generic.Database}
         @param database: The database to use for retrieving lease definitions.
         
         @raise Exception: If a problem occurs while binding the sockets needed

@@ -28,7 +28,6 @@ Legal
 import logging
 
 from .. import config
-from _generic import (Definition, Database)
 
 _logger = logging.getLogger('databases')
 
@@ -36,7 +35,7 @@ def get_database():
     """
     Assembles and returns a database-interface object.
     
-    @rtype: _generic.Database
+    @rtype: generic.Database
     @return A database interface, usable to access DHCP information.
     """
     if callable(config.DATABASE_ENGINE):
@@ -48,7 +47,7 @@ def get_database():
     })
     
     if not config.DATABASE_ENGINE:
-        from _generic import Null
+        from generic import Null
         return Null()
     elif config.DATABASE_ENGINE == 'SQLite':
         from _sql import SQLite
