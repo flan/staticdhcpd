@@ -47,7 +47,7 @@ def get_database():
     })
     
     if not config.DATABASE_ENGINE:
-        from generic import Null
+        from _generic import Null
         return Null()
     elif config.DATABASE_ENGINE == 'SQLite':
         from _sql import SQLite
