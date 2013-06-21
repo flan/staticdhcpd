@@ -34,7 +34,7 @@ from libpydhcpserver.dhcp_types.mac import MAC
 
 from .. import config
 
-from _generic import (Definition, Database)
+from generic import (Definition, Database)
 
 _logger = logging.getLogger("databases._ini")
 
