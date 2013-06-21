@@ -88,8 +88,8 @@ DATABASE_ENGINE : text, None : MUST BE SPECIFIED
    - None, 'SQLite', 'PostgreSQL', 'Oracle', 'MySQL', 'INI'
  - Only parameters related to the chosen database engine need to be supplied
  - You may alternatively supply a callable that returns an instance of
-   databases.Database, if you want to implement your own engine without messing
-   with core code
+   databases.generic.Database, if you want to implement your own engine without
+   messing with core code
    - The callable must require no arguments
    - To keep conf.py clean, define your engine in a separate module, like
      _mydb.py and import it just before DATABASE_ENGINE is set, referencing a
