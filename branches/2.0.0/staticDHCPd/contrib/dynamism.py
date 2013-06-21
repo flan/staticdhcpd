@@ -67,7 +67,7 @@ import logging
 import threading
 import time
 
-from staticdhcpdlib.databases import Definition
+from staticdhcpdlib.databases.generic import Definition
 
 from libpydhcpserver.dhcp_types.rfc import longToList
 from libpydhcpserver.dhcp_types.ipv4 import IPv4
