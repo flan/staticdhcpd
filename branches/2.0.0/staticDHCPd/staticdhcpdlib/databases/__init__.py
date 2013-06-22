@@ -27,8 +27,6 @@ Legal
 """
 import logging
 
-from .. import config
-
 _logger = logging.getLogger('databases')
 
 def get_database():
@@ -38,6 +36,8 @@ def get_database():
     @rtype: generic.Database
     @return A database interface, usable to access DHCP information.
     """
+    from .. import config #Deferred import to avoid circular issues when defining custom databases that import from generic
+    
     if callable(config.DATABASE_ENGINE):
         _logger.debug("Custom database engine supplied; initialising...")
         return config.DATABASE_ENGINE()
