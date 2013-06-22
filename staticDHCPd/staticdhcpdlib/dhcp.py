@@ -415,7 +415,7 @@ class _PacketWrapper(object):
          self.mac, ip, self.giaddr,
          self.pxe and self.pxe_options, self.vendor_options
         )
-        self._definition = Definition(
+        self._definition = definition and Definition(
          IPv4(definition.ip), definition.hostname,
          definition.gateway and IPv4(definition.gateway), definition.subnet_mask and IPv4(definition.subnet_mask), definition.broadcast_address and IPv4(definition.broadcast_address),
          definition.domain_name,
