@@ -23,8 +23,7 @@ import json
 import logging
 import urllib2
 
-from staticdhcpdlib.databases.generic import (Definition, Database)
-from staticdhcpdlib.databases._generic import (CachingDatabase)
+from staticdhcpdlib.databases.generic import (Definition, Database, CachingDatabase)
 
 _logger = logging.getLogger("contrib.httpdb")
 
@@ -128,6 +127,7 @@ class HTTPDatabase(Database, _HTTPLogic):
         
 class HTTPCachingDatabase(CachingDatabase, _HTTPLogic):
     def __init__(self):
-        CachingDatabase.__init__(self, concurrency_limit=2147483647)
+        #CachingDatabase.__init__(self, concurrency_limit=20) #The default limit is 2147483647
+        CachingDatabase.__init__(self)
         _HTTPLogic.__init__(self)
         
