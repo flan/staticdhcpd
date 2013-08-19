@@ -16,6 +16,8 @@ HTTPCachingDatabase and modify the limit it defines.
 
 Like staticDHCPd, this module under the GNU General Public License v3
 (C) Neil Tallim, 2013 <flan@uguu.ca>
+
+Created in response to a request from Aleksandr Chusov.
 """
 import json
 import logging
