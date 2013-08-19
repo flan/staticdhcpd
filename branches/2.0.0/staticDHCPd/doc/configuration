@@ -97,8 +97,7 @@ DATABASE_ENGINE : text, None : MUST BE SPECIFIED
    - If you need to configure it differently for each server, declare a lambda
      or short function in conf.py and make changes to that as needed
    - It is sane to inherit from subclasses like CachingDatabase or the SQL
-     family, but their implementations are technically unstable and may change
-     in the future, breaking your code, though this is extremely unlikely
+     family
    - If you need to tie into callbacks, like reinitialisation, you should do
      this as part of the callable's logic; the callbacks object is not available
      at the time that conf.py is first processed, but it is available while the

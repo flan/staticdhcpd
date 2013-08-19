@@ -27,6 +27,7 @@ Legal
 """
 import collections
 import logging
+import threading
 
 _logger = logging.getLogger('databases.generic')
 
@@ -69,6 +70,98 @@ class Database(object):
         @raise Exception: If a problem occurs while accessing the database.
         """
         raise NotImplementedError("lookupMAC() must be implemented by subclasses")
+        
+    def reinitialise(self):
+        """
+        Though subclass-dependent, this will generally result in some guarantee
+        that the database will provide fresh data, whether that means flushing
+        a cache or reconnecting to the source.
+        """
+        
+class CachingDatabase(Database):
+    """
+    A partial implementation of the Database engine, adding generic caching
+    logic and concurrency-throttling.
+    """
+    _resource_lock = None #: A lock used to prevent the database from being overwhelmed.
+    _cache_lock = None #: A lock used to prevent multiple simultaneous cache updates.
+    _mac_cache = None #: A cache used to prevent unnecessary database hits.
+    _subnet_cache = None #: A cache used to prevent unnecessary database hits.
+    _use_cache = False #: Whether caching should be enabled.
+    
+    def __init__(self, concurrency_limit=2147483647):
+        """
+        Sets up common attributes of broker objects.
+        
+        Must be invoked by subclasses' __init__() methods.
+        
+        @type concurrency_limit: int
+        @param concurrent_limit: The number of concurrent database hits to
+            permit, defaulting to a ridiculously large number.
+        """
+        from .. import config
+        self._use_cache = config.USE_CACHE
+        
+        _logger.debug("Initialising database with a maximum of %(count)i concurrent connections" % {'count': concurrency_limit,})
+        self._resource_lock = threading.BoundedSemaphore(concurrency_limit)
+        self._setupCache()
+        
+    def _setupCache(self):
+        """
+        Sets up the SQL broker cache.
+        """
+        if self._use_cache:
+            self._cache_lock = threading.Lock()
+            self._mac_cache = {}
+            self._subnet_cache = {}
+            _logger.debug("Database cache initialised")
+            
+    def reinitialise(self):
+        if self._use_cache:
+            with self._cache_lock:
+                self._mac_cache.clear()
+                self._subnet_cache.clear()
+            _logger.info("Database cache cleared")
+            
+    def lookupMAC(self, mac):
+        mac = str(mac)
+        if self._use_cache:
+            with self._cache_lock:
+                data = self._mac_cache.get(mac)
+            if data:
+                (ip, hostname, subnet_id) = data
+                return Definition(*((ip, hostname,) + self._subnet_cache[subnet_id] + subnet_id))
+                
+        with self._resource_lock:
+            definition = self._lookupMAC(mac)
+            if definition and self._use_cache:
+                subnet_id = (definition.subnet, definition.serial)
+                with self._cache_lock:
+                    self._mac_cache[mac] = (definition.ip, definition.hostname, subnet_id,)
+                    self._subnet_cache[subnet_id] = (
+                     definition.gateway, definition.subnet_mask, definition.broadcast_address,
+                     definition.domain_name, definition.domain_name_servers, definition.ntp_servers,
+                     definition.lease_time
+                    )
+            return definition
+            
+class Null(Database):
+    """
+    A database that never serves anything, useful in case other modules provide
+    definitions.
+    """
+    def lookupMAC(self, mac):
+        """
+        Queries the database for the given MAC address and returns the IP and
+        associated details if the MAC is known.
+        
+        @type mac: basestring
+        @param mac: The MAC address to lookup.
+        
+        @rtype: None
+        @return: Nothing, because no data is managed.
+        """
+        return None
         
     def reinitialise(self):
         """
