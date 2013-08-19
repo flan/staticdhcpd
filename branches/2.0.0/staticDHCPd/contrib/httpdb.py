@@ -26,7 +26,7 @@ import urllib2
 from staticdhcpdlib.databases.generic import (Definition, Database)
 from staticdhcpdlib.databases._generic import (CachingDatabase)
 
-_logger = logging.getLogger("httpdb")
+_logger = logging.getLogger("contrib.httpdb")
 
 #This class implements your lookup method; to customise this module for your
 #site, all you should need to do is edit this section.
