@@ -106,6 +106,9 @@ DATABASE_ENGINE : text, None : MUST BE SPECIFIED
      - Alternatively, you can create the object at the conf.py level, write a
        simple "lambda : _MY_INSTANTIATED_DATABASE_OBJECT" as the callable, and
        operate on _MY_INSTANTIATED_DATABASE_OBJECT in init(), for consistency
+     - Note: the database object's reinitialise() method is automatically
+       registered, so you only need to tie into callbacks if you need behaviour
+       that cannot be captured there
        
 Database:None
 ------------------------------
