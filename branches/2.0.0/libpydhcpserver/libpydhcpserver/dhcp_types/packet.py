@@ -537,7 +537,7 @@ class DHCPPacket(object):
                 payload = opt_124[1:1 + payload_size]
                 opt_124 = opt_124[1 + payload_size:]
                 
-                data.append(enterprise_number, payload)
+                data.append((enterprise_number, payload))
             opt_124 = data
             
         if opt_125:
@@ -555,9 +555,9 @@ class DHCPPacket(object):
                     subopt_size = payload[1]
                     subpayload = payload[2:2 + subopt_size]
                     payload = payload[2 + subopt_size:]
-                    subdata.append(subopt, subpayload)
+                    subdata.append((subopt, subpayload))
                     
-                data.append(enterprise_number, subdata)
+                data.append((enterprise_number, subdata))
             opt_125 = data
             
         self.deleteOption("vendor_specific_information")

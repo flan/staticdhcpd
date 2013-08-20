@@ -814,10 +814,10 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
             port = self._client_port
         else: #Unicast
             giaddr = _extractIPOrNone(packet, 'giaddr')
+            ip = address[0]
             if giaddr: #Relayed request.
                 port = self._server_port
             else: #Request directly from client, routed or otherwise.
-                ip = address[0]
                 if pxe:
                     ip = _extractIPOrNone(packet, 'ciaddr') or ip
                     port = address[1] or self._client_port #BSD doesn't seem to preserve port information
