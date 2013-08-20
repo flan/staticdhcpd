@@ -34,7 +34,7 @@ try:
 except ImportError: #py3k
     pass
     
-import rfc
+from common import (longToList, listToLong)
 
 class IPv4(object):
     """
@@ -55,7 +55,7 @@ class IPv4(object):
                  'ip': address,
                 })
                 self._ip = int(address)
-                self._ip_tuple = tuple(rfc.longToList(self._ip))
+                self._ip_tuple = tuple(longToList(self._ip))
         else:
             if isinstance(address, StringTypes):
                 octets = (i.strip() for i in address.split('.'))
@@ -103,7 +103,7 @@ class IPv4(object):
         
     def __int__(self):
         if self._ip is None:
-            self._ip = rfc.listToLong(self._ip_tuple)
+            self._ip = listToLong(self._ip_tuple)
         return self._ip
         
     def __long__(self):
