@@ -9,7 +9,7 @@ from libpydhcpserver import VERSION
 setup(
  name = 'libpydhcpserver',
  version = VERSION,
- description = "A well-tested, spec-compliant DHCP-packet-processing library",
+ description = "Pure-Python, spec-compliant DHCP-packet-processing library",
  author = 'Neil Tallim',
  author_email = 'flan@uguu.ca',
  license = 'GPLv3',

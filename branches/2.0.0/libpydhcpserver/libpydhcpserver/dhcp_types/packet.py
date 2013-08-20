@@ -24,7 +24,6 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 (C) Mathieu Ignacio, 2008 <mignacio@april.org>
 """
 import logging
-import operator
 from struct import (pack, unpack)
 from struct import pack
 
