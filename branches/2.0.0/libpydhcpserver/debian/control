@@ -2,12 +2,12 @@ Source: libpydhcpserver
 Maintainer: Neil Tallim <flan@uguu.ca>
 Section: python
 Priority: optional
-Build-Depends: python-all (>= 2.6.6-3), debhelper (>= 7)
+Build-Depends: python-all (>= 2.4), debhelper (>= 7)
 Standards-Version: 3.9.1
 
 Package: python-libpydhcpserver
 Architecture: all
-Depends: ${misc:Depends}, ${python:Depends}
+Depends: ${misc:Depends}, python (>=2.4)
 Description: Pure-Python, spec-compliant DHCP-packet-processing library
  libpydhcpserver provides the implementation for staticDHCPd's DHCP-processing
  needs, but has a stable API and may be used by other applications that have a
