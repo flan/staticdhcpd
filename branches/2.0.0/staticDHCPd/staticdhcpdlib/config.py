@@ -5,7 +5,7 @@ staticDHCPd module: config
 WARNING
 =======
  If you are attempting to customise your environment, edit conf.py instead.
- If testing, it will likely be in conf/, if installed, in /etc/staticDHCPd/,
+ If testing, it will likely be in conf/; if installed, in /etc/staticDHCPd/;
  or, if upgrading from an older version, in the same directory as main.py.
  
  This file is intended for internal use only and modifications here will
@@ -56,8 +56,12 @@ except IOError:
         sys.path.remove(etc_path)
         
         raise ImportError("Unable to find a suitable copy of conf.py")
+    else:
+        sys.path.append(os.path.join(etc_path, 'extensions'))
     finally:
         del etc_path
+else:
+    sys.path.append(os.path.join(conf_path, 'extensions'))
 finally:
     del conf_path
     del os

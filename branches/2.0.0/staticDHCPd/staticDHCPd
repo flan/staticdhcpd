@@ -35,6 +35,19 @@ import traceback
 
 import staticdhcpdlib
 import libpydhcpserver
+interesting_args = [v for v in sys.argv if v in ('--version', '-v', '--help', '-h')]
+if interesting_args:
+    if '--version' in interesting_args or '-v' in interesting_args:
+        print(
+         "staticDHCPd v" + staticdhcpdlib.VERSION + " - " + staticdhcpdlib.URL +
+         " | libpydhcpserver v" + libpydhcpserver.VERSION + " - " + libpydhcpserver.URL
+        )
+    elif '--help' in interesting_args or '-h' in interesting_args:
+        print("staticDHCPd [[--help | -h] | [--version | -v]]")
+        print("staticDHCPd searches for `conf.py' in `/etc/staticDHCPd' and `./conf'")
+        print("For more information, please see http://uguu.ca/ or http://staticdhcpd.googlecode.com/")
+    sys.exit(0)
+del interesting_args
 import staticdhcpdlib.config
 
 _logger = logging.getLogger('main')
@@ -163,10 +176,10 @@ def _initialise():
         
         if staticdhcpdlib.config.WEB_REINITIALISE_ENABLED:
             staticdhcpdlib.web.registerMethodCallback(
-            '/ca/uguu/puukusoft/staticDHCPd/reinitialise', staticdhcpdlib.web.methods.reinitialise,
-            hidden=staticdhcpdlib.config.WEB_REINITIALISE_HIDDEN, module='core', name='reinitialise',
-            secure=staticdhcpdlib.config.WEB_REINITIALISE_SECURE, confirm=staticdhcpdlib.config.WEB_REINITIALISE_CONFIRM,
-            display_mode=staticdhcpdlib.web.WEB_METHOD_DASHBOARD
+             '/ca/uguu/puukusoft/staticDHCPd/reinitialise', staticdhcpdlib.web.methods.reinitialise,
+             hidden=staticdhcpdlib.config.WEB_REINITIALISE_HIDDEN, module='core', name='reinitialise',
+             secure=staticdhcpdlib.config.WEB_REINITIALISE_SECURE, confirm=staticdhcpdlib.config.WEB_REINITIALISE_CONFIRM,
+             display_mode=staticdhcpdlib.web.WEB_METHOD_DASHBOARD
             )
             
         if staticdhcpdlib.config.WEB_HEADER_TITLE:

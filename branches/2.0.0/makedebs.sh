@@ -3,9 +3,9 @@ cd libpydhcpserver
 /usr/bin/debuild -uc -us
 cd ..
 
-#cd staticDHCPd
-#/usr/bin/debuild -uc -us
-#cd ..
+cd staticDHCPd
+/usr/bin/debuild -uc -us
+cd ..
 
 rm *.dsc
 rm *.changes

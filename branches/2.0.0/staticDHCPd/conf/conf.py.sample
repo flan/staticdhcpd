@@ -1,3 +1,6 @@
+#Copy this file to one of the following locations, then rename it to conf.py:
+#/etc/staticDHCPd/, ./conf/
+
 #For a full overview of what these parameters mean, and to further customise
 #your system, please consult doc/configuration and doc/scripting
 

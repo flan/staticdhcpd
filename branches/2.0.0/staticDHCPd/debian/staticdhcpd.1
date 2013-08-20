@@ -1,0 +1,48 @@
+.\"                                      Hey, EMACS: -*- nroff -*-
+.\" First parameter, NAME, should be all caps
+.\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
+.\" other parameters are allowed: see man(7), man(1)
+.TH staticDHCPd 1 "Aug 20, 2013"
+.\" Please adjust this date whenever revising the manpage.
+.\"
+.\" Some roff macros, for reference:
+.\" .nh        disable hyphenation
+.\" .hy        enable hyphenation
+.\" .ad l      left justify
+.\" .ad b      justify to both left and right margins
+.\" .nf        disable filling
+.\" .fi        enable filling
+.\" .br        insert line break
+.\" .sp <n>    insert n+1 empty lines
+.\" for manpage-specific macros, see man(7)
+.SH NAME
+staticdhcpd \- Provides DHCP services to a network
+.SH SYNOPSIS
+.B staticdhcpd
+.RI ["--version" | "--help"]
+.SH DESCRIPTION
+\fBstaticdhcpd\fP is a daemon that provides DHCP leases to clients on a network,
+for autoconfiguration purposes. It differs from others by focusing on
+customisability, allowing users to have as much control as possible over how
+their network operates, and simplifying common tasks like automating
+provisioning and reporting workflows. RFC-compliance and performance are also
+maintained.
+.SH OPTIONS
+.B \-\-version, \-v
+.TP
+View the current version.
+.br
+.B \-\-help, \-h
+.TP
+View help, which isn't particularly helpful.
+.SH SEE ALSO
+Useful documentation is available in \fI/usr/share/doc/staticdhcpd/\fP.
+.br
+\fBconfiguration\fP describes every option that can be used to configure
+staticDHCPd.
+.br
+\fBscripting\fP provides extensive information on how to effect customisations.
+.SH AUTHOR
+Neil Tallim <flan@uguu.ca>
+.br
+Other authors and contributors credited in source, where appropriate.

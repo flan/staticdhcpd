@@ -24,6 +24,9 @@ setup(
   ('/etc/staticDHCPd', [
    'conf/conf.py.sample',
   ]),
+  ('/etc/staticDHCPd/extensions', [
+   'conf/extensions/HOWTO',
+  ]),
  ],
  scripts = [
   'staticDHCPd',

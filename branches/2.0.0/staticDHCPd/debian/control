@@ -1,0 +1,22 @@
+Source: staticdhcpd
+Maintainer: Neil Tallim <flan@uguu.ca>
+Section: python
+Priority: optional
+Build-Depends: python-all (>= 2.4), debhelper (>= 7.4.3)
+Standards-Version: 3.9.1
+
+Package: staticdhcpd
+Architecture: all
+Depends: ${misc:Depends}, python (>=2.4), python-libpydhcpserver (=1.2.0)
+Suggests: python-scapy (>= 2.0.1), python-mysqldb (>= 1.2), python-psycopg2 (>=2.2)
+Description: Highly customisable, static-lease-focused DHCP server
+ staticDHCPd is an extensively customisable, high-performance,
+ RFC-spec-compliant DHCP server, well-suited to labs, LAN parties, home and
+ small-office networks, and specialised networks of vast size.
+ It supports all major DHCP extension RFCs and features a rich, plugin-oriented
+ web-interface, has a variety of modules, ranging from statistics-management
+ to notification services to dynamic address-provisioning and
+ network-auto-discovery.
+ Multiple backend databases are supported, from INI files to RDBMS SQL servers,
+ with examples of how to write and integrate your own, such as a REST-JSON
+ endpoint, simple enough to complete in minutes.
