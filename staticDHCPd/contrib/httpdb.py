@@ -106,7 +106,7 @@ class _HTTPLogic(object):
              'mac': str(mac),
             })
             return definition
-        except Exception as e:
+        except Exception, e:
             _logger.error("Failed to lookup '%(mac)s' on '%(uri)s': %(error)s" % {
              'uri': self._URI,
              'mac': str(mac),

@@ -1,0 +1,1 @@
+To make extension-modules (those things in contrib/) available for import in conf.py, place them into this directory.
