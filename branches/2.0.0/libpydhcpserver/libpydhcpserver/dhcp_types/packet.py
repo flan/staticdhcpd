@@ -77,7 +77,7 @@ class DHCPPacket(object):
                 position += 1
             elif self._packet_data[position] == 255: #End option; stop processing.
                 break
-            elif DHCP_OPTIONS_TYPES.has_key(self._packet_data[position]) and not self._packet_data[position] == 255:
+            elif self._packet_data[position] in DHCP_OPTIONS_TYPES and not self._packet_data[position] == 255:
                 opt_len = self._packet_data[position + 1]
                 opt_first = position + 1
                 opt_id = self._packet_data[position]
@@ -115,7 +115,7 @@ class DHCPPacket(object):
         #Pull options out of the payload, excluding options not specifically
         #requested, assuming any specific requests were made.
         options = {}
-        for key in self._options_data.keys():
+        for key in self._options_data:
             option_id = DHCP_OPTIONS[key]
             if self._requested_options is None or option_id in self._requested_options:
                 option_value = self._options_data[key]
@@ -182,7 +182,7 @@ class DHCPPacket(object):
         @rtype: bool
         @return: True if the deletion succeeded.
         """
-        if DHCP_FIELDS.has_key(name):
+        if name in DHCP_FIELDS:
             dhcp_field = DHCP_FIELDS[name]
             begin = dhcp_field[0]
             end = dhcp_field[0] + dhcp_field[1]
@@ -191,7 +191,7 @@ class DHCPPacket(object):
         else:
             if type(name) == int: #Translate int to string.
                 name = DHCP_OPTIONS_REVERSE.get(name)
-            if self._options_data.has_key(name):
+            if name in self._options_data:
                 del self._options_data[name]
                 return True
         return False
@@ -237,13 +237,13 @@ class DHCPPacket(object):
         @return: The value of the specified option or None if it hasn't been
             set.
         """
-        if DHCP_FIELDS.has_key(name):
+        if name in DHCP_FIELDS:
             option_info = DHCP_FIELDS[name]
             return self._packet_data[option_info[0]:option_info[0] + option_info[1]]
         else:
             if type(name) == int: #Translate int to string.
                 name = DHCP_OPTIONS_REVERSE.get(name)
-            if self._options_data.has_key(name):
+            if name in self._options_data:
                 return self._options_data[name]
         return None
         
@@ -258,8 +258,8 @@ class DHCPPacket(object):
         @return: True if the option has been set.
         """
         if type(name) == int: #Translate int to string.
-            self._options_data.has_key(DHCP_OPTIONS_REVERSE.get(name))
-        return self._options_data.has_key(name) or DHCP_FIELDS.has_key(name)
+            name = self._options_data.get(DHCP_OPTIONS_REVERSE.get(name))
+        return name in self._options_data or name in DHCP_FIELDS
         
     def setOption(self, name, value):
         """
@@ -280,12 +280,12 @@ class DHCPPacket(object):
         if not isinstance(value, RFC):
             if not type(value) in (list, tuple):
                 return False
-            if [None for v in value if not type(v) == int or not 0 <= v <= 255]:
+            if any(True for v in value if not type(v) == int or not 0 <= v <= 255):
                 return False
             value = list(value)
             
         #Basic checking: is the length of the value valid?
-        if DHCP_FIELDS.has_key(name):
+        if name in DHCP_FIELDS:
             dhcp_field = DHCP_FIELDS[name]
             if not len(value) == dhcp_field[1]:
                 return False 
@@ -533,7 +533,7 @@ class DHCPPacket(object):
             while opt_124:
                 enterprise_number = int(IPv4(opt_124[:4]))
                 opt_124 = opt_124[4:]
-                payload_size = ord(opt_124[0])
+                payload_size = opt_124[0]
                 payload = opt_124[1:1 + payload_size]
                 opt_124 = opt_124[1 + payload_size:]
                 
@@ -545,14 +545,14 @@ class DHCPPacket(object):
             while opt_125:
                 enterprise_number = int(IPv4(opt_125[:4]))
                 opt_125 = opt_125[4:]
-                payload_size = ord(opt_125[0])
+                payload_size = opt_125[0]
                 payload = opt_125[1:1 + payload_size]
                 opt_125 = opt_125[1 + payload_size:]
                 
                 subdata = []
                 while payload:
-                    subopt = ord(payload[0])
-                    subopt_size = ord(payload[1])
+                    subopt = payload[0]
+                    subopt_size = payload[1]
                     subpayload = payload[2:2 + subopt_size]
                     payload = payload[2 + subopt_size:]
                     subdata.append(subopt, subpayload)
@@ -744,8 +744,7 @@ class DHCPPacket(object):
             
         output.append('')
         output.append("#Options fields")
-        for opt in self._options_data.keys():
-            data = self._options_data[opt]
+        for (opt, data) in self._options_data.iteritems():
             result = None
             optnum  = DHCP_OPTIONS[opt]
             if opt == 'dhcp_message_type':
