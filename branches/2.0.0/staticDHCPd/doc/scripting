@@ -22,21 +22,25 @@ with a leading underscore. Likewise, any modules you define should also be named
 with a leading underscore.
 
 
-If you wish to encapsulate code inside of a module, place it in the same
-directory as conf.py or in a subpackage thereof. conf.py's directory is added to
-sys.path, so imports from a relative root should work just like they usually do.
+If you wish to encapsulate code inside of a module, place it in the extensions/
+subdirectory next to conf.py or in a subpackage thereof. The extensions/
+subdirectory is added to sys.path, so imports from a relative root should work
+just like they usually do.
 
 In particular, if you expect to have a lot of custom code, you should create a
-file alongside conf.py named "_handlers.py" and import the main callback
-functions from there to keep conf.py clean. At the same level as the config
-directives, do something like the following:
+file alongside in the extensions/ subdirectory named "_handlers.py" and import
+the main callback functions from there to keep conf.py clean. At the same level
+as the config directives, do something like the following:
 
 from _handlers import (init, handleUnknownMAC, loadDHCPPacket)
+
+Note that, although _handlers is in extensions/, it is imported as a root-level
+module.
 
 
 The examples below will show you how to enable dynamic provisioning using the
 included 'dynamism' module. To make these examples work, copy
-contrib/dynamism.py to the same directory as conf.py.
+extensions/official/dynamism.py to the extensions/ subdirectory.
 
 Using dynamism as an example, you should be able to write extension modules of
 your own. To customise DHCP behaviour, see the rules-writing guide:
@@ -375,7 +379,7 @@ Adds a webservice method.
 Parameters
 ------------------------------
     path: The path at which to register this callback, typically something like
-          "/ca/uguu/puukusoft/staticDHCPd/contrib/stats/histograph.csv", but as
+          "/ca/uguu/puukusoft/staticDHCPd/extension/stats/histograph.csv", but as
           long as it's a valid URI-fragment, it's up to you
     callback: The callable to be invoked when the method is called; this is
               what you'll need to implement
@@ -421,12 +425,11 @@ staticDHCPd uses Python's standard logging package, so writing to logs is as
 easy as the following snippet:
     import logging
     logger = logging.getLogger('my-module')
-    logger.info("I'm writing to the loggins system!")
+    logger.info("I'm writing to the logging system!")
     
 Similarly, if you want to capture logging events, you can hook in easily:
     import logging
     logging.root.addHandler(_YOUR_HANDLER_)
     
 An example of a custom handler, and application thereof, can be found in
-contrib/feedservice.py
-
+extensions/official/feedservice.py
