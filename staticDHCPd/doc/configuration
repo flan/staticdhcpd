@@ -92,8 +92,8 @@ DATABASE_ENGINE : text, None : MUST BE SPECIFIED
    messing with core code
    - The callable must require no arguments
    - To keep conf.py clean, define your engine in a separate module, like
-     _mydb.py and import it just before DATABASE_ENGINE is set, referencing a
-     function declared therein
+     extensions/_mydb.py and import it just before DATABASE_ENGINE is set,
+     referencing a function declared therein
    - If you need to configure it differently for each server, declare a lambda
      or short function in conf.py and make changes to that as needed
    - It is sane to inherit from subclasses like CachingDatabase or the SQL
