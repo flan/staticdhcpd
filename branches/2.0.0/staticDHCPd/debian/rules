@@ -7,7 +7,7 @@
 	dh $@ --with python2
 
 override_dh_auto_install:
-	python setup.py install --root=debian/staticdhcpd --install-layout=deb --install-lib=/usr/share/staticDHCPd --install-scripts=/usr/share/staticDHCPd
+	DEBUILD_MODE=yes python setup.py install --root=debian/staticdhcpd --install-layout=deb --install-lib=/usr/share/staticDHCPd --install-scripts=/usr/share/staticDHCPd
 	dh_installexamples 
 	
 override_dh_auto_build:
