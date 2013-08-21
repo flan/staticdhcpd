@@ -76,7 +76,7 @@ class DHCPPacket(object):
                 position += 1
             elif self._packet_data[position] == 255: #End option; stop processing.
                 break
-            elif self._packet_data[position] in DHCP_OPTIONS_TYPES and not self._packet_data[position] == 255:
+            elif self._packet_data[position] in DHCP_OPTIONS_TYPES:
                 opt_len = self._packet_data[position + 1]
                 opt_first = position + 1
                 opt_id = self._packet_data[position]
