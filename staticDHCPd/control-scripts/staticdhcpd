@@ -1,0 +1,50 @@
+### BEGIN INIT INFO
+# Provides:          staticdhcpd
+# Required-Start:    $local_fs $remote_fs $network
+# Required-Stop:     $local_fs $remote_fs $network
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Controls staticDHCPd
+# Description:       Provides DHCP services for a network
+### END INIT INFO
+
+NAME=staticDHCPd
+DAEMON=/usr/bin/staticDHCPd
+ARGS = ""
+SSD_ARGS="--quiet --pidfile /var/run/staticdhcpd.pid --exec $DAEMON -- $ARGS"
+
+start_daemon {
+  echo -n "Starting staticDHCPd: "
+  start-stop-daemon --make-pidfile --start $SSD_ARGS
+}
+stop_daemon {
+  echo -n "Stopping staticDHCPd: "
+  start-stop-daemon --stop $SSD_ARGS
+}
+
+case "$1" in
+  start)
+    start_daemon
+    echo "$NAME."
+    ;;
+  stop)
+    stop_daemon
+    echo "$NAME."
+    ;;
+  force-reload|restart)
+    stop_daemon
+    start_daemon
+    echo "$NAME."
+    ;;
+  reload)
+    echo -n "Reinitialising staticDHCPd: "
+    start-stop-daemon --stop --signal HUP $SSD_ARGS
+    echo "$NAME."
+    ;;
+  *)
+    echo "Usage: staticDHCPd {start|stop|reload|restart|force-reload}" >&2
+    exit 1
+    ;;
+esac
+
+exit 0
