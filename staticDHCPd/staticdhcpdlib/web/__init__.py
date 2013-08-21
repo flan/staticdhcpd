@@ -151,7 +151,7 @@ def registerMethodCallback(path, callback, cacheable=False, hidden=True, secure=
     accepted.
     
     `path` is the location at which the service may be called, like
-    "/ca/uguu/puukusoft/staticDHCPd/contrib/stats/histograph.csv".
+    "/ca/uguu/puukusoft/staticDHCPd/extension/stats/histograph.csv".
     
     The `callback` must accept the parameters 'path', 'queryargs', 'mimetype',
     'data', and 'headers', with the possibility that 'mimetype' and 'data' may
