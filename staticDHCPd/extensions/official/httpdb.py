@@ -50,7 +50,7 @@ class _HTTPLogic(object):
             request = urllib2.Request(
              self._URI, data=json.dumps({
               'mac': str(mac),
-             }, #The request will contain a JSON object like {"mac": "aa:bb:cc:dd:ee:ff"}
+             }), #The request will contain a JSON object like {"mac": "aa:bb:cc:dd:ee:ff"}
              headers=headers,
             )
         else:
