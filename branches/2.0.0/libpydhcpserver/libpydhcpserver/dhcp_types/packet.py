@@ -91,9 +91,7 @@ class DHCPPacket(object):
                     })
                     
                 if opt_id == 55: #Handle requested options.
-                    self._requested_options = tuple(set(
-                     [int(i) for i in opt_val] + [1, 3, 6, 15, 51, 53, 54, 58, 59]
-                    ))
+                    self._requested_options = tuple(set(int(i) for i in opt_val).union((1, 3, 6, 15, 51, 53, 54, 58, 59)))
                 position += self._packet_data[opt_first] + 2
             else:
                 opt_first = position + 1
