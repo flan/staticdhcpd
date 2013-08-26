@@ -73,12 +73,19 @@ class _DB20Broker(_SQLDatabase):
             db = self._getConnection()
             cur = db.cursor()
             
-            _logger.debug("Fetching data...")
+            _logger.debug("Looking up MAC %(mac)s..." % {
+             'mac': mac,
+            })
             cur.execute(self._query_mac, (mac,))
             result = cur.fetchone()
-            _logger.debug("Result collected")
             if result:
+                _logger.debug("Record found for MAC %(mac)s" % {
+                 'mac': mac,
+                })
                 return Definition(*result)
+            _logger.debug("No record found for MAC %(mac)s" % {
+             'mac': mac,
+            })
             return None
         finally:
             try:
