@@ -9,6 +9,7 @@ conf.py's init() function:
     
 Like staticDHCPd, this module under the GNU General Public License v3
 (C) Neil Tallim, 2013 <flan@uguu.ca>
+
 Inspiration derived from a discussion with John Stowers
 """
 #The number of events to track; if None, no limit will be applied

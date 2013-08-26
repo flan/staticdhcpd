@@ -1,0 +1,24 @@
+staticDHCPd ships with a number of extension-modules in its standard
+distribution; these are qualified as either 'contrib' or 'official', depending
+on how well-supported they are.
+
+official:
+    - guaranteed to work with the release with which they ship
+    - receive rapid response to bugfixes and patches
+    - will be dropped as gracefully as possible, if deprecated for any reason
+    - distributed under the same license as staticDHCPd
+    - documented as reference examples
+    
+contrib:
+    - may not be thoroughly tested for new releases of staticDHCPd
+    - updated at the maintainer's discretion
+    - may differ from the maintainer's version
+    - may disappear from future releases without notice
+    - may be distributed under any Debian-compliant open license
+    - may be entirely free of non-essential documentation
+    
+common to both:
+    - screened for security, to prevent malicious code from being shared
+    - well-documented usage information
+    - contain contact information for the author or primary maintainer
+    
