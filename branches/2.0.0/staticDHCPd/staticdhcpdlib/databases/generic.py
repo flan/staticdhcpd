@@ -78,6 +78,17 @@ class Database(object):
         a cache or reconnecting to the source.
         """
         
+class _DatabaseCache(object):
+    pass
+
+class _MemoryCache(_DatabaseCache):
+    pass
+
+class _DiskCache(_DatabaseCache):
+    def __init__(self, filepath):
+        import sqlite3
+        
+        
 class CachingDatabase(Database):
     """
     A partial implementation of the Database engine, adding generic caching
@@ -104,18 +115,29 @@ class CachingDatabase(Database):
         
         _logger.debug("Initialising database with a maximum of %(count)i concurrent connections" % {'count': concurrency_limit,})
         self._resource_lock = threading.BoundedSemaphore(concurrency_limit)
-        self._setupCache()
+        self._setupCache(config.PERSISTENT_CACHE, config.CACHE_ON_DISK)
         
-    def _setupCache(self):
+    def _setupCache(self, persistent_cache, cache_on_disk):
         """
-        Sets up the SQL broker cache.
+        Sets up the database cache.
+        
+        If `persistent_cache` is set, the indicated file will be opened as an SQLite database; it
+        will be read into memory if appropriate.
+        
+        If `cache_on_disk` is set, a tempfile will be opened as an SQLite database; if
+        `persistent_cache` is set, these files will be the same.
         """
         if self._use_cache:
             self._cache_lock = threading.Lock()
             self._mac_cache = {}
             self._subnet_cache = {}
             _logger.debug("Database cache initialised")
-            
+        else:
+            if persistent_cache:
+                _logger.warn("PERSISTENT_CACHE was set, but USE_CACHE was not")
+            if cache_on_disk:
+                _logger.warn("CACHE_ON_DISK was set, but USE_CACHE was not")
+                
     def reinitialise(self):
         if self._use_cache:
             with self._cache_lock:
