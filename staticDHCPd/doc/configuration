@@ -122,21 +122,21 @@ USE_CACHE : boolean : default=False
  - For SQLite, this should normally be False
 
 CACHE_ON_DISK : boolean : default=False
- - Causes the local cache to be managed as a local SQLite file, rather than a
-   purely in-memory construct
+ - Causes the local cache to be managed as a local file, rather than a purely
+   in-memory construct
    - Most kernels will keep the file in memory if accessed frequently, but
-     SQLite's data-compaction is a little bit tighter, and the cache should
-     reach its final state quickly, so reclaiming memory is swap-free
+     its data-compaction is a little bit tighter, and the cache should reach
+     its final state quickly, so reclaiming memory is swap-free
    - This file will be temporary, unless PERSISTENT_CACHE is set; in that case,
      the file will be the same
  - For SQLite, this should normally be False
  
 PERSISTENT_CACHE : text : default=None
- - Causes the cache to be written to a local SQLite file, which will be used
+ - Causes the cache to be written to a local database file, which will be used
    when staticDHCPd is restarted, to provide durability against unstable
    databases
  - The value of this option is the path to the file;
-   '/var/tmp/staticDHCPd.sqlite3' is recommended
+   '/var/tmp/staticDHCPd.db' is recommended
  - If CACHE_ON_DISK is set, this file will be used; if not, the contents of
    this file will be read into memory
  - For SQLite, this should normally be False
@@ -152,20 +152,20 @@ USE_CACHE : boolean : default=False
  - Can greatly improve performance in stable, high-load environments
  
 CACHE_ON_DISK : boolean : default=False
- - Causes the local cache to be managed as a local SQLite file, rather than a
-   purely in-memory construct
+ - Causes the local cache to be managed as a local file, rather than a purely
+   in-memory construct
    - Most kernels will keep the file in memory if accessed frequently, but
-     SQLite's data-compaction is a little bit tighter, and the cache should
-     reach its final state quickly, so reclaiming memory is swap-free
+     its data-compaction is a little bit tighter, and the cache should reach
+     its final state quickly, so reclaiming memory is swap-free
    - This file will be temporary, unless PERSISTENT_CACHE is set; in that case,
      the file will be the same
  
 PERSISTENT_CACHE : text : default=None
- - Causes the cache to be written to a local SQLite file, which will be used
+ - Causes the cache to be written to a local database file, which will be used
    when staticDHCPd is restarted, to provide durability against unstable
    databases
  - The value of this option is the path to the file;
-   '/var/tmp/staticDHCPd.sqlite3' is recommended
+   '/var/tmp/staticDHCPd.db' is recommended
  - If CACHE_ON_DISK is set, this file will be used; if not, the contents of
    this file will be read into memory
 
@@ -208,20 +208,20 @@ USE_CACHE : boolean : default=False
  - Can greatly improve performance in stable, high-load environments
  
 CACHE_ON_DISK : boolean : default=False
- - Causes the local cache to be managed as a local SQLite file, rather than a
-   purely in-memory construct
+ - Causes the local cache to be managed as a local file, rather than a purely
+   in-memory construct
    - Most kernels will keep the file in memory if accessed frequently, but
-     SQLite's data-compaction is a little bit tighter, and the cache should
-     reach its final state quickly, so reclaiming memory is swap-free
+     its data-compaction is a little bit tighter, and the cache should reach
+     its final state quickly, so reclaiming memory is swap-free
    - This file will be temporary, unless PERSISTENT_CACHE is set; in that case,
      the file will be the same
-
+ 
 PERSISTENT_CACHE : text : default=None
- - Causes the cache to be written to a local SQLite file, which will be used
+ - Causes the cache to be written to a local database file, which will be used
    when staticDHCPd is restarted, to provide durability against unstable
    databases
  - The value of this option is the path to the file;
-   '/var/tmp/staticDHCPd.sqlite3' is recommended
+   '/var/tmp/staticDHCPd.db' is recommended
  - If CACHE_ON_DISK is set, this file will be used; if not, the contents of
    this file will be read into memory
 
@@ -251,20 +251,20 @@ USE_CACHE : boolean : default=False
  - Can greatly improve performance in stable, high-load environments
  
 CACHE_ON_DISK : boolean : default=False
- - Causes the local cache to be managed as a local SQLite file, rather than a
-   purely in-memory construct
+ - Causes the local cache to be managed as a local file, rather than a purely
+   in-memory construct
    - Most kernels will keep the file in memory if accessed frequently, but
-     SQLite's data-compaction is a little bit tighter, and the cache should
-     reach its final state quickly, so reclaiming memory is swap-free
+     its data-compaction is a little bit tighter, and the cache should reach
+     its final state quickly, so reclaiming memory is swap-free
    - This file will be temporary, unless PERSISTENT_CACHE is set; in that case,
      the file will be the same
-
+ 
 PERSISTENT_CACHE : text : default=None
- - Causes the cache to be written to a local SQLite file, which will be used
+ - Causes the cache to be written to a local database file, which will be used
    when staticDHCPd is restarted, to provide durability against unstable
    databases
  - The value of this option is the path to the file;
-   '/var/tmp/staticDHCPd.sqlite3' is recommended
+   '/var/tmp/staticDHCPd.db' is recommended
  - If CACHE_ON_DISK is set, this file will be used; if not, the contents of
    this file will be read into memory
 
