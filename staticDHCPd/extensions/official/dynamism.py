@@ -77,7 +77,7 @@ _logger = logging.getLogger('extension.dynamism')
 _logger.info("Attempting to import scapy; scapy-specific logging output may follow")
 try:
     import scapy.route
-    from scapy.layer.l2 import arping
+    from scapy.layers.l2 import arping
 except ImportError:
     _logger.warn("scapy is unavailable; addresses added to pools cannot be automatically ARPed")
     arping = None
