@@ -106,7 +106,7 @@ def _dynamic_method(method):
             ip = method(self, *args, **kwargs)
             if ip:
                 return Definition(
-                 ip, self._hostname_pattern % {'ip': ip.replace('.', '-'),},
+                 ip, self._hostname_pattern % {'ip': str(ip).replace('.', '-'),},
                  self._gateway, self._subnet_mask, self._broadcast_address,
                  self._domain_name, self._domain_name_servers,
                  self._ntp_servers, self._lease_time,
