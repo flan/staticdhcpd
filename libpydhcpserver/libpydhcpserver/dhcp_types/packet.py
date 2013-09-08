@@ -32,6 +32,12 @@ from mac import MAC
 from ipv4 import IPv4
 from rfc import *
 
+_OPTION_ORDERING = (
+ DHCP_OPTIONS['dhcp_message_type'], #53
+ DHCP_OPTIONS['server_identifier'], #54
+ DHCP_OPTIONS['ip_address_lease_time'], #51
+)
+
 _logger = logging.getLogger('libpydhcpserver.types.packet')
 
 class DHCPPacket(object):
@@ -109,6 +115,10 @@ class DHCPPacket(object):
         @rtype: str
         @return: The encoded packet.
         """
+        #Set namespace references for speed
+        global DHCP_OPTIONS
+        global _OPTION_ORDERING
+        
         #Pull options out of the payload, excluding options not specifically
         #requested, assuming any specific requests were made.
         options = {}
@@ -126,8 +136,18 @@ class DHCPPacket(object):
                     else:
                         option += [option_id, len(option_value)] + option_value
                         break
-        #Order options by number and add them to the output data.
+                        
+        #Write options to the packet in a predictable order.
         ordered_options = []
+        
+        #Pluck critical options and put them first, to aid clients that were
+        #coded specifically for ISC, rather than RFC.
+        for option_id in _OPTION_ORDERING:
+            value = options.pop(option_id, None)
+            if value:
+                ordered_options += value
+                
+        #Order remaining options by number and add them to the output data.
         for (option_id, value) in sorted(options.iteritems()):
             ordered_options += value
             
