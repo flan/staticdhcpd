@@ -92,7 +92,7 @@ _defaults.update({
 #######################################
 _defaults.update({
  'USE_CACHE': False,
- 'PERSISTENT_CACHE': False,
+ 'PERSISTENT_CACHE': None,
  'CACHE_ON_DISK': False,
 
  'USE_POOL': True,

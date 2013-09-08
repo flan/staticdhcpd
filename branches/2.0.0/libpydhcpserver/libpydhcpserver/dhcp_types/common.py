@@ -22,17 +22,17 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 (C) Neil Tallim, 2013 <flan@uguu.ca>
 """
-def _listToNumber(l):
+def listToNumber(l):
     value = 0
     for (i, v) in enumerate(reversed(l)):
         value += v * (256 ** i)
     return value
     
 def listToInt(l):
-    return _listToNumber(l[:2])
+    return listToNumber(l[:2])
     
 def listToLong(l):
-    return _listToNumber(l[:4])
+    return listToNumber(l[:4])
     
 def intToList(i):
     """
