@@ -54,8 +54,8 @@ class IPv4(object):
                 raise ValueError("'%(ip)i' is not a valid IP: not a 32-bit unsigned integer" % {
                  'ip': address,
                 })
-                self._ip = int(address)
-                self._ip_tuple = tuple(longToList(self._ip))
+            self._ip = int(address)
+            self._ip_tuple = tuple(longToList(self._ip))
         else:
             if isinstance(address, StringTypes):
                 octets = (i.strip() for i in address.split('.'))
@@ -86,8 +86,6 @@ class IPv4(object):
             return 1
         if isinstance(other, StringTypes):
             other = IPv4(other)
-        if isinstance(other, IPv4):
-            return cmp(str(self), str(other))
         if isinstance(other, IntegerTypes):
             return cmp(int(self), other)
         return cmp(self._ip_tuple, tuple(other))

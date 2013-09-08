@@ -68,8 +68,8 @@ class _DB20Broker(_SQLDatabase):
         
         @raise Exception: If a problem occurs while accessing the database.
         """
+        mac = str(mac)
         try:
-            _logger.debug("Connecting to database...")
             db = self._getConnection()
             cur = db.cursor()
             

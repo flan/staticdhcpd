@@ -28,20 +28,43 @@ try:
 except ImportError: #py3k
     StringTypes = (str,)
     
+IntegerTypes = (int,)
+try:
+    IntegerTypes = (int, long)
+except ImportError: #py3k
+    pass
+    
+from common import (listToNumber)
+
 class MAC(object):
     """
     Provides a standardised way of representing MACs.
     """
     _mac = None #The MAC encapsulated by this object, as a tuple of bytes
+    _mac_integer = None #The MAC as an integer
     _mac_string = None #The MAC as a colon-delimited, lower-case string
     
     def __init__(self, address):
         """
         Constructs a MAC-representation from `address`, which is either a string
         of twelve hex digits, optionally separated by non-hex characters, like
-        ':', '.', or '-', or a sequence of six bytes.
+        ':', '.', or '-', a sequence of six bytes, or an unsigned integer.
         """
-        if isinstance(address, StringTypes):
+        if isinstance(address, IntegerTypes):
+            if not 0 <= address <= 281474976710655:
+                raise ValueError("'%(ip)i' is not a valid IP: not a 32-bit unsigned integer" % {
+                 'ip': address,
+                })
+            self._mac_integer = int(address)
+            self._mac = (
+             self._mac_integer >> 40 & 0xFF,
+             self._mac_integer >> 32 & 0xFF,
+             self._mac_integer >> 24 & 0xFF,
+             self._mac_integer >> 16 & 0xFF,
+             self._mac_integer >> 8 & 0xFF,
+             self._mac_integer & 0xFF,
+            )
+        elif isinstance(address, StringTypes):
             address = [c for c in address.lower() if c.isdigit() or 'a' <= c <= 'f']
             if len(address) != 12:
                 raise ValueError("Expected twelve hex digits as a MAC identifier; received " + str(len(address)))
@@ -58,10 +81,10 @@ class MAC(object):
     def __cmp__(self, other):
         if not other:
             return 1
+        if isinstance(other, IntegerTypes):
+            return cmp(int(self), other)
         if isinstance(other, StringTypes):
             other = MAC(other)
-        if isinstance(other, MAC):
-            return cmp(str(self), str(other))
         return cmp(self._mac, tuple(other))
         
     def __hash__(self):
@@ -69,9 +92,17 @@ class MAC(object):
         
     def __getitem__(self, index):
         return self._mac[index]
-        
+    
     def __nonzero__(self):
         return any(self._mac)
+        
+    def __int__(self):
+        if self._mac_integer is None:
+            self._mac_integer = listToNumber(self._mac)
+        return self._mac_integer
+        
+    def __long__(self):
+        return long(int(self))
         
     def __repr__(self):
         return str(self)

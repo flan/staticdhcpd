@@ -238,8 +238,9 @@ class INI(Database):
         
         @raise Exception: If a problem occurs while accessing the database.
         """
+        mac = str(mac)
         with self._lock:
-            map = self._maps.get(str(mac))
+            map = self._maps.get(mac)
             if not map:
                 return None
                 
