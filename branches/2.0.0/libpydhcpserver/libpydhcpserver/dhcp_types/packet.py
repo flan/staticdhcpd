@@ -47,6 +47,7 @@ class DHCPPacket(object):
     _packet_data = None #: The core 240 bytes that make up a DHCP packet.
     _options_data = None #: Any additional options attached to this packet.
     _requested_options = None #: Any options explicitly requested by the client.
+    _terminal_pad = False #: True if the request had a pad after the end option.
     
     def __init__(self, data=None):
         """
@@ -80,7 +81,9 @@ class DHCPPacket(object):
             if self._packet_data[position] == 0: #Pad option; skip byte.
                 opt_first = position + 1
                 position += 1
-            elif self._packet_data[position] == 255: #End option; stop processing.
+            elif self._packet_data[position] == 255: #End option; stop processing
+                if position + 1 < end_position: #But first, check to see if there was a trailing pad
+                    self._terminal_pad = self._packet_data[position + 1] == 0
                 break
             elif self._packet_data[position] in DHCP_OPTIONS_TYPES:
                 opt_len = self._packet_data[position + 1]
@@ -153,8 +156,10 @@ class DHCPPacket(object):
             
         #Assemble data.
         packet = self._packet_data[:240] + ordered_options
-        packet.append(255) #Add End option.
-        
+        packet.append(255) #Add End option
+        if self._terminal_pad:
+            packet.append(0) #Add a trailing Pad option, since the client sent one this way
+            
         #Encode packet.
         pack_fmt = str(len(packet)) + "c"
         packet = map(chr, packet)
