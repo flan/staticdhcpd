@@ -49,6 +49,8 @@ class DHCPPacket(object):
     _requested_options = None #: Any options explicitly requested by the client.
     _terminal_pad = False #: True if the request had a pad after the end option.
     
+    word_align = False #If set, every option with an odd length in bytes will be padded, to ensure 16-bit word-alignment
+    
     def __init__(self, data=None):
         """
         Initializes a DHCP packet, using real data, if possible.
@@ -140,20 +142,19 @@ class DHCPPacket(object):
                         option += [option_id, len(option_value)] + option_value
                         break
                         
-        #Write options to the packet in a predictable order.
-        ordered_options = []
+        #Determine the order for options to appear in the packet
+        keys = set(options.keys())
+        option_ordering = [i for i in _OPTION_ORDERING if i in keys] #Put specific options first
+        option_ordering.extend(sorted(keys.difference(option_ordering))) #Then sort the rest
         
-        #Pluck critical options and put them first, to aid clients that were
-        #coded specifically for ISC, rather than RFC.
-        for option_id in _OPTION_ORDERING:
-            value = options.pop(option_id, None)
-            if value:
-                ordered_options += value
-                
-        #Order remaining options by number and add them to the output data.
-        for (option_id, value) in sorted(options.iteritems()):
+        #Write them to the packet's buffer
+        ordered_options = []
+        for option_id in option_ordering:
+            value = options[option_id]
             ordered_options += value
-            
+            if self.word_align and len(value) & 1:
+                ordered_options.append(0) #Add a pad
+                
         #Assemble data.
         packet = self._packet_data[:240] + ordered_options
         packet.append(255) #Add End option
