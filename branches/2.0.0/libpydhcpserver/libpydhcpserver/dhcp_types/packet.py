@@ -750,13 +750,7 @@ class DHCPPacket(object):
             elif DHCP_FIELDS_TYPES[opt] == "32-bits":
                 result = str(int(IPv4(data)))
             elif DHCP_FIELDS_TYPES[opt] == "string":
-                result = []
-                for c in data:
-                    if c:
-                        result.append(chr(c))
-                    else:
-                        break
-                result = ''.join(result)
+                result = listToStr(data)
             elif DHCP_FIELDS_TYPES[opt] == "ipv4":
                 result = str(IPv4(data))
             elif DHCP_FIELDS_TYPES[opt] == "hwmac":
@@ -773,8 +767,10 @@ class DHCPPacket(object):
             optnum  = DHCP_OPTIONS[opt]
             if opt == 'dhcp_message_type':
                 result = DHCP_FIELDS_NAMES['dhcp_message_type'][data[0]]
-            elif DHCP_OPTIONS_TYPES[optnum] in ("byte", "byte+", "string"):
+            elif DHCP_OPTIONS_TYPES[optnum] in ("byte", "byte+"):
                 result = str(data)
+            elif DHCP_OPTIONS_TYPES[optnum] in ("string"):
+                result = listToStr(data)
             elif DHCP_OPTIONS_TYPES[optnum] in ("char", "char+"):
                 if optnum == 55: # parameter_request_list
                     requested_options = []
