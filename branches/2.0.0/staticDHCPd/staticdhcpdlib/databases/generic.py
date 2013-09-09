@@ -267,7 +267,7 @@ LIMIT 1""", (str(mac),))
         
     def _cacheMAC(self, mac, definition, chained):
         (database, cursor) = self._connect()
-        cursor.execute("INSERT INTO subnets (subnet, serial, lease_time, gateway, subnet_mask, broadcast_address, ntp_servers, domain_name_servers, domain_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        cursor.execute("INSERT INTO OR IGNORE subnets (subnet, serial, lease_time, gateway, subnet_mask, broadcast_address, ntp_servers, domain_name_servers, domain_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
          (
           definition.subnet, definition.serial,
           definition.lease_time,
