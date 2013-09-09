@@ -13,10 +13,12 @@ Description: Highly customisable, static-lease-focused DHCP server
  staticDHCPd is an extensively customisable, high-performance,
  RFC-spec-compliant DHCP server, well-suited to labs, LAN parties, home and
  small-office networks, and specialised networks of vast size.
+ .
  It supports all major DHCP extension RFCs and features a rich, plugin-oriented
  web-interface, has a variety of modules, ranging from statistics-management
  to notification services to dynamic address-provisioning and
  network-auto-discovery.
+ .
  Multiple backend databases are supported, from INI files to RDBMS SQL servers,
  with examples of how to write and integrate your own, such as a REST-JSON
  endpoint, simple enough to complete in minutes.
