@@ -493,6 +493,16 @@ class DHCPPacket(object):
         """
         return self._getDHCPMessageType() == 3
         
+    def extractIPOrNone(self, parameter):
+        """
+        Extracts the identified packet-field-IP and returns it if it is defined,
+        None otherwise.
+        """
+        addr = self.getOption(parameter)
+        if not addr or not any(addr):
+            return None
+        return IPv4(addr)
+        
     def extractPXEOptions(self):
         """
         Strips out PXE-specific options from the packet, returning them

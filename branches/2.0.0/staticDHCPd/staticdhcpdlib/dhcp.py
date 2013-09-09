@@ -74,16 +74,6 @@ Definition = collections.namedtuple('Definition', (
 Like the database version, only with IPv4 objects.
 """
 
-def _extractIPOrNone(packet, parameter):
-    """
-    Extracts the identified packet-field-IP and returns it if it is defined,
-    None otherwise.
-    """
-    addr = packet.getOption(parameter)
-    if not addr or not any(addr):
-        return None
-    return IPv4(addr)
-    
 class _PacketWrapper(object):
     """
     Wraps a packet for the duration of a handler's operations, allowing for
@@ -210,11 +200,11 @@ class _PacketWrapper(object):
         the handling functions.
         """
         self.mac = self.packet.getHardwareAddress()
-        self.ip = _extractIPOrNone(self.packet, "requested_ip_address")
-        self.sid = _extractIPOrNone(self.packet, "server_identifier")
-        self.ciaddr = _extractIPOrNone(self.packet, "ciaddr")
+        self.ip = packet.extractIPOrNone("requested_ip_address")
+        self.sid = packet.extractIPOrNone("server_identifier")
+        self.ciaddr = packet.extractIPOrNone("ciaddr")
         self._associated_ip = self.ciaddr
-        self.giaddr = _extractIPOrNone(self.packet, "giaddr")
+        self.giaddr = packet.extractIPOrNone("giaddr")
         self.pxe_options = self.packet.extractPXEOptions()
         self.vendor_options = self.packet.extractVendorOptions()
         
@@ -813,16 +803,16 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
             if packet.getOption('flags')[0] & 0b10000000: #Broadcast bit set; respond in kind
                 ip = _IP_BROADCAST
             else: #The client wants to receive a response via unicast
-                ip = _extractIPOrNone(packet, 'yiaddr')
+                ip = packet.extractIPOrNone('yiaddr')
             port = self._client_port
         else: #Unicast source
-            giaddr = _extractIPOrNone(packet, 'giaddr')
+            giaddr = packet.extractIPOrNone('giaddr')
             ip = address[0]
             if giaddr: #Relayed request.
                 port = self._server_port
             else: #Request directly from client, routed or otherwise.
                 if pxe:
-                    ip = _extractIPOrNone(packet, 'ciaddr') or ip
+                    ip = packet.extractIPOrNone('ciaddr') or ip
                     port = address[1] or self._client_port #BSD doesn't seem to preserve port information
                 else:
                     port = self._client_port
