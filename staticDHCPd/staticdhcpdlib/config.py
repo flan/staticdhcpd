@@ -220,6 +220,7 @@ conf.longToList = rfc.longToList
 conf.longsToList = rfc.longsToList
 conf.strToList = rfc.strToList
 conf.strToPaddedList = rfc.strToPaddedList
+conf.listToStr = rfc.listToStr
 
 conf.rfc2610_78 = rfc.rfc2610_78
 conf.rfc2610_79 = rfc.rfc2610_79
