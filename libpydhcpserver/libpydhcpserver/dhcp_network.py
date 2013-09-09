@@ -64,7 +64,7 @@ class DHCPNetwork(object):
         self._client_port = client_port
         self._pxe_port = pxe_port
         
-        self._createSocket()
+        self._createSockets()
         self._bindToAddress()
         
     def _bindToAddress(self):
@@ -74,8 +74,7 @@ class DHCPNetwork(object):
         @raise Exception: A problem occurred while binding the sockets.
         """
         try:
-            if self._server_address:
-                self._response_socket.bind((self._server_address, 0))
+            self._response_socket.bind((self._server_address or '', 0))
             self._dhcp_socket.bind(('', self._server_port))
             if self._pxe_port:
                 self._pxe_socket.bind(('', self._pxe_port))
@@ -84,7 +83,7 @@ class DHCPNetwork(object):
              'error': str(e),
             })
             
-    def _createSocket(self):
+    def _createSockets(self):
         """
         Creates and configures the server and response sockets.
         
@@ -93,10 +92,7 @@ class DHCPNetwork(object):
         """
         try:
             self._dhcp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            if self._server_address:
-                self._response_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            else:
-                self._response_socket = self._dhcp_socket
+            self._response_socket = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_RAW)
             if self._pxe_port:
                 self._pxe_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         except socket.error, msg:
@@ -265,3 +261,39 @@ class DHCPNetwork(object):
         else:
             return self._response_socket.sendto(packet_encoded, (ip, port))
             
+
+
+"""
+Use self._response_socket for both DHCP and PXE responses, writing the source-port as appropriate
+
+Try to move most of the dhcp.py send logic here, since it's largely packet-introspection and that's
+all very generally applicable to DHCP server behaviour.
+
+References:
+    http://www.binarytides.com/raw-socket-programming-in-python-linux/
+    UDP header: 8 bytes (source: 16, destination: 16, length: 16, checksum: 16)
+    The length includes the size of the header (8 bytes)
+    Checksum, from pyip:
+        def cksum(s):
+            if len(s) & 1:
+                s = s + '\0'
+            words = array.array('h', s)
+            sum = 0
+            for word in words:
+                sum = sum + (word & 0xffff)
+            hi = sum >> 16
+            lo = sum & 0xffff
+            sum = hi + lo
+            sum = sum + (sum >> 16)
+            return (~sum) & 0xffff
+            
+        def _assemble(self, cksum=1):
+            self.ulen = 8 + len(self.data)
+            begin = struct.pack('HHH', self.sport, self.dport, self.ulen)
+            packet = begin + '\000\000' + self.data
+            if cksum:
+                self.sum = inetutils.cksum(packet)
+                packet = begin + struct.pack('H', self.sum) + self.data
+            self.__packet = inetutils.udph2net(packet)
+            return self.__packet
+"""
