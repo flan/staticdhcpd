@@ -809,10 +809,13 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         @return: The number of bytes transmitted.
         """
         ip = port = None
-        if address[0] in _IP_UNSPECIFIED_FILTER: #Broadcast
-            ip = _IP_BROADCAST
+        if address[0] in _IP_UNSPECIFIED_FILTER: #Broadcast source
+            if packet.getOption('flags')[0] & 0b10000000: #Broadcast bit set; respond in kind
+                ip = _IP_BROADCAST
+            else: #The client wants to receive a response via unicast
+                ip = _extractIPOrNone(packet, 'yiaddr')
             port = self._client_port
-        else: #Unicast
+        else: #Unicast source
             giaddr = _extractIPOrNone(packet, 'giaddr')
             ip = address[0]
             if giaddr: #Relayed request.
