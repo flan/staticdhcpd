@@ -1,6 +1,6 @@
 #Runs both libpydhcpserver and staticDHCPd's Debian scripts
 cd libpydhcpserver
-/usr/bin/debuild -uc -us
+/usr/bin/debuild -uc -us 
 cd ..
 
 cd staticDHCPd
