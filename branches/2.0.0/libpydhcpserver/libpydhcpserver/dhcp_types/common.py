@@ -130,3 +130,6 @@ def strToPaddedList(s, l):
         padded_list += [0] * (l - len(padded_list))
     return padded_list[:l]
     
+def listToStr(l):
+    return ''.join(chr(i) for i in l)
+    

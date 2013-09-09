@@ -32,7 +32,7 @@ except ImportError: #py3k
 from common import (
  listToInt, listToLong,
  intToList, intsToList, longToList, longsToList,
- strToList, strToPaddedList,
+ strToList, strToPaddedList, listToStr,
 )
 from ipv4 import IPv4
 

@@ -40,7 +40,7 @@ from libpydhcpserver.dhcp_types.mac import MAC
 from libpydhcpserver.dhcp_types.rfc import (
  ipToList, ipsToList,
  longToList,
- strToList,
+ strToList, listToStr,
 )
 
 #Packet-type string-constants
