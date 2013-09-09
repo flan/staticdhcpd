@@ -50,6 +50,7 @@ class DHCPPacket(object):
     _terminal_pad = False #: True if the request had a pad after the end option.
     
     word_align = False #If set, every option with an odd length in bytes will be padded, to ensure 16-bit word-alignment
+    word_size = 4 #The number of bytes in a word; 32-bit by network convention by default
     terminal_pad = True #If set, if the client ended its request with a pad, one will be added in the response
     
     def __init__(self, data=None):
@@ -153,9 +154,10 @@ class DHCPPacket(object):
         for option_id in option_ordering:
             value = options[option_id]
             ordered_options += value
-            if self.word_align and len(value) & 1:
-                ordered_options.append(0) #Add a pad
-                
+            if self.word_align:
+                for i in xrange((len(value) ^ 0b00) & 0b11): #Equivalent to % 4
+                    ordered_options.append(0) #Add a pad
+                    
         #Assemble data.
         packet = self._packet_data[:240] + ordered_options
         packet.append(255) #Add End option
