@@ -133,6 +133,11 @@ Step 3: Set up conf.py
         
         Set DHCP_SERVER_IP to whichever IP you want to listen on.
         
+        If you are working with clients that do not understand the DHCP
+        broadcast bit (mostly embedded devices running busybox/udhcpc), read
+        about the DHCP_RESPONSE_INTERFACE option in the configuration doc. If
+        not, don't worry about it.
+        
         INI method:
             Set DATABASE_ENGINE to 'INI'; capitalization matters.
             

@@ -442,7 +442,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
     _dhcp_actions = None #: The MACs and the number of actions each has performed, decremented by one each tick.
     _ignored_addresses = None #: A list of all MACs currently ignored, plus the time remaining until requests will be honoured again.
     
-    def __init__(self, server_address, server_port, client_port, pxe_port, database):
+    def __init__(self, server_address, server_port, client_port, pxe_port, response_interface, database):
         """
         Constructs the handler.
         
@@ -470,7 +470,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         self._ignored_addresses = []
         
         libpydhcpserver.dhcp_network.DHCPNetwork.__init__(
-         self, server_address, server_port, client_port, pxe_port
+         self, server_address, server_port, client_port, pxe_port, response_interface=response_interface
         )
         
     @_dhcpHandler(_PACKET_TYPE_DECLINE)
@@ -798,6 +798,11 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         @rtype: int
         @return: The number of bytes transmitted.
         """
+        packet.setOption('server_identifier', ipToList(self._server_address))
+        
+        
+        
+        
         ip = port = None
         if address[0] in _IP_UNSPECIFIED_FILTER: #Broadcast source
             if packet.getOption('flags')[0] & 0b10000000: #Broadcast bit set; respond in kind
@@ -817,7 +822,6 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
                 else:
                     port = self._client_port
                     
-        packet.setOption('server_identifier', ipToList(self._server_address))
         bytes = self._sendDHCPPacket(packet, ip, port, pxe)
         response_type = packet.getDHCPMessageTypeName()
         _logger.info('%(type)s sent to %(mac)s for %(client)s via %(ip)s:%(port)i %(pxe)s[%(bytes)i bytes]' % {
@@ -928,11 +932,12 @@ class DHCPService(threading.Thread):
         self.daemon = True
         
         server_address = '.'.join([str(int(o)) for o in config.DHCP_SERVER_IP.split('.')])
-        _logger.info("Prepared to bind to %(address)s; ports: server: %(server)s, client: %(client)s, pxe: %(pxe)s" % {
+        _logger.info("Prepared to bind to %(address)s; ports: server: %(server)s, client: %(client)s, pxe: %(pxe)s%(response-interface)s" % {
          'address': server_address,
          'server': config.DHCP_SERVER_PORT,
          'client': config.DHCP_CLIENT_PORT,
          'pxe': config.PXE_PORT,
+         'response-interface': config.DHCP_RESPONSE_INTERFACE and '; response-interface: %(response-interface)s' % {'response-interface': config.DHCP_RESPONSE_INTERFACE,} or '',
         })
         self._dhcp_server = _DHCPServer(
          server_address,
