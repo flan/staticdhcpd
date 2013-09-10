@@ -76,14 +76,23 @@ _logger = logging.getLogger('extension.dynamism')
 
 _logger.info("Attempting to import scapy; scapy-specific logging output may follow")
 try:
-    import scapy.route
-    from scapy.layers.l2 import arping
+    import scapy.arch
 except ImportError:
     _logger.warn("scapy is unavailable; addresses added to pools cannot be automatically ARPed")
     arping = None
 else:
-    _logger.info("scapy imported successfully; automatic ARPing is available")
-    
+    if not scapy.arch.conf.L2Socket:
+        _logger.warn("scapy was unable to construct layer-2 socketing rules; if using a BSD-based system (including OS X), please follow its documentation for installing pcap bindings; addresses added to pools cannot be automatically ARPed")
+        arping = None
+    else:
+        try:
+            from scapy.layers.l2 import arping
+        except ImportError:
+            _logger.warn("scapy's arping is unavailable; addresses added to pools cannot be automatically ARPed")
+            arping = None
+        else:
+            _logger.info("scapy imported successfully; automatic ARPing is available")
+            
 _LeaseDefinition = collections.namedtuple('LeaseDefinition', ('ip', 'mac', 'expiration', 'last_seen'))
 """
 Provides lease-definition information for an IP.
