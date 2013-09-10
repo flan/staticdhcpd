@@ -407,3 +407,190 @@ packet = ip_header + tcp_header + user_data
 s.sendto(packet, (dest_ip , 0 ))    # put this in a loop if you want to flood the target
 
 """
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class L2Socket(SuperSocket):
+   402     desc = "read/write packets at layer 2 using Linux PF_PACKET sockets"
+   403     def __init__(self, iface = None, type = ETH_P_ALL, filter=None, nofilter=0):
+   404         if iface is None:
+   405             iface = conf.iface
+   406         self.ins = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.htons(type))
+   407         self.ins.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 0)
+   408         _flush_fd(self.ins)
+   409         if not nofilter: 
+   410             if conf.except_filter:
+   411                 if filter:
+   412                     filter = "(%s) and not (%s)" % (filter, conf.except_filter)
+   413                 else:
+   414                     filter = "not (%s)" % conf.except_filter
+   415             if filter is not None:
+   416                 attach_filter(self.ins, filter)
+   417         self.ins.bind((iface, type))
+   418         self.ins.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 2**30)
+   419         self.outs = self.ins
+   420         self.outs.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 2**30)
+   421         sa_ll = self.outs.getsockname()
+   422         if sa_ll[3] in conf.l2types:
+   423             self.LL = conf.l2types[sa_ll[3]]
+   424         elif sa_ll[1] in conf.l3types:
+   425             self.LL = conf.l3types[sa_ll[1]]
+   426         else:
+   427             self.LL = conf.default_l2
+   428             warning("Unable to guess type (interface=%s protocol=%#x family=%i). Using %s" % (sa_ll[0],sa_ll[1],sa_ll[3],self.LL.name))
+   429             
+   430     def recv(self, x=MTU):
+   431         pkt, sa_ll = self.ins.recvfrom(x)
+   432         if sa_ll[2] == socket.PACKET_OUTGOING:
+   433             return None
+   434         try:
+   435             q = self.LL(pkt)
+   436         except KeyboardInterrupt:
+   437             raise
+   438         except:
+   439             if conf.debug_dissector:
+   440                 raise
+   441             q = conf.raw_layer(pkt)
+   442         q.time = get_last_packet_timestamp(self.ins)
+   443         return q
+   
+   
+   
+   
+   
+   
+   
+class SuperSocket:
+    24     __metaclass__ = _SuperSocket_metaclass
+    25     desc = None
+    26     closed=0
+    27     def __init__(self, family=socket.AF_INET,type=socket.SOCK_STREAM, proto=0):
+    28         self.ins = socket.socket(family, type, proto)
+    29         self.outs = self.ins
+    30         self.promisc=None
+    31     def send(self, x):
+    32         sx = str(x)
+    33         if hasattr(x, "sent_time"):
+    34             x.sent_time = time.time()
+    35         return self.outs.send(sx)
+    36     def recv(self, x=MTU):
+    37         return conf.raw_layer(self.ins.recv(x))
+    38     def fileno(self):
+    39         return self.ins.fileno()
+    40     def close(self):
+    41         if self.closed:
+    42             return
+    43         self.closed=1
+    44         if self.ins != self.outs:
+    45             if self.outs and self.outs.fileno() != -1:
+    46                 self.outs.close()
+    47         if self.ins and self.ins.fileno() != -1:
+    48             self.ins.close()
+    49     def sr(self, *args, **kargs):
+    50         return sendrecv.sndrcv(self, *args, **kargs)
+    51     def sr1(self, *args, **kargs):        
+    52         a,b = sendrecv.sndrcv(self, *args, **kargs)
+    53         if len(a) > 0:
+    54             return a[0][1]
+    55         else:
+    56             return None
+    57     def sniff(self, *args, **kargs):
+    58         return sendrecv.sniff(opened_socket=self, *args, **kargs)
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+OS X/BSD
+
+
+class L2dnetSocket(SuperSocket):
+   285         desc = "read/write packets at layer 2 using libdnet and libpcap"
+   286         def __init__(self, iface = None, type = ETH_P_ALL, filter=None, nofilter=0):
+   287             if iface is None:
+   288                 iface = conf.iface
+   289             self.iface = iface
+   290             self.ins = open_pcap(iface, 1600, 0, 100)
+   291             try:
+   292                 ioctl(self.ins.fileno(),BIOCIMMEDIATE,struct.pack("I",1))
+   293             except:
+   294                 pass
+   295             if nofilter:
+   296                 if type != ETH_P_ALL:  # PF_PACKET stuff. Need to emulate this for pcap
+   297                     filter = "ether proto %i" % type
+   298                 else:
+   299                     filter = None
+   300             else:
+   301                 if conf.except_filter:
+   302                     if filter:
+   303                         filter = "(%s) and not (%s)" % (filter, conf.except_filter)
+   304                     else:
+   305                         filter = "not (%s)" % conf.except_filter
+   306                 if type != ETH_P_ALL:  # PF_PACKET stuff. Need to emulate this for pcap
+   307                     if filter:
+   308                         filter = "(ether proto %i) and (%s)" % (type,filter)
+   309                     else:
+   310                         filter = "ether proto %i" % type
+   311             if filter:
+   312                 self.ins.setfilter(filter)
+   313             self.outs = dnet.eth(iface)
+   314         def recv(self,x=MTU):
+   315             ll = self.ins.datalink()
+   316             if ll in conf.l2types:
+   317                 cls = conf.l2types[ll]
+   318             else:
+   319                 cls = conf.default_l2
+   320                 warning("Unable to guess datalink type (interface=%s linktype=%i). Using %s" % (self.iface, ll, cls.name))
+   321     
+   322             pkt = self.ins.next()
+   323             if pkt is not None:
+   324                 ts,pkt = pkt
+   325             if pkt is None:
+   326                 return
+   327             
+   328             try:
+   329                 pkt = cls(pkt)
+   330             except KeyboardInterrupt:
+   331                 raise
+   332             except:
+   333                 if conf.debug_dissector:
+   334                     raise
+   335                 pkt = conf.raw_layer(pkt)
+   336             pkt.time = ts
+   337             return pkt
+   338     
+   339         def nonblock_recv(self):
+   340             self.ins.setnonblock(1)
+   341             p = self.recv(MTU)
+   342             self.ins.setnonblock(0)
+   343             return p
+   344     
+   345         def close(self):
+   346             if hasattr(self, "ins"):
+   347                 del(self.ins)
+   348             if hasattr(self, "outs"):
+   349                 del(self.outs)
