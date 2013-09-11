@@ -249,9 +249,12 @@ class _NetworkLink(object):
         else:
             self._listening_sockets = (dhcp_socket,)
             
-        if response_interface:
+        if response_interface and platform.system() == 'Linux':
+            _logger.info("Attempting to set up raw response-socket mechanism on %(interface)s..." % {'interface': response_interface,})
             self._responder_dhcp = self._responder_pxe = self._responder_broadcast = _RawResponder()
         else:
+            if response_interface:
+                _logger.warn("Raw response-socket requested on %(interface)s, but only Linux is supported for now" % {'interface': response_interface,})
             self._responder_dhcp = _Responder(dhcp_socket)
             self._responder_pxe = _Responder(pxe_socket)
             self._responder_broadcast = _Responder()
