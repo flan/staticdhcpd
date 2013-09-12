@@ -232,13 +232,13 @@ class _NetworkLink(object):
             
         self._responder_dhcp = _L3Responder(socketobj=dhcp_socket)
         self._responder_pxe = _L3Responder(socketobj=pxe_socket)
-        if response_interface and platform.system() == 'Linux':
+        if response_interface and (hasattr(socket, 'AF_PACKET') or hasattr(socket, 'PF_PACKET')):
             self._responder_broadcast = _L2Responder(server_address, response_interface)
             self._unicast_discover_supported = True
         else:
             if response_interface:
                 import warnings
-                warnings.warn("libpydhcpserver: Raw response-socket requested on %(interface)s, but only Linux is supported for now" % {'interface': response_interface,})
+                warnings.warn("libpydhcpserver: Raw response-socket requested on %(interface)s, but neither AF_PACKET nor PF_PACKET is not supported on your platform" % {'interface': response_interface,})
             self._responder_broadcast = _L3Responder(server_address=server_address)
             
     def _setupListeningSockets(self, server_port, pxe_port):
@@ -380,7 +380,8 @@ class _L2Responder(_Responder):
         
         self._server_address = socket.inet_aton(str(server_address))
         
-        self._socket = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.htons(_ETH_P_SNAP))
+        socket_type = ((hasattr(socket, 'AF_PACKET') and socket.AF_PACKET) or (hasattr(socket, 'PF_PACKET') and socket.PF_PACKET))
+        self._socket = socket.socket(socket_type, socket.SOCK_RAW, socket.htons(_ETH_P_SNAP))
         self._socket.bind((response_interface, _ETH_P_SNAP))
         self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 2 ** 12)
         self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 2 ** 12)
