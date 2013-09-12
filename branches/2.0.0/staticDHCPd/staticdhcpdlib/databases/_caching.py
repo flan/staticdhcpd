@@ -27,9 +27,11 @@ Legal
 import logging
 import threading
 
+from generic import (Database, Definition)
+
 _logger = logging.getLogger('databases._caching')
 
-class DatabaseCache(object):
+class _DatabaseCache(Database):
     _cache_lock = None
     _chained_cache = None
     _name = None
@@ -220,7 +222,7 @@ LIMIT 1""", (str(mac),))
         
     def _cacheMAC(self, mac, definition, chained):
         (database, cursor) = self._connect()
-        cursor.execute("INSERT INTO OR IGNORE subnets (subnet, serial, lease_time, gateway, subnet_mask, broadcast_address, ntp_servers, domain_name_servers, domain_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        cursor.execute("INSERT OR IGNORE INTO subnets (subnet, serial, lease_time, gateway, subnet_mask, broadcast_address, ntp_servers, domain_name_servers, domain_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
          (
           definition.subnet, definition.serial,
           definition.lease_time,

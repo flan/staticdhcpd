@@ -197,11 +197,11 @@ class _PacketWrapper(object):
         the handling functions.
         """
         self.mac = self.packet.getHardwareAddress()
-        self.ip = packet.extractIPOrNone("requested_ip_address")
-        self.sid = packet.extractIPOrNone("server_identifier")
-        self.ciaddr = packet.extractIPOrNone("ciaddr")
+        self.ip = self.packet.extractIPOrNone("requested_ip_address")
+        self.sid = self.packet.extractIPOrNone("server_identifier")
+        self.ciaddr = self.packet.extractIPOrNone("ciaddr")
         self._associated_ip = self.ciaddr
-        self.giaddr = packet.extractIPOrNone("giaddr")
+        self.giaddr = self.packet.extractIPOrNone("giaddr")
         self.pxe_options = self.packet.extractPXEOptions()
         self.vendor_options = self.packet.extractVendorOptions()
         
@@ -797,9 +797,9 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         """
         packet.setOption('server_identifier', ipToList(self._server_address))
         
-        bytes = self._sendDHCPPacket(packet, address, pxe, mac, client_ip)
+        (bytes, ip, port) = self._sendDHCPPacket(packet, address, pxe, mac, client_ip)
         response_type = packet.getDHCPMessageTypeName()
-        _logger.info('%(type)s sent to %(mac)s for %(client)s via %(ip)s:%(port)i %(pxe)s[%(bytes)i bytes]' % {
+        _logger.info('%(type)s sent at %(mac)s for %(client)s via %(ip)s:%(port)i %(pxe)s[%(bytes)i bytes]' % {
          'type': response_type[response_type.find('_') + 1:],
          'mac': mac,
          'client': client_ip,
@@ -919,6 +919,7 @@ class DHCPService(threading.Thread):
          config.DHCP_SERVER_PORT,
          config.DHCP_CLIENT_PORT,
          config.PXE_PORT,
+         config.DHCP_RESPONSE_INTERFACE,
          database
         )
         _logger.info("Configured DHCP server")
