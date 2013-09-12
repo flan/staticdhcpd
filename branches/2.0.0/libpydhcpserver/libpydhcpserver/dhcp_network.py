@@ -230,15 +230,15 @@ class _NetworkLink(object):
         else:
             self._listening_sockets = (dhcp_socket,)
             
+        self._responder_dhcp = _L3Responder(socketobj=dhcp_socket)
+        self._responder_pxe = _L3Responder(socketobj=pxe_socket)
         if response_interface and platform.system() == 'Linux':
-            self._responder_dhcp = self._responder_pxe = self._responder_broadcast = _L2Responder(server_address, response_interface)
+            self._responder_broadcast = _L2Responder(server_address, response_interface)
             self._unicast_discover_supported = True
         else:
             if response_interface:
                 import warnings
                 warnings.warn("libpydhcpserver: Raw response-socket requested on %(interface)s, but only Linux is supported for now" % {'interface': response_interface,})
-            self._responder_dhcp = _L3Responder(socketobj=dhcp_socket)
-            self._responder_pxe = _L3Responder(socketobj=pxe_socket)
             self._responder_broadcast = _L3Responder(server_address=server_address)
             
     def _setupListeningSockets(self, server_port, pxe_port):
@@ -298,9 +298,9 @@ class _NetworkLink(object):
             if (not self._unicast_discover_supported or #All responses have to be via broadcast
                 packet.getOption('flags')[0] & 0b10000000): #Broadcast bit set; respond in kind 
                 ip = _IP_BROADCAST
-                responder = self._responder_broadcast
             else: #The client wants unicast and this host can handle it
                 ip = packet.extractIPOrNone('yiaddr')
+            responder = self._responder_broadcast
         else: #Unicast source
             giaddr = packet.extractIPOrNone('giaddr')
             ip = address[0]
