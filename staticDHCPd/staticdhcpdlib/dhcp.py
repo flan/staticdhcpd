@@ -56,9 +56,6 @@ _PACKET_TYPE_REQUEST_RENEW = 'REQUEST:RENEW'
 _PACKET_TYPE_REQUEST_SELECTING = 'REQUEST:SELECTING'
 
 #IP constants
-_IP_GLOB = '0.0.0.0'
-_IP_BROADCAST = '255.255.255.255'
-_IP_UNSPECIFIED_FILTER = (None, '', _IP_GLOB, _IP_BROADCAST)
 _IP_REJECTED = '<nil>'
 
 _logger = logging.getLogger('dhcp')
@@ -235,7 +232,7 @@ class _PacketWrapper(object):
          'mac': self.mac,
          'ip': ip and (" for %(ip)s" % {'ip': ip,}) or '',
          'sip': (
-          self.source_address[0] not in _IP_UNSPECIFIED_FILTER and
+          self.source_address[0] not in libpydhcpserver.dhcp_network.IP_UNSPECIFIED_FILTER and
           " via %(address)s:%(port)i" % {'address': self.source_address[0], 'port': self.source_address[1],} or
           ''
          ),
@@ -687,7 +684,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
             wrapper.markAddressed()
             
     def _handleDHCPRequest_RENEW_REBIND(self, wrapper):
-        renew = wrapper.source_address[0] not in _IP_UNSPECIFIED_FILTER
+        renew = wrapper.source_address[0] not in libpydhcpserver.dhcp_network.IP_UNSPECIFIED_FILTER
         wrapper.setType(renew and _PACKET_TYPE_REQUEST_RENEW or _PACKET_TYPE_REQUEST_REBIND)
         if not wrapper.filterPacket(): return
         wrapper.announcePacket(ip=wrapper.ip)
@@ -800,29 +797,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         """
         packet.setOption('server_identifier', ipToList(self._server_address))
         
-        
-        
-        
-        ip = port = None
-        if address[0] in _IP_UNSPECIFIED_FILTER: #Broadcast source
-            if packet.getOption('flags')[0] & 0b10000000: #Broadcast bit set; respond in kind
-                ip = _IP_BROADCAST
-            else: #The client wants to receive a response via unicast
-                ip = packet.extractIPOrNone('yiaddr')
-            port = self._client_port
-        else: #Unicast source
-            giaddr = packet.extractIPOrNone('giaddr')
-            ip = address[0]
-            if giaddr: #Relayed request.
-                port = self._server_port
-            else: #Request directly from client, routed or otherwise.
-                if pxe:
-                    ip = packet.extractIPOrNone('ciaddr') or ip
-                    port = address[1] or self._client_port #BSD doesn't seem to preserve port information
-                else:
-                    port = self._client_port
-                    
-        bytes = self._sendDHCPPacket(packet, ip, port, pxe)
+        bytes = self._sendDHCPPacket(packet, address, pxe, mac, client_ip)
         response_type = packet.getDHCPMessageTypeName()
         _logger.info('%(type)s sent to %(mac)s for %(client)s via %(ip)s:%(port)i %(pxe)s[%(bytes)i bytes]' % {
          'type': response_type[response_type.find('_') + 1:],
