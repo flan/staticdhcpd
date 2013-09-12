@@ -188,17 +188,9 @@ class DHCPNetwork(object):
         @type pxe: bool
         @param pxe: True if the packet was received via the PXE port
         """
-        self._network_link.sendData(packet, address, pxe, mac, client_ip)
-
+        return self._network_link.sendData(packet, address, pxe, mac, client_ip)
         
-            
-Packet:        
-    response_mac = None #If set to something coerceable into a MAC, the packet will be sent to this MAC, rather than its default
-    response_ip = None #If set to something coerceable into an IPv4, the packet will be sent to this IP, rather than its default
-    response_port = None #If set to an integer, the packet will be sent to this port, rather than its default_l2
-    
-    
-            
+        
 class _NetworkLink(object):
     """
     Handles network I/O.
@@ -209,9 +201,8 @@ class _NetworkLink(object):
     _responder_dhcp = None
     _responder_pxe = None
     _responder_broadcast = None
-    _dhcp_socket = None #: The socket used to receive DHCP requests.
-    _pxe_socket = None #: The socket used to receive PXE requests.
     _listening_sockets = None #: All sockets on which to listen for activity.
+    _unicast_discover_supported = False
     
     def __init__(self, server_address, server_port, client_port, pxe_port, response_interface=None):
         """
@@ -240,13 +231,14 @@ class _NetworkLink(object):
             
         if response_interface and platform.system() == 'Linux':
             _logger.info("Attempting to set up raw response-socket mechanism on %(interface)s..." % {'interface': response_interface,})
-            self._responder_dhcp = self._responder_pxe = self._responder_broadcast = _RawResponder(client_port, server_port, pxe_port, response_interface)
+            self._responder_dhcp = self._responder_pxe = self._responder_broadcast = _L2Responder(client_port, server_port, pxe_port, response_interface)
+            self._unicast_discover_supported = True
         else:
             if response_interface:
                 _logger.warn("Raw response-socket requested on %(interface)s, but only Linux is supported for now" % {'interface': response_interface,})
-            self._responder_dhcp = _DHCPResponder(socket=dhcp_socket)
-            self._responder_pxe = _PXEResponder(socket=pxe_socket)
-            self._responder_broadcast = _BroadcastResponder()
+            self._responder_dhcp = _L3Responder(socket=dhcp_socket)
+            self._responder_pxe = _L3Responder(socket=pxe_socket)
+            self._responder_broadcast = _L3Responder()
             
     def _setupSockets(self, server_port, pxe_port):
         dhcp_socket = pxe_socket = None
@@ -293,15 +285,17 @@ class _NetworkLink(object):
         return (source_address, None)
         
     def sendData(self, packet, address, pxe, mac, client_ip):
-        ip = port = None
-        if address[0] in IP_UNSPECIFIED_FILTER: #Broadcast source
-            if packet.getOption('flags')[0] & 0b10000000: #Broadcast bit set; respond in kind
+        ip = None
+        port = self._client_port
+        source_port = self._server_port
+        responder = self._responder_dhcp
+        if address[0] in IP_UNSPECIFIED_FILTER: #Broadcast source; this is never valid for PXE
+            if (not self._unicast_discover_supported or #All responses have to be via broadcast
+                packet.getOption('flags')[0] & 0b10000000): #Broadcast bit set; respond in kind 
                 ip = _IP_BROADCAST
-            else: #The client wants to receive a response via unicast
+                responder = self._responder_broadcast
+            else: #The client wants unicast and this host can handle it
                 ip = packet.extractIPOrNone('yiaddr')
-            port = self._client_port
-            
-            
         else: #Unicast source
             giaddr = packet.extractIPOrNone('giaddr')
             ip = address[0]
@@ -310,55 +304,44 @@ class _NetworkLink(object):
             else: #Request directly from client, routed or otherwise.
                 if pxe:
                     ip = packet.extractIPOrNone('ciaddr') or ip
-                    port = address[1] or self._client_port #BSD doesn't seem to preserve port information
-                else:
-                    port = self._client_port
+                    port = address[1] or self._pxe_port #BSD doesn't seem to preserve port information
+                    source_port = self._pxe_port
+                    responder = self._responder_pxe
                     
-        
-                    
-                    
-        # When responding to a relay, the packet will be unicast, so use
-        # self._dhcp_socket so the source port will be 67. Some relays
-        # will not relay when the source port is not 67. Or, if PXE is in
-        # use, use that socket instead.
-        #
-        # Otherwise use self._response_socket because it has SO_BROADCAST.
-        #
-        # If self._dhcp_socket is anonymously bound, the two sockets will
-        # actually be one and the same, so this change has no potentially
-        # damaging effects.
-        ip = str(ip)
-        if not ip == '255.255.255.255':
-            if pxe:
-                return self._pxe_socket.sendto(packet_encoded, (ip, port))
-            else:
-                return self._dhcp_socket.sendto(packet_encoded, (ip, port))
-        else:
-            return self._response_socket.sendto(packet_encoded, (ip, port))
-        
-        
-        
-        
+        return responder.send(packet, mac, ip, port, source_port=source_port)
         
 class _Responder(object):
     _socket = None #The socket used for responses; its semantics vary by subclass
     
     def _setBroadcastBit(self, packet, state):
         flags = packet.getOption('flags')
+        old_state = bool(flags[0] & 0b10000000)
         if state:
             flags[0] |= 0b10000000
         else:
             flags[0] &= 0b01111111
         packet.setOption('flags', flags)
+        return old_state
         
-    def send(self, packet, address, pxe, mac, client_ip):
+    def send(self, packet, mac, ip, port, *args, **kwargs):
+        old_broadcast_bit = self._setBroadcastBit(packet, ip == _IP_BROADCAST)
         
+        #Perform any packet-specific rewriting
+        packet = packet.response_mac or mac
+        if not old_broadcast_bit:
+            ip = packet.response_ip or ip
+        port = packet.response_port or port
+        if packet.source_port is not None:
+            kwargs['source_port'] = packet.source_port
+            
+        try:
+            bytes_sent = self._send(packet, mac, ip, port, *args, **kwargs)
+            self._setBroadcastBit(packet, old_broadcast_bit) #Restore the broadcast bit, in case the packet needs to be used for something else
+        finally:
+            return bytes_sent
+    def _send(self, packet, mac, ip, port, *args, **kwargs):
+        raise NotImplementedError("_send() must be implemented in subclasses")
         
-        
-                    
-        
-    def _send(self, *args, **kwargs): raise NotImplementedError("_send() must be implemented in subclasses")
-    
 class _L3Responder(_Responder):
     def __init__(self, socket=None):
         if socket:
@@ -376,24 +359,10 @@ class _L3Responder(_Responder):
             except socket.error, e:
                 raise Exception('Unable to bind socket: %(error)s' % {'error': e,})
                 
-    def send(self, packet, address, pxe, mac, client_ip):
-        return self._send(packet, address, pxe, mac, client_ip)
-    def _send(self, packet, ip, port):
+    def _send(self, packet, mac, ip, port, *args, **kwargs):
         return self._socket.sendto(packet.encodePacket(), (ip, port))
         
-class _DHCPResponder(_L3Responder):
-    def send(self):
-        self._setBroadcastBit(packet, False)
-        
-class _PXEResponder(_L3Responder):
-    def send(self):
-        self._setBroadcastBit(packet, False)
-        
-class _BroadcastResponder(_L3Responder):
-    def send(self):
-        self._setBroadcastBit(packet, True)
-        
-class _RawResponder(_Responder):
+class _L2Responder(_Responder):
     _ethernet_id = None #The source MAC and Ethernet payload-type
     _server_address = None #The server's IP
     
@@ -452,16 +421,14 @@ class _RawResponder(_Responder):
          packet,
         ])
         
-    def send(self, packet, mac, ip, port):
+    def _send(self, packet, mac, ip, port, source_port=0, *args, **kwargs):
         binary = []
         ip = str(ip)
         
         #<> Ethernet header
         if ip == _IP_BROADCAST:
-            self._setBroadcastBit(packet, True)
             binary.append('\xff\xff\xff\xff\xff\xff') #Broadcast MAC
         else:
-            self._setBroadcastBit(packet, False)
             binary.append(''.join(chr(i) for i in mac)) #Destination MAC
         binary.append(self._ethernet_id) #Source MAC and Ethernet payload-type
         
@@ -486,7 +453,7 @@ class _RawResponder(_Responder):
         ))
         
         #<> UDP header
-        binary.append(self.__pack("!HH", 0, port)) #Source port doesn't matter, hence 0
+        binary.append(self.__pack("!HH", source_port, port))
         binary.append(self.__pack("!H", len(packet) + 8)) #8 for the header itself
         binary.append(self.__pack("<H", self._udpChecksum(ip_destination, binary[-2], binary[-1], packet))
         
