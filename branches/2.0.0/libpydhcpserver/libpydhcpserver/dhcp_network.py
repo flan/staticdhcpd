@@ -32,6 +32,7 @@ import socket
 import threading
 
 from dhcp_types.packet import DHCPPacket
+from dhcp_types.mac import MAC
 
 #IP constants
 _IP_GLOB = '0.0.0.0'
@@ -232,13 +233,17 @@ class _NetworkLink(object):
             
         self._responder_dhcp = _L3Responder(socketobj=dhcp_socket)
         self._responder_pxe = _L3Responder(socketobj=pxe_socket)
-        if response_interface and (hasattr(socket, 'AF_PACKET') or hasattr(socket, 'PF_PACKET')):
-            self._responder_broadcast = _L2Responder(server_address, response_interface)
+        if response_interface:
+            try:
+                self._responder_broadcast = _L2Responder_AF_PACKET(server_address, response_interface)
+            except Exception:
+                try:
+                    self._responder_broadcast = _L2Responder_pcap(server_address, response_interface)
+                except Exception:
+                    import errno
+                    raise EnvironmentError(errno.ELIBACC, "Raw response-socket requested on %(interface)s, neither AF_PACKET/PF_PACKET nor libpcap are supported" % {'interface': response_interface,})
             self._unicast_discover_supported = True
         else:
-            if response_interface:
-                import warnings
-                warnings.warn("libpydhcpserver: Raw response-socket requested on %(interface)s, but neither AF_PACKET nor PF_PACKET is not supported on your platform" % {'interface': response_interface,})
             self._responder_broadcast = _L3Responder(server_address=server_address)
             
     def _setupListeningSockets(self, server_port, pxe_port):
@@ -372,24 +377,13 @@ class _L2Responder(_Responder):
     __array = None
     __pack = None
     
-    def __init__(self, server_address, response_interface):
+    def __init__(self, server_address):
         import struct
         self.__pack = struct.pack
         import array
         self.__array = array.array
         
         self._server_address = socket.inet_aton(str(server_address))
-        
-        socket_type = ((hasattr(socket, 'AF_PACKET') and socket.AF_PACKET) or (hasattr(socket, 'PF_PACKET') and socket.PF_PACKET))
-        self._socket = socket.socket(socket_type, socket.SOCK_RAW, socket.htons(_ETH_P_SNAP))
-        self._socket.bind((response_interface, _ETH_P_SNAP))
-        self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 2 ** 12)
-        self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 2 ** 12)
-        
-        self._ethernet_id = (
-         self._socket.getsockname()[4] + #Source MAC
-         "\x08\x00" #IP payload-type
-        )
         
     def _checksum(self, data):
         if sum(len(i) for i in data) & 1:
@@ -425,7 +419,7 @@ class _L2Responder(_Responder):
          packet,
         ])
         
-    def _send(self, packet, mac, ip, port, source_port=0, *args, **kwargs):
+    def _assemblePacket(self, packet, mac, ip, port, source_port, *args, **kwargs):
         binary = []
         ip = str(ip)
         
@@ -465,5 +459,85 @@ class _L2Responder(_Responder):
         #<> Payload
         binary.append(packet)
         
-        return self._socket.send(''.join(binary))
+        return ''.join(binary)
+        
+class _L2Responder_AF_PACKET(_Responder):
+    def __init__(self, server_address, response_interface):
+        _L2Responder.__init__(self, server_address)
+        
+        socket_type = ((hasattr(socket, 'AF_PACKET') and socket.AF_PACKET) or (hasattr(socket, 'PF_PACKET') and socket.PF_PACKET))
+        if not socket_type:
+            raise Exception("Neither AF_PACKET nor PF_PACKET found")
+        self._socket = socket.socket(socket_type, socket.SOCK_RAW, socket.htons(_ETH_P_SNAP))
+        self._socket.bind((response_interface, _ETH_P_SNAP))
+        self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 2 ** 12)
+        self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 2 ** 12)
+        
+        self._ethernet_id = (
+         self._socket.getsockname()[4] + #Source MAC
+         "\x08\x00" #IP payload-type
+        )
+        
+    def _send(self, packet, mac, ip, port, source_port=0, *args, **kwargs):
+        binary_packet = self._assemblePacket(packet, mac, ip, port, source_port, *args, **kwargs)
+        return self._socket.send(binary_packet)
+        
+class _L2Responder_pcap(_Responder):
+    __ctypes = None
+    
+    _inject = None
+    
+    def __init__(self, server_address, response_interface):
+        _L2Responder.__init__(self, server_address)
+        
+        import ctypes
+        self.__ctypes = ctypes
+        import ctypes.util
+        
+        pcap = ctypes.util.find_library('pcap')
+        if not pcap:
+            raise Exception("libpcap not found")
+        pcap = ctypes.cdll.LoadLibrary(pcap)
+        
+        errbuf = self.__ctypes.create_string_buffer(256)
+        self._socket = pcap.pcap_open_live(response_interface, self.__ctypes.c_int(0), self.__ctypes.c_int(0), self.__ctypes.c_int(0), errbuf)
+        if not self._socket:
+            import errno
+            raise IOError(errno.EACCES, self._errbuf.value)
+        elif self._errbuf.value:
+            import warnings
+            warnings.warn(self._errbuf.value)
+            
+        #Ultra-hackish, but mostly portable, means of getting the MAC address for the interface
+        import subprocess
+        import re
+        ifconfig_output = subprocess.check_output(('/sbin/ifconfig', response_interface))
+        m = re.search(r'\b(?P<mac>(?:[0-9A-Fa-f]{2}:){5}(?:[0-9A-Fa-f]{2}))\b', ifconfig_output)
+        if not m:
+            pcap.pcap_close(self._socket)
+            raise Exception("Unable to determine MAC of %(interface)s using... ifconfig... Yes, really; someone, please provide a better way!" % {
+             'interface': response_interface,
+            })
+        mac = MAC(m.group('mac'))
+        #End of hackery
+        
+        self._ethernet_id = (
+         ''.join(chr(i) for i in mac) + #Source MAC
+         "\x08\x00" #IP payload-type
+        )
+        
+        #The "send" function for the socket
+        self._inject = pcap.pcap_inject
+        
+    def _send(self, packet, mac, ip, port, source_port=0, *args, **kwargs):
+        binary_packet = self._assemblePacket(packet, mac, ip, port, source_port, *args, **kwargs)
+        packet_len = len(binary_packet)
+        bytes_sent = self._inject(self._socket, binary_packet, ctypes.c_int(packet_len))
+        if bytes_sent != packet_len:
+            import errno
+            raise IOError(errno.EIO, "Packet not fully transmitted: length=%(length)i, sent=%(sent)i" % {
+             'length': packet_len,
+             'sent': bytes_sent,
+            })
+        return bytes_sent
         
