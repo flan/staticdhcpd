@@ -56,6 +56,7 @@ class DHCPPacket(object):
     response_mac = None #If set to something coerceable into a MAC, the packet will be sent to this MAC, rather than its default
     response_ip = None #If set to something coerceable into an IPv4, the packet will be sent to this IP, rather than its default
     response_port = None #If set to an integer, the packet will be sent to this port, rather than its default
+    response_source_port = None #If set to an integer, the packet will be reported as being sent from this port, rather than its default
     
     def __init__(self, data=None):
         """
