@@ -79,11 +79,10 @@ class DHCPNetwork(object):
             indicating whether a DHCP packet was received or not and the tuple
             reflecting the source of the received packet, if any.
         """
-        (source_address, data) = self._network_link.getData()
+        (source_address, data, pxe) = self._network_link.getData(timeout=timeout, packet_buffer=packet_buffer)
         if data:
             packet = DHCPPacket(data)
             if packet.isDHCPPacket():
-                pxe = active_socket == self._pxe_socket
                 if packet.isDHCPRequestPacket():
                     threading.Thread(target=self._handleDHCPRequest, args=(packet, source_address, pxe)).start()
                 elif packet.isDHCPDiscoverPacket():
@@ -198,6 +197,7 @@ class _NetworkLink(object):
     _client_port = None
     _server_port = None
     _pxe_port = None
+    _pxe_socket = None
     _responder_dhcp = None
     _responder_pxe = None
     _responder_broadcast = None
@@ -223,9 +223,10 @@ class _NetworkLink(object):
         self._server_port = server_port
         self._pxe_port = pxe_port
         
-        (dhcp_socket, pxe_socket) = self._setupSockets(server_port, pxe_port)
+        (dhcp_socket, pxe_socket) = self._setupListeningSockets(server_port, pxe_port)
         if pxe_socket:
             self._listening_sockets = (dhcp_socket, pxe_socket)
+            self._pxe_socket = pxe_socket
         else:
             self._listening_sockets = (dhcp_socket,)
             
@@ -236,11 +237,11 @@ class _NetworkLink(object):
         else:
             if response_interface:
                 _logger.warn("Raw response-socket requested on %(interface)s, but only Linux is supported for now" % {'interface': response_interface,})
-            self._responder_dhcp = _L3Responder(socket=dhcp_socket)
-            self._responder_pxe = _L3Responder(socket=pxe_socket)
-            self._responder_broadcast = _L3Responder()
+            self._responder_dhcp = _L3Responder(socketobj=dhcp_socket)
+            self._responder_pxe = _L3Responder(socketobj=pxe_socket)
+            self._responder_broadcast = _L3Responder(server_address=server_address)
             
-    def _setupSockets(self, server_port, pxe_port):
+    def _setupListeningSockets(self, server_port, pxe_port):
         dhcp_socket = pxe_socket = None
         try:
             dhcp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -276,13 +277,15 @@ class _NetworkLink(object):
         return (dhcp_socket, pxe_socket)
         
     def getData(self, timeout, packet_buffer):
+        pxe = False
         active_sockets = select.select(self._listening_sockets, [], [], timeout)[0]
         if active_sockets:
             active_socket = active_sockets[0]
+            pxe = active_socket == self._pxe_socket
             (data, source_address) = active_socket.recvfrom(packet_buffer)
             if data:
-                return (source_address, data)
-        return (source_address, None)
+                return (source_address, data, pxe)
+        return (None, None, False)
         
     def sendData(self, packet, address, pxe, mac, client_ip):
         ip = None
@@ -327,25 +330,25 @@ class _Responder(object):
         old_broadcast_bit = self._setBroadcastBit(packet, ip == _IP_BROADCAST)
         
         #Perform any packet-specific rewriting
-        packet = packet.response_mac or mac
+        mac = packet.response_mac or mac
         if not old_broadcast_bit:
             ip = packet.response_ip or ip
         port = packet.response_port or port
-        if packet.source_port is not None:
-            kwargs['source_port'] = packet.source_port
+        if packet.response_source_port is not None:
+            kwargs['source_port'] = packet.response_source_port
             
         try:
             bytes_sent = self._send(packet, mac, ip, port, *args, **kwargs)
             self._setBroadcastBit(packet, old_broadcast_bit) #Restore the broadcast bit, in case the packet needs to be used for something else
         finally:
-            return bytes_sent
+            return (bytes_sent, ip, port)
     def _send(self, packet, mac, ip, port, *args, **kwargs):
         raise NotImplementedError("_send() must be implemented in subclasses")
         
 class _L3Responder(_Responder):
-    def __init__(self, socket=None):
-        if socket:
-            self._socket = socket
+    def __init__(self, socketobj=None, server_address=None):
+        if socketobj:
+            self._socket = socketobj
         else:
             self._socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             
@@ -355,7 +358,7 @@ class _L3Responder(_Responder):
                 raise Exception('Unable to set SO_BROADCAST: %(err)s' % {'err': e,})
             
             try:
-                self._response_socket.bind((server_address or '', 0))
+                self._socket.bind((server_address or '', 0))
             except socket.error, e:
                 raise Exception('Unable to bind socket: %(error)s' % {'error': e,})
                 
@@ -455,7 +458,7 @@ class _L2Responder(_Responder):
         #<> UDP header
         binary.append(self.__pack("!HH", source_port, port))
         binary.append(self.__pack("!H", len(packet) + 8)) #8 for the header itself
-        binary.append(self.__pack("<H", self._udpChecksum(ip_destination, binary[-2], binary[-1], packet))
+        binary.append(self.__pack("<H", self._udpChecksum(ip_destination, binary[-2], binary[-1], packet)))
         
         #<> Payload
         binary.append(packet)
