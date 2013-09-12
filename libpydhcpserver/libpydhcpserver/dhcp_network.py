@@ -231,7 +231,7 @@ class _NetworkLink(object):
             self._listening_sockets = (dhcp_socket,)
             
         if response_interface and platform.system() == 'Linux':
-            self._responder_dhcp = self._responder_pxe = self._responder_broadcast = _L2Responder(client_port, server_port, pxe_port, response_interface)
+            self._responder_dhcp = self._responder_pxe = self._responder_broadcast = _L2Responder(server_address, response_interface)
             self._unicast_discover_supported = True
         else:
             if response_interface:
@@ -435,18 +435,19 @@ class _L2Responder(_Responder):
         
         #<> Prepare packet data for transmission and checksumming
         packet = packet.encodePacket()
+        packet_len = len(packet)
         
         #<> IP header
-        binary.append(self.__pack("!BBHHHB",
+        binary.append(self.__pack("!BBHHHBB",
          69, #IPv4 + length=5
          0, #DSCP/ECN aren't relevant
-         68 + len(packet), #The IP, UDP, and packet lengths in bytes
+         28 + packet_len, #The UDP and packet lengths in bytes
          0, #ID, which is always 0 because we're the origin
-         0, #Default flags and no fragmentation (yet)
-         128, #Make the default TTL sane, but not maximum
+         packet_len <= 560 and 0b0100000000000000 or 0, #Flags and fragmentation
+         64, #Make the default TTL sane, but not maximum
          0x11, #Protocol=UDP
         ))
-        ip_destination = socket.inet_aton(ip)
+        ip_destination = socket.inet_aton(str(ip))
         binary.extend((
          self.__pack("<H", self._ipChecksum(binary[-1], ip_destination)),
          self._server_address,
@@ -455,7 +456,7 @@ class _L2Responder(_Responder):
         
         #<> UDP header
         binary.append(self.__pack("!HH", source_port, port))
-        binary.append(self.__pack("!H", len(packet) + 8)) #8 for the header itself
+        binary.append(self.__pack("!H", packet_len + 8)) #8 for the header itself
         binary.append(self.__pack("<H", self._udpChecksum(ip_destination, binary[-2], binary[-1], packet)))
         
         #<> Payload
