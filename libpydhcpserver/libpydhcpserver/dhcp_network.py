@@ -511,7 +511,11 @@ class _L2Responder_pcap(_Responder):
         #Ultra-hackish, but mostly portable, means of getting the MAC address for the interface
         import subprocess
         import re
-        ifconfig_output = subprocess.check_output(('/sbin/ifconfig', response_interface))
+        if platform.system() == 'Linux':
+            command = ('/sbin/ip', 'link', 'show', response_interface)
+        else:
+            command = ('/sbin/ifconfig', response_interface)
+        ifconfig_output = subprocess.check_output(command)
         m = re.search(r'\b(?P<mac>(?:[0-9A-Fa-f]{2}:){5}(?:[0-9A-Fa-f]{2}))\b', ifconfig_output)
         if not m:
             pcap.pcap_close(self._socket)
