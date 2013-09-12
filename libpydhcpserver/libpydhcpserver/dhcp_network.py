@@ -254,16 +254,18 @@ class _NetworkLink(object):
             dhcp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             if pxe_socket:
                 pxe_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        except socket.error, msg :
-            _logger.warn('Unable to set SO_REUSEADDR; multiple DHCP servers cannot be run in parallel: %(err)s' % {'err': str(msg),})
+        except socket.error, msg:
+            import warnings
+            warnings.warn('Unable to set SO_REUSEADDR; multiple DHCP servers cannot be run in parallel: %(err)s' % {'err': str(msg),})
             
         if platform.system() != 'Linux':
             try: 
                 dhcp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
                 if pxe_port:
                     pxe_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
-            except socket.error, msg :
-                _logger.warn('Unable to set SO_REUSEPORT; multiple DHCP servers cannot be run in parallel: %(err)s' % {'err': str(msg),})
+            except socket.error, msg:
+                import warnings
+                warnings.warn('Unable to set SO_REUSEPORT; multiple DHCP servers cannot be run in parallel: %(err)s' % {'err': str(msg),})
                 
         try:
             dhcp_socket.bind(('', server_port))
@@ -444,7 +446,7 @@ class _L2Responder(_Responder):
          28 + packet_len, #The UDP and packet lengths in bytes
          0, #ID, which is always 0 because we're the origin
          packet_len <= 560 and 0b0100000000000000 or 0, #Flags and fragmentation
-         64, #Make the default TTL sane, but not maximum
+         128, #Make the default TTL sane, but not maximum
          0x11, #Protocol=UDP
         ))
         ip_destination = socket.inet_aton(str(ip))
