@@ -231,12 +231,12 @@ class _NetworkLink(object):
             self._listening_sockets = (dhcp_socket,)
             
         if response_interface and platform.system() == 'Linux':
-            _logger.info("Attempting to set up raw response-socket mechanism on %(interface)s..." % {'interface': response_interface,})
             self._responder_dhcp = self._responder_pxe = self._responder_broadcast = _L2Responder(client_port, server_port, pxe_port, response_interface)
             self._unicast_discover_supported = True
         else:
             if response_interface:
-                _logger.warn("Raw response-socket requested on %(interface)s, but only Linux is supported for now" % {'interface': response_interface,})
+                import warnings
+                warnings.warn("libpydhcpserver: Raw response-socket requested on %(interface)s, but only Linux is supported for now" % {'interface': response_interface,})
             self._responder_dhcp = _L3Responder(socketobj=dhcp_socket)
             self._responder_pxe = _L3Responder(socketobj=pxe_socket)
             self._responder_broadcast = _L3Responder(server_address=server_address)
@@ -337,11 +337,9 @@ class _Responder(object):
         if packet.response_source_port is not None:
             kwargs['source_port'] = packet.response_source_port
             
-        try:
-            bytes_sent = self._send(packet, mac, ip, port, *args, **kwargs)
-            self._setBroadcastBit(packet, old_broadcast_bit) #Restore the broadcast bit, in case the packet needs to be used for something else
-        finally:
-            return (bytes_sent, ip, port)
+        bytes_sent = self._send(packet, mac, ip, port, *args, **kwargs)
+        self._setBroadcastBit(packet, old_broadcast_bit) #Restore the broadcast bit, in case the packet needs to be used for something else
+        return (bytes_sent, ip, port)
     def _send(self, packet, mac, ip, port, *args, **kwargs):
         raise NotImplementedError("_send() must be implemented in subclasses")
         
@@ -363,7 +361,7 @@ class _L3Responder(_Responder):
                 raise Exception('Unable to bind socket: %(error)s' % {'error': e,})
                 
     def _send(self, packet, mac, ip, port, *args, **kwargs):
-        return self._socket.sendto(packet.encodePacket(), (ip, port))
+        return self._socket.sendto(packet.encodePacket(), (str(ip), port))
         
 class _L2Responder(_Responder):
     _ethernet_id = None #The source MAC and Ethernet payload-type
