@@ -420,7 +420,7 @@ class _L2Responder(_Responder):
          packet,
         ])
         
-    def _assemblePacket(self, packet, mac, ip, port, source_port, *args, **kwargs):
+    def _assemblePacket(self, packet, mac, ip, port, source_port):
         binary = []
         ip = str(ip)
         
@@ -462,6 +462,10 @@ class _L2Responder(_Responder):
         
         return ''.join(binary)
         
+    def _send(self, packet, mac, ip, port, source_port=0, *args, **kwargs):
+        binary_packet = self._assemblePacket(packet, mac, ip, port, source_port)
+        return self._send_(binary_packet)
+        
 class _L2Responder_AF_PACKET(_L2Responder):
     def __init__(self, server_address, response_interface):
         _L2Responder.__init__(self, server_address)
@@ -479,9 +483,8 @@ class _L2Responder_AF_PACKET(_L2Responder):
          "\x08\x00" #IP payload-type
         )
         
-    def _send(self, packet, mac, ip, port, source_port=0, *args, **kwargs):
-        binary_packet = self._assemblePacket(packet, mac, ip, port, source_port, *args, **kwargs)
-        return self._socket.send(binary_packet)
+    def _send(self, packet):
+        return self._socket.send(packet)
         
 class _L2Responder_pcap(_L2Responder):
     __c_int = None
@@ -534,15 +537,6 @@ class _L2Responder_pcap(_L2Responder):
         #The "send" function for the socket
         self._inject = pcap.pcap_inject
         
-    def _send(self, packet, mac, ip, port, source_port=0, *args, **kwargs):
-        binary_packet = self._assemblePacket(packet, mac, ip, port, source_port, *args, **kwargs)
-        packet_len = len(binary_packet)
-        bytes_sent = self._inject(self._socket, binary_packet, self.__c_int(packet_len))
-        if bytes_sent != packet_len:
-            import errno
-            raise IOError(errno.EIO, "Packet not fully transmitted: length=%(length)i, sent=%(sent)i" % {
-             'length': packet_len,
-             'sent': bytes_sent,
-            })
-        return bytes_sent
+    def _send_(self, packet):
+        return self._inject(self._socket, packet, self.__c_int(len(packet)))
         
