@@ -1,7 +1,7 @@
 #summary All change history is now part of the Debian package
 
 = Content moved =
-All changelog history is now found in debian/changelog, to avoid maintaining multiple copies.
+All changelog history is now found in `debian/changelog`, to avoid maintaining multiple copies.
 
  * [http://code.google.com/p/staticdhcpd/source/browse/branches/2.0.0/staticDHCPd/debian/changelog staticDHCPd]
  * [http://code.google.com/p/staticdhcpd/source/browse/branches/2.0.0/libpydhcpserver/debian/changelog libpydhcpserver]
