@@ -1,5 +1,354 @@
-staticdhcpd (2.0.0) unstable; urgency=low
+staticdhcpd (2.0.0~beta) unstable; urgency=low
 
-  * source package automatically created by stdeb 0.6.0+git
+  * Debian package support, at long last!
+  
+  * Logging improvements everywhere.
+
+  * Massive networking logic rewrites in conjunction with libpydhcpserver.
+    - Of key value is that this addresses issue 15, meaning that systems,
+      often embedded, that can't or won't listen for broadcast DHCP responses
+      can now be served via UNICAST response to their MACs.
+      
+  * More flexibility in determining where packets go, in case specific clients
+    require responses at/from odd addresses.
+  
+  * Clients with weird chomp-like behaviour that always eats one byte past END
+    will now receive a PAD-byte at the end of a packet if they sent one, too.
+  
+  * All cacheable databases (which is most of them) now have support for
+    local caching on disk, instead of just memory, and for persistent on-disk
+    caching, in case the database server is sometimes unreachable.
+  
+  * No more warnings: all logging
+
+  * Complete rewrites of the following subsystems:
+    - Logging: now uses Python's logging facility
+    - Web: now completely extensible and definable through extensions
+    - Stats: now an event system integrated with extensions
+    - DHCP: streamlined, more efficient, and less-confusing (within core logic)
+    - Databases: fully embraced custom databases, with love for subclassing
+      against builtins
+      
+  * Added new officially supported extension modules:
+    - dynamism: dynamic address allocation
+    - feedservice: provides an ATOM feed that reads logging events
+    - httpdb: generic REST-JSON webservice database
+      (usable, but also a good example for building your own)
+    - recent_activity: web-interface component to monitor DHCP activity, with
+      fancy graphs
+    - statistics: all the goodness of the old stats stuff, with more
+      flexibility, but now it's optional if you don't want it
 
  -- Neil Tallim <flan@uguu.ca>  Tue, 20 Aug 2013 11:47:57 -0600
+
+staticdhcpd (1.6.4) stable; urgency=low
+
+  * Backported a feature from 2.0.0 that lets users define their own custom
+    database engines without needing to touch the core code.
+  
+ -- Neil Tallim <flan@uguu.ca>  Mon, 01 Apr 2013 00:00:00 -0600
+
+staticdhcpd (1.6.3) stable; urgency=low
+
+  * Fixed a long-standing issue in which PXE clients that sent broadcast
+    packets containing `ciaddr` were responded to via broadcast, rather than
+    unicast to that `ciaddr` value.
+  
+ -- Neil Tallim <flan@uguu.ca>  Thu, 28 Mar 2013 00:00:00 -0600
+
+staticdhcpd (1.6.2) stable; urgency=low
+
+  * Refactored the database component, breaking coupling to SQL
+  
+  * Implemented support for using an INI file as an alternative to an SQL-based
+    database, borrowing from contributions by John Stowers
+  
+ -- Neil Tallim <flan@uguu.ca>  Tue, 19 Mar 2013 00:00:00 -0600
+
+staticdhcpd (1.6.1) stable; urgency=low
+
+  * Massive re-architecture of the directory structures
+    - staticDHCPd and libpydhcpserver now separated
+    - conf/ directory added for source-based testing and deployment
+    - /etc/staticDHCPd/ now recognised as a configuration path
+    
+  * Better deployment and operation logic
+    - Setup scripts for both components of the system
+    - Basic unified installer
+      - Upgrade-friendly
+    - Platform auto-detection and initscript-setup-help
+    - No more need for hacks to access custom modules imported relative to
+      `conf.py`
+    
+  * Fixed a tab-based indentation issue in 1.6.0 (thanks to John Stowers for
+    pointing it out)
+  
+  * `main.py` is now `staticDHCPd`
+  
+ -- Neil Tallim <flan@uguu.ca>  Mon, 18 Mar 2013 00:00:00 -0600
+
+staticdhcpd (1.6.0) unstable; urgency=low
+
+  * Support for dynamic provisioning as part of an extensions subsystem.
+  
+  * Support for true daemon operation.
+  
+ -- Neil Tallim <flan@uguu.ca>  Fri, 01 Mar 2013 00:00:00 -0600
+
+staticdhcpd (1.5.7) stable; urgency=low
+
+  * PXE will now work even when ALLOW_LOCAL_DHCP is False. This failed before
+    because PXE is strictly unicast, so it doesn't use a relay, even when the
+    other half of the negotiation does.
+  
+ -- Neil Tallim <flan@uguu.ca>  Sun, 29 Apr 2012 00:00:00 -0600
+
+staticdhcpd (1.5.6) stable; urgency=low
+
+  * Fixes a significant issue that prevented special DHCP options from being
+    parsed, with thanks to Aditya Kulkarni.
+    
+  * Fixes an issue that, despite what 1.5.3 said, prevented PXE from working
+    properly, since the socket was never checked for pending data.
+    
+  * Fixes the lack of e-mail timeouts and allows ports to be specified.
+  
+ -- Neil Tallim <flan@uguu.ca>  Thu, 29 Mar 2012 00:00:00 -0600
+
+staticdhcpd (1.5.5) stable; urgency=low
+
+  * Primarily a bugfix release, and one long overdue.
+  
+  * Addresses a number of issues affecting REBIND behaviour and errant NAKs
+    (issue 7).
+    
+  * Adds Python 2.5 backwards-compatibility thanks to a patch from Mark
+    Schloesser.
+    
+  * Fixes an error-logging issue that caused still more errors to be thrown,
+    with thanks again to Mark (issue 8).
+    
+  * Fixes issues related to in-code typos that prevent custom attributes from
+    being set correctly in DHCP packets (issue 10).
+    
+  * Added some diagnosis logic and a strToPaddedList() function based on
+    patches from Andrew Xuan.
+  
+ -- Neil Tallim <flan@uguu.ca>  Thu, 23 Jun 2011 00:00:00 -0600
+
+staticdhcpd (1.5.4) stable; urgency=low
+
+  * Made it easy to upgrade by introducing a buffering setting-default system
+  
+  * Refactored some code out of places it didn't need to be
+  
+  * Severed a reverse-dependency between libpydhcpserver and staticDHCPd
+  
+ -- Neil Tallim <flan@uguu.ca>  Sat, 08 Jan 2011 00:00:00 -0600
+
+staticdhcpd (1.5.3) unstable; urgency=low
+
+  * Vendor options are automatically stripped from received packets and exposed
+    to users through a `vendor` parameter
+    
+  * Support for a PXE port has been added
+  
+  * Added support for easy logging from user-defined code
+  
+ -- Neil Tallim <flan@uguu.ca>  Fri, 07 Jan 2011 00:00:00 -0600
+
+staticdhcpd (1.5.2) unstable; urgency=low
+
+  * Addressed an issue with Cisco relays not accepting packets from sockets
+    other than 67
+  
+  * Added support for Oracle
+  
+ -- Neil Tallim <flan@uguu.ca>  Wed, 05 Jan 2011 00:00:00 -0600
+
+staticdhcpd (1.5.1) stable; urgency=low
+
+  * Fixed a bug with Postgres's configuration, preventing it from being used
+    unless MySQL was configured, too
+  
+  * Fixed a documentation error in the README: no netmask was defined
+  
+ -- Neil Tallim <flan@uguu.ca>  Wed, 29 Dec 2010 00:00:00 -0600
+
+staticdhcpd (1.5.0) stable; urgency=low
+
+  * Database-flow overhaul
+    - Added support for Postgres
+    - Added connection pooling
+    - Removed concurrency support from SQLite, since it was redundant
+    
+  * Converted all source to space-based indentation
+  
+  * Cleaned up webserver logging a little
+  
+  * Refactored pydhcplib into libpydhcpserver
+  
+  * Added support for RFC3442 (option 121)
+  
+  * Added support for RFC3495 (option 122)
+  
+  * Added support for RFC3825 (option 123)
+  
+  * Added support for RFC3925 (options 124 and 125)
+  
+  * Added support for RFC4039 (option 80)
+  
+  * Added support for RFC4280 (options 88 and 89)
+  
+  * Added support for RFC4578 (options 93, 94, and 97)
+  
+  * Added support for RFC4776 (option 99)
+  
+  * Added support for RFC4833 (options 100 and 101)
+  
+  * Added support for RFC5071 (options 208-211)
+  
+  * Added support for RFC5192 (option 136)
+  
+  * Added support for RFC5223 (option 137)
+  
+  * Added support for RFC5417 (option 138)
+  
+ -- Neil Tallim <flan@uguu.ca>  Sat, 20 Nov 2010 00:00:00 -0600
+
+staticdhcpd (1.4.1) stable; urgency=low
+
+  * 1.4.0's new RFC options can now be set using lists of bytes
+  
+ -- Neil Tallim <flan@uguu.ca>  Tue, 02 Feb 2010 00:00:00 -0600
+
+staticdhcpd (1.4.0) stable; urgency=low
+
+  * Added support for RFC2610 (options 78 and 79)
+  
+  * Added support for RFC2937 (option 117)
+  
+  * Added support for RFC3046 (option 82)
+  
+  * Added support for RFC3361 (option 120)
+  
+  * Added support for RFC3396 (long options)
+  
+  * Added support for RFC4174 (option 83)
+  
+  * Added BETA support for RFC4388 (LEASEQUERY)
+    - Caveat: only MAC-based lookups are supported; anything else will be
+    served a DHCPLEASEUNKNOWN out of necessity
+    
+  * Added support for specification of options by number
+  
+  * Rebuilt support for RFC3397 (option 119)
+    - Caveat: the compression algorithm it describes was omitted
+  
+ -- Neil Tallim <flan@uguu.ca>  Sun, 31 Jan 2010 00:00:00 -0600
+
+staticdhcpd (1.4.0) stable; urgency=low
+
+  * Added support for RFC2610 (options 78 and 79)
+  
+  * Added support for RFC2937 (option 117)
+  
+  * Added support for RFC3046 (option 82)
+  
+  * Added support for RFC3361 (option 120)
+  
+  * Added support for RFC3396 (long options)
+  
+  * Added support for RFC4174 (option 83)
+  
+  * Added BETA support for RFC4388 (LEASEQUERY)
+    - Caveat: only MAC-based lookups are supported; anything else will be
+    served a DHCPLEASEUNKNOWN out of necessity
+    
+  * Added support for specification of options by number
+  
+  * Rebuilt support for RFC3397 (option 119)
+    - Caveat: the compression algorithm it describes was omitted
+  
+ -- Neil Tallim <flan@uguu.ca>  Sun, 31 Jan 2010 00:00:00 -0600
+
+staticdhcpd (1.3.5) stable; urgency=low
+
+  * Updated support and resource URLs
+  
+ -- Neil Tallim <flan@uguu.ca>  Fri, 22 Jan 2010 00:00:00 -0600
+
+staticdhcpd (1.3.4) stable; urgency=low
+
+  * Fixed a logic error that resulted in non-RFC-compliant NAKing
+    - No clients seem to have noticed or cared, though
+  
+ -- Neil Tallim <flan@uguu.ca>  Tue, 19 Jan 2010 00:00:00 -0600
+
+staticdhcpd (1.3.3) stable; urgency=low
+
+  * Fixed a typo that prevented NAKing of unknown MACs in AUTHORITATIVE mode
+  
+ -- Neil Tallim <flan@uguu.ca>  Tue, 18 Jan 2010 00:00:00 -0600
+
+staticdhcpd (1.3.2) stable; urgency=low
+
+  * Improved concurrent efficiency of the DHCPDECLINE and DHCPRELEASE events
+  
+  * Added better reporting of misconfigured/malicious clients that would break
+    dynamic DHCP servers
+  
+  * Added better handling for misconfigured/malicious clients
+  
+  * More consistent message formatting
+  
+ -- Neil Tallim <flan@uguu.ca>  Mon, 17 Jan 2010 00:00:00 -0600
+
+staticdhcpd (1.3.1) stable; urgency=low
+
+  * Added reporting for DHCPRELEASE events, to make it easier to determine
+    whether clients are behaving properly
+  
+  * Added reporting for DHCPDECLINE events, complete with e-mail notification,
+    to help operators find conflicts in their networks
+  
+  * Improved log formatting
+  
+  * Improved memory-efficiency of caching mode
+  
+ -- Neil Tallim <flan@uguu.ca>  Sun, 16 Jan 2010 00:00:00 -0600
+
+staticdhcpd (1.3.0) stable; urgency=low
+
+  * Added AUTHORITATIVE mode, allowing staticDHCPd to be configured to NAK
+    DISCOVERs for unknown MACs, rather than silently ignoring them
+  
+  * Added an option to have logfiles written to disk with the current timestamp
+    as a suffix, simplifying the process of creating status snapshots
+  
+ -- Neil Tallim <flan@uguu.ca>  Wed, 13 Jan 2010 00:00:00 -0600
+
+staticdhcpd (1.2.0) stable; urgency=low
+
+  * Consistently named and documented convenience functions
+  
+ -- Neil Tallim <flan@uguu.ca>  Mon, 11 Jan 2010 03:00:00 -0600
+
+staticdhcpd (1.1.1) stable; urgency=low
+
+  * Added README with a quick-start proof-of-concept-for-busy-people guide
+  
+ -- Neil Tallim <flan@uguu.ca>  Mon, 11 Jan 2010 02:00:00 -0600
+
+staticdhcpd (1.1.0) stable; urgency=low
+
+  * USE_CACHE option added to conf.py, allowing for memory-speed performance
+    under heavy load
+  
+ -- Neil Tallim <flan@uguu.ca>  Mon, 11 Jan 2010 01:00:00 -0600
+
+staticdhcpd (1.0.0) stable; urgency=low
+
+  * First stable release
+  
+ -- Neil Tallim <flan@uguu.ca>  Mon, 11 Jan 2010 00:00:00 -0600
