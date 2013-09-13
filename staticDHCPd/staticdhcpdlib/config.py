@@ -41,33 +41,32 @@ conf = None
 import os
 import sys
 import imp
-conf_path = os.path.join(os.getcwd(), 'conf')
-sys.path.append(conf_path)
-try: #Look for a 'conf/' subdirectory
-    conf = imp.load_source('conf', os.path.join(conf_path, 'conf.py'))
-except IOError:
-    sys.path.remove(conf_path)
-    
-    etc_path = '/etc/staticDHCPd'
-    sys.path.append(etc_path)
-    try: #If that fails, try /etc/staticDHCPd/
-        conf = imp.load_source('conf', os.path.join(etc_path, 'conf.py'))
-    except IOError:
-        sys.path.remove(etc_path)
-        
-        raise ImportError("Unable to find a suitable copy of conf.py")
-    else:
-        sys.path.append(os.path.join(etc_path, 'extensions'))
-    finally:
-        del etc_path
+
+if 'STATICDHCPD_CONF_PATH' in os.environ:
+    conf_search_paths = [os.path.dirname(os.environ['STATICDHCPD_CONF_PATH'])]
 else:
-    sys.path.append(os.path.join(conf_path, 'extensions'))
-finally:
-    del conf_path
-    del os
-    del sys
-    del imp
+    conf_search_paths = [os.path.join(os.getcwd(), 'conf'), '/etc/staticDHCPd']
     
+for conf_path in conf_search_paths:
+    sys.path.append(conf_path)
+    try: #Attempt to import conf.py from the path
+        conf = imp.load_source('conf', os.path.join(conf_path, 'conf.py'))
+    except IOError:
+        sys.path.remove(conf_path)
+    else:
+        sys.path.append(os.path.join(conf_path, 'extensions'))
+        break
+else:
+    raise ImportError("Unable to find a suitable copy of conf.py; searched: %(paths)r" % {
+     'paths': conf_search_paths,
+    })
+    
+del conf_search_paths
+del conf_path
+del os
+del sys
+del imp
+
 #Options passed through from conf.py
 #For explanations, please consult that file.
 ##############################################################################

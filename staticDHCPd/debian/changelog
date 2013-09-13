@@ -18,9 +18,15 @@ staticdhcpd (2.0.0~beta) unstable; urgency=low
   * All cacheable databases (which is most of them) now have support for
     local caching on disk, instead of just memory, and for persistent on-disk
     caching, in case the database server is sometimes unreachable.
+    
+  * Better support for (more) arguments.
+  
+  * conf.py can now be located anywhere.
+    - Either set the environment variable STATICDHCPD_CONF_PATH or supply it
+      as an argument with --config
   
   * No more warnings: all logging
-
+  
   * Complete rewrites of the following subsystems:
     - Logging: now uses Python's logging facility
     - Web: now completely extensible and definable through extensions
@@ -28,7 +34,8 @@ staticdhcpd (2.0.0~beta) unstable; urgency=low
     - DHCP: streamlined, more efficient, and less-confusing (within core logic)
     - Databases: fully embraced custom databases, with love for subclassing
       against builtins
-      
+    Everything's still compatible with old configurations, though!
+    
   * Added new officially supported extension modules:
     - dynamism: dynamic address allocation
     - feedservice: provides an ATOM feed that reads logging events
@@ -38,7 +45,7 @@ staticdhcpd (2.0.0~beta) unstable; urgency=low
       fancy graphs
     - statistics: all the goodness of the old stats stuff, with more
       flexibility, but now it's optional if you don't want it
-
+      
  -- Neil Tallim <flan@uguu.ca>  Tue, 20 Aug 2013 11:47:57 -0600
 
 staticdhcpd (1.6.4) stable; urgency=low

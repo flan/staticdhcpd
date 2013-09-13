@@ -27,6 +27,7 @@ Legal
 """
 import logging
 import logging.handlers
+import optparse
 import os
 import signal
 import sys
@@ -35,19 +36,26 @@ import traceback
 
 import staticdhcpdlib
 import libpydhcpserver
-interesting_args = [v for v in sys.argv if v in ('--version', '-v', '--help', '-h')]
-if interesting_args:
-    if '--version' in interesting_args or '-v' in interesting_args:
-        print(
-         "staticDHCPd v" + staticdhcpdlib.VERSION + " - " + staticdhcpdlib.URL +
-         " | libpydhcpserver v" + libpydhcpserver.VERSION + " - " + libpydhcpserver.URL
-        )
-    elif '--help' in interesting_args or '-h' in interesting_args:
-        print("staticDHCPd [[--help | -h] | [--version | -v]]")
-        print("staticDHCPd searches for `conf.py' in `/etc/staticDHCPd' and `./conf'")
-        print("For more information, please see http://uguu.ca/ or http://staticdhcpd.googlecode.com/")
+
+#Options-processing needs to be done before config is loaded
+parser = optparse.OptionParser()
+parser.add_option("--config", help="specify the location of conf.py", dest="conf_path")
+parser.add_option("--debug", help="output logging information at the DEBUG level", dest="debug", action="store_true", default=False)
+parser.add_option("--verbose", help="disable daemon mode, if set, and enable console output", dest="verbose", action="store_true", default=False)
+parser.add_option("--version", help="display version information", dest="version", action="store_true", default=False)
+(parser_options, args) = parser.parse_args()
+if parser_options.version:
+    print(
+     "staticDHCPd v" + staticdhcpdlib.VERSION + " - " + staticdhcpdlib.URL +
+     " | libpydhcpserver v" + libpydhcpserver.VERSION + " - " + libpydhcpserver.URL
+    )
     sys.exit(0)
-del interesting_args
+if parser_options.config:
+    os.environ['STATICDHCPD_CONF_PATH'] = parser_options.config
+del parser
+del args
+#Options-processing complete
+
 import staticdhcpdlib.config
 
 _logger = logging.getLogger('main')
@@ -208,10 +216,25 @@ def _initialiseDHCP():
     staticdhcpdlib.system.registerTickCallback(dhcp.tick)
     
 if __name__ == '__main__':
-    if staticdhcpdlib.config.DAEMON:
-        _daemonise()
+    if parser_options.debug:
+        staticdhcpdlib.config.DEBUG = True
+        staticdhcpdlib.config.LOG_FILE_SEVERITY = logging.DEBUG
+        staticdhcpdlib.config.LOG_CONSOLE_SEVERITY = logging.DEBUG
+        print("staticDHCPd: Debugging overrides enabled: debugging operation requested")
         
+    if staticdhcpdlib.config.DAEMON:
+        if parser_options.verbose:
+            staticdhcpdlib.config.DAEMON = False
+            print("staticDHCPd: Daemonised execution disabled: verbose operation requested")
+        else:
+            _daemonise()
+    del _daemonise
+    
+del parser_options #No longer needed; allow reclamation
+
+if __name__ == '__main__':
     _setupLogging()
+    del _setupLogging
     for i in (
      "----------------------------------------",
      "----------------------------------------",
@@ -254,12 +277,14 @@ if __name__ == '__main__':
         
         #Initialise all system resources
         _initialise()
+        del _initialise
         
         _logger.info("Initialising custom code...")
         staticdhcpdlib.config.init()
         
         #Initialise the DHCP server
         _initialiseDHCP()
+        del _initialiseDHCP
         
         _logger.info("Changing runtime permissions to UID=%(uid)i, GID=%(gid)i..." % {
          'uid': staticdhcpdlib.config.UID,
