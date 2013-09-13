@@ -239,9 +239,10 @@ class _NetworkLink(object):
             except Exception:
                 try:
                     self._responder_broadcast = _L2Responder_pcap(server_address, response_interface)
-                except Exception:
+                except Exception, e:
+                    print e
                     import errno
-                    raise EnvironmentError(errno.ELIBACC, "Raw response-socket requested on %(interface)s, neither AF_PACKET/PF_PACKET nor libpcap are supported" % {'interface': response_interface,})
+                    raise EnvironmentError(errno.ELIBACC, "Raw response-socket requested on %(interface)s, but neither AF_PACKET/PF_PACKET nor libpcap are available" % {'interface': response_interface,})
             self._unicast_discover_supported = True
         else:
             self._responder_broadcast = _L3Responder(server_address=server_address)
@@ -461,7 +462,7 @@ class _L2Responder(_Responder):
         
         return ''.join(binary)
         
-class _L2Responder_AF_PACKET(_Responder):
+class _L2Responder_AF_PACKET(_L2Responder):
     def __init__(self, server_address, response_interface):
         _L2Responder.__init__(self, server_address)
         
@@ -482,8 +483,8 @@ class _L2Responder_AF_PACKET(_Responder):
         binary_packet = self._assemblePacket(packet, mac, ip, port, source_port, *args, **kwargs)
         return self._socket.send(binary_packet)
         
-class _L2Responder_pcap(_Responder):
-    __ctypes = None
+class _L2Responder_pcap(_L2Responder):
+    __c_int = None
     
     _inject = None
     
@@ -491,7 +492,7 @@ class _L2Responder_pcap(_Responder):
         _L2Responder.__init__(self, server_address)
         
         import ctypes
-        self.__ctypes = ctypes
+        self.__c_int = ctypes.c_int
         import ctypes.util
         
         pcap = ctypes.util.find_library('pcap')
@@ -499,14 +500,14 @@ class _L2Responder_pcap(_Responder):
             raise Exception("libpcap not found")
         pcap = ctypes.cdll.LoadLibrary(pcap)
         
-        errbuf = self.__ctypes.create_string_buffer(256)
-        self._socket = pcap.pcap_open_live(response_interface, self.__ctypes.c_int(0), self.__ctypes.c_int(0), self.__ctypes.c_int(0), errbuf)
+        errbuf = ctypes.create_string_buffer(256)
+        self._socket = pcap.pcap_open_live(response_interface, ctypes.c_int(0), ctypes.c_int(0), ctypes.c_int(0), errbuf)
         if not self._socket:
             import errno
-            raise IOError(errno.EACCES, self._errbuf.value)
-        elif self._errbuf.value:
+            raise IOError(errno.EACCES, errbuf.value)
+        elif errbuf.value:
             import warnings
-            warnings.warn(self._errbuf.value)
+            warnings.warn(errbuf.value)
             
         #Ultra-hackish, but mostly portable, means of getting the MAC address for the interface
         import subprocess
@@ -536,7 +537,7 @@ class _L2Responder_pcap(_Responder):
     def _send(self, packet, mac, ip, port, source_port=0, *args, **kwargs):
         binary_packet = self._assemblePacket(packet, mac, ip, port, source_port, *args, **kwargs)
         packet_len = len(binary_packet)
-        bytes_sent = self._inject(self._socket, binary_packet, ctypes.c_int(packet_len))
+        bytes_sent = self._inject(self._socket, binary_packet, self.__c_int(packet_len))
         if bytes_sent != packet_len:
             import errno
             raise IOError(errno.EIO, "Packet not fully transmitted: length=%(length)i, sent=%(sent)i" % {
