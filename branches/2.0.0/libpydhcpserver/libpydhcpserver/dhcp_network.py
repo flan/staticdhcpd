@@ -483,7 +483,7 @@ class _L2Responder_AF_PACKET(_L2Responder):
          "\x08\x00" #IP payload-type
         )
         
-    def _send(self, packet):
+    def _send_(self, packet):
         return self._socket.send(packet)
         
 class _L2Responder_pcap(_L2Responder):
