@@ -211,7 +211,7 @@ class INI(Database):
              'section': section,
             })
         
-        self._maps[str(mac)] = (ip, hostname, (subnet, serial))
+        self._maps[int(mac)] = (ip, hostname, (subnet, serial))
         
     def _validate_references(self):
         """
@@ -220,7 +220,7 @@ class INI(Database):
         for (mac, (_, _, subnet)) in self._maps.items():
             if subnet not in self._subnets:
                 raise ValueError("MAC '%(mac)s' references unknown subnet '%(subnet)s|%(serial)i'" % {
-                 'mac': mac,
+                 'mac': MAC(mac),
                  'subnet': subnet[0],
                  'serial': subnet[1],
                 })
@@ -238,7 +238,7 @@ class INI(Database):
         
         @raise Exception: If a problem occurs while accessing the database.
         """
-        mac = str(mac)
+        mac = int(mac)
         with self._lock:
             map = self._maps.get(mac)
             if not map:
