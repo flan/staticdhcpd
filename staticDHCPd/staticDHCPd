@@ -39,7 +39,7 @@ import libpydhcpserver
 
 #Options-processing needs to be done before config is loaded
 parser = optparse.OptionParser()
-parser.add_option("--config", help="specify the location of conf.py", dest="conf_path")
+parser.add_option("--config", help="specify the location of conf.py", dest="config")
 parser.add_option("--debug", help="output logging information at the DEBUG level", dest="debug", action="store_true", default=False)
 parser.add_option("--verbose", help="disable daemon mode, if set, and enable console output", dest="verbose", action="store_true", default=False)
 parser.add_option("--version", help="display version information", dest="version", action="store_true", default=False)
@@ -218,8 +218,8 @@ def _initialiseDHCP():
 if __name__ == '__main__':
     if parser_options.debug:
         staticdhcpdlib.config.DEBUG = True
-        staticdhcpdlib.config.LOG_FILE_SEVERITY = logging.DEBUG
-        staticdhcpdlib.config.LOG_CONSOLE_SEVERITY = logging.DEBUG
+        staticdhcpdlib.config.LOG_FILE_SEVERITY = 'DEBUG'
+        staticdhcpdlib.config.LOG_CONSOLE_SEVERITY = 'DEBUG'
         print("staticDHCPd: Debugging overrides enabled: debugging operation requested")
         
     if staticdhcpdlib.config.DAEMON:
