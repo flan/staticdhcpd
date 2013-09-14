@@ -123,6 +123,11 @@ handleUnknownMAC(), described in the scripting guide, to provision addresses.
 
 Database:SQLite
 ------------------------------
+CASE_INSENSITIVE_MACS : boolean : default=False
+ - Forces case-insensitive comparisons for MACs
+ - If this matters to you, for SQLite, you should create a NOCASE index over
+   maps:mac instead, for greater efficiency
+
 USE_CACHE : boolean : default=False
  - Causes data retrieved from the database to be stored in memory until the
    cache is flushed via reinitialisation
@@ -153,6 +158,10 @@ SQLITE_FILE : text : MUST BE SPECIFIED
 
 Database:PostgreSQL
 ------------------------------
+CASE_INSENSITIVE_MACS : boolean : default=False
+ - Forces case-insensitive comparisons for MACs
+ - This is generally inefficient; store lower-case MACs instead
+
 USE_CACHE : boolean : default=False
  - Causes data retrieved from the database to be stored in memory until the
    cache is flushed via reinitialisation
@@ -209,6 +218,10 @@ POSTGRESQL_MAXIMUM_CONNECTIONS : integer : default=4
 
 Database:Oracle
 ------------------------------
+CASE_INSENSITIVE_MACS : boolean : default=False
+ - Forces case-insensitive comparisons for MACs
+ - This is generally inefficient; store lower-case MACs instead
+   
 USE_CACHE : boolean : default=False
  - Causes data retrieved from the database to be stored in memory until the
    cache is flushed via reinitialisation
@@ -252,6 +265,10 @@ ORACLE_MAXIMUM_CONNECTIONS : integer : default=4
 
 Database:MySQL
 ------------------------------
+CASE_INSENSITIVE_MACS : boolean : default=False
+ - Forces case-insensitive comparisons for MACs
+ - MySQL is normally case-insensitive, so this isn't likely to be helpful
+   
 USE_CACHE : boolean : default=False
  - Causes data retrieved from the database to be stored in memory until the
    cache is flushed via reinitialisation
