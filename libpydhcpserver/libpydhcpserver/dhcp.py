@@ -42,7 +42,7 @@ IP_UNSPECIFIED_FILTER = (None, '', _IP_GLOB, _IP_BROADCAST)
 _ETH_P_SNAP = 0x0005 #Internal-only Ethernet-frame-grabbing
 #Nothing should be addressible to the special response socket, but better to avoid wasting memory
 
-class DHCPNetwork(object):
+class DHCPServer(object):
     """
     Handles internal packet-path-routing logic.
     """
