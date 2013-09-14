@@ -34,7 +34,7 @@ import traceback
 import config
 import statistics
 
-import libpydhcpserver.dhcp_network
+import libpydhcpserver.dhcp
 from libpydhcpserver.dhcp_types.ipv4 import IPv4
 from libpydhcpserver.dhcp_types.mac import MAC
 from libpydhcpserver.dhcp_types.rfc import (
@@ -232,7 +232,7 @@ class _PacketWrapper(object):
          'mac': self.mac,
          'ip': ip and (" for %(ip)s" % {'ip': ip,}) or '',
          'sip': (
-          self.source_address[0] not in libpydhcpserver.dhcp_network.IP_UNSPECIFIED_FILTER and
+          self.source_address[0] not in libpydhcpserver.dhcp.IP_UNSPECIFIED_FILTER and
           " via %(address)s:%(port)i" % {'address': self.source_address[0], 'port': self.source_address[1],} or
           ''
          ),
@@ -430,7 +430,7 @@ def _dhcpHandler(packet_type):
         return wrappedHandler
     return decorator
     
-class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
+class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
     """
     The handler that responds to all received requests.
     """
@@ -466,7 +466,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
         self._dhcp_actions = {}
         self._ignored_addresses = []
         
-        libpydhcpserver.dhcp_network.DHCPNetwork.__init__(
+        libpydhcpserver.dhcp.DHCPServer.__init__(
          self, server_address, server_port, client_port, pxe_port, response_interface=response_interface
         )
         
@@ -684,7 +684,7 @@ class _DHCPServer(libpydhcpserver.dhcp_network.DHCPNetwork):
             wrapper.markAddressed()
             
     def _handleDHCPRequest_RENEW_REBIND(self, wrapper):
-        renew = wrapper.source_address[0] not in libpydhcpserver.dhcp_network.IP_UNSPECIFIED_FILTER
+        renew = wrapper.source_address[0] not in libpydhcpserver.dhcp.IP_UNSPECIFIED_FILTER
         wrapper.setType(renew and _PACKET_TYPE_REQUEST_RENEW or _PACKET_TYPE_REQUEST_REBIND)
         if not wrapper.filterPacket(): return
         wrapper.announcePacket(ip=wrapper.ip)
