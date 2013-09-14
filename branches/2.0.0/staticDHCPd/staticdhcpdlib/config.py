@@ -97,6 +97,8 @@ _defaults.update({
  'PERSISTENT_CACHE': None,
  'CACHE_ON_DISK': False,
 
+ 'CASE_INSENSITIVE_MACS': False,
+
  'USE_POOL': True,
 
  'POSTGRESQL_HOST': None,
