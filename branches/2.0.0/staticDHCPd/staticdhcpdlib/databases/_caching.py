@@ -188,7 +188,7 @@ class DiskCache(_DatabaseCache):
     PRIMARY KEY(subnet, serial)
 )""")
         cursor.execute("""CREATE TABLE IF NOT EXISTS maps (
-    mac TEXT PRIMARY KEY,
+    mac INTEGER PRIMARY KEY,
     ip TEXT,
     hostname TEXT,
     subnet TEXT,
@@ -213,7 +213,7 @@ class DiskCache(_DatabaseCache):
 FROM maps m, subnets s
 WHERE
  m.mac = ? AND m.subnet = s.subnet AND m.serial = s.serial
-LIMIT 1""", (str(mac),))
+LIMIT 1""", (int(mac),))
         result = cursor.fetchone()
         self._disconnect(database, cursor)
         if result:
@@ -232,7 +232,7 @@ LIMIT 1""", (str(mac),))
         )
         cursor.execute("INSERT INTO maps (mac, ip, hostname, subnet, serial) VALUES (?, ?, ?, ?, ?)",
          (
-          str(mac),
+          int(mac),
           definition.ip, definition.hostname,
           definition.subnet, definition.serial
          )
