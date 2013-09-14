@@ -1,4 +1,3 @@
-doc/README
-doc/configuration
-doc/scripting
-
+README
+doc/customisation/configuration.rst
+doc/customisation/scripting.rst
