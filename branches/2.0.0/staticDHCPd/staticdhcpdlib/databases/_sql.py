@@ -172,7 +172,7 @@ class MySQL(_PoolingBroker):
       s.ntp_servers, s.lease_time, s.subnet, s.serial
      FROM maps m, subnets s
      WHERE
-      %(mac)s = %s AND m.subnet = s.subnet AND m.serial = s.serial
+      %(mac)s = %%s AND m.subnet = s.subnet AND m.serial = s.serial
      LIMIT 1
     """ % {'mac': config.CASE_INSENSITIVE_MACS and 'LOWER(m.mac)' or 'm.mac'}
     
@@ -209,7 +209,7 @@ class PostgreSQL(_PoolingBroker):
       s.ntp_servers, s.lease_time, s.subnet, s.serial
      FROM maps m, subnets s
      WHERE
-      %(mac)s = %s AND m.subnet = s.subnet AND m.serial = s.serial
+      %(mac)s = %%s AND m.subnet = s.subnet AND m.serial = s.serial
      LIMIT 1
     """ % {'mac': config.CASE_INSENSITIVE_MACS and 'lower(m.mac)' or 'm.mac'}
     

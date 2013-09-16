@@ -27,3 +27,7 @@ CREATE TABLE maps (
 /* staticDHCPd requires an account with SELECT access; if anyone can provide a sane description of
    how to set this up under Oracle, it would be very much appreciated.
 */
+
+-- Case-insensitive MAC-lookups may be handled in-database using the following method:
+--  - Include the following index
+CREATE INDEX case_insensitive_macs ON maps ((lower(mac)));
