@@ -33,3 +33,7 @@ GRANT SELECT ON TABLE subnets, maps TO 'dhcp_user';
 CREATE USER 'dhcp_maintainer' WITH password 'dhcp_pass';
 GRANT SELECT, INSERT, DELETE, UPDATE, EXECUTE ON TABLE subnets, maps TO 'dhcp_maintainer';
 */
+
+-- Case-insensitive MAC-lookups may be handled in-database using the following method:
+--  - Include the following index
+CREATE INDEX case_insensitive_macs ON maps ((lower(mac)));

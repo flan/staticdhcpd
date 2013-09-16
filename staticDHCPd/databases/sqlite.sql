@@ -21,7 +21,7 @@ CREATE TABLE maps (
     FOREIGN KEY (subnet, serial) REFERENCES subnets (subnet, serial)
 );
 
--- Case-insensitive MAC-lookupss may be handled in-database using either of the following methods:
+-- Case-insensitive MAC-lookups may be handled in-database using either of the following methods:
 --  - Put "COLLATE NOCASE" in the column-definition in maps:mac
 --  - Include the following index
 CREATE INDEX case_insensitive_macs ON maps (mac COLLATE NOCASE);

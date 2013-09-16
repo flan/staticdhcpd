@@ -160,7 +160,8 @@ Database:PostgreSQL
 ------------------------------
 CASE_INSENSITIVE_MACS : boolean : default=False
  - Forces case-insensitive comparisons for MACs
- - This is generally inefficient; store lower-case MACs instead
+ - If this matters to you, for Postgres, you should create a lower() index over
+   maps:mac instead, for greater efficiency
 
 USE_CACHE : boolean : default=False
  - Causes data retrieved from the database to be stored in memory until the
@@ -220,7 +221,8 @@ Database:Oracle
 ------------------------------
 CASE_INSENSITIVE_MACS : boolean : default=False
  - Forces case-insensitive comparisons for MACs
- - This is generally inefficient; store lower-case MACs instead
+ - If this matters to you, for Oracle, you should create a lower() index over
+   maps:mac instead, for greater efficiency
    
 USE_CACHE : boolean : default=False
  - Causes data retrieved from the database to be stored in memory until the
