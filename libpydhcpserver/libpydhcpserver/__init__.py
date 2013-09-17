@@ -26,3 +26,4 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 """
 VERSION = '1.3.1-beta'
 URL = 'http://uguu.ca/'
+COPYRIGHT = '2013, Neil Tallim <flan@uguu.ca>'
