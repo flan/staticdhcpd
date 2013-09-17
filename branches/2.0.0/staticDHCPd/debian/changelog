@@ -19,6 +19,10 @@ staticdhcpd (2.0.0~beta) unstable; urgency=low
     local caching on disk, instead of just memory, and for persistent on-disk
     caching, in case the database server is sometimes unreachable.
     
+  * All databases now offer optional case-insensitive modes of operation, with
+    all SQL-schema examples describing how to bake this in for better
+    operational efficiency.
+    
   * Better support for (more) arguments.
   
   * conf.py can now be located anywhere.

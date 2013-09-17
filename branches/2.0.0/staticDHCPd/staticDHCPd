@@ -27,7 +27,6 @@ Legal
 """
 import logging
 import logging.handlers
-import optparse
 import os
 import signal
 import sys
@@ -37,23 +36,27 @@ import traceback
 import staticdhcpdlib
 import libpydhcpserver
 
+parser_options = None
 #Options-processing needs to be done before config is loaded
-parser = optparse.OptionParser()
-parser.add_option("--config", help="specify the location of conf.py", dest="config")
-parser.add_option("--debug", help="output logging information at the DEBUG level", dest="debug", action="store_true", default=False)
-parser.add_option("--verbose", help="disable daemon mode, if set, and enable console output", dest="verbose", action="store_true", default=False)
-parser.add_option("--version", help="display version information", dest="version", action="store_true", default=False)
-(parser_options, args) = parser.parse_args()
-if parser_options.version:
-    print(
-     "staticDHCPd v" + staticdhcpdlib.VERSION + " - " + staticdhcpdlib.URL +
-     " | libpydhcpserver v" + libpydhcpserver.VERSION + " - " + libpydhcpserver.URL
-    )
-    sys.exit(0)
-if parser_options.config:
-    os.environ['STATICDHCPD_CONF_PATH'] = parser_options.config
-del parser
-del args
+if __name__ == '__main__' and len(sys.argv > 1):
+    import optparse
+    parser = optparse.OptionParser()
+    parser.add_option("--config", help="specify the location of conf.py", dest="config")
+    parser.add_option("--debug", help="output logging information at the DEBUG level", dest="debug", action="store_true", default=False)
+    parser.add_option("--verbose", help="disable daemon mode, if set, and enable console output", dest="verbose", action="store_true", default=False)
+    parser.add_option("--version", help="display version information", dest="version", action="store_true", default=False)
+    (parser_options, args) = parser.parse_args()
+    if parser_options.version:
+        print(
+         "staticDHCPd v" + staticdhcpdlib.VERSION + " - " + staticdhcpdlib.URL +
+         " | libpydhcpserver v" + libpydhcpserver.VERSION + " - " + libpydhcpserver.URL
+        )
+        sys.exit(0)
+    if parser_options.config:
+        os.environ['STATICDHCPD_CONF_PATH'] = parser_options.config
+    del parser
+    del args
+    del optparse
 #Options-processing complete
 
 import staticdhcpdlib.config
@@ -216,14 +219,14 @@ def _initialiseDHCP():
     staticdhcpdlib.system.registerTickCallback(dhcp.tick)
     
 if __name__ == '__main__':
-    if parser_options.debug:
+    if parser_options and parser_options.debug:
         staticdhcpdlib.config.DEBUG = True
         staticdhcpdlib.config.LOG_FILE_SEVERITY = 'DEBUG'
         staticdhcpdlib.config.LOG_CONSOLE_SEVERITY = 'DEBUG'
         print("staticDHCPd: Debugging overrides enabled: debugging operation requested")
         
     if staticdhcpdlib.config.DAEMON:
-        if parser_options.verbose:
+        if parser_options and parser_options.verbose:
             staticdhcpdlib.config.DAEMON = False
             print("staticDHCPd: Daemonised execution disabled: verbose operation requested")
         else:
