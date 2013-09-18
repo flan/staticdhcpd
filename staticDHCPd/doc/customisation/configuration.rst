@@ -76,6 +76,17 @@ DHCP_RESPONSE_INTERFACE : text : default=None
  - If set, response-packets will be crafted from layer 2, allowing for unicast
    OFFERS in response to DISCOVERs, if the client did not set the broadcast bit
  - For most environments, this will not be required and should not be set
+
+DHCP_RESPONSE_INTERFACE_QTAGS : list : default=None
+ - If DHCP_RESPONSE_INTERFACE is set and qtags are required on that interface,
+   they may be supplied in order of appearance (head to tail) as TCI blocks
+ - Format:
+   (
+    Priority Control Point (0-7),
+    Drop Eligible Indicator (True/False),
+    VLAN Identifier (1-4094)
+   )
+ - Example: [(3, True, 42), (1, False, 77)] -> VLAN 42 with nested VLAN 77
  
 DHCP_SERVER_PORT : integer : default=67
  - The port on which to listen for DHCP queries
