@@ -205,7 +205,7 @@ class _NetworkLink(object):
     _listening_sockets = None #: All sockets on which to listen for activity.
     _unicast_discover_supported = False
     
-    def __init__(self, server_address, server_port, client_port, pxe_port, response_interface=None):
+    def __init__(self, server_address, server_port, client_port, pxe_port, response_interface=None, response_interface_qtags=None):
         """
         Sets up the DHCP network infrastructure.
         
@@ -235,12 +235,11 @@ class _NetworkLink(object):
         self._responder_pxe = _L3Responder(socketobj=pxe_socket)
         if response_interface:
             try:
-                self._responder_broadcast = _L2Responder_AF_PACKET(server_address, response_interface)
+                self._responder_broadcast = _L2Responder_AF_PACKET(server_address, response_interface, qtags=response_interface_qtags)
             except Exception:
                 try:
-                    self._responder_broadcast = _L2Responder_pcap(server_address, response_interface)
+                    self._responder_broadcast = _L2Responder_pcap(server_address, response_interface, qtags=response_interface_qtags)
                 except Exception, e:
-                    print e
                     import errno
                     raise EnvironmentError(errno.ELIBACC, "Raw response-socket requested on %(interface)s, but neither AF_PACKET/PF_PACKET nor libpcap are available" % {'interface': response_interface,})
             self._unicast_discover_supported = True
@@ -372,19 +371,29 @@ class _L3Responder(_Responder):
         return self._socket.sendto(packet.encodePacket(), (str(ip), port))
         
 class _L2Responder(_Responder):
-    _ethernet_id = None #The source MAC and Ethernet payload-type
+    _ethernet_id = None #The source MAC and Ethernet payload-type (and qtags, if applicable)
     _server_address = None #The server's IP
     
     __array = None
     __pack = None
     
-    def __init__(self, server_address):
+    def __init__(self, server_address, mac, qtags=None):
         import struct
         self.__pack = struct.pack
         import array
         self.__array = array.array
         
         self._server_address = socket.inet_aton(str(server_address))
+        ethernet_id = [self._socket.getsockname()[4],] #Source MAC
+        if qtags:
+            for (pcp, dei, vid) in qtags:
+                ethernet_id.append("\x81\x00") #qtag payload-type
+                qtag_value = pcp << 13 #Priority-code-point (0-7)
+                qtag_value += int(dei) << 12 #Drop-eligible-indicator
+                qtag_value += vid #vlan-identifier
+                ethernet_id.append(self.__pack('!H', qtag_value))
+        ethernet_id.append("\x08\x00") #IP payload-type
+        self._ethernet_id = ''.join(ethernet_id)
         
     def _checksum(self, data):
         if sum(len(i) for i in data) & 1:
@@ -467,9 +476,7 @@ class _L2Responder(_Responder):
         return self._send_(binary_packet)
         
 class _L2Responder_AF_PACKET(_L2Responder):
-    def __init__(self, server_address, response_interface):
-        _L2Responder.__init__(self, server_address)
-        
+    def __init__(self, server_address, response_interface, qtags=None):
         socket_type = ((hasattr(socket, 'AF_PACKET') and socket.AF_PACKET) or (hasattr(socket, 'PF_PACKET') and socket.PF_PACKET))
         if not socket_type:
             raise Exception("Neither AF_PACKET nor PF_PACKET found")
@@ -477,12 +484,10 @@ class _L2Responder_AF_PACKET(_L2Responder):
         self._socket.bind((response_interface, _ETH_P_SNAP))
         self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 2 ** 12)
         self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 2 ** 12)
-        
-        self._ethernet_id = (
-         self._socket.getsockname()[4] + #Source MAC
-         "\x08\x00" #IP payload-type
-        )
-        
+
+        mac = self._socket.getsockname()[4]        
+        _L2Responder.__init__(self, server_address, mac, qtags=qtags)
+
     def _send_(self, packet):
         return self._socket.send(packet)
         
@@ -491,9 +496,7 @@ class _L2Responder_pcap(_L2Responder):
     
     _inject = None
     
-    def __init__(self, server_address, response_interface):
-        _L2Responder.__init__(self, server_address)
-        
+    def __init__(self, server_address, response_interface, qtags=None):
         import ctypes
         self.__c_int = ctypes.c_int
         import ctypes.util
@@ -526,13 +529,9 @@ class _L2Responder_pcap(_L2Responder):
             raise Exception("Unable to determine MAC of %(interface)s using... ifconfig... Yes, really; someone, please provide a better way!" % {
              'interface': response_interface,
             })
-        mac = MAC(m.group('mac'))
+        mac = ''.join(chr(i) foor i in MAC(m.group('mac')))
         #End of hackery
-        
-        self._ethernet_id = (
-         ''.join(chr(i) for i in mac) + #Source MAC
-         "\x08\x00" #IP payload-type
-        )
+        _L2Responder.__init__(self, server_address, mac, qtags=qtags)
         
         #The "send" function for the socket
         self._inject = pcap.pcap_inject

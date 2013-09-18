@@ -2,6 +2,7 @@ libpydhcpserver (1.3.0~beta) unstable; urgency=low
 
   * Huge rewrite to the networking logic, allowing for layer 2 packets and
     moving all server-related logic into libpydhcpserver
+    - Support for qtags (vlans) now provided for raw packets
 
   * Renamed modules and made what should be the last significant API change.
 

@@ -85,6 +85,7 @@ _defaults.update({
 #######################################
 _defaults.update({
  'DHCP_RESPONSE_INTERFACE': None,
+ 'DHCP_RESPONSE_INTERFACE_QTAGS': None,
  'DHCP_SERVER_PORT': 67,
  'DHCP_CLIENT_PORT': 68,
  'PXE_PORT': None,
