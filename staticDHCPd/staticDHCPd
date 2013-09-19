@@ -63,6 +63,14 @@ import staticdhcpdlib.config
 
 _logger = logging.getLogger('main')
 
+def _gracefulShutdown():
+    if staticdhcpdlib.system.ALIVE:
+        _logger.warn("System shutdown beginning...")
+        staticdhcpdlib.system.ALIVE = False
+    else:
+        _logger.warn("System shutting down immediately")
+        sys.exit(1)
+        
 def _termHandler(signum, frame):
     """
     Cleanly shuts down this daemon upon receipt of a SIGTERM.
@@ -75,8 +83,7 @@ def _termHandler(signum, frame):
         This is not used.
     """
     _logger.warn("Received SIGTERM")
-    staticdhcpdlib.system.ALIVE = False
-    _logger.warn("System shutdown in progress")
+    _gracefulShutdown()
     
 def _hupHandler(signum, frame):
     """
@@ -311,6 +318,7 @@ if __name__ == '__main__':
     except Exception:
         _logger.critical("System shutdown triggered by unhandled exception:\n" + traceback.format_exc())
     finally:
+        _gracefulShutdown()
         if pidfile_recorded:
             _logger.debug("Unlinking pidfile...")
             try:
