@@ -50,6 +50,9 @@ staticdhcpd (2.0.0~beta) unstable; urgency=low
     - statistics: all the goodness of the old stats stuff, with more
       flexibility, but now it's optional if you don't want it
       
+  * SIGTERM (^C) now causes immediate termination if received while the system
+    is already in a shutting-down state.
+
  -- Neil Tallim <flan@uguu.ca>  Tue, 20 Aug 2013 11:47:57 -0600
 
 staticdhcpd (1.6.4) stable; urgency=low
