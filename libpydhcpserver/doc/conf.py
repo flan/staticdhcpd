@@ -3,6 +3,8 @@ import sys, os, re
 
 sys.path.append(os.path.abspath('..'))
 import libpydhcpserver as module
+print module
+print dir(module)
 sys.path.remove(os.path.abspath('..'))
 sys.path.append(os.path.abspath('../libpydhcpserver'))
 

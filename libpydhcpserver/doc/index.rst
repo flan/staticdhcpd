@@ -1,6 +1,5 @@
 libpydhcpserver developer documentation
 =======================================
-
 Overview of what the project is.
 
 .. toctree::
