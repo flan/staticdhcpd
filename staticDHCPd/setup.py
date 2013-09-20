@@ -5,17 +5,18 @@ Deployment script for staticDHCPd.
 from distutils.core import setup
 import os
 import platform
+import re
 
-from staticdhcpdlib import VERSION
+import staticdhcpdlib
 
 setup(
  name = 'staticDHCPd',
- version = VERSION,
+ version = staticdhcpdlib.VERSION,
  description = "Highly customisable, static-lease-focused DHCP server",
- author = 'Neil Tallim',
- author_email = 'flan@uguu.ca',
+ author = re.search(', (.*?) <', staticdhcpdlib.COPYRIGHT).group(1),
+ author_email = re.search('<(.*?)>', staticdhcpdlib.COPYRIGHT).group(1),
  license = 'GPLv3',
- url = 'http://staticdhcpd.googlecode.com/',
+ url = staticdhcpdlib.URL,
  packages = [
   'staticdhcpdlib',
   'staticdhcpdlib.databases',
