@@ -1,30 +1,28 @@
 # -*- encoding: utf-8 -*-
 """
-pydhcplib module: dhcp_network
+libpydhcpserver.dhcp_network
+============================
+Handles send/receive and internal routing for DHCP packets.
 
-Purpose
-=======
- Handles send/receive and internal routing for DHCP packets.
- 
 Legal
-=====
- This file is part of libpydhcpserver.
- libpydhcpserver is free software; you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation; either version 3 of the License, or
- (at your option) any later version.
+-----
+This file is part of libpydhcpserver.
+libpydhcpserver is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 3 of the License, or
+(at your option) any later version.
 
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
- You should have received a copy of the GNU General Public License
- along with this program. If not, see <http://www.gnu.org/licenses/>.
- 
- (C) Neil Tallim, 2011 <red.hamsterx@gmail.com>
- (C) Matthew Boedicker, 2011 <matthewm@boedicker.org>
- (C) Mathieu Ignacio, 2008 <mignacio@april.org>
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+(C) Neil Tallim, 2013 <flan@uguu.ca>
+(C) Matthew Boedicker, 2011 <matthewm@boedicker.org>
+(C) Mathieu Ignacio, 2008 <mignacio@april.org>
 """
 import platform
 import select
@@ -49,7 +47,7 @@ class DHCPServer(object):
     _server_address = None #The IP associated with this server
     _network_link = None #The I/O-handler
     
-    def __init__(self, server_address, server_port, client_port, pxe_port=None, response_interface=None):
+    def __init__(self, server_address, server_port, client_port, pxe_port=None, response_interface=None, response_interface_qtags=None):
         """
         Sets up the DHCP network infrastructure.
         
@@ -65,7 +63,7 @@ class DHCPServer(object):
         @raise Exception: A problem occurred during setup.
         """
         self._server_address = server_address
-        self._network_link = _NetworkLink(server_address, server_port, client_port, pxe_port, response_interface)
+        self._network_link = _NetworkLink(server_address, server_port, client_port, pxe_port, response_interface, response_interface_qtags=response_interface_qtags)
         
     def _getNextDHCPPacket(self, timeout=60, packet_buffer=2048):
         """
@@ -529,7 +527,7 @@ class _L2Responder_pcap(_L2Responder):
             raise Exception("Unable to determine MAC of %(interface)s using... ifconfig... Yes, really; someone, please provide a better way!" % {
              'interface': response_interface,
             })
-        mac = ''.join(chr(i) foor i in MAC(m.group('mac')))
+        mac = ''.join(chr(i) for i in MAC(m.group('mac')))
         #End of hackery
         _L2Responder.__init__(self, server_address, mac, qtags=qtags)
         
