@@ -8,7 +8,7 @@ Standards-Version: 3.9.1
 Package: python-libpydhcpserver
 Architecture: all
 Depends: ${misc:Depends}, python (>=2.4)
-Description: Pure-Python, spec-compliant DHCP-packet-processing library
+Description: Pure-Python, spec-compliant DHCP-packet-processing and networking library
  libpydhcpserver provides the implementation for staticDHCPd's DHCP-processing
  needs, but has a stable API and may be used by other applications that have a
  reason to work with DHCP packets and perform server-oriented functions.
