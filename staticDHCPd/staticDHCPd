@@ -38,7 +38,7 @@ import libpydhcpserver
 
 parser_options = None
 #Options-processing needs to be done before config is loaded
-if __name__ == '__main__' and len(sys.argv > 1):
+if __name__ == '__main__' and len(sys.argv) > 1:
     import optparse
     parser = optparse.OptionParser()
     parser.add_option("--config", help="specify the location of conf.py", dest="config")
