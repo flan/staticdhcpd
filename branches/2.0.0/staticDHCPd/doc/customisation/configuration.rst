@@ -153,7 +153,7 @@ CACHE_ON_DISK : boolean : default=False
    - This file will be temporary, unless PERSISTENT_CACHE is set; in that case,
      the file will be the same
  - For SQLite, this should normally be False
- 
+
 PERSISTENT_CACHE : text : default=None
  - Causes the cache to be written to a local database file, which will be used
    when staticDHCPd is restarted, to provide durability against unstable
@@ -163,6 +163,14 @@ PERSISTENT_CACHE : text : default=None
  - If CACHE_ON_DISK is set, this file will be used; if not, the contents of
    this file will be read into memory
  - For SQLite, this should normally be False
+
+EXTRA_MAPS : list : default=None
+ - Any non-standard fields to read from the `maps` table, which will be
+   provided in `definition.extra`, keyed as `maps.$COLUMN`
+
+EXTRA_SUBNETS : list : default=None
+ - Any non-standard fields to read from the `subnets` table, which will be
+   provided in `definition.extra`, keyed as `subnets.$COLUMN`
 
 SQLITE_FILE : text : MUST BE SPECIFIED
  - The path to the file that contains your SQLite database
@@ -196,6 +204,14 @@ PERSISTENT_CACHE : text : default=None
    '/var/tmp/staticDHCPd.db' is recommended
  - If CACHE_ON_DISK is set, this file will be used; if not, the contents of
    this file will be read into memory
+
+EXTRA_MAPS : list : default=None
+ - Any non-standard fields to read from the `maps` table, which will be
+   provided in `definition.extra`, keyed as `maps.$COLUMN`
+
+EXTRA_SUBNETS : list : default=None
+ - Any non-standard fields to read from the `subnets` table, which will be
+   provided in `definition.extra`, keyed as `subnets.$COLUMN`
 
 USE_POOL : boolean : default=True
  - Causes database connections to pull from a pool by default, reducing
@@ -258,6 +274,14 @@ PERSISTENT_CACHE : text : default=None
  - If CACHE_ON_DISK is set, this file will be used; if not, the contents of
    this file will be read into memory
 
+EXTRA_MAPS : list : default=None
+ - Any non-standard fields to read from the `maps` table, which will be
+   provided in `definition.extra`, keyed as `maps.$COLUMN`
+
+EXTRA_SUBNETS : list : default=None
+ - Any non-standard fields to read from the `subnets` table, which will be
+   provided in `definition.extra`, keyed as `subnets.$COLUMN`
+
 USE_POOL : boolean : default=True
  - Causes database connections to pull from a pool by default, reducing
    connection overhead considerably
@@ -304,6 +328,14 @@ PERSISTENT_CACHE : text : default=None
    '/var/tmp/staticDHCPd.db' is recommended
  - If CACHE_ON_DISK is set, this file will be used; if not, the contents of
    this file will be read into memory
+
+EXTRA_MAPS : list : default=None
+ - Any non-standard fields to read from the `maps` table, which will be
+   provided in `definition.extra`, keyed as `maps.$COLUMN`
+
+EXTRA_SUBNETS : list : default=None
+ - Any non-standard fields to read from the `subnets` table, which will be
+   provided in `definition.extra`, keyed as `subnets.$COLUMN`
 
 USE_POOL : boolean : default=True
  - Causes database connections to pull from a pool by default, reducing

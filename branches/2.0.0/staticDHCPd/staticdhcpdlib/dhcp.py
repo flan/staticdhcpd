@@ -367,8 +367,7 @@ class _PacketWrapper(object):
         self._loadDHCPPacket(definition, inform)
         process = bool(config.loadDHCPPacket(
          self.packet, self._packet_type,
-         self.mac, definition.subnet, definition.serial,
-         definition.ip, self.giaddr,
+         self.mac, definition, self.giaddr,
          self.pxe and self.pxe_options, self.vendor_options
         ))
         if not process:

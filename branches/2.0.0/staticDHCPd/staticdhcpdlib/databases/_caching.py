@@ -24,6 +24,7 @@ Legal
  
  (C) Neil Tallim, 2013 <flan@uguu.ca>
 """
+import json
 import logging
 import threading
 
@@ -124,13 +125,17 @@ class MemoryCache(_DatabaseCache):
     def _lookupMAC(self, mac):
         data = self._mac_cache.get(int(mac))
         if data:
-            (ip, hostname, subnet_id) = data
-            return Definition(*((ip, hostname,) + self._subnet_cache[subnet_id] + subnet_id))
+            (ip, hostname, extra, subnet_id) = data
+            definition = [ip, hostname]
+            definition.extend(self._subnet_cache[subnet_id])
+            definition.extend(subnet_id)
+            definition.append(extra)
+            return Definition(*definition)
         return None
         
     def _cacheMAC(self, mac, definition, chained):
         subnet_id = (definition.subnet, definition.serial)
-        self._mac_cache[int(mac)] = (definition.ip, definition.hostname, subnet_id)
+        self._mac_cache[int(mac)] = (definition.ip, definition.hostname, definition.extra, subnet_id)
         self._subnet_cache[subnet_id] = (
          definition.gateway, definition.subnet_mask, definition.broadcast_address,
          definition.domain_name, definition.domain_name_servers, definition.ntp_servers,
@@ -192,7 +197,8 @@ class DiskCache(_DatabaseCache):
     ip TEXT,
     hostname TEXT,
     subnet TEXT,
-    serial INTEGER
+    serial INTEGER,
+    extra TEXT
 )""")
         database.commit()
         self._disconnect(database, cursor)
@@ -209,7 +215,8 @@ class DiskCache(_DatabaseCache):
         cursor.execute("""SELECT
  m.ip, m.hostname,
  s.gateway, s.subnet_mask, s.broadcast_address, s.domain_name, s.domain_name_servers,
- s.ntp_servers, s.lease_time, s.subnet, s.serial
+ s.ntp_servers, s.lease_time, s.subnet, s.serial,
+ m.extra
 FROM maps m, subnets s
 WHERE
  m.mac = ? AND m.subnet = s.subnet AND m.serial = s.serial
@@ -217,6 +224,8 @@ LIMIT 1""", (int(mac),))
         result = cursor.fetchone()
         self._disconnect(database, cursor)
         if result:
+            result = list(result)
+            result[-1] = json.loads(result[-1])
             return Definition(*result)
         return None
         
@@ -230,11 +239,12 @@ LIMIT 1""", (int(mac),))
           definition.ntp_servers, definition.domain_name_servers, definition.domain_name
          )
         )
-        cursor.execute("INSERT INTO maps (mac, ip, hostname, subnet, serial) VALUES (?, ?, ?, ?, ?)",
+        cursor.execute("INSERT INTO maps (mac, ip, hostname, subnet, serial, extra) VALUES (?, ?, ?, ?, ?, ?)",
          (
           int(mac),
           definition.ip, definition.hostname,
-          definition.subnet, definition.serial
+          definition.subnet, definition.serial,
+          json.dumps(definition.extra)
          )
         )
         database.commit()
