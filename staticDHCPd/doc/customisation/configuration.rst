@@ -365,6 +365,9 @@ MYSQL_MAXIMUM_CONNECTIONS : integer : default=4
  
 Database:INI
 ------------------------------
+Any additional options in subnets or maps will be exposed through
+`definition.extra`.
+
 INI_FILE : text : MUST BE SPECIFIED
  - The path to the file that contains your INI database
 
