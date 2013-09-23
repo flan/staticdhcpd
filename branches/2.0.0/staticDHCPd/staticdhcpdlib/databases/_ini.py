@@ -143,12 +143,12 @@ class INI(Database):
             self._parse_ini()
         _logger.info("INI-file contents parsed and loaded into memory")
         
-    def _parse_extra(self, reader, section, omitted):
+    def _parse_extra(self, reader, section, omitted, section_type):
         extra = {}
         for option in reader.options(section):
             if not option in omitted:
                 (option, value) = self._parse_extra_option(section, option)
-                extra[option] = value
+                extra['%s.%s' % (section_type, option)] = value
         return extra or None
         
     def _parse_extra_option(self, reader, section, option):
@@ -221,7 +221,7 @@ class INI(Database):
         extra = self._parse_extra(reader, section, (
          'lease-time', 'gateway', 'subnet-mask', 'broadcast-address',
          'ntp-servers', 'domain-name-servers', 'domain-name',
-        ))
+        ), 'subnets')
         
         self._subnets[(subnet, serial)] = (
          lease_time,
@@ -253,7 +253,7 @@ class INI(Database):
         extra = self._parse_extra(reader, section, (
          'ip', 'hostname',
          'subnet', 'serial',
-        ))
+        ), 'maps')
         
         self._maps[int(mac)] = (ip, hostname, (subnet, serial), extra)
         
