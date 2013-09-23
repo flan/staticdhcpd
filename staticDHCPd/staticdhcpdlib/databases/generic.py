@@ -38,6 +38,7 @@ Definition = collections.namedtuple('Definition', (
  'domain_name', 'domain_name_servers', 'ntp_servers',
  'lease_time',
  'subnet', 'serial',
+ 'extra',
 ))
 """
 `ip`: '192.168.0.1'
@@ -51,6 +52,7 @@ Definition = collections.namedtuple('Definition', (
 `lease_time`: 3600
 `subnet`: 'subnet-id`
 `serial`: 0
+`extra`: {...} or None
 """
 
 class Database(object):

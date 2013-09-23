@@ -143,6 +143,39 @@ class INI(Database):
             self._parse_ini()
         _logger.info("INI-file contents parsed and loaded into memory")
         
+    def _parse_extra(self, reader, section, omitted):
+        extra = {}
+        for option in reader.options(section):
+            if not option in omitted:
+                (option, value) = self._parse_extra_option(section, option)
+                extra[option] = value
+        return extra or None
+        
+    def _parse_extra_option(self, reader, section, option):
+        method = reader.get
+        none_on_error = False
+        if option[1] == ':':
+            l_option = option[0].lower()
+            none_on_error = l_option != option[0]
+            if l_option == 's':
+                pass
+            elif l_option == 'i':
+                method = reader.getint
+            elif l_option == 'f':
+                method = reader.getfloat
+            elif l_option == 'b':
+                method = reader.getboolean
+                
+        real_option = option[2:]
+        try:
+            value = method(section, option, None)
+        except ValueError:
+            if none_on_error:
+                return (real_option, None)
+            raise
+        else:
+            return (real_option, value)
+            
     def _parse_ini(self):
         """
         Creates an optimal in-memory representation of the data in the INI file.
@@ -185,10 +218,16 @@ class INI(Database):
         domain_name_servers = reader.get(section, 'domain-name-servers', None)
         domain_name = reader.get(section, 'domain-name', None)
         
+        extra = self._parse_extra(reader, section, (
+         'lease-time', 'gateway', 'subnet-mask', 'broadcast-address',
+         'ntp-servers', 'domain-name-servers', 'domain-name',
+        ))
+        
         self._subnets[(subnet, serial)] = (
          lease_time,
          gateway, subnet_mask, broadcast_address,
-         ntp_servers, domain_name_servers, domain_name
+         ntp_servers, domain_name_servers, domain_name,
+         extra
         )
         
     def _process_map(self, reader, section, mac):
@@ -210,8 +249,13 @@ class INI(Database):
             raise ValueError("Field 'serial' unspecified for '%(section)s'" % {
              'section': section,
             })
+            
+        extra = self._parse_extra(reader, section, (
+         'ip', 'hostname',
+         'subnet', 'serial',
+        ))
         
-        self._maps[int(mac)] = (ip, hostname, (subnet, serial))
+        self._maps[int(mac)] = (ip, hostname, (subnet, serial), extra)
         
     def _validate_references(self):
         """
@@ -244,16 +288,24 @@ class INI(Database):
             if not map:
                 return None
                 
-            (ip, hostname, subnet) = map
+            (ip, hostname, subnet, extra_map) = map
             (lease_time,
-            gateway, subnet_mask, broadcast_address,
-            ntp_servers, domain_name_servers, domain_name
+             gateway, subnet_mask, broadcast_address,
+             ntp_servers, domain_name_servers, domain_name,
+             extra_subnet
             ) = self._subnets.get(subnet)
+            
+        if extra_map and extra_subnet:
+            extra = extra_map.copy()
+            extra.update(extra_subnet)
+        else:
+            extra = extra_map or extra_subnet
             
         return Definition(
          ip, hostname,
          gateway, subnet_mask, broadcast_address,
          domain_name, domain_name_servers, ntp_servers,
-         lease_time, subnet[0], subnet[1]
+         lease_time, subnet[0], subnet[1],
+         extra
         )
         

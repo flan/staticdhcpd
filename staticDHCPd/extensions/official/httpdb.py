@@ -93,13 +93,14 @@ class _HTTPLogic(object):
             # "ntp_servers": "192.168.0.1, 192.168.0.2,192.168.0.3", //may be omitted or null
             # "lease_time": 3600,
             # "subnet": "subnet-id",
-            # "serial": 0
+            # "serial": 0,
+            # "extra": {...}, //any extra attributes you would like in the lease-definition; may be omitted or null
             #}
             definition = Definition(
              result['ip'], result.get('hostname'),
              result.get('gateway'), result.get('subnet_mask'), result.get('broadcast_address'),
              result.get('domain_name'), result.get('domain_name_servers'), result.get('ntp_servers'),
-             result['lease_time'], result['subnet'], result['serial']
+             result['lease_time'], result['subnet'], result['serial'], result.get('extra'),
             )
             _logger.debug("Known MAC response from '%(uri)s' for '%(mac)s'" % {
              'uri': self._URI,

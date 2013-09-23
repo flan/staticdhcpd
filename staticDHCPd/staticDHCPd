@@ -105,7 +105,7 @@ def _daemonise():
     os.setsid() #Ensure session semantics are configured
     os.chdir('/') #Avoid holding references to unstable resources
     
-    #And lastly, clean up the base descriptors
+    #And, lastly, clean up the base descriptors
     si = open('/dev/null', 'r')
     so = open('/dev/null', 'a+')
     se = open('/dev/null', 'a+', 0)

@@ -32,7 +32,18 @@ from .. import config
 from generic import (Definition, CachingDatabase)
 
 _logger = logging.getLogger("databases._sql")
-
+_extra = []
+if config.EXTRA_MAPS:
+    for i in config.EXTRA_MAPS:
+        _extra.append('maps.' + i)
+if config.EXTRA_SUBNETS:
+    for i in config.EXTRA_SUBNETS:
+        _extra.append('subnets.' + i)
+del i
+if not _extra:
+    _extra = None
+    
+    
 class _SQLDatabase(CachingDatabase):
     """
     A stub documenting the features an _SQLDatabase object must provide.
@@ -82,7 +93,12 @@ class _DB20Broker(_SQLDatabase):
                 _logger.debug("Record found for MAC %(mac)s" % {
                  'mac': mac,
                 })
-                return Definition(*result)
+                if _extra:
+                    definition = list(result[:11])
+                    definition.append(dict(zip(_extra, result[11:])))
+                else:
+                    definition = result
+                return Definition(*definition)
             _logger.debug("No record found for MAC %(mac)s" % {
              'mac': mac,
             })
@@ -169,12 +185,17 @@ class MySQL(_PoolingBroker):
      SELECT
       m.ip, m.hostname,
       s.gateway, s.subnet_mask, s.broadcast_address, s.domain_name, s.domain_name_servers,
-      s.ntp_servers, s.lease_time, s.subnet, s.serial
+      s.ntp_servers, s.lease_time, s.subnet, s.serial%(extra)s
      FROM maps m, subnets s
      WHERE
       %(mac)s = %%s AND m.subnet = s.subnet AND m.serial = s.serial
      LIMIT 1
-    """ % {'mac': config.CASE_INSENSITIVE_MACS and 'LOWER(m.mac)' or 'm.mac'}
+    """ % {
+     'mac': config.CASE_INSENSITIVE_MACS and 'LOWER(m.mac)' or 'm.mac'
+     'extra': _extra and ','.join(
+      [''] + ['m.' + i for i in config.EXTRA_MAPS] + ['s.' + i for i in config.EXTRA_SUBNETS]
+     ) or '',
+    }
     
     def __init__(self):
         """
@@ -206,12 +227,17 @@ class PostgreSQL(_PoolingBroker):
      SELECT
       m.ip, m.hostname,
       s.gateway, s.subnet_mask, s.broadcast_address, s.domain_name, s.domain_name_servers,
-      s.ntp_servers, s.lease_time, s.subnet, s.serial
+      s.ntp_servers, s.lease_time, s.subnet, s.serial%(extra)s
      FROM maps m, subnets s
      WHERE
       %(mac)s = %%s AND m.subnet = s.subnet AND m.serial = s.serial
      LIMIT 1
-    """ % {'mac': config.CASE_INSENSITIVE_MACS and 'lower(m.mac)' or 'm.mac'}
+    """ % {
+     'mac': config.CASE_INSENSITIVE_MACS and 'lower(m.mac)' or 'm.mac',
+     'extra': _extra and ','.join(
+      [''] + ['m.' + i for i in config.EXTRA_MAPS] + ['s.' + i for i in config.EXTRA_SUBNETS]
+     ) or '',
+    }
     
     def __init__(self):
         """
@@ -242,12 +268,17 @@ class Oracle(_PoolingBroker):
      SELECT
       m.ip, m.hostname,
       s.gateway, s.subnet_mask, s.broadcast_address, s.domain_name, s.domain_name_servers,
-      s.ntp_servers, s.lease_time, s.subnet, s.serial
+      s.ntp_servers, s.lease_time, s.subnet, s.serial%(extra)s
      FROM maps m, subnets s
      WHERE
       %(mac)s = :1 AND m.subnet = s.subnet AND m.serial = s.serial
      LIMIT 1
-    """ % {'mac': config.CASE_INSENSITIVE_MACS and 'LOWER(m.mac)' or 'm.mac'}
+    """ % {
+     'mac': config.CASE_INSENSITIVE_MACS and 'LOWER(m.mac)' or 'm.mac',
+     'extra': _extra and ','.join(
+      [''] + ['m.' + i for i in config.EXTRA_MAPS] + ['s.' + i for i in config.EXTRA_SUBNETS]
+     ) or '',
+    }
 
     def __init__(self):
         """
@@ -274,12 +305,17 @@ class SQLite(_NonPoolingBroker):
      SELECT
       m.ip, m.hostname,
       s.gateway, s.subnet_mask, s.broadcast_address, s.domain_name, s.domain_name_servers,
-      s.ntp_servers, s.lease_time, s.subnet, s.serial
+      s.ntp_servers, s.lease_time, s.subnet, s.serial%(extra)s
      FROM maps m, subnets s
      WHERE
       %(mac)s = ? AND m.subnet = s.subnet AND m.serial = s.serial
      LIMIT 1
-    """ % {'mac': config.CASE_INSENSITIVE_MACS and 'lower(m.mac)' or 'm.mac'}
+    """ % {
+     'mac': config.CASE_INSENSITIVE_MACS and 'lower(m.mac)' or 'm.mac',
+     'extra': _extra and ','.join(
+      [''] + ['m.' + i for i in config.EXTRA_MAPS] + ['s.' + i for i in config.EXTRA_SUBNETS]
+     ) or '',
+    }
     
     def __init__(self):
         """

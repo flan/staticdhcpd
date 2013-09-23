@@ -195,8 +195,7 @@ this function has to do is pass a few parameters to dynamism.handle() and it
 will return either None or a Definition object, which is all you need.
 
 
-loadDHCPPacket(packet, method, mac, subnet, serial, client_ip, relay_ip, pxe,
-vendor)
+loadDHCPPacket(packet, method, mac, definition, relay_ip, pxe, vendor)
 ----------------------------------------
 Before any response is sent to a client, an opportunity is presented to allow
 you to modify the packet, adding or removing options and setting values as
@@ -218,12 +217,9 @@ Parameters
     instance of libpydhcpserver.dhcp_types.mac.MAC, which can be coerced
          into a human-readable, lower-case, colon-delimited string or a sequence
          of bytes, or compared directly against either
-    subnet: the subnet-string associated with the lease's definition
-    serial: the serial-integer associated with the lease's definition
-    client_ip: an object that emulates the properties of a quadruple of octets
-               (192, 168, 0, 1), a dotted quad ("192.168.0.1"), and an integer
-               (3232235521)
-    relay_ip: either None or an object of the type described in client_ip,
+    definition: the lease-definition provided via MAC-lookup, an instance of
+         staticdhcpdlib.databases.generic.Definition
+    relay_ip: either None or an object of the type described in client_ip *rewrite this*,
               representing the server that relayed this request
     pxe: False if not applicable; else, a triple containing, in order, option 93
          (client_system) as a sequence of ints, option 94 (client_ndi) as a
@@ -245,10 +241,10 @@ completes.
 
 Example
 ------------------------------
-def loadDHCPPacket(packet, method, mac, subnet, serial, client_ip, relay_ip, pxe, vendor):
+def loadDHCPPacket(packet, method, mac, definition, relay_ip, pxe, vendor):
     import random
     
-    if client_ip[3] % 3 == 0: #The client's IP's fourth octet is a multiple of 3
+    if definition.ip[3] % 3 == 0: #The client's IP's fourth octet is a multiple of 3
         packet.setOption('renewal_time_value', longToList(60))
     elif method.startswith('REQUEST:') and random.random() < 0.5:
         packet.transformToDHCPNakPacket()
