@@ -29,12 +29,21 @@ provisioning and reporting workflows. RFC-compliance and performance are also
 maintained.
 .SH OPTIONS
 .TP
-View the current version.
-.B \-\-version, \-v
-.br
+Set all core logging facilities to DEBUG verbosity, regardless of what is
+specified in conf.py.
+.B \-\-debug
 .TP
-View help, which isn't particularly helpful.
-.B \-\-help, \-h
+Display brief help.
+.B \-\-help
+.TP
+Disables daemon mode, if set in conf.py, and enables console output, as an
+alternative to relying on logfiles for behavioural observation. Useful with
+\fB\-\-debug\fP.
+.B \-\-verbose
+.TP
+Display current version information.
+.B \-\-version
+.br
 .SH SEE ALSO
 Useful documentation is available in \fI/usr/share/doc/staticdhcpd/\fP.
 .br
