@@ -115,11 +115,11 @@ def _dynamic_method(method):
             ip = method(self, *args, **kwargs)
             if ip:
                 return Definition(
-                 ip, self._hostname_pattern % {'ip': str(ip).replace('.', '-'),},
-                 self._gateway, self._subnet_mask, self._broadcast_address,
-                 self._domain_name, self._domain_name_servers,
-                 self._ntp_servers, self._lease_time,
-                 self._subnet, self._serial
+                 ip=ip, lease_time=self._lease_time, subnet=self._subnet, serial=self._serial,
+                 hostname=(self._hostname_pattern % {'ip': str(ip).replace('.', '-'),}),
+                 gateway=self._gateway, subnet_mask=self._subnet_mask, broadcast_address=self._broadcast_address,
+                 domain_name=self._domain_name, domain_name_servers=self._domain_name_servers, ntp_servers=self._ntp_servers,
+                 extra=None
                 )
             return None
     return wrapped_method

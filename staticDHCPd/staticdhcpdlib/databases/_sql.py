@@ -93,12 +93,13 @@ class _DB20Broker(_SQLDatabase):
                 _logger.debug("Record found for MAC %(mac)s" % {
                  'mac': mac,
                 })
-                if _extra:
-                    definition = list(result[:11])
-                    definition.append(dict(zip(_extra, result[11:])))
-                else:
-                    definition = result
-                return Definition(*definition)
+                return Definition(
+                 ip=result[0], hostname=result[1],
+                 gateway=result[2], subnet_mask=result[3], broadcast_address=result[4],
+                 domain_name=result[5], domain_name_servers=result[6], ntp_servers=result[7],
+                 lease_time=result[8], subnet=result[9], serial=result[10],
+                 extra=(_extra and dict(zip(_extra, result[11:])) or None)
+                )
             _logger.debug("No record found for MAC %(mac)s" % {
              'mac': mac,
             })

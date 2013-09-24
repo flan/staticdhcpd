@@ -126,11 +126,14 @@ class MemoryCache(_DatabaseCache):
         data = self._mac_cache.get(int(mac))
         if data:
             (ip, hostname, extra, subnet_id) = data
-            definition = [ip, hostname]
-            definition.extend(self._subnet_cache[subnet_id])
-            definition.extend(subnet_id)
-            definition.append(extra)
-            return Definition(*definition)
+            details = self._subnet_cache[subnet_id]
+            return Definition(
+             ip=ip, lease_time=details[6], subnet=subnet_id[0], serial=subnet_id[1],
+             hostname=hostname,
+             gateway=details[0], subnet_mask=details[1], broadcast_address=details[2],
+             domain_name=details[3], domain_name_servers=details[4], ntp_servers=details[5],
+             extra=extra
+            )
         return None
         
     def _cacheMAC(self, mac, definition, chained):
@@ -224,9 +227,13 @@ LIMIT 1""", (int(mac),))
         result = cursor.fetchone()
         self._disconnect(database, cursor)
         if result:
-            result = list(result)
-            result[-1] = json.loads(result[-1])
-            return Definition(*result)
+            return Definition(
+             ip=result[0], hostname=result[1],
+             gateway=result[2], subnet_mask=result[3], broadcast_address=result[4],
+             domain_name=result[5], domain_name_servers=result[6], ntp_servers=result[7],
+             lease_time=result[8], subnet=result[9], serial=result[10],
+             extra=json.loads(result[11])
+            )
         return None
         
     def _cacheMAC(self, mac, definition, chained):

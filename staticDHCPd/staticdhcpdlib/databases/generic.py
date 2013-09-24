@@ -24,37 +24,64 @@ Legal
  along with this program. If not, see <http://www.gnu.org/licenses/>.
  
  (C) Neil Tallim, 2013 <flan@uguu.ca>
+ (C) Anthony Woods, 2013 <awoods@internap.com>
 """
+try:
+    from types import StringTypes
+except ImportError: #py3k
+    StringTypes = (str,)
+
 import collections
 import logging
 import threading
 import traceback
+from libpydhcpserver.dhcp_types.ipv4 import IPv4
 
 _logger = logging.getLogger('databases.generic')
 
-Definition = collections.namedtuple('Definition', (
- 'ip', 'hostname',
- 'gateway', 'subnet_mask', 'broadcast_address',
- 'domain_name', 'domain_name_servers', 'ntp_servers',
- 'lease_time',
- 'subnet', 'serial',
- 'extra',
-))
-"""
-`ip`: '192.168.0.1'
-`hostname`: 'any-valid-hostname' or None
-`gateway`: '192.168.0.1' or None
-`subnet_mask`: '255.255.255.0' or None
-`broadcast_address`: '192.168.0.255' or None
-`domain_name`: 'example.org' or None
-`domain_name_servers`: '192.168.0.1, 192.168.0.2,192.168.0.3' or None
-`ntp_servers`: '192.168.0.1, 192.168.0.2,192.168.0.3' or None
-`lease_time`: 3600
-`subnet`: 'subnet-id`
-`serial`: 0
-`extra`: {...} or None
-"""
+class Definition(object):
+    ip = None
+    hostname = None
+    gateway = None
+    subnet_mask = None
+    broadcast_address = None
+    domain_name = None
+    domain_name_servers = None
+    ntp_servers = None
+    lease_time = None
+    subnet = None
+    serial = None
+    extra = None
 
+    def __init__(self, ip, lease_time, subnet, serial,
+        hostname=None,
+        gateway=None, subnet_mask=None, broadcast_address=None,
+        domain_name=None, domain_name_servers=None, ntp_servers=None,
+        extra=None):
+        
+        #Required values
+        self.ip = IPv4(ip)
+        self.lease_time = lease_time
+        self.subnet = subnet
+        self.serial = serial
+        
+        #Optional vlaues
+        self.hostname = hostname
+        self.gateway = gateway and IPv4(gateway)
+        self.subnet_mask = subnet_mask and IPv4(subnet_mask)
+        self.broadcast_address = broadcast_address and IPv4(broadcast_address)
+        self.domain_name = domain_name
+        if domain_name_servers:
+            if isinstance(domain_name_servers, StringTypes):
+                domain_name_servers = domain_name_servers.split(',')
+            self.domain_name_servers = [IPv4(i) for i in domain_name_servers[:3]]
+        if ntp_servers:
+            if isinstance(ntp_servers, StringTypes):
+                ntp_servers = ntp_servers.split(',')
+            self.ntp_servers = [IPv4(i) for i in ntp_servers[:3]]
+        self.extra = extra or None
+        
+        
 class Database(object):
     """
     A stub documenting the features a Database object must provide.

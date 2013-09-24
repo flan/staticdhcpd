@@ -181,7 +181,7 @@ Parameters
             Any unset options are presented as None
     
 The value returned must be either None, which means that the MAC will remain
-unknown, or an instance of `staticdhcpd.dhcp.Definition`.
+unknown, or an instance of `staticdhcpd.databases.generic.Definition`.
 
 Example
 ------------------------------

@@ -32,7 +32,6 @@ import time
 import traceback
 
 import config
-import databases.generic
 import statistics
 
 import libpydhcpserver.dhcp
@@ -386,20 +385,10 @@ class _PacketWrapper(object):
             ip = override_ip_value
             self._associated_ip = ip
             
-        definition = self._server.getDatabase().lookupMAC(self.mac) or config.handleUnknownMAC(
+        self._definition = self._server.getDatabase().lookupMAC(self.mac) or config.handleUnknownMAC(
          self.packet, self._packet_type,
          self.mac, ip, self.giaddr,
          self.pxe and self.pxe_options, self.vendor_options
-        )
-        self._definition = definition and databases.generic.Definition(
-         IPv4(definition.ip), definition.hostname,
-         definition.gateway and IPv4(definition.gateway), definition.subnet_mask and IPv4(definition.subnet_mask), definition.broadcast_address and IPv4(definition.broadcast_address),
-         definition.domain_name,
-         definition.domain_name_servers and [IPv4(i) for i in definition.domain_name_servers.split(',')],
-         definition.ntp_servers and [IPv4(i) for i in definition.ntp_servers.split(',')],
-         definition.lease_time,
-         definition.subnet, definition.serial,
-         definition.extra,
         )
         
         return self._definition
