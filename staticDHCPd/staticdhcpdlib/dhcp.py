@@ -32,6 +32,7 @@ import time
 import traceback
 
 import config
+import databases.generic
 import statistics
 
 import libpydhcpserver.dhcp
@@ -59,17 +60,6 @@ _PACKET_TYPE_REQUEST_SELECTING = 'REQUEST:SELECTING'
 _IP_REJECTED = '<nil>'
 
 _logger = logging.getLogger('dhcp')
-
-Definition = collections.namedtuple('Definition', (
- 'ip', 'hostname',
- 'gateway', 'subnet_mask', 'broadcast_address',
- 'domain_name', 'domain_name_servers', 'ntp_servers',
- 'lease_time',
- 'subnet', 'serial',
-))
-"""
-Like the database version, only with IPv4 objects.
-"""
 
 class _PacketWrapper(object):
     """
@@ -401,7 +391,7 @@ class _PacketWrapper(object):
          self.mac, ip, self.giaddr,
          self.pxe and self.pxe_options, self.vendor_options
         )
-        self._definition = definition and Definition(
+        self._definition = definition and databases.generic.Definition(
          IPv4(definition.ip), definition.hostname,
          definition.gateway and IPv4(definition.gateway), definition.subnet_mask and IPv4(definition.subnet_mask), definition.broadcast_address and IPv4(definition.broadcast_address),
          definition.domain_name,
@@ -409,6 +399,7 @@ class _PacketWrapper(object):
          definition.ntp_servers and [IPv4(i) for i in definition.ntp_servers.split(',')],
          definition.lease_time,
          definition.subnet, definition.serial,
+         definition.extra,
         )
         
         return self._definition
