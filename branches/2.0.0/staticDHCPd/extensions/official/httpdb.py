@@ -89,19 +89,21 @@ class _HTTPLogic(object):
             # "subnet_mask": "255.255.255.0", //may be omitted or null
             # "broadcast_address": "192.168.0.255", //may be omitted or null
             # "domain_name": "example.org", //may be omitted or null
-            # "domain_name_servers": "192.168.0.1, 192.168.0.2,192.168.0.3", //may be omitted or null
-            # "ntp_servers": "192.168.0.1, 192.168.0.2,192.168.0.3", //may be omitted or null
+            # "domain_name_servers": ["192.168.0.1", "192.168.0.2", "192.168.0.3"], //may be omitted or null
+            # "ntp_servers": ["192.168.0.1", "192.168.0.2", "192.168.0.3"], //may be omitted or null
             # "lease_time": 3600,
             # "subnet": "subnet-id",
             # "serial": 0,
             # "extra": {...}, //any extra attributes you would like in the lease-definition; may be omitted or null
             #}
             definition = Definition(
-             result['ip'], result.get('hostname'),
-             result.get('gateway'), result.get('subnet_mask'), result.get('broadcast_address'),
-             result.get('domain_name'), result.get('domain_name_servers'), result.get('ntp_servers'),
-             result['lease_time'], result['subnet'], result['serial'], result.get('extra'),
+             ip=result['ip'], lease_time=result['lease_time'], subnet=result['subnet'], serial=result['serial'],
+             hostname=result.get('hostname'),
+             gateway=result.get('gateway'), subnet_mask=result.get('subnet_mask'), broadcast_address=result.get('broadcast_address'),
+             domain_name=result.get('domain_name'), domain_name_servers=result.get('domain_name_servers'), ntp_servers=result.get('ntp_servers'),
+             extra=result.get('extra'),
             )
+            
             _logger.debug("Known MAC response from '%(uri)s' for '%(mac)s'" % {
              'uri': self._URI,
              'mac': str(mac),

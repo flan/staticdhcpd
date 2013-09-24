@@ -287,25 +287,21 @@ class INI(Database):
             map = self._maps.get(mac)
             if not map:
                 return None
-                
-            (ip, hostname, subnet, extra_map) = map
-            (lease_time,
-             gateway, subnet_mask, broadcast_address,
-             ntp_servers, domain_name_servers, domain_name,
-             extra_subnet
-            ) = self._subnets.get(subnet)
+            subnet = self._subnets.get(map[2])
             
+        extra_map = map[3]
+        extra_subnet = map[7]
         if extra_map and extra_subnet:
             extra = extra_map.copy()
             extra.update(extra_subnet)
         else:
-            extra = extra_map or extra_subnet
+            extra = (extra_map and extra_map.copy()) or (extra_subnet and extra_subnet.copy())
             
         return Definition(
-         ip, hostname,
-         gateway, subnet_mask, broadcast_address,
-         domain_name, domain_name_servers, ntp_servers,
-         lease_time, subnet[0], subnet[1],
-         extra
+         ip=map[0], lease_time=subnet[0], subnet=map[2][0], serial=map[2][1],
+         hostname=map[1],
+         gateway=subnet[1], subnet_mask=subnet[2], broadcast_address=subnet[3],
+         domain_name=subnet[6], domain_name_servers=subnet[5], ntp_servers=subnet[4],
+         extra=extra
         )
         
