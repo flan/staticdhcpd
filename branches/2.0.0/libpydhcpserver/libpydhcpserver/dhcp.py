@@ -24,21 +24,29 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 (C) Matthew Boedicker, 2011 <matthewm@boedicker.org>
 (C) Mathieu Ignacio, 2008 <mignacio@april.org>
 """
+import collections
 import platform
 import select
 import socket
 import threading
 
-from dhcp_types.packet import DHCPPacket
+from dhcp_types.ipv4 import IPv4
 from dhcp_types.mac import MAC
+from dhcp_types.packet import DHCPPacket
 
 #IP constants
-_IP_GLOB = '0.0.0.0'
-_IP_BROADCAST = '255.255.255.255'
-IP_UNSPECIFIED_FILTER = (None, '', _IP_GLOB, _IP_BROADCAST)
+_IP_GLOB = IPv4('0.0.0.0')
+_IP_BROADCAST = IPv4('255.255.255.255')
+IP_UNSPECIFIED_FILTER = (_IP_GLOB, _IP_BROADCAST, None)
 
 _ETH_P_SNAP = 0x0005 #Internal-only Ethernet-frame-grabbing
 #Nothing should be addressible to the special response socket, but better to avoid wasting memory
+
+Address = collections.namedtuple("Address", ('ip', 'port'))
+"""
+ip is an IPv4
+port is an integer
+"""
 
 class DHCPServer(object):
     """
@@ -289,7 +297,7 @@ class _NetworkLink(object):
             pxe = active_socket == self._pxe_socket
             (data, source_address) = active_socket.recvfrom(packet_buffer)
             if data:
-                return (source_address, data, pxe)
+                return (Address(IPv4(source_address[0]), source_address[1]), data, pxe)
         return (None, None, False)
         
     def sendData(self, packet, address, pxe, mac, client_ip):

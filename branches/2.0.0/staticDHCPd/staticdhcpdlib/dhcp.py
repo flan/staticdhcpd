@@ -221,8 +221,8 @@ class _PacketWrapper(object):
          'mac': self.mac,
          'ip': ip and (" for %(ip)s" % {'ip': ip,}) or '',
          'sip': (
-          self.source_address[0] not in libpydhcpserver.dhcp.IP_UNSPECIFIED_FILTER and
-          " via %(address)s:%(port)i" % {'address': self.source_address[0], 'port': self.source_address[1],} or
+          self.source_address.ip not in libpydhcpserver.dhcp.IP_UNSPECIFIED_FILTER and
+          " via %(address)s:%(port)i" % {'address': self.source_address.ip, 'port': self.source_address.port,} or
           ''
          ),
          'pxe': self.pxe and " (PXE)" or '',
@@ -663,7 +663,7 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
             wrapper.markAddressed()
             
     def _handleDHCPRequest_RENEW_REBIND(self, wrapper):
-        renew = wrapper.source_address[0] not in libpydhcpserver.dhcp.IP_UNSPECIFIED_FILTER
+        renew = wrapper.source_address.ip not in libpydhcpserver.dhcp.IP_UNSPECIFIED_FILTER
         wrapper.setType(renew and _PACKET_TYPE_REQUEST_RENEW or _PACKET_TYPE_REQUEST_REBIND)
         if not wrapper.filterPacket(): return
         wrapper.announcePacket(ip=wrapper.ip)
