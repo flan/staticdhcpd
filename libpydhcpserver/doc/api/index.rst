@@ -24,8 +24,14 @@ Constants
 
 Classes
 +++++++
+To build a DHCP server, all you need to understand are the following class-interfaces.
+
+Address
+|||||||
 .. autoclass:: dhcp.Address
 
+DHCPServer
+||||||||||
 .. autoclass:: dhcp.DHCPServer
     :members:
     :private-members:
@@ -38,7 +44,7 @@ Classes
     
 Private API
 -----------
-You'll pretty much never need to touch any of this, unless you're tracking down a bug or extending
+You'll pretty much never need to touch any of this, unless you're tracking down a bug or modifying
 *libpydhcpserver*.
 
 Constants
@@ -49,6 +55,13 @@ Constants
 
 Classes
 +++++++
+Behind the scenes, a DHCP server does a lot of networking stuff; *libpydhcpserver* handles layer 2
+and layer 3 traffic, making it more complex than just working at layer 4; if you want to preserve a
+worldview that starts with writing application code and ends with writing data to a stream, read no
+further.
+
+_NetworkLink
+||||||||||||
 .. autoclass:: dhcp._NetworkLink
     :members:
     :private-members:
@@ -65,12 +78,16 @@ Classes
     .. autoattribute:: dhcp._NetworkLink._listening_sockets
     .. autoattribute:: dhcp._NetworkLink._unicast_discover_supported
     
+_Responder
+||||||||||
 .. autoclass:: dhcp._Responder
     :members:
     :private-members:
     :special-members:
     :exclude-members: __weakref__
     
+_L3Responder
+||||||||||||
 .. autoclass:: dhcp._L3Responder
     :members:
     :private-members:
@@ -80,6 +97,8 @@ Classes
     
     .. autoattribute:: dhcp._L3Responder._socket
     
+_L2Responder
+||||||||||||
 .. autoclass:: dhcp._L2Responder
     :members:
     :private-members:
@@ -92,6 +111,8 @@ Classes
     .. autoattribute:: dhcp._L2Responder._pack_
     .. autoattribute:: dhcp._L2Responder._array_
     
+_L2Responder_AF_PACKET
+||||||||||||||||||||||
 .. autoclass:: dhcp._L2Responder_AF_PACKET
     :members:
     :private-members:
@@ -101,6 +122,8 @@ Classes
     
     .. autoattribute:: dhcp._L2Responder_AF_PACKET._socket
     
+_L2Responder_pcap
+|||||||||||||||||
 .. autoclass:: dhcp._L2Responder_pcap
     :members:
     :private-members:
