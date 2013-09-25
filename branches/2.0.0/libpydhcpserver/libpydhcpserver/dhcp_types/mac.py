@@ -105,7 +105,7 @@ class MAC(object):
         return long(int(self))
         
     def __repr__(self):
-        return str(self)
+        return "MAC(%s)" % (str(self))
         
     def __str__(self):
         if self._mac_string is None:

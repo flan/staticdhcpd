@@ -108,7 +108,7 @@ class IPv4(object):
         return long(int(self))
         
     def __repr__(self):
-        return str(self)
+        return "IPv4(%s)" % (str(self))
         
     def __str__(self):
         if not self._ip_string:
