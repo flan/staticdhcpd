@@ -90,10 +90,7 @@ class RFC(object):
         return 1
         
     def __cmp__(self, other):
-        if self._value == other:
-            return 0
-        return 1
-        
+        return -1 * cmp(other, self._value)
         
 class rfc1035_plus(RFC):
     def __init__(self, data):
@@ -106,7 +103,6 @@ class rfc1035_plus(RFC):
         self._value = []
         for token in [tok for tok in [t.strip() for t in data.split(',')] if tok]:
             self._value += _rfc1035Parse(token)
-            
             
 class rfc2610_78(RFC):
     def __init__(self, mandatory, data):
