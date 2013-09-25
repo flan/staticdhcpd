@@ -211,22 +211,23 @@ del inspect
 
 #Inject namespace elements into conf.
 ##############################################################################
+import libpydhcpserver.dhcp_types.conversion as conversion
+conf.ipToList = conversion.ipToList
+conf.ipsToList = conversion.ipsToList
+conf.listToInt = conversion.listToInt
+conf.listToLong = conversion.listToLong
+conf.intToList = conversion.intToList
+conf.intsToList = conversion.intsToList
+conf.longToList = conversion.longToList
+conf.longsToList = conversion.longsToList
+conf.strToList = conversion.strToList
+conf.strToPaddedList = conversion.strToPaddedList
+conf.listToStr = conversion.listToStr
+del conversion
+
 import libpydhcpserver.dhcp_types.rfc as rfc
 conf.rfc3046_decode = rfc.rfc3046_decode
 conf.rfc1035_plus = rfc.rfc1035_plus
-
-conf.ipToList = rfc.ipToList
-conf.ipsToList = rfc.ipsToList
-conf.listToInt = rfc.listToInt
-conf.listToLong = rfc.listToLong
-conf.intToList = rfc.intToList
-conf.intsToList = rfc.intsToList
-conf.longToList = rfc.longToList
-conf.longsToList = rfc.longsToList
-conf.strToList = rfc.strToList
-conf.strToPaddedList = rfc.strToPaddedList
-conf.listToStr = rfc.listToStr
-
 conf.rfc2610_78 = rfc.rfc2610_78
 conf.rfc2610_79 = rfc.rfc2610_79
 conf.rfc3361_120 = rfc.rfc3361_120

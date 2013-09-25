@@ -37,10 +37,10 @@ import statistics
 import libpydhcpserver.dhcp
 from libpydhcpserver.dhcp_types.ipv4 import IPv4
 from libpydhcpserver.dhcp_types.mac import MAC
-from libpydhcpserver.dhcp_types.rfc import (
+from libpydhcpserver.dhcp_types.conversion import (
  ipToList, ipsToList,
  longToList,
- strToList, listToStr,
+ strToList,
 )
 
 #Packet-type string-constants

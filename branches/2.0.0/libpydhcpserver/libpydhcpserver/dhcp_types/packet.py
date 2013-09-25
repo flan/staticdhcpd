@@ -27,10 +27,15 @@ import logging
 from struct import (pack, unpack)
 from struct import pack
 
-from constants import *
+from constants import (
+ MAGIC_COOKIE,
+ DHCP_FIELDS_NAMES, DHCP_FIELDS, DHCP_FIELDS_SPECS, DHCP_FIELDS_TYPES,
+ DHCP_OPTIONS_TYPES, DHCP_OPTIONS, DHCP_OPTIONS_REVERSE,
+)
 from mac import MAC
 from ipv4 import IPv4
-from rfc import *
+from rfc import (RFC, RFC_MAP)
+from conversion import (listToStr)
 
 _OPTION_ORDERING = (
  DHCP_OPTIONS['dhcp_message_type'], #53
@@ -342,24 +347,9 @@ class DHCPPacket(object):
                 return False
             else:
                 #Process special RFC options.
-                if dhcp_field_type == 'RFC2610_78':
-                    return self._setRfcOption(name, value, rfc2610_78)
-                elif dhcp_field_type == 'RFC2610_79':
-                    return self._setRfcOption(name, value, rfc2610_79)
-                elif dhcp_field_type == 'RFC3361_120':
-                    return self._setRfcOption(name, value, rfc3361_120)
-                elif dhcp_field_type == 'RFC3397_119':
-                    return self._setRfcOption(name, value, rfc3397_119)
-                elif dhcp_field_type == 'RFC4174_83':
-                    return self._setRfcOption(name, value, rfc4174_83)
-                elif dhcp_field_type == 'RFC4280_88':
-                    return self._setRfcOption(name, value, rfc4280_88)
-                elif dhcp_field_type == 'RFC5223_137':
-                    return self._setRfcOption(name, value, rfc5223_137)
-                elif dhcp_field_type == 'RFC5678_139':
-                    return self._setRfcOption(name, value, rfc5678_139)
-                elif dhcp_field_type == 'RFC5678_140':
-                    return self._setRfcOption(name, value, rfc5678_140)
+                rfc_type = RFC_MAP.get(dhcp_field_type.lower())
+                if rfc_type:
+                    return self._setRfcOption(name, value, rfc_type)
         raise ValueError("Unknown option: %(name)s" % {
          'name': name,
         })
