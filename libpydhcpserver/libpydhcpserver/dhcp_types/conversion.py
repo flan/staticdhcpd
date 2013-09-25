@@ -1,8 +1,9 @@
 # -*- encoding: utf-8 -*-
 """
-libpydhcpserver.dhcp_types.common
-=================================
-Defines common data-access methods.
+libpydhcpserver.dhcp_types.conversion
+=====================================
+Provides convenience functions used to convert from friendly data-types into
+packet-insertable data-types and vice-versa.
 
 Legal
 -----
@@ -22,6 +23,8 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 (C) Neil Tallim, 2013 <flan@uguu.ca>
 """
+_IPv4 = None #: Placeholder for a deferred import ot avoid a circular reference.
+
 def listToNumber(l):
     value = 0
     for (i, v) in enumerate(reversed(l)):
@@ -133,3 +136,41 @@ def strToPaddedList(s, l):
 def listToStr(l):
     return ''.join(chr(i) for i in l)
     
+def ipToList(ip):
+    """
+    Converts an IPv4 address into a collection of four bytes.
+    
+    @type ip: basestring
+    @param ip: The IPv4 to process.
+    
+    @rtype: list
+    @return: The IPv4 expressed as bytes.
+    """
+    global _IPv4
+    if not _IPv4:
+        from ipv4 import IPv4
+        _IPv4 = IPv4
+        
+    if not isinstance(ip, _IPv4):
+        ip = _IPv4(ip)
+    return list(ip)
+    
+def ipsToList(ips):
+    """
+    Converts a comma-delimited list of IPv4s into bytes.
+    
+    @type ips: basestring
+    @param ips: The list of IPv4s to process.
+    
+    @rtype: list
+    @return: A collection of bytes corresponding to the given IPv4s.
+    """
+    if isinstance(ips, StringTypes):
+        tokens = ips.split(',')
+    else:
+        tokens = ips
+        
+    bytes = []
+    for ip in ips:
+        bytes += ipToList(ip)
+    return bytes

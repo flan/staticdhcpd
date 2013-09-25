@@ -34,7 +34,7 @@ try:
 except ImportError: #py3k
     pass
     
-from common import (listToNumber)
+from conversion import (listToNumber)
 
 class MAC(object):
     """
