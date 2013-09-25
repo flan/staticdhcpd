@@ -305,7 +305,7 @@ class _NetworkLink(object):
         port = self._client_port
         source_port = self._server_port
         responder = self._responder_dhcp
-        if address[0] in IP_UNSPECIFIED_FILTER: #Broadcast source; this is never valid for PXE
+        if address.ip in IP_UNSPECIFIED_FILTER: #Broadcast source; this is never valid for PXE
             if (not self._unicast_discover_supported or #All responses have to be via broadcast
                 packet.getOption('flags')[0] & 0b10000000): #Broadcast bit set; respond in kind 
                 ip = _IP_BROADCAST
@@ -314,13 +314,13 @@ class _NetworkLink(object):
             responder = self._responder_broadcast
         else: #Unicast source
             giaddr = packet.extractIPOrNone('giaddr')
-            ip = address[0]
+            ip = address.ip
             if giaddr: #Relayed request.
                 port = self._server_port
             else: #Request directly from client, routed or otherwise.
                 if pxe:
                     ip = packet.extractIPOrNone('ciaddr') or ip
-                    port = address[1] or self._pxe_port #BSD doesn't seem to preserve port information
+                    port = address.port or self._pxe_port #BSD doesn't seem to preserve port information
                     source_port = self._pxe_port
                     responder = self._responder_pxe
                     
