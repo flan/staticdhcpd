@@ -776,15 +776,15 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
         """
         packet.setOption('server_identifier', ipToList(self._server_address))
         
-        (bytes, ip, port) = self._sendDHCPPacket(packet, address, pxe, mac, client_ip)
+        (bytes, address) = self._sendDHCPPacket(packet, address, pxe)
         response_type = packet.getDHCPMessageTypeName()
         _logger.info('%(type)s sent at %(mac)s for %(client)s via %(ip)s:%(port)i %(pxe)s[%(bytes)i bytes]' % {
          'type': response_type[response_type.find('_') + 1:],
          'mac': mac,
          'client': client_ip,
          'bytes': bytes,
-         'ip': ip,
-         'port': port,
+         'ip': address.ip,
+         'port': address.port,
          'pxe': pxe and '(PXE) ' or '',
         })
         return bytes
@@ -885,7 +885,7 @@ class DHCPService(threading.Thread):
         self.name = "DHCP"
         self.daemon = True
         
-        server_address = '.'.join([str(int(o)) for o in config.DHCP_SERVER_IP.split('.')])
+        server_address = IPv4(config.DHCP_SERVER_IP)
         _logger.info("Prepared to bind to %(address)s; ports: server: %(server)s, client: %(client)s, pxe: %(pxe)s%(response-interface)s" % {
          'address': server_address,
          'server': config.DHCP_SERVER_PORT,

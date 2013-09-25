@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 """
-libpydhcpserver.types
-=====================
+libpydhcpserver.dhcp_types
+==========================
 Collects definitions of types internal to libpydhcpserver.
  
 Legal

@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 """
-types.common
-============
+libpydhcpserver.dhcp_types.common
+=================================
 Defines common data-access methods.
 
 Legal

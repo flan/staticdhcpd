@@ -35,56 +35,64 @@ from dhcp_types.mac import MAC
 from dhcp_types.packet import DHCPPacket
 
 #IP constants
-_IP_GLOB = IPv4('0.0.0.0')
-_IP_BROADCAST = IPv4('255.255.255.255')
-IP_UNSPECIFIED_FILTER = (_IP_GLOB, _IP_BROADCAST, None)
+_IP_GLOB = IPv4('0.0.0.0') #: The internal "everything" address.
+_IP_BROADCAST = IPv4('255.255.255.255') #: The broadcast address.
+IP_UNSPECIFIED_FILTER = (_IP_GLOB, _IP_BROADCAST, None) #: A tuple of addresses that reflect non-unicast targets.
 
-_ETH_P_SNAP = 0x0005 #Internal-only Ethernet-frame-grabbing
-#Nothing should be addressible to the special response socket, but better to avoid wasting memory
+_ETH_P_SNAP = 0x0005
+"""
+Internal-only Ethernet-frame-grabbing for Linux.
+
+Nothing should be addressable to the special response socket, but better to avoid wasting memory.
+"""
 
 Address = collections.namedtuple("Address", ('ip', 'port'))
 """
-ip is an IPv4
-port is an integer
+Defines an inet layer-3 address, as a named tuple.
+
+* ``ip``: :class:`IPv4 <dhcp_types.IPv4>`
+* ``port``: ``int``
 """
 
 class DHCPServer(object):
     """
     Handles internal packet-path-routing logic.
     """
-    _server_address = None #The IP associated with this server
-    _network_link = None #The I/O-handler
+    _server_address = None #: The IP associated with this server.
+    _network_link = None #: The I/O-handler; you don't want to touch this.
     
     def __init__(self, server_address, server_port, client_port, pxe_port=None, response_interface=None, response_interface_qtags=None):
         """
         Sets up the DHCP network infrastructure.
         
-        @type server_address: basestring
-        @param server_address: The IP address on which to run the DHCP service.
-        @type server_port: int
-        @param server_port: The port on which DHCP servers and relays listen in this network.
-        @type client_port: int
-        @param client_port: The port on which DHCP clients listen in this network.
-        @type pxe_port: int|NoneType
-        @param pxe_port: The port on which DHCP servers listen for PXE traffic in this network.
-        
-        @raise Exception: A problem occurred during setup.
+        :param server_address: The IP address on which to run the DHCP service.
+        :type server_address: :class:`IPv4 <dhcp_types.IPv4>`
+        :param int port: The port on which DHCP servers and relays listen in this network.
+        :param int client_port: The port on which DHCP clients listen in this network.
+        :param int|None pxe_port: The port on which DHCP servers listen for PXE traffic in this
+            network; ``None`` to disable.
+        :param str|None response_interface: The interface on which to provide raw packet support,
+            like ``"eth0"``, or ``None`` if not requested.
+        :param sequence|None response_interface_qtags: Any qtags to insert into raw packets, in
+            order of appearance. Definitions take the following form:
+            (pcp:`0-7`, dei:``bool``, vid:`1-4094`)
+        :except Exception: A problem occurred during setup.
         """
         self._server_address = server_address
-        self._network_link = _NetworkLink(server_address, server_port, client_port, pxe_port, response_interface, response_interface_qtags=response_interface_qtags)
+        self._network_link = _NetworkLink(str(server_address), server_port, client_port, pxe_port, response_interface, response_interface_qtags=response_interface_qtags)
         
     def _getNextDHCPPacket(self, timeout=60, packet_buffer=2048):
         """
-        Blocks for up to C{timeout} seconds while waiting for a packet to
+        Blocks for up to ``timeout`` seconds while waiting for a packet to
         arrive; if one does, a thread is spawned to process it.
         
-        @type timeout: int
-        @param timeout: The number of seconds to wait before returning.
+        Have a thread blocking on this at all times; restart it immediately after it returns.
         
-        @rtype: tuple(2)
-        @return: (received:bool, (address:basestring, port:int)|None), with received
-            indicating whether a DHCP packet was received or not and the tuple
-            reflecting the source of the received packet, if any.
+        :param int timeout: The number of seconds to wait before returning.
+        :param int packet_buffer: The size of the buffer to use for receiving packets.
+        :return tuple(2):
+            0. ``bool``: ``True`` if a DHCP packet was received.
+            1. :class:`Address <dhcp.Address>` or ``None``: None if the timeout was reached.
         """
         (source_address, data, pxe) = self._network_link.getData(timeout=timeout, packet_buffer=packet_buffer)
         if data:
@@ -109,127 +117,130 @@ class DHCPServer(object):
         """
         Processes a DECLINE packet.
         
-        @type packet: L{dhcp_types.packet.DHCPPacket}
-        @param packet: The packet to be processed.
-        @type source_address: tuple
-        @param source_address: The address (host, port) from which the request
-            was received.
-        @type pxe: bool
-        @param pxe: True if the packet was received on the PXE port.
+        Override this with your own logic to handle DECLINEs.
+        
+        :param packet: The packet to be processed.
+        :type packet: :class:`DHCPPacket <dhcp_types.packet.DHCPPacket>`
+        :param source_address: The address from which the request was received.
+        :type source_address: :class:`Address <dhcp.Address>`
+        :param bool pxe: ``True`` if the packet was received on the PXE port.
         """
         
     def _handleDHCPDiscover(self, packet, source_address, pxe):
         """
         Processes a DISCOVER packet.
         
-        @type packet: L{dhcp_types.packet.DHCPPacket}
-        @param packet: The packet to be processed.
-        @type source_address: tuple
-        @param source_address: The address (host, port) from which the request
-            was received.
-        @type pxe: bool
-        @param pxe: True if the packet was received on the PXE port.
+        Override this with your own logic to handle DISCOVERs.
+        
+        :param packet: The packet to be processed.
+        :type packet: :class:`DHCPPacket <dhcp_types.packet.DHCPPacket>`
+        :param source_address: The address from which the request was received.
+        :type source_address: :class:`Address <dhcp.Address>`
+        :param bool pxe: ``True`` if the packet was received on the PXE port.
         """
         
     def _handleDHCPInform(self, packet, source_address, pxe):
         """
         Processes an INFORM packet.
         
-        @type packet: L{dhcp_types.packet.DHCPPacket}
-        @param packet: The packet to be processed.
-        @type source_address: tuple
-        @param source_address: The address (host, port) from which the request
-            was received.
-        @type pxe: bool
-        @param pxe: True if the packet was received on the PXE port.
+        Override this with your own logic to handle INFORMs.
+        
+        :param packet: The packet to be processed.
+        :type packet: :class:`DHCPPacket <dhcp_types.packet.DHCPPacket>`
+        :param source_address: The address from which the request was received.
+        :type source_address: :class:`Address <dhcp.Address>`
+        :param bool pxe: ``True`` if the packet was received on the PXE port.
         """
         
     def _handleDHCPLeaseQuery(self, packet, source_address, pxe):
         """
         Processes a LEASEQUERY packet.
         
-        @type packet: L{dhcp_types.packet.DHCPPacket}
-        @param packet: The packet to be processed.
-        @type source_address: tuple
-        @param source_address: The address (host, port) from which the request
-            was received.
-        @type pxe: bool
-        @param pxe: True if the packet was received on the PXE port.
+        Override this with your own logic to handle LEASEQUERYs.
+        
+        :param packet: The packet to be processed.
+        :type packet: :class:`DHCPPacket <dhcp_types.packet.DHCPPacket>`
+        :param source_address: The address from which the request was received.
+        :type source_address: :class:`Address <dhcp.Address>`
+        :param bool pxe: ``True`` if the packet was received on the PXE port.
         """
         
     def _handleDHCPRelease(self, packet, source_address):
         """
         Processes a RELEASE packet.
         
-        @type packet: L{dhcp_types.packet.DHCPPacket}
-        @param packet: The packet to be processed.
-        @type source_address: tuple
-        @param source_address: The address (host, port) from which the request
-            was received.
+        Override this with your own logic to handle RELEASEs.
+        
+        :param packet: The packet to be processed.
+        :type packet: :class:`DHCPPacket <dhcp_types.packet.DHCPPacket>`
+        :param source_address: The address from which the request was received.
+        :type source_address: :class:`Address <dhcp.Address>`
+        :param bool pxe: ``True`` if the packet was received on the PXE port.
         """
         
     def _handleDHCPRequest(self, packet, source_address, pxe):
         """
         Processes a REQUEST packet.
         
-        @type packet: L{dhcp_types.packet.DHCPPacket}
-        @param packet: The packet to be processed.
-        @type source_address: tuple
-        @param source_address: The address (host, port) from which the request
-            was received.
-        @type pxe: bool
-        @param pxe: True if the packet was received on the PXE port.
+        Override this with your own logic to handle REQUESTs.
+        
+        :param packet: The packet to be processed.
+        :type packet: :class:`DHCPPacket <dhcp_types.packet.DHCPPacket>`
+        :param source_address: The address from which the request was received.
+        :type source_address: :class:`Address <dhcp.Address>`
+        :param bool pxe: ``True`` if the packet was received on the PXE port.
         """
         
-    def _sendDHCPPacket(self, packet, address, pxe, mac, client_ip):
+    def _sendDHCPPacket(self, packet, source_address, pxe):
         """
         Encodes and sends a DHCP packet to its destination.
         
-        @type packet: L{dhcp_types.packet.DHCPPacket}
-        @param packet: The packet to be sent.
-        @type ip: basestring
-        @param ip: The IP address to which the packet is to be sent.
-        @type port: int
-        @param port: The port to which the packet is to be addressed.
-        @type pxe: bool
-        @param pxe: True if the packet was received via the PXE port
+        :param packet: The packet to be processed.
+        :type packet: :class:`DHCPPacket <dhcp_types.packet.DHCPPacket>`
+        :param source_address: The address from which the request was received.
+        :type source_address: :class:`Address <dhcp.Address>`
+        :param bool pxe: ``True`` if the packet was received on the PXE port.
+        :return int: The number of bytes transmitted.
+        :except Exception: A problem occurred during serialisation or transmission.
         """
-        return self._network_link.sendData(packet, address, pxe, mac, client_ip)
+        return self._network_link.sendData(packet, address, pxe)
         
         
 class _NetworkLink(object):
     """
     Handles network I/O.
     """
-    _client_port = None
-    _server_port = None
-    _pxe_port = None
-    _pxe_socket = None
-    _responder_dhcp = None
-    _responder_pxe = None
-    _responder_broadcast = None
+    _client_port = None #: The port on which clients expect to receive DHCP traffic.
+    _server_port = None #: The port on which servers expect to receive DHCP traffic.
+    _pxe_port = None #: The port on which PXE clients expect to receive traffic.
+    _pxe_socket = None #: The internal socket to use for PXE traffic.
+    _responder_dhcp = None #: The internal socket to use for responding to DHCP requests.
+    _responder_pxe = None #: The internal socket to use for responding to PXE requests.
+    _responder_broadcast = None #: The internal socket to use for responding to broadcast requests.
     _listening_sockets = None #: All sockets on which to listen for activity.
-    _unicast_discover_supported = False
+    _unicast_discover_supported = False #: Whether unicast responses to DISCOVERs are supported.
     
     def __init__(self, server_address, server_port, client_port, pxe_port, response_interface=None, response_interface_qtags=None):
         """
         Sets up the DHCP network infrastructure.
         
-        @type server_address: basestring
-        @param server_address: The IP address on which to run the DHCP service.
-        @type server_port: int
-        @param server_port: The port on which DHCP servers and relays listen in this network.
-        @type client_port: int
-        @param client_port: The port on which DHCP clients listen in this network.
-        @type pxe_port: int|NoneType
-        @param pxe_port: The port on which DHCP servers listen for PXE traffic in this network.
-        
-        @raise Exception: A problem occurred during setup.
+        :param str server_address: The IP address on which to run the DHCP service.
+        :param int server_port: The port on which DHCP servers and relays listen in this network.
+        :param int client_port: The port on which DHCP clients listen in this network.
+        :param int|None pxe_port: The port on which DHCP servers listen for PXE traffic in this
+            network.
+        :param str|None response_interface: The interface on which to provide raw packet support,
+            like 'eth0', or None if not requested.
+        :param sequence|None response_interface_qtags: Any qtags to insert into raw packets, in
+            order of appearance. Definitions take the following form:
+            (pcp:`0-7`, dei:``bool``, vid:`1-4094`)
+        :except Exception: A problem occurred during setup.
         """
         self._client_port = client_port
         self._server_port = server_port
         self._pxe_port = pxe_port
         
+        #Create and bind unicast sockets
         (dhcp_socket, pxe_socket) = self._setupListeningSockets(server_port, pxe_port)
         if pxe_socket:
             self._listening_sockets = (dhcp_socket, pxe_socket)
@@ -237,8 +248,10 @@ class _NetworkLink(object):
         else:
             self._listening_sockets = (dhcp_socket,)
             
+        #Wrap the sockets with appropriate logic and set options
         self._responder_dhcp = _L3Responder(socketobj=dhcp_socket)
         self._responder_pxe = _L3Responder(socketobj=pxe_socket)
+        #Either create a raw-response socket or a generic broadcast-response socket
         if response_interface:
             try:
                 self._responder_broadcast = _L2Responder_AF_PACKET(server_address, response_interface, qtags=response_interface_qtags)
@@ -253,6 +266,15 @@ class _NetworkLink(object):
             self._responder_broadcast = _L3Responder(server_address=server_address)
             
     def _setupListeningSockets(self, server_port, pxe_port):
+        """
+        Creates and binds the listening sockets.
+        
+        :param int server_port: The port on which to listen for DHCP traffic.
+        :param int pxe_port: The port on which to listen for PXE traffic.
+        :return tuple(2): The DHCP and PXE sockets, the latter of which may be ``None`` if not
+            requested.
+        :except socket.error: Sockets could not be created or bound.
+        """
         dhcp_socket = pxe_socket = None
         try:
             dhcp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -290,6 +312,17 @@ class _NetworkLink(object):
         return (dhcp_socket, pxe_socket)
         
     def getData(self, timeout, packet_buffer):
+        """
+        Runs `select()` over all relevant sockets, providing data if available.
+        
+        :param int timeout: The number of seconds to wait before returning.
+        :param int packet_buffer: The size of the buffer to use for receiving packets.
+        :return tuple(3):
+            0. :class:`Address <dhcp.Address>` or ``None``: None if the timeout was reached.
+            1. The received data as a ``str`` or ``None`` if the timeout was reached.
+            2. A ``bool`` indicating whether the data was received via PXE.
+        :except select.error: The `select()` operation did not complete gracefully.
+        """
         pxe = False
         active_sockets = select.select(self._listening_sockets, [], [], timeout)[0]
         if active_sockets:
@@ -300,7 +333,20 @@ class _NetworkLink(object):
                 return (Address(IPv4(source_address[0]), source_address[1]), data, pxe)
         return (None, None, False)
         
-    def sendData(self, packet, address, pxe, mac, client_ip):
+    def sendData(self, packet, address, pxe):
+        """
+        Writes the packet to to appropriate socket, addressed to the appropriate recipient.
+        
+        :param packet: The packet to be written.
+        :type packet: :class:`DHCPPacket <dhcp_types.packet.DHCPPacket>`
+        :param address: The address from which the original packet was received.
+        :type address: :class:`Address <dhcp.Address>`
+        :param bool pxe: Whether the request was received via PXE.
+        :return tuple(2):
+            0. The number of bytes written to the network.
+            1. The :class:`Address <dhcp.Address>` ultimately used.
+        :except Exception: A problem occurred during serialisation or transmission.
+        """
         ip = None
         port = self._client_port
         source_port = self._server_port
@@ -324,12 +370,21 @@ class _NetworkLink(object):
                     source_port = self._pxe_port
                     responder = self._responder_pxe
                     
-        return responder.send(packet, mac, ip, port, source_port=source_port)
+        return responder.send(packet, ip, port, source_port=source_port)
         
 class _Responder(object):
-    _socket = None #The socket used for responses; its semantics vary by subclass
-    
+    """
+    A generic responder-template, which defines common logic.
+    """
     def _setBroadcastBit(self, packet, state):
+        """
+        Modifies the packet to set the broadcast bit.
+        
+        :param packet: The packet to be written.
+        :type packet: :class:`DHCPPacket <dhcp_types.packet.DHCPPacket>`
+        :param bool state: Whether the broadcast bit should be set or not.
+        :return bool: The previous state of the broadcast bit.
+        """
         flags = packet.getOption('flags')
         old_state = bool(flags[0] & 0b10000000)
         if state:
@@ -339,25 +394,66 @@ class _Responder(object):
         packet.setOption('flags', flags)
         return old_state
         
-    def send(self, packet, mac, ip, port, *args, **kwargs):
-        old_broadcast_bit = self._setBroadcastBit(packet, ip == _IP_BROADCAST)
+    def send(self, packet, ip, port, **kwargs):
+        """
+        Performs final sanity-checking and address manipulation, then submits the packet for
+        transmission.
         
-        #Perform any packet-specific rewriting
-        mac = packet.response_mac or mac
+        :param packet: The packet to be written.
+        :type packet: :class:`DHCPPacket <dhcp_types.packet.DHCPPacket>`
+        :param ip: The address to which the packet should be sent.
+        :type ip: :class:`IPv4 <dhcp_types.IPv4>`
+        :param int port: The port to which the packet should be sent.
+        :param \*\*kwargs: Any technology-specific arguments.
+        :return tuple(2):
+            0. The number of bytes written to the network.
+            1. The :class:`Address <dhcp.Address>` ultimately used.
+        :except Exception: An error occurred during serialisation or transmission.
+        """
+        old_broadcast_bit = self._setBroadcastBit(packet, _IP_BROADCAST == ip)
+        
+        #Perform any necessary packet-specific address-changes
         if not old_broadcast_bit:
             ip = packet.response_ip or ip
         port = packet.response_port or port
         if packet.response_source_port is not None:
             kwargs['source_port'] = packet.response_source_port
             
-        bytes_sent = self._send(packet, mac, ip, port, *args, **kwargs)
-        self._setBroadcastBit(packet, old_broadcast_bit) #Restore the broadcast bit, in case the packet needs to be used for something else
-        return (bytes_sent, ip, port)
-    def _send(self, packet, mac, ip, port, *args, **kwargs):
+        bytes_sent = self._send(packet, str(ip), port, **kwargs)
+        if (_IP_BROADCAST == ip) != old_broadcast_bit: #Restore the broadcast bit, in case the packet needs to be used for something else
+            self._setBroadcastBit(packet, old_broadcast_bit)
+        return (bytes_sent, Address(IPv4(ip), port))
+    def _send(self, packet, ip, port, **kwargs):
+        """
+        Handles technology-specific transmission; must be implemented by subclasses.
+        
+        :param packet: The packet to be written.
+        :type packet: :class:`DHCPPacket <dhcp_types.packet.DHCPPacket>`
+        :param ip: The address to which the packet should be sent.
+        :type ip: :class:`IPv4 <dhcp_types.IPv4>`
+        :param int port: The port to which the packet should be sent.
+        :param \*\*kwargs: Any technology-specific arguments.
+        :return int: The number of bytes written to the network.
+        :except Exception: An error occurred during serialisation or transmission.
+        """
         raise NotImplementedError("_send() must be implemented in subclasses")
         
 class _L3Responder(_Responder):
+    """
+    Defines rules and logic needed to respond at layer 3.
+    """
+    _socket = None #: The socket used for responses.
+    
     def __init__(self, socketobj=None, server_address=None):
+        """
+        Wraps an existing socket or creates an arbitrarily bound new socket with broadcast
+        capabilities.
+        
+        :param socket.socket|None socketobj: The socket to be bound; if ``None``, a new one is
+            created.
+        :param str|None server_address: The address to which a new socket should be bound.
+        :except Exception: Unable to bind a new socket.
+        """
         if socketobj:
             self._socket = socketobj
         else:
@@ -373,39 +469,68 @@ class _L3Responder(_Responder):
             except socket.error, e:
                 raise Exception('Unable to bind socket: %(error)s' % {'error': e,})
                 
-    def _send(self, packet, mac, ip, port, *args, **kwargs):
-        return self._socket.sendto(packet.encodePacket(), (str(ip), port))
+    def _send(self, packet, ip, port, **kwargs):
+        """
+        Serialises and sends the packet.
+        
+        :param packet: The packet to be written.
+        :type packet: :class:`DHCPPacket <dhcp_types.packet.DHCPPacket>`
+        :param str ip: The address to which the packet should be sent.
+        :param int port: The port to which the packet should be sent.
+        :param \*\*kwargs: Any technology-specific arguments.
+        :return int: The number of bytes written to the network.
+        :except Exception: An error occurred during serialisation or transmission.
+        """
+        return self._socket.sendto(packet.encodePacket(), (ip, port))
         
 class _L2Responder(_Responder):
-    _ethernet_id = None #The source MAC and Ethernet payload-type (and qtags, if applicable)
-    _server_address = None #The server's IP
+    """
+    Defines rules and logic needed to respond at layer 2.
+    """
+    _ethernet_id = None #: The source MAC and Ethernet payload-type (and qtags, if applicable).
+    _server_address = None #: The server's IP.
     
-    __array = None
-    __pack = None
+    #Locally cached module functions
+    _array_ = None #: `array.array`
+    _pack_ = None #: `struct.pack`
     
     def __init__(self, server_address, mac, qtags=None):
+        """
+        Constructs the Ethernet header for all L2 communication.
+        
+        :param str server_address: The server's IP as a dotted quad.
+        :param str mac: The MAC of the responding interface, in network-byte order.
+        :param sequence qtags: Any qtags to insert into raw packets, in order of appearance.
+            Definitions take the following form: (pcp:`0-7`, dei:``bool``, vid:`1-4094`)
+        """
         import struct
-        self.__pack = struct.pack
+        self._pack_ = struct.pack
         import array
-        self.__array = array.array
+        self._array_ = array.array
         
         self._server_address = socket.inet_aton(str(server_address))
-        ethernet_id = [self._socket.getsockname()[4],] #Source MAC
+        ethernet_id = [mac,] #Source MAC
         if qtags:
             for (pcp, dei, vid) in qtags:
                 ethernet_id.append("\x81\x00") #qtag payload-type
                 qtag_value = pcp << 13 #Priority-code-point (0-7)
                 qtag_value += int(dei) << 12 #Drop-eligible-indicator
                 qtag_value += vid #vlan-identifier
-                ethernet_id.append(self.__pack('!H', qtag_value))
+                ethernet_id.append(self._pack('!H', qtag_value))
         ethernet_id.append("\x08\x00") #IP payload-type
         self._ethernet_id = ''.join(ethernet_id)
         
     def _checksum(self, data):
+        """
+        Computes the RFC768 checksum of ``data``.
+        
+        :param sequence data: The data to be checksummed.
+        :return int: The data's checksum.
+        """
         if sum(len(i) for i in data) & 1:
             data.append('\0')
             
-        words = self.__array('h', ''.join(data))
+        words = self._array_('h', ''.join(data))
         checksum = 0
         for word in words:
             checksum += word & 0xffff
@@ -416,6 +541,13 @@ class _L2Responder(_Responder):
         return ~checksum & 0xffff
         
     def _ipChecksum(self, ip_prefix, ip_destination):
+        """
+        Computes the checksum of the IPv4 header.
+        
+        :param str ip_prefix: The portion of the IPv4 header preceding the `checksum` field.
+        :param str ip_destination: The destination address, in network-byte order.
+        :return int: The IPv4 checksum.
+        """
         return self._checksum([
          ip_prefix,
          '\0\0', #Empty checksum field
@@ -424,6 +556,15 @@ class _L2Responder(_Responder):
         ])
         
     def _udpChecksum(self, ip_destination, udp_addressing, udp_length, packet):
+        """
+        Computes the checksum of the UDP header and payload.
+        
+        :param str ip_destination: The destination address, in network-byte order.
+        :param str udp_addressing: The UDP header's port section.
+        :param str udp_length: The length of the UDP payload plus header.
+        :param str packet: The serialised packet.
+        :return int: The UDP checksum.
+        """
         return self._checksum([
          self._server_address,
          ip_destination,
@@ -436,11 +577,23 @@ class _L2Responder(_Responder):
         ])
         
     def _assemblePacket(self, packet, mac, ip, port, source_port):
+        """
+        Assembles the Ethernet, IPv4, and UDP headers, serialises the packet, and provides a
+        complete Ethernet frame for injection into the network.
+        
+        :param packet: The packet to be written.
+        :type packet: :class:`DHCPPacket <dhcp_types.packet.DHCPPacket>`
+        :param mac: The MAC to which the packet is addressed.
+        :type mac: :class:`MAC <dhcp_types.mac.MAC>`
+        :param str ip: The IPv4 to which the packet is addressed, as a dotted quad.
+        :param int port: The port to which the packet is addressed.
+        :param int source_port: The port from which the packet is addressed.
+        :return str: The complete binary packet.
+        """
         binary = []
-        ip = str(ip)
         
         #<> Ethernet header
-        if ip == _IP_BROADCAST:
+        if _IP_BROADCAST == ip:
             binary.append('\xff\xff\xff\xff\xff\xff') #Broadcast MAC
         else:
             binary.append(''.join(chr(i) for i in mac)) #Destination MAC
@@ -451,7 +604,7 @@ class _L2Responder(_Responder):
         packet_len = len(packet)
         
         #<> IP header
-        binary.append(self.__pack("!BBHHHBB",
+        binary.append(self._pack_("!BBHHHBB",
          69, #IPv4 + length=5
          0, #DSCP/ECN aren't relevant
          28 + packet_len, #The UDP and packet lengths in bytes
@@ -460,29 +613,57 @@ class _L2Responder(_Responder):
          128, #Make the default TTL sane, but not maximum
          0x11, #Protocol=UDP
         ))
-        ip_destination = socket.inet_aton(str(ip))
+        ip_destination = socket.inet_aton(ip)
         binary.extend((
-         self.__pack("<H", self._ipChecksum(binary[-1], ip_destination)),
+         self._pack_("<H", self._ipChecksum(binary[-1], ip_destination)),
          self._server_address,
          ip_destination
         ))
         
         #<> UDP header
-        binary.append(self.__pack("!HH", source_port, port))
-        binary.append(self.__pack("!H", packet_len + 8)) #8 for the header itself
-        binary.append(self.__pack("<H", self._udpChecksum(ip_destination, binary[-2], binary[-1], packet)))
+        binary.append(self._pack_("!HH", source_port, port))
+        binary.append(self._pack_("!H", packet_len + 8)) #8 for the header itself
+        binary.append(self._pack_("<H", self._udpChecksum(ip_destination, binary[-2], binary[-1], packet)))
         
         #<> Payload
         binary.append(packet)
         
         return ''.join(binary)
         
-    def _send(self, packet, mac, ip, port, source_port=0, *args, **kwargs):
+    def _send(self, packet, ip, port, source_port=0, **kwargs):
+        """
+        Serialises and sends the packet.
+        
+        :param packet: The packet to be written.
+        :type packet: :class:`DHCPPacket <dhcp_types.packet.DHCPPacket>`
+        :param str ip: The address to which the packet should be sent.
+        :param int port: The port to which the packet should be sent.
+        :param int source_port: The UDP port from which to claim the packet originated.
+        :param \*\*kwargs: Any technology-specific arguments.
+        :return int: The number of bytes written to the network.
+        :except Exception: An error occurred during serialisation or transmission.
+        """
+        mac = (packet.response_mac and MAC(packet.response_mac)) or packet.getHardwareAddress()
         binary_packet = self._assemblePacket(packet, mac, ip, port, source_port)
         return self._send_(binary_packet)
         
 class _L2Responder_AF_PACKET(_L2Responder):
+    """
+    A Linux-specific layer 2 responder that uses AF_PACKET/PF_PACKET.
+    """
+    _socket = None #: The socket used for responses.
+    
     def __init__(self, server_address, response_interface, qtags=None):
+        """
+        Creates and configures a raw socket on an interface.
+        
+        :param str server_address: The server's IP as a dotted quad.
+        :param str response_interface: The interface on which to provide raw packet support, like
+            ``"eth0"``.
+        :param sequence qtags: Any qtags to insert into raw packets, in order of appearance.
+            Definitions take the following form: (pcp:`0-7`, dei:``bool``, vid:`1-4094`)
+        :except socket.error: The socket could not be configured.
+        """
         socket_type = ((hasattr(socket, 'AF_PACKET') and socket.AF_PACKET) or (hasattr(socket, 'PF_PACKET') and socket.PF_PACKET))
         if not socket_type:
             raise Exception("Neither AF_PACKET nor PF_PACKET found")
@@ -491,20 +672,42 @@ class _L2Responder_AF_PACKET(_L2Responder):
         self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 2 ** 12)
         self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 2 ** 12)
 
-        mac = self._socket.getsockname()[4]        
+        mac = self._socket.getsockname()[4]
         _L2Responder.__init__(self, server_address, mac, qtags=qtags)
 
     def _send_(self, packet):
+        """
+        Sends the packet.
+        
+        :param str packet: The packet to be written.
+        :return int: The number of bytes written to the network.
+        :except Exception: An error occurred during transmission.
+        """
         return self._socket.send(packet)
         
 class _L2Responder_pcap(_L2Responder):
-    __c_int = None
+    """
+    A more general Unix-oriented layer 2 responder that uses libpcap.
+    """
+    _fd = None #: The file-descriptor of the socket used for responses.
+    _inject = None #: The "send" function to invoke from libpcap.
     
-    _inject = None
+    #Locally cached module functions
+    _c_int_ = None #: `ctypes.c_int`
     
     def __init__(self, server_address, response_interface, qtags=None):
+        """
+        Creates and configures a raw socket on an interface.
+        
+        :param str server_address: The server's IP as a dotted quad.
+        :param str response_interface: The interface on which to provide raw packet support, like
+            ``"eth0"``.
+        :param sequence qtags: Any qtags to insert into raw packets, in order of appearance.
+            Definitions take the following form: (pcp:`0-7`, dei:``bool``, vid:`1-4094`)
+        :except Exception: Interfacing with libpcap failed.
+        """
         import ctypes
-        self.__c_int = ctypes.c_int
+        self._c_int_ = ctypes.c_int
         import ctypes.util
         
         pcap = ctypes.util.find_library('pcap')
@@ -513,15 +716,32 @@ class _L2Responder_pcap(_L2Responder):
         pcap = ctypes.cdll.LoadLibrary(pcap)
         
         errbuf = ctypes.create_string_buffer(256)
-        self._socket = pcap.pcap_open_live(response_interface, ctypes.c_int(0), ctypes.c_int(0), ctypes.c_int(0), errbuf)
-        if not self._socket:
+        self._fd = pcap.pcap_open_live(response_interface, ctypes.c_int(0), ctypes.c_int(0), ctypes.c_int(0), errbuf)
+        if not self._fd:
             import errno
             raise IOError(errno.EACCES, errbuf.value)
         elif errbuf.value:
             import warnings
             warnings.warn(errbuf.value)
             
-        #Ultra-hackish, but mostly portable, means of getting the MAC address for the interface
+        try:
+            mac = self._getMAC(response_interface)
+        except Exception:
+            pcap.pcap_close(self._fd)
+            raise
+        else:
+            _L2Responder.__init__(self, server_address, mac, qtags=qtags)
+        self._inject = pcap.pcap_inject
+        
+    def _getMAC(self, response_interface):
+        """
+        Mostly portable means of getting the MAC address for the interface.
+        
+        :param str response_interface: The interface on which to provide raw packet support, like
+            ``"eth0"``.
+        :return str: The MAC address, in network-byte order.
+        :except Exception: The MAC could not be retrieved.
+        """
         import subprocess
         import re
         if platform.system() == 'Linux':
@@ -531,17 +751,18 @@ class _L2Responder_pcap(_L2Responder):
         ifconfig_output = subprocess.check_output(command)
         m = re.search(r'\b(?P<mac>(?:[0-9A-Fa-f]{2}:){5}(?:[0-9A-Fa-f]{2}))\b', ifconfig_output)
         if not m:
-            pcap.pcap_close(self._socket)
-            raise Exception("Unable to determine MAC of %(interface)s using... ifconfig... Yes, really; someone, please provide a better way!" % {
+            raise Exception("Unable to determine MAC of %(interface)s" % {
              'interface': response_interface,
             })
-        mac = ''.join(chr(i) for i in MAC(m.group('mac')))
-        #End of hackery
-        _L2Responder.__init__(self, server_address, mac, qtags=qtags)
-        
-        #The "send" function for the socket
-        self._inject = pcap.pcap_inject
+        return ''.join(chr(i) for i in MAC(m.group('mac')))
         
     def _send_(self, packet):
-        return self._inject(self._socket, packet, self.__c_int(len(packet)))
+        """
+        Sends the packet.
+        
+        :param str packet: The packet to be written.
+        :return int: The number of bytes written to the network.
+        :except Exception: An error occurred during transmission.
+        """
+        return self._inject(self._fd, packet, self._c_int_(len(packet)))
         
