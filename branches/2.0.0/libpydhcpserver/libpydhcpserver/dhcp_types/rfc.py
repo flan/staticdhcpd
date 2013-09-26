@@ -32,8 +32,6 @@ except ImportError: #py3k
 from conversion import (intToList, longToList)
 from ipv4 import IPv4
 
-RFC_MAP = {} #: A mapping of RFC names to classes, dynamically populated.
-
 def rfc3046_decode(l):
     """
     Extracts sub-options from an RFC3046 option (82).
@@ -117,7 +115,6 @@ class rfc2610_78(RFC):
         self._value = [int(mandatory)]
         for token in [tok for tok in [t.strip() for t in data.split(',')] if tok]:
             self._value += IPv4(token)
-RFC_MAP["rfc2610_78"] = rfc2610_78
 
 class rfc2610_79(RFC):
     def __init__(self, mandatory, data):
@@ -130,7 +127,6 @@ class rfc2610_79(RFC):
         @param data: The scope-list to process.
         """
         self._value = [int(mandatory)] + [ord(c) for c in data.encode('utf-8')]
-RFC_MAP["rfc2610_79"] = rfc2610_79
 
 class rfc3361_120(RFC):
     def __init__(self, data):
@@ -161,10 +157,8 @@ class rfc3361_120(RFC):
             })
             
         self._value.insert(0, int(ip_4_mode))
-RFC_MAP["rfc3361_120"] = rfc3361_120
 
 class rfc3397_119(rfc1035_plus): pass
-RFC_MAP["rfc3397_119"] = rfc3397_119
 
 class rfc3925_124(RFC):
     def __init__(self, data):
@@ -179,7 +173,6 @@ class rfc3925_124(RFC):
             self._value += longToList(enterprise_number)
             self._value.append(chr(len(payload)))
             self._value += payload
-RFC_MAP["rfc3925_124"] = rfc3925_124
 
 class rfc3925_125(RFC):
     def __init__(self, data):
@@ -202,7 +195,6 @@ class rfc3925_125(RFC):
                 
             self._value.append(chr(len(subdata)))
             self._value += subdata
-RFC_MAP["rfc3925_125"] = rfc3925_125
 
 class rfc4174_83(RFC):
     def __init__(self, isns_functions, dd_access, admin_flags, isns_security, ips):
@@ -228,13 +220,10 @@ class rfc4174_83(RFC):
         self._value = isns_functions + dd_access + admin_flags + isns_security
         for token in [tok for tok in [t.strip() for t in ips.split(',')] if tok]:
             self._value += IPv4(token)
-RFC_MAP["rfc4174_83"] = rfc4174_83
 
 class rfc4280_88(rfc1035_plus): pass
-RFC_MAP["rfc4280_88"] = rfc4280_88
 
 class rfc5223_137(rfc1035_plus): pass
-RFC_MAP["rfc5223_137"] = rfc5223_137
 
 class rfc5678_139(RFC):
     def __init__(self, values):
@@ -250,7 +239,6 @@ class rfc5678_139(RFC):
             self._value.append(code)
             for token in [tok for tok in [address.strip() for address in addresses.split(',')] if tok]:
                 self._value += IPv4(token)
-RFC_MAP["rfc5678_139"] = rfc5678_139
 
 class rfc5678_140(RFC):
     def __init__(self, values):
@@ -265,4 +253,3 @@ class rfc5678_140(RFC):
         for (code, addresses) in values:
             self._value.append(code)
             self._value += rfc1035_plus(addresses).getValue()
-RFC_MAP["rfc5678_140"] = rfc5678_140

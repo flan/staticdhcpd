@@ -212,10 +212,14 @@ del inspect
 #Inject namespace elements into conf.
 ##############################################################################
 import libpydhcpserver.dhcp_types.conversion as conversion
+conf.listToIP = conversion.listToIP
+conf.listToIPs = conversion.listToIPs
 conf.ipToList = conversion.ipToList
 conf.ipsToList = conversion.ipsToList
 conf.listToInt = conversion.listToInt
+conf.listToInts = conversion.listToInts
 conf.listToLong = conversion.listToLong
+conf.listToLongs = conversion.listToLongs
 conf.intToList = conversion.intToList
 conf.intsToList = conversion.intsToList
 conf.longToList = conversion.longToList

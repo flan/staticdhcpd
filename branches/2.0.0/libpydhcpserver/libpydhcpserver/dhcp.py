@@ -96,8 +96,11 @@ class DHCPServer(object):
         """
         (source_address, data, pxe) = self._network_link.getData(timeout=timeout, packet_buffer=packet_buffer)
         if data:
-            packet = DHCPPacket(data)
-            if packet.isDHCPPacket():
+            try:
+                packet = DHCPPacket(data=data)
+            except ValueError:
+                pass
+            else:
                 if packet.isDHCPRequestPacket():
                     threading.Thread(target=self._handleDHCPRequest, args=(packet, source_address, pxe)).start()
                 elif packet.isDHCPDiscoverPacket():
