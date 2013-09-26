@@ -1,7 +1,7 @@
 Framework overview
 ==================
 *libpydhcpserver* is fundamentally a framework on which a DHCP server may be
-built. Its :doc:`types <../types>` may be of value to developers working with
+built. Its :doc:`types <../types/index>` may be of value to developers working with
 DHCP in Python, but some will be crazy enough to need to build a server of
 their own and this is a good place to start.
 
@@ -12,11 +12,11 @@ top of *libpydhcpserver*.
 
 Public API
 ----------
-Building a DHCP server is relatively straightforward: a request packet is
+The core operation of a DHCP server is relatively straightforward: a request packet is
 received and analysed, then a response packet is emitted. Between the
-:doc:`types <../types>` *libpydhcpserver* provides (which include an
+:doc:`types <../types/index>` *libpydhcpserver* provides (which include an
 object-oriented packet interface) and the :class:`DHCPServer <dhcp.DHCPServer>` class described
-below.
+below, all that's left for you to do is customising the analysis part.
 
 Constants
 +++++++++
