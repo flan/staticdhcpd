@@ -6,7 +6,7 @@ import staticdhcpdlib as module
 sys.path.remove(os.path.abspath('..'))
 sys.path.append(os.path.abspath('../staticdhcpdlib'))
 
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.todo', 'sphinx.ext.coverage', 'sphinx.ext.viewcode']
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.todo', 'sphinx.ext.coverage']
 templates_path = ['_templates']
 source_suffix = '.rst'
 master_doc = 'index'
