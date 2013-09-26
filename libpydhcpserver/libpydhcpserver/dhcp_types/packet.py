@@ -105,7 +105,7 @@ class DHCPPacket(object):
         @param data: The raw packet from which this object should be instantiated or None if a
             blank packet should be created.
         """
-        if type(data) == tuple: #Duplicating an existing packet
+        if type(data) is tuple: #Duplicating an existing packet
             ((packet_data, options_data, requested_options),
              terminal_pad,
              (word_align, word_size),
@@ -240,6 +240,16 @@ class DHCPPacket(object):
         #Encode packet.
         return packet.tostring()
         
+    def _getOptionName(self, option):
+        if type(option) is int:
+            return DHCP_OPTIONS_REVERSE.get(option)
+        return option
+        
+    def _getOptionID(self, option):
+        if type(option) is not int:
+            return DHCP_OPTIONS.get(option)
+        return option
+        
     def deleteOption(self, name):
         """
         Drops a value from the DHCP data-set.
@@ -258,8 +268,7 @@ class DHCPPacket(object):
             self._packet_data[start:start + length] = array('B', [0] * length)
             return True
         else:
-            if type(name) == int: #Translate int to string.
-                name = DHCP_OPTIONS_REVERSE.get(name)
+            name = self._getOptionName(name)
             if name in self._options_data:
                 del self._options_data[name]
                 return True
@@ -278,17 +287,11 @@ class DHCPPacket(object):
         
         @raise ValueError: The specified option does not exist.
         """
-        name = id = None
-        if type(option) == int: #Translate int to string.
-            name = DHCP_OPTIONS_REVERSE.get(option)
-            id = option
-        else: #Translate string into int.
-            id = DHCP_OPTIONS.get(option)
-            name = option
-            
+        name = self._getOptionName(option)
+        id = self._getOptionID(option)
         if name and id:
             if self._requested_options:
-                self._requested_options += (option,)
+                self._requested_options += (id,)
             self._options_data[name] = list(value)
         else:
             raise ValueError("Unknown option: %(option)s" % {
@@ -300,7 +303,7 @@ class DHCPPacket(object):
             return rfc3046_decode(value)
             
         type = DHCP_FIELDS_TYPES.get(name) or DHCP_OPTIONS_TYPES.get(name)
-        if not type or not type in _FORMAT_CONVERSION_DESERIAL:
+        if not type in _FORMAT_CONVERSION_DESERIAL:
             return None
         return _FORMAT_CONVERSION_DESERIAL[type](value)
         
@@ -316,14 +319,13 @@ class DHCPPacket(object):
             set.
         """
         if name in DHCP_FIELDS:
-            option_info = DHCP_FIELDS[name]
-            value = self._packet_data[option_info[0]:option_info[0] + option_info[1]].tolist()
+            (start, length) = DHCP_FIELDS[name]
+            value = self._packet_data[start:start + length].tolist()
             if convert:
                 return self._unconvertOptionValue(name, value)
             return value
         else:
-            if type(name) == int: #Translate int to string.
-                name = DHCP_OPTIONS_REVERSE.get(name)
+            name = self._getOptionName(name)
             if name in self._options_data:
                 value = self._options_data[name]
                 if convert:
@@ -341,19 +343,15 @@ class DHCPPacket(object):
         @rtype: bool
         @return: True if the option has been set.
         """
-        if type(name) == int: #Translate int to string.
-            name = self._options_data.get(DHCP_OPTIONS_REVERSE.get(name))
+        name = self._getOptionName(name)
         return name in self._options_data or name in DHCP_FIELDS
         
     def _convertOptionValue(self, name, value):
-        if isinstance(value, RFC):
-            return value.getValue()
-        else:
-            type = DHCP_FIELDS_TYPES.get(name) or DHCP_OPTIONS_TYPES.get(name)
-            if not type or not type in _FORMAT_CONVERSION_SERIAL:
-                return None
-            return _FORMAT_CONVERSION_SERIAL[type](value)
-            
+        type = DHCP_FIELDS_TYPES.get(name) or DHCP_OPTIONS_TYPES.get(name)
+        if not type or not type in _FORMAT_CONVERSION_SERIAL:
+            return None
+        return _FORMAT_CONVERSION_SERIAL[type](value)
+        
     def setOption(self, name, value, convert=False):
         """
         Validates and sets the value of a DHCP option associated with this
@@ -370,8 +368,9 @@ class DHCPPacket(object):
         
         @raise ValueError: The specified option does not exist.
         """
+        #Ensure the input is a list of bytes
         if not isinstance(value, list):
-            if isinstance(value, tuple):
+            if isinstance(value, (tuple, array)):
                 value = list(value)
             elif convert:
                 value = self._convertOptionValue(name, value)
@@ -379,7 +378,7 @@ class DHCPPacket(object):
                     return False
             else:
                 return False
-        if any(True for v in value if not type(v) == int or not 0 <= v <= 255):
+        if any(True for v in value if type(v) is not int or not 0 <= v <= 255):
             return False
             
         #Basic checking: is the length of the value valid?
@@ -390,22 +389,22 @@ class DHCPPacket(object):
             self._packet_data[start:start + length] = array('B', value)
             return True
         else:
-            if type(name) == int:
-                name = DHCP_OPTIONS_REVERSE.get(name)
+            name = self._getOptionName(name)
             dhcp_field_type = DHCP_OPTIONS_TYPES.get(DHCP_OPTIONS.get(name))
             if not dhcp_field_type:
                 return False
                 
-            #Process normal options.
             dhcp_field_specs = DHCP_FIELDS_SPECS.get(dhcp_field_type)
-            if dhcp_field_specs:
+            if dhcp_field_specs: #Process normal options.
                 (fixed_length, minimum_length, multiple) = dhcp_field_specs
                 length = len(value)
                 if fixed_length == length or (minimum_length <= length and length % multiple == 0):
                     self._options_data[name] = value
                     return True
                 return False
-            elif dhcp_field_type.lower().startswith('rfc_'): #Process special RFC options.
+            elif dhcp_field_type.lower().startswith('rfc_'): #Process RFC options.
+                if isinstance(value, RFC):
+                    value = value.getValue()
                 self._options_data[name] = value
                 return True
         raise ValueError("Unknown option: %(name)s" % {
@@ -783,9 +782,8 @@ class DHCPPacket(object):
         if self._requested_options is None:
             return True
             
-        if not type(name) == int:
-            return DHCP_OPTIONS.get(name) in self._requested_options
-        return name in self._requested_options
+        id = self._getOptionName(name)
+        return id in self._requested_options
         
     def __str__(self):
         """
@@ -797,15 +795,15 @@ class DHCPPacket(object):
         global _FORMAT_CONVERSION_DESERIAL
         
         output = ['Header:']
-        op = self._packet_data[DHCP_FIELDS['op'][0]:DHCP_FIELDS['op'][0] + DHCP_FIELDS['op'][1]]
+        (start, length) = DHCP_FIELDS['op']
+        op = self._packet_data[start:start + length]
         output.append("\top: %(type)s" % {
          'type': DHCP_FIELDS_NAMES['op'][op[0]],
         })
         
         for opt in DHCP_FIELDS.iterkeys():
-            begin = DHCP_FIELDS[opt][0]
-            end = DHCP_FIELDS[opt][0] + DHCP_FIELDS[opt][1]
-            data = self._packet_data[begin:end]
+            (start, length) = DHCP_FIELDS[opt]
+            data = self._packet_data[start:start + length]
             output.append("\t%(opt)s: %(result)r" % {
              'opt': opt,
              'result': _FORMAT_CONVERSION_DESERIAL[DHCP_FIELDS_TYPES[opt]](data),
@@ -827,7 +825,8 @@ class DHCPPacket(object):
             else:
                 represent = True
                 result = _FORMAT_CONVERSION_DESERIAL[DHCP_OPTIONS_TYPES[opt]](data)
-            output.append((represent and "\t%(opt)s: %(result)r" or "\t%(opt)s: %(result)s") % {
+            output.append((represent and "\t[%(num)03i] %(opt)s: %(result)r" or "\t%(opt)s: %(result)s") % {
+             'num': self._getOptionID(opt),
              'opt': opt,
              'result': result,
             })
