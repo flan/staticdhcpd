@@ -28,14 +28,28 @@ _IPv4 = None #: Placeholder for a deferred import ot avoid a circular reference.
 def listToNumber(l):
     value = 0
     for (i, v) in enumerate(reversed(l)):
-        value += v * (256 ** i)
+        value += v * (256 << (8 * i))
     return value
     
 def listToInt(l):
     return listToNumber(l[:2])
     
+def listToInts(l):
+    ints = []
+    for i in xrange(len(l) >> 1):
+        p = i * 2
+        ints.append(listToInt(l[p:p + 2]))
+    return ints
+    
 def listToLong(l):
     return listToNumber(l[:4])
+    
+def listToLongs(l):
+    longs = []
+    for i in xrange(len(l) >> 2):
+        p = i * 4
+        longs.append(listToLong(l[p:p + 4]))
+    return longs
     
 def intToList(i):
     """
@@ -174,3 +188,20 @@ def ipsToList(ips):
     for ip in ips:
         bytes += ipToList(ip)
     return bytes
+    
+def listToIP(l):
+    global _IPv4
+    if not _IPv4:
+        from ipv4 import IPv4
+        _IPv4 = IPv4
+        
+    return _IPv4(l)
+    
+def listToIPs(l):
+    ips = []
+    for i in xrange(len(l) / 4):
+        p = i * 4
+        ips.append(listToIP(l[p:p + 4]))
+    return ips
+    
+    

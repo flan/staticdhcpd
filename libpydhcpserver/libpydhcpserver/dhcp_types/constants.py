@@ -25,7 +25,9 @@ Legal
  (C) Neil Tallim, 2010 <red.hamsterx@gmail.com>
  (C) Mathieu Ignacio, 2008 <mignacio@april.org>
 """
-MAGIC_COOKIE = [99, 130, 83, 99] #The DHCP magic cookie value, per RFC 1048
+import array
+
+MAGIC_COOKIE = array.array('B', [99, 130, 83, 99]) #The DHCP magic cookie value, per RFC 1048
 
 DHCP_FIELDS_NAMES = {
  'op': {0: 'ERROR_UNDEF', 1: 'BOOTREQUEST', 2: 'BOOTREPLY',},
