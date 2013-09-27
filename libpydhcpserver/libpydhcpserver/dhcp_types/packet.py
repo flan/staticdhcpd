@@ -26,7 +26,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 from array import array
 
 from constants import (
- MAGIC_COOKIE,
+ MAGIC_COOKIE, MAGIC_COOKIE_ARRAY,
  DHCP_FIELDS_NAMES, DHCP_FIELDS, DHCP_FIELDS_SPECS, DHCP_FIELDS_TYPES,
  DHCP_OPTIONS_TYPES, DHCP_OPTIONS, DHCP_OPTIONS_REVERSE,
 )
@@ -34,6 +34,21 @@ from mac import MAC
 from ipv4 import IPv4
 from rfc import (RFC, rfc3046_decode)
 import conversion
+
+_MAGIC_COOKIE_POSITION = 236
+_PACKET_HEADER_SIZE = 240
+
+_MANDATORY_OPTIONS = set((
+ 1, #subnet_mask
+ 3, #router
+ 6, #domain_name_servers
+ 15, #domain_name
+ 51, #ip_address_lease_time
+ 53, #dhcp_message_type
+ 54, #server_identifier
+ 58, #renewal_time_value
+ 59, #rebinding_time_value
+)) #: All options to force a client to receive, even if not requested.
 
 _OPTION_ORDERING = (
  DHCP_OPTIONS['dhcp_message_type'], #53
@@ -80,8 +95,8 @@ class DHCPPacket(object):
     """
     Handles the construction, management, and export of DHCP packets.
     """
-    _packet_data = None #: The core 240 bytes that make up a DHCP packet.
-    _options_data = None #: Any additional options attached to this packet.
+    _header = None #: The core 240 bytes that make up a DHCP packet.
+    _options = None #: Any options attached to this packet.
     _requested_options = None #: Any options explicitly requested by the client.
     
     _terminal_pad = False #: True if the request had a pad after the end option.
@@ -110,42 +125,50 @@ class DHCPPacket(object):
                 self._initialise()
             return
             
-        self._options_data = {}
-        #Recast the data as an array of bytes
-        packet_data = array('B', data)
+        options_position = self._locateOptions(data)
         
-        #Some servers or clients don't place the magic cookie immediately
-        #after the end of the headers block, adding unnecessary padding.
-        #It's necessary to find the magic cookie before proceding.
-        position = 236
-        end_position = len(packet_data)
-        while not packet_data[position:position + 4] == MAGIC_COOKIE and position < end_position:
-            position += 1
-        if position == end_position:
-            raise ValueError("Data received does not represent a DHCP packet: Magic Cookie not found")
-        position += 4 #Jump to the point immediately after the cookie.
+        #Recast the data as an array of bytes
+        packet = array('B', data)
+        
+        (options, requested_options, terminal_pad) = self._decodeOptions(packet, options_position)
+        self._options = options
+        self._requested_options = requested_options
+        self._terminal_pad = terminal_pad
+        
+        #Cut the packet data down to just the header and keep that.
+        self._header = packet[:_PACKET_HEADER_SIZE]
+        if options_position != _PACKET_HEADER_SIZE: #Insert the cookie without padding.
+            self._header[_MAGIC_COOKIE_POSITION:_PACKET_HEADER_SIZE] = MAGIC_COOKIE_ARRAY
+            
+    def _decodeOptions(self, packet, position):
+        global DHCP_OPTIONS_TYPES
+        
+        options = {}
+        requested_options = None
+        terminal_pad = False
         
         #Extract extended options from the payload.
         while position < end_position:
-            if packet_data[position] == 0: #Pad option; skip byte.
-                opt_first = position + 1
+            if packet[position] == 0: #Pad option; skip byte.
                 position += 1
-            elif packet_data[position] == 255: #End option; stop processing
+                continue
+            
+            if packet[position] == 255: #End option; stop processing
                 if position + 1 < end_position: #But first, check to see if there was a trailing pad
-                    self._terminal_pad = packet_data[position + 1] == 0
+                    terminal_pad = packet[position + 1] == 0
                 break
-            elif packet_data[position] in DHCP_OPTIONS_TYPES:
-                opt_id = packet_data[position]
-                opt_start = position + 1
-                opt_len = packet_data[opt_start]
-                opt_start += 1 #Advance past length-byte
-                opt_val = packet_data[opt_start:opt_start + opt_len].tolist()
+                
+            opt_id = packet[position]
+            position += 2 #Skip the pointer past the identifier and length
+            if opt_id in DHCP_OPTIONS_TYPES:
+                opt_len = packet[position + 1]
+                opt_val = packet[position:position + opt_len].tolist()
                 try:
                     opt_name = DHCP_OPTIONS_REVERSE[opt_id]
-                    if opt_name in self._options_data:
-                        self._options_data[opt_name].extend(opt_val)
+                    if opt_name in self._options:
+                        self._options[opt_name].extend(opt_val)
                     else:
-                        self._options_data[opt_name] = opt_val
+                        self._options[opt_name] = opt_val
                 except Exception, e:
                     _logger.warn("Unable to assign '%(value)s' to '%(id)s': %(error)s" % {
                      'value': opt_val,
@@ -154,30 +177,34 @@ class DHCPPacket(object):
                     })
                     
                 if opt_id == 55: #Handle requested options.
-                    self._requested_options = tuple(set(int(i) for i in opt_val).union((1, 3, 6, 15, 51, 53, 54, 58, 59)))
-                position += packet_data[opt_first] + 2
-            else:
-                opt_first = position + 1
-                position += packet_data[opt_first] + 2
-                
-        #Cut the packet data down to 240 bytes.
-        self._packet_data = packet_data[:240]
-        self._packet_data[236:240] = MAGIC_COOKIE
+                    self._requested_options = _MANDATORY_OPTIONS.union(opt_val)
+            #else: it's something unimplemented, so just ignore it
+            position += opt_len #Skip the pointer past the payload_size
+        return (options, requested_options, terminal_pad)
+        
+    def _locateOptions(self, data):
+        #Some servers or clients don't place the magic cookie immediately
+        #after the end of the headers block, adding unnecessary padding.
+        #It's necessary to find the magic cookie.
+        position = data.find(MAGIC_COOKIE, _MAGIC_COOKIE_POSITION)
+        if position == -1:
+            raise ValueError("Data received does not represent a DHCP packet: Magic Cookie not found")
+        return position + len(MAGIC_COOKIE)
         
     def _initialise(self):
-        self._options_data = {}
-        self._packet_data = array('B', [0] * 240)
-        self._packet_data[236:240] = MAGIC_COOKIE
+        self._options = {}
+        self._header = array('B', [0] * _PACKET_HEADER_SIZE)
+        self._header[_MAGIC_COOKIE_POSITION:_PACKET_HEADER_SIZE] = MAGIC_COOKIE_ARRAY
         
     def _copy(self, data):
-        ((packet_data, options_data, requested_options),
+        ((packet, options, requested_options),
          terminal_pad,
          (word_align, word_size),
          (response_mac, response_ip, response_port, response_source_port),
         ) = data
-        self._packet_data = packet_data[:]
-        self._options_data = options_data.copy()
-        self._requested_options = requested_options[:]
+        self._header = packet[:]
+        self._options = options.copy()
+        self._requested_options = requested_options.copy()
         self._terminal_pad = self.terminal_pad = terminal_pad
         
         self.word_align = word_align
@@ -190,7 +217,7 @@ class DHCPPacket(object):
         
     def copy(self):
         return DHCPPacket(_copy_data=(
-         (self._packet_data, self._options_data, self._requested_options),
+         (self._header, self._options, self._requested_options),
          self.terminal_pad and self._terminal_pad,
          (self.word_align, self.word_size),
          (self.response_mac, self.response_ip, self.response_port, self.response_source_port),
@@ -212,10 +239,10 @@ class DHCPPacket(object):
         #Pull options out of the payload, excluding options not specifically
         #requested, assuming any specific requests were made.
         options = {}
-        for key in self._options_data:
+        for key in self._options:
             option_id = DHCP_OPTIONS[key]
             if self._requested_options is None or option_id in self._requested_options:
-                option_value = self._options_data[key]
+                option_value = self._options[key]
                 options[option_id] = option = []
                 while True:
                     if len(option_value) > 255:
@@ -242,8 +269,8 @@ class DHCPPacket(object):
         #Assemble data.
         ordered_options.append(255) #Add End option
         if self.terminal_pad and self._terminal_pad:
-            ordered_options.append(0) #Add a trailing Pad option, since the client sent one this way
-        packet = self._packet_data[:]
+            ordered_options.append(0) #Add a trailing Pad option
+        packet = self._header[:]
         packet.extend(ordered_options)
         
         #Encode packet.
@@ -274,12 +301,12 @@ class DHCPPacket(object):
         """
         if name in DHCP_FIELDS:
             (start, length) = DHCP_FIELDS[name]
-            self._packet_data[start:start + length] = array('B', [0] * length)
+            self._header[start:start + length] = array('B', [0] * length)
             return True
         else:
             name = self._getOptionName(name)
-            if name in self._options_data:
-                del self._options_data[name]
+            if name in self._options:
+                del self._options[name]
                 return True
         return False
         
@@ -300,8 +327,8 @@ class DHCPPacket(object):
         id = self._getOptionID(option)
         if name and id:
             if self._requested_options:
-                self._requested_options += (id,)
-            self._options_data[name] = list(value)
+                self._requested_options.add(id)
+            self._options[name] = list(value)
         else:
             raise ValueError("Unknown option: %(option)s" % {
              'option': option,
@@ -329,14 +356,14 @@ class DHCPPacket(object):
         """
         if name in DHCP_FIELDS:
             (start, length) = DHCP_FIELDS[name]
-            value = self._packet_data[start:start + length].tolist()
+            value = self._header[start:start + length].tolist()
             if convert:
                 return self._unconvertOptionValue(name, value)
             return value
         else:
             name = self._getOptionName(name)
-            if name in self._options_data:
-                value = self._options_data[name]
+            if name in self._options:
+                value = self._options[name]
                 if convert:
                     return self._unconvertOptionValue(name, value)
                 return value
@@ -353,7 +380,7 @@ class DHCPPacket(object):
         @return: True if the option has been set.
         """
         name = self._getOptionName(name)
-        return name in self._options_data or name in DHCP_FIELDS
+        return name in self._options or name in DHCP_FIELDS
         
     def _convertOptionValue(self, name, value):
         type = DHCP_FIELDS_TYPES.get(name) or DHCP_OPTIONS_TYPES.get(name)
@@ -395,7 +422,7 @@ class DHCPPacket(object):
             (start, length) = DHCP_FIELDS[name]
             if not len(value) == length:
                 return False 
-            self._packet_data[start:start + length] = array('B', value)
+            self._header[start:start + length] = array('B', value)
             return True
         else:
             name = self._getOptionName(name)
@@ -408,13 +435,13 @@ class DHCPPacket(object):
                 (fixed_length, minimum_length, multiple) = dhcp_field_specs
                 length = len(value)
                 if fixed_length == length or (minimum_length <= length and length % multiple == 0):
-                    self._options_data[name] = value
+                    self._options[name] = value
                     return True
                 return False
             elif dhcp_field_type.lower().startswith('rfc_'): #Process RFC options.
                 if isinstance(value, RFC):
                     value = value.getValue()
-                self._options_data[name] = value
+                self._options[name] = value
                 return True
         raise ValueError("Unknown option: %(name)s" % {
          'name': name,
@@ -774,7 +801,7 @@ class DHCPPacket(object):
         @return: The options requested by the client or None if option 55 was
             omitted.
         """
-        return self._requested_options
+        return tuple(sorted(self._requested_options))
         
     def isRequestedOption(self, name):
         """
@@ -791,7 +818,7 @@ class DHCPPacket(object):
         if self._requested_options is None:
             return True
             
-        id = self._getOptionName(name)
+        id = self._getOptionID(name)
         return id in self._requested_options
         
     def __str__(self):
@@ -805,14 +832,14 @@ class DHCPPacket(object):
         
         output = ['Header:']
         (start, length) = DHCP_FIELDS['op']
-        op = self._packet_data[start:start + length]
+        op = self._header[start:start + length]
         output.append("\top: %(type)s" % {
          'type': DHCP_FIELDS_NAMES['op'][op[0]],
         })
         
         for opt in DHCP_FIELDS.iterkeys():
             (start, length) = DHCP_FIELDS[opt]
-            data = self._packet_data[start:start + length]
+            data = self._header[start:start + length]
             output.append("\t%(opt)s: %(result)r" % {
              'opt': opt,
              'result': _FORMAT_CONVERSION_DESERIAL[DHCP_FIELDS_TYPES[opt]](data),
@@ -820,7 +847,7 @@ class DHCPPacket(object):
             
         output.append('')
         output.append("Body:")
-        for (opt, data) in self._options_data.iteritems():
+        for (opt, data) in self._options.iteritems():
             result = None
             represent = False
             optnum  = DHCP_OPTIONS[opt]
