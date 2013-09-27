@@ -27,7 +27,8 @@ Legal
 """
 import array
 
-MAGIC_COOKIE = array.array('B', [99, 130, 83, 99]) #The DHCP magic cookie value, per RFC 1048
+MAGIC_COOKIE = '\x63\x82\x53\x63' #: The DHCP magic cookie, per RFC 1048
+MAGIC_COOKIE_ARRAY = array.array('B', MAGIC_COOKIE) #: The DHCP magic cookie as an array of bytes
 
 DHCP_FIELDS_NAMES = {
  'op': {0: 'ERROR_UNDEF', 1: 'BOOTREQUEST', 2: 'BOOTREPLY',},
