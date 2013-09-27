@@ -1,8 +1,8 @@
 # -*- encoding: utf-8 -*-
 """
-types.packet
-============
-An encapsulation of a DHCP packet, allowing for easy access and manipulation.
+libpydhcpserver.dhcp_types.packet
+=================================
+Defines the structure of a DHCP packet, providing methods for manipulation.
 
 Legal
 -----
@@ -24,7 +24,6 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 (C) Mathieu Ignacio, 2008 <mignacio@april.org>
 """
 from array import array
-import logging
 
 from constants import (
  MAGIC_COOKIE,
@@ -77,8 +76,6 @@ _FORMAT_CONVERSION_DESERIAL = {
  'none': lambda v: None,
 }
 
-_logger = logging.getLogger('libpydhcpserver.types.packet')
-
 class DHCPPacket(object):
     """
     Handles the construction, management, and export of DHCP packets.
@@ -86,18 +83,19 @@ class DHCPPacket(object):
     _packet_data = None #: The core 240 bytes that make up a DHCP packet.
     _options_data = None #: Any additional options attached to this packet.
     _requested_options = None #: Any options explicitly requested by the client.
+    
     _terminal_pad = False #: True if the request had a pad after the end option.
+    terminal_pad = True #If set, if the client ended its request with a pad, one will be added in the response
     
     word_align = False #If set, every option with an odd length in bytes will be padded, to ensure 16-bit word-alignment
     word_size = 4 #The number of bytes in a word; 32-bit by network convention by default
-    terminal_pad = True #If set, if the client ended its request with a pad, one will be added in the response
     
     response_mac = None #If set to something coerceable into a MAC, the packet will be sent to this MAC, rather than its default
     response_ip = None #If set to something coerceable into an IPv4, the packet will be sent to this IP, rather than its default
     response_port = None #If set to an integer, the packet will be sent to this port, rather than its default
     response_source_port = None #If set to an integer, the packet will be reported as being sent from this port, rather than its default
     
-    def __init__(self, data=None):
+    def __init__(self, data=None, _copy_data=None):
         """
         Initializes a DHCP packet, using real data, if possible.
         
@@ -105,32 +103,14 @@ class DHCPPacket(object):
         @param data: The raw packet from which this object should be instantiated or None if a
             blank packet should be created.
         """
-        if type(data) is tuple: #Duplicating an existing packet
-            ((packet_data, options_data, requested_options),
-             terminal_pad,
-             (word_align, word_size),
-             (response_mac, response_ip, response_port, response_source_port),
-            ) = _copy_data
-            self._packet_data = packet_data[:]
-            self._options_data = options_data.copy()
-            self._requested_options = requested_options[:]
-            self._terminal_pad = self.terminal_pad = terminal_pad
-            
-            self.word_align = word_align
-            self.word_size = word_size
-            
-            self.response_mac = response_mac
-            self.response_ip = response_ip
-            self.response_port = response_port
-            self.response_source_port = response_source_port
+        if not data:
+            if _copy_data:
+                self._copy(_copy_data)
+            else:
+                self._initialise()
             return
             
         self._options_data = {}
-        if not data: #Just create a blank packet and bail.
-            self._packet_data = array('B', [0] * 240)
-            self._packet_data[236:240] = MAGIC_COOKIE
-            return
-            
         #Recast the data as an array of bytes
         packet_data = array('B', data)
         
@@ -155,12 +135,17 @@ class DHCPPacket(object):
                     self._terminal_pad = packet_data[position + 1] == 0
                 break
             elif packet_data[position] in DHCP_OPTIONS_TYPES:
-                opt_len = packet_data[position + 1]
-                opt_first = position + 1
                 opt_id = packet_data[position]
-                opt_val = packet_data[opt_first + 1:opt_len + opt_first + 1].tolist()
+                opt_start = position + 1
+                opt_len = packet_data[opt_start]
+                opt_start += 1 #Advance past length-byte
+                opt_val = packet_data[opt_start:opt_start + opt_len].tolist()
                 try:
-                    self._options_data[DHCP_OPTIONS_REVERSE[opt_id]] = opt_val
+                    opt_name = DHCP_OPTIONS_REVERSE[opt_id]
+                    if opt_name in self._options_data:
+                        self._options_data[opt_name].extend(opt_val)
+                    else:
+                        self._options_data[opt_name] = opt_val
                 except Exception, e:
                     _logger.warn("Unable to assign '%(value)s' to '%(id)s': %(error)s" % {
                      'value': opt_val,
@@ -179,8 +164,32 @@ class DHCPPacket(object):
         self._packet_data = packet_data[:240]
         self._packet_data[236:240] = MAGIC_COOKIE
         
+    def _initialise(self):
+        self._options_data = {}
+        self._packet_data = array('B', [0] * 240)
+        self._packet_data[236:240] = MAGIC_COOKIE
+        
+    def _copy(self, data):
+        ((packet_data, options_data, requested_options),
+         terminal_pad,
+         (word_align, word_size),
+         (response_mac, response_ip, response_port, response_source_port),
+        ) = data
+        self._packet_data = packet_data[:]
+        self._options_data = options_data.copy()
+        self._requested_options = requested_options[:]
+        self._terminal_pad = self.terminal_pad = terminal_pad
+        
+        self.word_align = word_align
+        self.word_size = word_size
+        
+        self.response_mac = response_mac
+        self.response_ip = response_ip
+        self.response_port = response_port
+        self.response_source_port = response_source_port
+        
     def copy(self):
-        return DHCPPacket(data=(
+        return DHCPPacket(_copy_data=(
          (self._packet_data, self._options_data, self._requested_options),
          self.terminal_pad and self._terminal_pad,
          (self.word_align, self.word_size),
