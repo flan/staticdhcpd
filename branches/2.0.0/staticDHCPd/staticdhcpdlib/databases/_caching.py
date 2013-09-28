@@ -242,14 +242,18 @@ LIMIT 1""", (int(mac),))
          (
           definition.subnet, definition.serial,
           definition.lease_time,
-          definition.gateway, definition.subnet_mask, definition.broadcast_address,
-          definition.ntp_servers, definition.domain_name_servers, definition.domain_name
+          definition.gateway and str(definition.gateway),
+          definition.subnet_mask and str(definition.subnet_mask),
+          definition.broadcast_address and str(definition.broadcast_address),
+          definition.ntp_servers and ','.join(str(i) for i in definition.ntp_servers),
+          definition.domain_name_servers and ','.join(str(i) for i in definition.domain_name_servers),
+          definition.domain_name
          )
         )
         cursor.execute("INSERT INTO maps (mac, ip, hostname, subnet, serial, extra) VALUES (?, ?, ?, ?, ?, ?)",
          (
           int(mac),
-          definition.ip, definition.hostname,
+          definition.ip and str(definition.ip), definition.hostname,
           definition.subnet, definition.serial,
           json.dumps(definition.extra)
          )

@@ -82,7 +82,7 @@ class IPv4(object):
                 self._ip_tuple = tuple(octets)
                 
     def __cmp__(self, other):
-        if not other:
+        if not other and not isinstance(other, IPv4):
             return 1
         if isinstance(other, StringTypes):
             other = IPv4(other)

@@ -206,7 +206,7 @@ class DHCPServer(object):
         :return int: The number of bytes transmitted.
         :except Exception: A problem occurred during serialisation or transmission.
         """
-        return self._network_link.sendData(packet, address, pxe)
+        return self._network_link.sendData(packet, source_address, pxe)
         
         
 class _NetworkLink(object):
@@ -355,8 +355,8 @@ class _NetworkLink(object):
         source_port = self._server_port
         responder = self._responder_dhcp
         if address.ip in IP_UNSPECIFIED_FILTER: #Broadcast source; this is never valid for PXE
-            if (not self._unicast_discover_supported or #All responses have to be via broadcast
-                packet.getOption('flags')[0] & 0b10000000): #Broadcast bit set; respond in kind 
+            if (not self._unicast_discover_supported #All responses have to be via broadcast
+                or packet.getOption('flags')[0] & 0b10000000): #Broadcast bit set; respond in kind 
                 ip = _IP_BROADCAST
             else: #The client wants unicast and this host can handle it
                 ip = packet.extractIPOrNone('yiaddr')
@@ -426,6 +426,7 @@ class _Responder(object):
         if (_IP_BROADCAST == ip) != old_broadcast_bit: #Restore the broadcast bit, in case the packet needs to be used for something else
             self._setBroadcastBit(packet, old_broadcast_bit)
         return (bytes_sent, Address(IPv4(ip), port))
+        
     def _send(self, packet, ip, port, **kwargs):
         """
         Handles technology-specific transmission; must be implemented by subclasses.
