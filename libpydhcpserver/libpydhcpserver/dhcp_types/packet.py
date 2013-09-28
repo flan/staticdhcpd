@@ -190,6 +190,7 @@ class DHCPPacket(object):
         
         options = {}
         #Extract extended options from the payload.
+        end_position = len(packet)
         while position < end_position:
             if packet[position] == 0: #Pad option: skip byte.
                 position += 1
@@ -352,9 +353,10 @@ class DHCPPacket(object):
         @raise ValueError: The specified option does not exist.
         """
         id = self._getOptionID(option)
-        if self._requested_options:
-            self._requested_options.add(id)
-        self._options[id] = list(value)
+        if id in DHCP_OPTIONS:
+            if self._requested_options:
+                self._requested_options.add(id)
+            self._options[id] = list(value)
         else:
             raise ValueError("Unknown option: %(option)s" % {
              'option': option,
@@ -822,24 +824,35 @@ class DHCPPacket(object):
         """
         global _FORMAT_CONVERSION_DESERIAL
         
-        output = ['Header:']
+        output = ['::Header::']
+        
         (start, length) = DHCP_FIELDS['op']
         op = self._header[start:start + length]
         output.append("\top: %(type)s" % {
          'type': DHCP_FIELDS_NAMES['op'][op[0]],
         })
         
-        for field in DHCP_FIELDS.iterkeys():
+        output.append("\thwmac: %(mac)r" % {
+         'mac': self.getHardwareAddress(),
+        })
+        
+        for field in (
+         'htype', 'hlen',
+         'flags', 'hops', 'secs',
+         'xid',
+         'siaddr', 'giaddr', 'ciaddr', 'yiaddr',
+         'sname', 'file',
+        ):
             (start, length) = DHCP_FIELDS[field]
             data = self._header[start:start + length]
-            field.append("\t%(field)s: %(result)r" % {
+            output.append("\t%(field)s: %(result)r" % {
              'field': field,
              'result': _FORMAT_CONVERSION_DESERIAL[DHCP_FIELDS_TYPES[field]](data),
             })
             
         output.append('')
-        output.append("Body:")
-        for (option_id, data) in self._options.iteritems():
+        output.append("::Body::")
+        for (option_id, data) in sorted(self._options.items()):
             result = None
             represent = False
             if option_id == 53: #dhcp_message_type

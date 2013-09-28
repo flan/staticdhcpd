@@ -36,10 +36,11 @@ _extra = []
 if config.EXTRA_MAPS:
     for i in config.EXTRA_MAPS:
         _extra.append('maps.' + i)
+    del i
 if config.EXTRA_SUBNETS:
     for i in config.EXTRA_SUBNETS:
         _extra.append('subnets.' + i)
-del i
+    del i
 if not _extra:
     _extra = None
     
@@ -192,7 +193,7 @@ class MySQL(_PoolingBroker):
       %(mac)s = %%s AND m.subnet = s.subnet AND m.serial = s.serial
      LIMIT 1
     """ % {
-     'mac': config.CASE_INSENSITIVE_MACS and 'LOWER(m.mac)' or 'm.mac'
+     'mac': config.CASE_INSENSITIVE_MACS and 'LOWER(m.mac)' or 'm.mac',
      'extra': _extra and ','.join(
       [''] + ['m.' + i for i in config.EXTRA_MAPS] + ['s.' + i for i in config.EXTRA_SUBNETS]
      ) or '',

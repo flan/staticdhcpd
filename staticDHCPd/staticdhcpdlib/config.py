@@ -100,6 +100,9 @@ _defaults.update({
 
  'CASE_INSENSITIVE_MACS': False,
 
+ 'EXTRA_MAPS': None,
+ 'EXTRA_SUBNETS': None,
+
  'USE_POOL': True,
 
  'POSTGRESQL_HOST': None,
