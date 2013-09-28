@@ -71,7 +71,6 @@ _FORMAT_CONVERSION_SERIAL = {
  '32-bits': conversion.longToList,
  '32-bits+': conversion.longsToList,
  'identifier': conversion.intsToList,
- 'none': lambda v: [0],
 }
 _FORMAT_CONVERSION_DESERIAL = {
  'ipv4': conversion.listToIP,
@@ -88,7 +87,6 @@ _FORMAT_CONVERSION_DESERIAL = {
  '32-bits': conversion.listToLong,
  '32-bits+': conversion.listToLongs,
  'identifier': conversion.listToInts,
- 'none': lambda v: None,
 }
 
 class DHCPPacket(object):
