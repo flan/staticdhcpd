@@ -1,6 +1,8 @@
 staticdhcpd (2.0.0~beta) unstable; urgency=low
-
+  
   * Debian package support, at long last!
+  
+  * Proper documentation!
   
   * Logging improvements everywhere.
 
@@ -8,6 +10,7 @@ staticdhcpd (2.0.0~beta) unstable; urgency=low
     - Of key value is that this addresses issue 15, meaning that systems,
       often embedded, that can't or won't listen for broadcast DHCP responses
       can now be served via UNICAST response to their MACs.
+    - qtags are also supported via this method.
       
   * More flexibility in determining where packets go, in case specific clients
     require responses at/from odd addresses.
@@ -18,6 +21,9 @@ staticdhcpd (2.0.0~beta) unstable; urgency=low
   * All cacheable databases (which is most of them) now have support for
     local caching on disk, instead of just memory, and for persistent on-disk
     caching, in case the database server is sometimes unreachable.
+    
+  * All databases now support "extra" parameters, allowing site-defined
+    additional fields to be passed to loadDHCPPacket().
     
   * All databases now offer optional case-insensitive modes of operation, with
     all SQL-schema examples describing how to bake this in for better

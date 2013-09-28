@@ -88,7 +88,9 @@ class RFC(object):
         return 1
         
     def __cmp__(self, other):
-        return -1 * cmp(other, self._value)
+        if isinstance(other, RFC):
+            return cmp(self._value, other.getValue())
+        return cmp(self._value, other)
         
 class rfc1035_plus(RFC):
     def __init__(self, data):
