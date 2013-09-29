@@ -27,6 +27,22 @@ Legal
 """
 import array
 
+TYPE_IPV4 = "ipv4"
+TYPE_IPV4_PLUS ="ipv4+"
+TYPE_IPV4_MULT = "ipv4*"
+TYPE_BYTE = "byte"
+TYPE_BYTE_PLUS = "byte+"
+TYPE_CHAR = "char"
+TYPE_CHAR_PLUS = "char+"
+TYPE_STRING = "string"
+TYPE_BOOL = "bool"
+TYPE_INT = "16-bits"
+TYPE_INT_PLUS = "16-bits+"
+TYPE_LONG = "32-bits"
+TYPE_LONG_PLUS = "32-bits+"
+TYPE_IDENTIFIER = "identifier"
+TYPE_NONE = "none"
+
 MAGIC_COOKIE = '\x63\x82\x53\x63' #: The DHCP magic cookie, per RFC 1048
 MAGIC_COOKIE_ARRAY = array.array('B', MAGIC_COOKIE) #: The DHCP magic cookie as an array of bytes
 
@@ -116,7 +132,7 @@ DHCP_FIELDS_TYPES = {
 } #: Maps human-readable field-names to DHCP fields specs.
 
 DHCP_OPTIONS_TYPES = {
- 0: "none",
+ #0: "none",
  1: "ipv4",
  2: "32-bits",
  3: "ipv4+",
@@ -287,7 +303,7 @@ DHCP_OPTIONS_TYPES = {
  244: "Reserved", 245: "Reserved", 246: "Reserved", 247: "Reserved",
  248: "Reserved", 249: "Reserved", 250: "Reserved", 251: "Reserved",
  252: "Reserved", 253: "Reserved", 254: "Reserved",
- 255: "none",
+ #255: "none",
 }
 """
 Maps DHCP option-numbers to DHCP fields specs.
@@ -296,8 +312,8 @@ All values derived from http://www.iana.org/assignments/bootp-dhcp-parameters
 """
 
 DHCP_OPTIONS = {
- 'pad': 0,
- # Vendor Extension
+ #'pad': 0,
+ #Vendor extensions
  'subnet_mask': 1,
  'time_offset': 2,
  'router': 3,
@@ -316,7 +332,7 @@ DHCP_OPTIONS = {
  'swap_server': 16,
  'root_path': 17,
  'extensions_path': 18,
- # IP layer parameters per host
+ #IP-layer parameters per host
  'ip_forwarding': 19,
  'nonlocal_source_routing': 20,
  'policy_filter': 21,
@@ -324,7 +340,7 @@ DHCP_OPTIONS = {
  'default_ip_time-to-live': 23,
  'path_mtu_aging_timeout': 24,
  'path_mtu_table': 25,
- # IP layer parameters per interface
+ #IP-layer parameters per interface
  'interface_mtu': 26,
  'all_subnets_are_local': 27,
  'broadcast_address': 28,
@@ -333,15 +349,15 @@ DHCP_OPTIONS = {
  'perform_router_discovery': 31,
  'router_solicitation_address': 32,
  'static_routes': 33,
- # link layer parameters per interface
+ #Link-layer parameters per interface
  'trailer_encapsulation': 34,
  'arp_cache_timeout': 35,
  'ethernet_encapsulation': 36,
- # TCP parameters
+ #TCP parameters
  'tcp_default_ttl': 37,
  'tcp_keepalive_interval': 38,
  'tcp_keepalive_garbage': 39,
- # Applications and service parameters
+ #Applications and service parameters
  'nis_domain': 40,
  'nis_servers': 41,
  'ntp_servers': 42,
@@ -351,7 +367,7 @@ DHCP_OPTIONS = {
  'nb_scope': 47,
  'x_window_system_font_server': 48,
  'x_window_system_display_manager': 49,
- # DHCP extensions
+ #DHCP extensions
  'requested_ip_address': 50,
  'ip_address_lease_time': 51,
  'overload': 52,
@@ -364,7 +380,7 @@ DHCP_OPTIONS = {
  'rebinding_time_value': 59,
  'vendor_class_identifier': 60,
  'client_identifier': 61,
- # Add from RFC 2132
+ #RFC 2132
  'netware_ip_domain_name': 62,
  'netware_ip_sub_options': 63,
  'nis+_domain': 64,
@@ -387,7 +403,7 @@ DHCP_OPTIONS = {
  'client_fqdn': 81,
  'relay_agent': 82,
  'internet_storage_name_service': 83,
- #Hole.
+ #hole
  'nds_server': 85,
  'nds_tree_name': 86,
  'nds_context': 87,
@@ -399,17 +415,17 @@ DHCP_OPTIONS = {
  'client_system': 93,
  'client_ndi': 94,
  'ldap': 95,
- #Hole
+ #hole
  'uuid_guid': 97,
  'open_group_user_auth': 98,
  'geoconf_civic': 99,
  'pcode': 100,
  'tcode': 101,
- #Hole.
+ #hole
  'netinfo_address': 112,
  'netinfo_tag': 113,
  'url': 114,
- #Hole.
+ #hole
  'auto_config': 116,
  'name_service_search': 117,
  'subnet_selection': 118,
@@ -420,7 +436,7 @@ DHCP_OPTIONS = {
  'geoconf': 123,
  'vendor_class': 124,
  'vendor_specific': 125,
- #Hole.
+ #hole
  'pxe_128': 128,
  'pxe_129': 129,
  'pxe_130': 130,
@@ -434,13 +450,13 @@ DHCP_OPTIONS = {
  'capwap_ac_v4': 138,
  'ipv4_mos': 139,
  'fqdn_mos': 140,
- #Hole.
+ #hole
  'pxelinux_magic': 208,
  'configuration_file': 209,
  'path_prefix': 210,
  'reboot_time': 211,
- #Hole.
- 'end': 255
+ #hole
+ #'end': 255
 } #: Maps human-readable DHCP option names to integer values.
 
 DHCP_OPTIONS_REVERSE = dict((v, k) for (k, v) in DHCP_OPTIONS.iteritems()) #: Maps integer values to human-readable DHCP option names.
