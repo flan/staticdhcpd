@@ -274,27 +274,6 @@ class _PacketWrapper(object):
             raise _PacketSourceBlacklist("filterPacket() returned None")
         return result
         
-    def _logInvalidValue(self, name, value, subnet, serial):
-        """
-        Makes a note of invalid values fround in a lease definition.
-        
-        @type name: basestring
-        @param name: The name of the field.
-        @type value: any
-        @param value: The offending value.
-        @type subnet: basestring
-        @param subnet: The subnet in which the value was found.
-        @type serial: int
-        @param serial: The serial in which the value was found.
-        """
-        _logger.error("Invalid value for %(subnet)s:%(serial)i:%(mac)s %(name)s: %(value)r" % {
-         'subnet': subnet,
-         'serial': serial,
-         'mac': self.mac,
-         'name': name,
-         'value': value,
-        })
-        
     def _loadDHCPPacket(self, definition, inform):
         """
         Sets option fields based on values returned from the database.
@@ -307,38 +286,29 @@ class _PacketWrapper(object):
         """
         #Core parameters.
         if not inform:
-            if not self.packet.setOption('yiaddr', ipToList(definition.ip)):
-                self._logInvalidValue('ip', definition.ip, definition.subnet, definition.serial)
-            if not self.packet.setOption('ip_address_lease_time', longToList(int(definition.lease_time))):
-                self._logInvalidValue('lease_time', definition.lease_time, definition.subnet, definition.serial)
-                
+            self.packet.setOption('yiaddr', ipToList(definition.ip))
+            self.packet.setOption('ip_address_lease_time', longToList(int(definition.lease_time)))
+            
         #Default gateway, subnet mask, and broadcast address.
         if definition.gateway:
-            if not self.packet.setOption('router', ipToList(definition.gateway)):
-                _logInvalidValue('gateway', definition.gateway, definition.subnet, definition.serial)
+            self.packet.setOption('router', ipToList(definition.gateway))
         if definition.subnet_mask:
-            if not self.packet.setOption('subnet_mask', ipToList(definition.subnet_mask)):
-                _logInvalidValue('subnet_mask', definition.subnet_mask, definition.subnet, definition.serial)
+            self.packet.setOption('subnet_mask', ipToList(definition.subnet_mask))
         if definition.broadcast_address:
-            if not self.packet.setOption('broadcast_address', ipToList(definition.broadcast_address)):
-                _logInvalidValue('broadcast_address', definition.broadcast_address, definition.subnet, definition.serial)
-                
+            self.packet.setOption('broadcast_address', ipToList(definition.broadcast_address))
+            
         #Domain details.
         if definition.hostname:
-            if not self.packet.setOption('hostname', strToList(definition.hostname)):
-                _logInvalidValue('hostname', definition.hostname, definition.subnet, definition.serial)
+            self.packet.setOption('hostname', strToList(definition.hostname))
         if definition.domain_name:
-            if not self.packet.setOption('domain_name', strToList(definition.domain_name)):
-                _logInvalidValue('domain_name', definition.domain_name, definition.subnet, definition.serial)
+            self.packet.setOption('domain_name', strToList(definition.domain_name))
         if definition.domain_name_servers:
-            if not self.packet.setOption('domain_name_servers', ipsToList(definition.domain_name_servers)):
-                _logInvalidValue('domain_name_servers', definition.domain_name_servers, definition.subnet, definition.serial)
-                
+            self.packet.setOption('domain_name_servers', ipsToList(definition.domain_name_servers))
+            
         #NTP servers.
         if definition.ntp_servers:
-            if not self.packet.setOption('ntp_servers', ipsToList(definition.ntp_servers)):
-                _logInvalidValue('ntp_servers', definition.ntp_servers, definition.subnet, definition.serial)
-                
+            self.packet.setOption('ntp_servers', ipsToList(definition.ntp_servers))
+            
     def loadDHCPPacket(self, definition, inform=False):
         """
         Loads the packet with all normally required values, then passes it
