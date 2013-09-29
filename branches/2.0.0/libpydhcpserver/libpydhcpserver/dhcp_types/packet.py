@@ -281,10 +281,14 @@ class DHCPPacket(object):
     def setHardwareAddress(self, mac):
         """
         Sets the client's MAC address in the DHCP packet, using a
-        `types.mac.MAC` object.
+        `types.mac.MAC` object or a sequence of bytes (this does not include strings).
         """
         full_hw = self.getOption("chaddr")
         mac = list(mac)
+        if any(i for i in mac if i < 0 or i > 255):
+            raise ValueError("MAC received, %(mac)r, is not a sequence of bytes" % {
+             'mac': mac,
+            })
         mac.extend([0] * (len(full_hw) - len(mac)))
         self.setOption("chaddr", mac)
         
@@ -413,6 +417,7 @@ class DHCPPacket(object):
         @return: True if the value was set successfully.
         
         @raise ValueError: The specified option does not exist.
+        #IndexError instead? ValueError should be used if the input is invalid.
         """
         #Ensure the input is a list of bytes or convert as needed
         if not isinstance(value, list):
