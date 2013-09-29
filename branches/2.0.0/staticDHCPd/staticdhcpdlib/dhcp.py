@@ -511,7 +511,7 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
                  'mac': wrapper.mac,
                 })
                 wrapper.packet.transformToDHCPAckPacket()
-                wrapper.packet.forceOption('rapid_commit', [])
+                wrapper.packet.setOption('rapid_commit', [])
             else:
                 wrapper.packet.transformToDHCPOfferPacket()
                 

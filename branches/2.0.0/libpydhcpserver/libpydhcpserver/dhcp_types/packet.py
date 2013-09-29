@@ -25,6 +25,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 """
 from array import array
 
+import constants
 from constants import (
  MAGIC_COOKIE, MAGIC_COOKIE_ARRAY,
  DHCP_FIELDS_NAMES, DHCP_FIELDS, DHCP_FIELDS_SPECS, DHCP_FIELDS_TYPES,
@@ -57,36 +58,38 @@ _OPTION_ORDERING = (
 )
 
 _FORMAT_CONVERSION_SERIAL = {
- 'ipv4': conversion.ipToList,
- 'ipv4+': conversion.ipsToList,
- 'ipv4*': conversion.ipsToList,
- 'byte': lambda b: [b],
- 'byte+': list,
- 'char': conversion.strToList,
- 'char+': conversion.strToList,
- 'string': conversion.strToList,
- 'bool': int,
- '16-bits': conversion.intToList,
- '16-bits+': conversion.intsToList,
- '32-bits': conversion.longToList,
- '32-bits+': conversion.longsToList,
- 'identifier': conversion.intsToList,
+ constants.TYPE_IPV4: conversion.ipToList,
+ constants.TYPE_IPV4_PLUS: conversion.ipsToList,
+ constants.TYPE_IPV4_MULT: conversion.ipsToList,
+ constants.TYPE_BYTE: lambda b: [b],
+ constants.TYPE_BYTE_PLUS: list,
+ constants.TYPE_CHAR: conversion.strToList,
+ constants.TYPE_CHAR_PLUS: conversion.strToList,
+ constants.TYPE_STRING: conversion.strToList,
+ constants.TYPE_BOOL: int,
+ constants.TYPE_INT: conversion.intToList,
+ constants.TYPE_INT_PLUS: conversion.intsToList,
+ constants.TYPE_LONG: conversion.longToList,
+ constants.TYPE_LONG_PLUS: conversion.longsToList,
+ constants.TYPE_IDENTIFIER: conversion.intsToList,
+ constants.TYPE_NONE: lambda _: [],
 }
 _FORMAT_CONVERSION_DESERIAL = {
- 'ipv4': conversion.listToIP,
- 'ipv4+': conversion.listToIPs,
- 'ipv4*': conversion.listToIPs,
- 'byte': lambda l: l[0],
- 'byte+': lambda l: l,
- 'char': conversion.listToStr,
- 'char+': conversion.listToStr,
- 'string': conversion.listToStr,
- 'bool': bool,
- '16-bits': conversion.listToInt,
- '16-bits+': conversion.listToInts,
- '32-bits': conversion.listToLong,
- '32-bits+': conversion.listToLongs,
- 'identifier': conversion.listToInts,
+ constants.TYPE_IPV4: conversion.listToIP,
+ constants.TYPE_IPV4_PLUS: conversion.listToIPs,
+ constants.TYPE_IPV4_MULT: conversion.listToIPs,
+ constants.TYPE_BYTE: lambda l: l[0],
+ constants.TYPE_BYTE_PLUS: lambda l: l,
+ constants.TYPE_CHAR: conversion.listToStr,
+ constants.TYPE_CHAR_PLUS: conversion.listToStr,
+ constants.TYPE_STRING: conversion.listToStr,
+ constants.TYPE_BOOL: bool,
+ constants.TYPE_INT: conversion.listToInt,
+ constants.TYPE_INT_PLUS: conversion.listToInts,
+ constants.TYPE_LONG: conversion.listToLong,
+ constants.TYPE_LONG_PLUS: conversion.listToLongs,
+ constants.TYPE_IDENTIFIER: conversion.listToInts,
+ constants.TYPE_NONE: lambda _: None,
 }
 
 class DHCPPacket(object):
@@ -267,6 +270,45 @@ class DHCPPacket(object):
         #Encode packet.
         return packet.tostring()
         
+    def _convertOptionValue(self, option, value):
+        type = DHCP_FIELDS_TYPES.get(option) or DHCP_OPTIONS_TYPES.get(self._getOptionID(option))
+        if not type or not type in _FORMAT_CONVERSION_SERIAL:
+            raise ValueError("Requested option does not have a type-mapping for conversion: %(option)r" % {
+             'option': value,
+            })
+        return _FORMAT_CONVERSION_SERIAL[type](value)
+        
+    def _unconvertOptionValue(self, option, value):
+        if option == 82: #relay_agent
+            return rfc3046_decode(value)
+            
+        type = DHCP_FIELDS_TYPES.get(option) or DHCP_OPTIONS_TYPES.get(self._getOptionID(option))
+        if not type in _FORMAT_CONVERSION_DESERIAL:
+            raise ValueError("Requested option does not have a type-mapping for conversion: %(option)r" % {
+             'option': value,
+            })
+        return _FORMAT_CONVERSION_DESERIAL[type](value)
+        
+    def _extractList(self, value, conversion_option):
+        if not isinstance(value, list):
+            if isinstance(value, tuple):
+                value = list(value)
+            elif isinstance(value, array):
+                value = value.tolist()
+            elif isinstance(value, RFC):
+                value = value.getValue()
+            elif conversion_option:
+                value = self._convertOptionValue(conversion_option, value)
+            else:
+                raise TypeError("Value supplied could not be converted into a list: %(value)r" % {
+                 'value': value,
+                })
+        if any(True for v in value if type(v) is not int or not 0 <= v <= 255):
+            raise TypeError("Value supplied is not a sequence of bytes: %(value)r" % {
+             'value': value,
+            })
+        return value
+        
     def getHardwareAddress(self):
         """
         Extracts the client's MAC address from the DHCP packet, as a
@@ -282,40 +324,49 @@ class DHCPPacket(object):
         """
         Sets the client's MAC address in the DHCP packet, using a
         `types.mac.MAC` object or a sequence of bytes (this does not include strings).
+        
+        #Raises TypeError if mac is not a sequence of bytes.
         """
         full_hw = self.getOption("chaddr")
-        mac = list(mac)
-        if any(i for i in mac if i < 0 or i > 255):
-            raise ValueError("MAC received, %(mac)r, is not a sequence of bytes" % {
-             'mac': mac,
-            })
+        mac = self._extractList(mac, None)
         mac.extend([0] * (len(full_hw) - len(mac)))
         self.setOption("chaddr", mac)
         
     def _getOptionID(self, option):
         if type(option) is not int:
-            return DHCP_OPTIONS.get(option)
-        return option
+            id = DHCP_OPTIONS.get(option)
+        elif not 0 < option < 255:
+            id = None
+            
+        if id is None:
+            raise LookupError("Option %(option)r is unknown" % {
+             'option': option,
+            })
+        return id
         
     def _getOptionName(self, option):
         if type(option) is int:
-            return DHCP_OPTIONS_REVERSE.get(option)
-        return option
-        
-    def _convertOptionValue(self, option, value):
-        type = DHCP_FIELDS_TYPES.get(option) or DHCP_OPTIONS_TYPES.get(self._getOptionID(option))
-        if not type or not type in _FORMAT_CONVERSION_SERIAL:
-            return None
-        return _FORMAT_CONVERSION_SERIAL[type](value)
-        
-    def _unconvertOptionValue(self, option, value):
-        if option == 82: #relay_agent
-            return rfc3046_decode(value)
+            name = DHCP_OPTIONS_REVERSE.get(option)
+        elif not name in DHCP_OPTIONS:
+            name = None
             
-        type = DHCP_FIELDS_TYPES.get(option) or DHCP_OPTIONS_TYPES.get(self._getOptionID(option))
-        if not type in _FORMAT_CONVERSION_DESERIAL:
-            return None
-        return _FORMAT_CONVERSION_DESERIAL[type](value)
+        if name is None:
+            raise LookupError("Option %(option)r is unknown" % {
+             'option': option,
+            })
+        return name
+        
+    def isOption(self, option):
+        """
+        Indicates whether an option is currently set within the packet.
+        
+        @type option: basestring|int
+        @param option: The option's name or numeric value.
+        
+        @rtype: bool
+        @return: True if the option has been set.
+        """
+        return self._getOptionID(option) in self._options or option in DHCP_FIELDS
         
     def deleteOption(self, option):
         """
@@ -327,8 +378,10 @@ class DHCPPacket(object):
         @type option: basestring|int
         @param option: The option's name or numeric value.
         
+        LookupError on invalid option
+        
         @rtype: bool
-        @return: True if the deletion succeeded.
+        @return: True if something was removed.
         """
         if option in DHCP_FIELDS:
             (start, length) = DHCP_FIELDS[option]
@@ -341,35 +394,14 @@ class DHCPPacket(object):
                 return True
         return False
         
-    def forceOption(self, option, value):
-        """
-        Bypasses validation checks and adds the option number to the
-        request-list. Useful to force spec-non-compliant clients to perform
-        specific tasks.
-        
-        @type option: basestring|int
-        @param option: The option's name or numeric value.
-        @type value: list|tuple
-        @param value: The bytes to assign to this option.
-        
-        @raise ValueError: The specified option does not exist.
-        """
-        id = self._getOptionID(option)
-        if id in DHCP_OPTIONS:
-            if self._requested_options:
-                self._requested_options.add(id)
-            self._options[id] = list(value)
-        else:
-            raise ValueError("Unknown option: %(option)s" % {
-             'option': option,
-            })
-            
     def getOption(self, option, convert=False):
         """
         Retrieves the value of an option in the packet's data.
         
         @type option: basestring|int
         @param option: The option's name or numeric value.
+        
+        LookupError on invalid option
         
         @rtype: list|None
         @return: The value of the specified option or None if it hasn't been
@@ -390,19 +422,7 @@ class DHCPPacket(object):
                 return value
         return None
         
-    def isOption(self, option):
-        """
-        Indicates whether an option is currently set within the packet.
-        
-        @type option: basestring|int
-        @param option: The option's name or numeric value.
-        
-        @rtype: bool
-        @return: True if the option has been set.
-        """
-        return self._getOptionID(option) in self._options or option in DHCP_FIELDS
-        
-    def setOption(self, option, value, convert=False):
+    def setOption(self, option, value, convert=False, force=False):
         """
         Validates and sets the value of a DHCP option associated with this
         packet.
@@ -412,59 +432,52 @@ class DHCPPacket(object):
         @type value: list|tuple|L{RFC} -- does some coercion
         @param value: The bytes to assign to this option or the special RFC
             object from which they are to be derived.
-        
-        @rtype: bool
-        @return: True if the value was set successfully.
-        
-        @raise ValueError: The specified option does not exist.
-        #IndexError instead? ValueError should be used if the input is invalid.
-        """
-        #Ensure the input is a list of bytes or convert as needed
-        if not isinstance(value, list):
-            if isinstance(value, (tuple, array)):
-                value = list(value)
-            elif isinstance(value, RFC):
-                value = value.getValue()
-            elif convert:
-                value = self._convertOptionValue(option, value)
-                if value is None:
-                    return False
-            else:
-                return False
-        if any(True for v in value if type(v) is not int or not 0 <= v <= 255):
-            return False
             
+        LookupError on invalid option
+        TypeError on invalid value
+        ValueError on invalid length
+        """
+        value = self._extractList(value, convert and option or None)
+        
         if option in DHCP_FIELDS:
-            #Validate the length of the value
             (start, length) = DHCP_FIELDS[option]
             if not len(value) == length:
-                return False
-            #Set it
+                raise ValueError("Expected a value of length %(length)i, not %(value-length)i: %(value)r" % {
+                 'length': length,
+                 'value-length': len(value),
+                 'value': value,
+                })
             self._header[start:start + length] = array('B', value)
-            return True
         else:
             id = self._getOptionID(option)
-            dhcp_field_type = DHCP_OPTIONS_TYPES.get(id)
-            if not dhcp_field_type:
-                return False
-                
+            dhcp_field_type = DHCP_OPTIONS_TYPES[id]
             dhcp_field_specs = DHCP_FIELDS_SPECS.get(dhcp_field_type)
             if dhcp_field_specs: #It's a normal option
-                #Validate the length of the value
-                (fixed_length, minimum_length, multiple) = dhcp_field_specs
-                length = len(value)
-                if not (fixed_length == length or (minimum_length <= length and length % multiple == 0)):
-                    return False
-                #Set it
+                if not force: #Validate the length of the value
+                    (fixed_length, minimum_length, multiple) = dhcp_field_specs
+                    length = len(value)
+                    if fixed_length != length:
+                        if length < minimum_length or length % multiple:
+                            raise ValueError("Expected a value a multiple of length %(length)i, not %(value-length)i: %(value)r" % {
+                             'length': minimum_length,
+                             'value-length': length,
+                             'value': value,
+                            })
+                    elif not fixed_length:
+                        raise ValueError("Expected a value of length %(length)i, not %(value-length)i: %(value)r" % {
+                         'length': fixed_length,
+                         'value-length': length,
+                         'value': value,
+                        })
                 self._options[id] = value
-                return True
-            elif dhcp_field_type.startswith('RFC'): #It's an RFC option; assume the value is right
+            elif dhcp_field_type.startswith('RFC'): #It's an RFC option
+                #Assume the value is right
                 self._options[id] = value
-                return True
-        raise ValueError("Unknown option: %(option)s" % {
-         'option': option,
-        })
-        
+            else:
+                raise ValueError("Unsupported option: %(option)s" % {
+                 'option': option,
+                })
+                
     def getRequestedOptions(self):
         """
         Returns the options requested by the client from which this packet
@@ -491,8 +504,7 @@ class DHCPPacket(object):
         if self._requested_options is None:
             return True
             
-        id = self._getOptionID(option)
-        return id in self._requested_options
+        return self._getOptionID(option) in self._requested_options
         
     def extractIPOrNone(self, parameter):
         """
