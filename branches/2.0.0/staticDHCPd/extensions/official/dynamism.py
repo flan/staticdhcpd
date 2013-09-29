@@ -69,7 +69,6 @@ import time
 
 from staticdhcpdlib.databases.generic import Definition
 
-from libpydhcpserver.dhcp_types.rfc import longToList
 from libpydhcpserver.dhcp_types.ipv4 import IPv4
 
 _logger = logging.getLogger('extension.dynamism')
@@ -165,12 +164,12 @@ class DynamicPool(object):
         self._lease_time = lease_time
         self._hostname_prefix = hostname_prefix
         self._hostname_pattern = self._hostname_prefix + "-%(ip)s"
-        self._subnet_mask = subnet_mask and tuple(IPv4(subnet_mask)) or None
-        self._gateway = gateway and tuple(IPv4(gateway)) or None
-        self._broadcast_address = broadcast_address and tuple(IPv4(broadcast_address)) or None
+        self._subnet_mask = subnet_mask and IPv4(subnet_mask) or None
+        self._gateway = gateway and IPv4(gateway) or None
+        self._broadcast_address = broadcast_address and IPv4(broadcast_address) or None
         self._domain_name = domain_name
-        self._domain_name_servers = domain_name_servers or None
-        self._ntp_servers = ntp_servers or None
+        self._domain_name_servers = domain_name_servers and map(IPv4, domain_name_servers) or None
+        self._ntp_servers = ntp_servers and map(IPv4, ntp_servers) or None
         self._discourage_renewals = discourage_renewals
         
         self._logger = _logger.getChild(self._hostname_prefix)
@@ -284,8 +283,8 @@ class DynamicPool(object):
                  'lease': definition.lease_time,
                  'target': target_time,
                 })
-                packet.setOption('renewal_time_value', longToList(target_time))
-                packet.setOption('rebinding_time_value', longToList(target_time))
+                packet.setOption('renewal_time_value', target_time, convert=True)
+                packet.setOption('rebinding_time_value', target_time, convert=True)
             return definition
         if method == 'RELEASE' or method == 'DECLINE':
             return self._reclaim(mac, client_ip)
