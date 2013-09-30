@@ -55,6 +55,20 @@ _IP_REJECTED = '<nil>'
 
 _logger = logging.getLogger('dhcp')
 
+PXEOptions = collections.namedtuple("PXEOptions", (
+ 'client_system', 'client_ndi', 'uuid_guid'
+))
+"""
+Provides PXE options in an easy-to-interpret form.
+
+* ``client_system``: `option 93`, as a tuple of ints
+* ``client_ndi``: `option 94` as a tuple of three bytes
+* ``uuid_guid``: `option 97` as a tuple with the type in the first slot as a
+    byte and a tuple of bytes in the second slot
+    
+Any unset options will be ``None``.
+"""
+
 class _PacketWrapper(object):
     """
     Wraps a packet for the duration of a handler's operations, allowing for
@@ -78,7 +92,6 @@ class _PacketWrapper(object):
     giaddr = None #:The IP address of the gateway associated with the packet, if any.
     pxe = None #:Whether the packet was received from a PXE context.
     pxe_options = None #:Any PXE options extracted from the packet.
-    vendor_options = None #:Any vendor options extracted from the packet.
     
     def __init__(self, server, packet, packet_type, source_address, pxe):
         """
@@ -186,9 +199,16 @@ class _PacketWrapper(object):
         self.ciaddr = self.packet.extractIPOrNone("ciaddr")
         self._associated_ip = self.ciaddr
         self.giaddr = self.packet.extractIPOrNone("giaddr")
-        self.pxe_options = self.packet.extractPXEOptions()
-        self.vendor_options = self.packet.extractVendorOptions()
-        
+        if self.pxe:
+            option_93 = self.packet.getOption(93, convert=True) #client_system
+            option_94 = self.packet.getOption(94) #client_ndi
+            option_97 = self.packet.getOption(97) #uuid_guid
+            self.pxe_options = PXEOptions(
+             option_93,
+             option_94 and tuple(option_94),
+             option_97 and (option_97[0], option_97[1:])
+            )
+            
     def _evaluateSource(self):
         """
         Determines whether the received packet belongs to a relayed request or
@@ -263,7 +283,7 @@ class _PacketWrapper(object):
         result = config.filterPacket(
          self.packet, self._packet_type,
          self.mac, ip, self.giaddr,
-         self.pxe and self.pxe_options, self.vendor_options
+         self.pxe and self.pxe_options
         )
         if result is None:
             raise _PacketSourceBlacklist("filterPacket() returned None")
@@ -322,7 +342,7 @@ class _PacketWrapper(object):
         process = bool(config.loadDHCPPacket(
          self.packet, self._packet_type,
          self.mac, definition, self.giaddr,
-         self.pxe and self.pxe_options, self.vendor_options
+         self.pxe and self.pxe_options
         ))
         if not process:
             _logger.info('Ignoring %(type)s from %(mac)s per loadDHCPPacket()' % {
@@ -353,7 +373,7 @@ class _PacketWrapper(object):
         self._definition = self._server.getDatabase().lookupMAC(self.mac) or config.handleUnknownMAC(
          self.packet, self._packet_type,
          self.mac, ip, self.giaddr,
-         self.pxe and self.pxe_options, self.vendor_options
+         self.pxe and self.pxe_options
         )
         
         return self._definition

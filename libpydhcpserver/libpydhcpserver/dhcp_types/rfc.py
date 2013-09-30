@@ -50,6 +50,35 @@ def rfc3046_decode(l):
         l = l[length:]
     return sub_options
     
+def rfc3925_decode(l, identifier_size=4):
+    """
+    Extracts sub-options from an RFC3925 option (124, 125).
+    
+    identifier_size: the width of the identifier in bytes
+    
+    * ``vendor_class``: `option 124` as a dictionary of data as strings keyed by
+        enterprise numbers
+    """
+    data = {}
+    while option:
+        enterprise_number = conversion.listToNumber(option[:identifier_size])
+        payload_size = option[identifier_size]
+        payload = option[1 + identifier_size:1 + identifier_size + payload_size]
+        option = option[1 + identifier_size + payload_size:]
+        data[enterprise_number] = payload
+    return data
+    
+def rfc3925_125_decode(l):
+    """
+    * ``vendor_specific``: `option 125` as a dictionary of data keyed by enterprise
+        number; the values are dictionaries that map suboption IDs to data as
+        strings
+    """
+    value = rfc3925_decode(value, identifier_size=4)
+    for i in value:
+        value[i] = rfc3925_decode(value[i], identifier_size=1)
+    return value
+    
 def _rfc1035Parse(domain_name):
     """
     Splits an FQDN on dots, outputting data like

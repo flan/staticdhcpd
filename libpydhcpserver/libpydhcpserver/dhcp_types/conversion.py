@@ -28,7 +28,7 @@ _IPv4 = None #: Placeholder for a deferred import ot avoid a circular reference.
 def listToNumber(l):
     value = 0
     for (i, v) in enumerate(reversed(l)):
-        value += v * (256 << (8 * i))
+        value += v << (8 * i)
     return value
     
 def listToInt(l):
