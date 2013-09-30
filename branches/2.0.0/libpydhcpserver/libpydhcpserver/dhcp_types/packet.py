@@ -28,8 +28,15 @@ import collections
 
 import constants
 from constants import (
+ FIELD_OP,
+ FIELD_HTYPE, FIELD_HLEN, FIELD_HOPS,
+ FIELD_XID, FIELD_SECS, FIELD_FLAGS,
+ FIELD_CIADDR, FIELD_YIADDR, FIELD_SIADDR, FIELD_GIADDR,
+ FIELD_CHADDR,
+ FIELD_SNAME, FIELD_FILE,
  MAGIC_COOKIE, MAGIC_COOKIE_ARRAY,
- DHCP_FIELDS_NAMES, DHCP_FIELDS, DHCP_FIELDS_SPECS, DHCP_FIELDS_TYPES,
+ DHCP_OP_NAMES, DHCP_TYPE_NAMES,
+ DHCP_FIELDS, DHCP_FIELDS_SPECS, DHCP_FIELDS_TYPES,
  DHCP_OPTIONS_TYPES, DHCP_OPTIONS, DHCP_OPTIONS_REVERSE,
 )
 from mac import MAC
@@ -64,8 +71,6 @@ _FORMAT_CONVERSION_SERIAL = {
  constants.TYPE_IPV4_MULT: conversion.ipsToList,
  constants.TYPE_BYTE: lambda b: [b],
  constants.TYPE_BYTE_PLUS: list,
- constants.TYPE_CHAR: conversion.strToList,
- constants.TYPE_CHAR_PLUS: conversion.strToList,
  constants.TYPE_STRING: conversion.strToList,
  constants.TYPE_BOOL: int,
  constants.TYPE_INT: conversion.intToList,
@@ -81,8 +86,6 @@ _FORMAT_CONVERSION_DESERIAL = {
  constants.TYPE_IPV4_MULT: conversion.listToIPs,
  constants.TYPE_BYTE: lambda l: l[0],
  constants.TYPE_BYTE_PLUS: lambda l: l,
- constants.TYPE_CHAR: conversion.listToStr,
- constants.TYPE_CHAR_PLUS: conversion.listToStr,
  constants.TYPE_STRING: conversion.listToStr,
  constants.TYPE_BOOL: bool,
  constants.TYPE_INT: conversion.listToInt,
@@ -352,8 +355,8 @@ class DHCPPacket(object):
         Extracts the client's MAC address from the DHCP packet, as a
         `types.mac.MAC` object.
         """
-        length = self.getOption("hlen")[0]
-        full_hw = self.getOption("chaddr")
+        length = self.getOption(FIELD_HLEN)[0]
+        full_hw = self.getOption(FIELD_CHADDR)
         if length and length < len(full_hw):
             return MAC(full_hw[0:length])
         return MAC(full_hw)
@@ -365,10 +368,10 @@ class DHCPPacket(object):
         
         #Raises TypeError if mac is not a sequence of bytes.
         """
-        full_hw = self.getOption("chaddr")
+        full_hw = self.getOption(FIELD_CHADDR)
         mac = self._extractList(mac)
         mac.extend([0] * (len(full_hw) - len(mac)))
-        self.setOption("chaddr", mac)
+        self.setOption(FIELD_CHADDR, mac)
         
     def _getOptionID(self, option):
         if type(option) is not int:
@@ -639,7 +642,7 @@ class DHCPPacket(object):
         """
         Returns the DHCP packet-type-name of this packet as a string.
         """
-        return DHCP_FIELDS_NAMES['dhcp_message_type'].get(self._getDHCPMessageType(), 'UNKNOWN_UNKNOWN')
+        return DHCP_TYPE_NAMES.get(self._getDHCPMessageType(), 'UNKNOWN_UNKNOWN')
         
     def isDHCPAckPacket(self):
         """
@@ -754,10 +757,10 @@ class DHCPPacket(object):
         Sets and removes options from the DHCP packet to make it suitable for
         returning to the client.
         """
-        self.setOption("op", [2])
-        self.setOption("hlen", [6])
+        self.setOption(FIELD_OP, [2])
+        self.setOption(FIELD_HLEN, [6])
         
-        self.deleteOption("secs")
+        self.deleteOption(FIELD_SECS)
         
         self.deleteOption(22) #maximum_datagram_reassembly_size
         self.deleteOption(50) #requested_ip_address
@@ -782,10 +785,10 @@ class DHCPPacket(object):
         self._transformBase()
         self.setOption(53, [13]) #dhcp_message_type
         
-        self.deleteOption("ciaddr")
+        self.deleteOption(FIELD_CIADDR)
         
-        self.deleteOption("file")
-        self.deleteOption("sname")
+        self.deleteOption(FIELD_FILE)
+        self.deleteOption(FIELD_SNAME)
         
     def transformToDHCPLeaseUnassignedPacket(self):
         """
@@ -795,10 +798,10 @@ class DHCPPacket(object):
         self._transformBase()
         self.setOption(53, [11]) #dhcp_message_type
         
-        self.deleteOption("ciaddr")
+        self.deleteOption(FIELD_CIADDR)
         
-        self.deleteOption("file")
-        self.deleteOption("sname")
+        self.deleteOption(FIELD_FILE)
+        self.deleteOption(FIELD_SNAME)
         
     def transformToDHCPLeaseUnknownPacket(self):
         """
@@ -808,10 +811,10 @@ class DHCPPacket(object):
         self._transformBase()
         self.setOption(53, [12]) #dhcp_message_type
         
-        self.deleteOption("ciaddr")
+        self.deleteOption(FIELD_CIADDR)
         
-        self.deleteOption("file")
-        self.deleteOption("sname")
+        self.deleteOption(FIELD_FILE)
+        self.deleteOption(FIELD_SNAME)
         
     def transformToDHCPOfferPacket(self):
         """
@@ -821,7 +824,7 @@ class DHCPPacket(object):
         self._transformBase()
         self.setOption(53, [2]) #dhcp_message_type
         
-        self.deleteOption("ciaddr")
+        self.deleteOption(FIELD_CIADDR)
         
     def transformToDHCPNakPacket(self):
         """
@@ -831,12 +834,12 @@ class DHCPPacket(object):
         self._transformBase()
         self.setOption(53, [6]) #dhcp_message_type
         
-        self.deleteOption("ciaddr")
-        self.deleteOption("siaddr")
-        self.deleteOption("yiaddr")
+        self.deleteOption(FIELD_CIADDR)
+        self.deleteOption(FIELD_SIADDR)
+        self.deleteOption(FIELD_YIADDR)
 
-        self.deleteOption("file")
-        self.deleteOption("sname")
+        self.deleteOption(FIELD_FILE)
+        self.deleteOption(FIELD_SNAME)
         
         self.deleteOption(51) #ip_address_lease_time
         
@@ -851,10 +854,10 @@ class DHCPPacket(object):
         
         output = ['::Header::']
         
-        (start, length) = DHCP_FIELDS['op']
+        (start, length) = DHCP_FIELDS[FIELD_OP]
         op = self._header[start:start + length]
         output.append("\top: %(type)s" % {
-         'type': DHCP_FIELDS_NAMES['op'][op[0]],
+         'type': DHCP_OP_NAMES[op[0]],
         })
         
         output.append("\thwmac: %(mac)r" % {
@@ -862,11 +865,10 @@ class DHCPPacket(object):
         })
         
         for field in (
-         'htype', 'hlen',
-         'flags', 'hops', 'secs',
-         'xid',
-         'siaddr', 'giaddr', 'ciaddr', 'yiaddr',
-         'sname', 'file',
+         FIELD_FLAGS, FIELD_HOPS, onstants.FIELD_SECS,
+         FIELD_XID,
+         FIELD_SIADDR, FIELD_GIADDR, FIELD_CIADDR, FIELD_YIADDR,
+         FIELD_SNAME, FIELD_FILE,
         ):
             (start, length) = DHCP_FIELDS[field]
             data = self._header[start:start + length]
