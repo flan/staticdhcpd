@@ -32,7 +32,7 @@ import threading
 
 from dhcp_types.ipv4 import IPv4
 from dhcp_types.mac import MAC
-from dhcp_types.packet import DHCPPacket
+from dhcp_types.packet import (DHCPPacket, FLAG_BROADCAST)
 
 #IP constants
 _IP_GLOB = IPv4('0.0.0.0') #: The internal "everything" address.
@@ -198,13 +198,18 @@ class DHCPServer(object):
         """
         Encodes and sends a DHCP packet to its destination.
         
+        **Important**: during this process, the packet may be modified, but
+        will be restored to its initial state by the time this method returns.
+        If any threadsafing is required, it must be handled in calling logic.
+        
         :param packet: The packet to be processed.
         :type packet: :class:`DHCPPacket <dhcp_types.packet.DHCPPacket>`
         :param source_address: The address from which the request was received.
         :type source_address: :class:`Address <dhcp.Address>`
         :param bool pxe: ``True`` if the packet was received on the PXE port.
         :return int: The number of bytes transmitted.
-        :except Exception: A problem occurred during serialisation or transmission.
+        :except Exception: A problem occurred during serialisation or
+            transmission.
         """
         return self._network_link.sendData(packet, source_address, pxe)
         
@@ -379,24 +384,6 @@ class _Responder(object):
     """
     A generic responder-template, which defines common logic.
     """
-    def _setBroadcastBit(self, packet, state):
-        """
-        Modifies the packet to set the broadcast bit.
-        
-        :param packet: The packet to be written.
-        :type packet: :class:`DHCPPacket <dhcp_types.packet.DHCPPacket>`
-        :param bool state: Whether the broadcast bit should be set or not.
-        :return bool: The previous state of the broadcast bit.
-        """
-        flags = packet.getOption('flags')
-        old_state = bool(flags[0] & 0b10000000)
-        if state:
-            flags[0] |= 0b10000000
-        else:
-            flags[0] &= 0b01111111
-        packet.setOption('flags', flags)
-        return old_state
-        
     def send(self, packet, ip, port, **kwargs):
         """
         Performs final sanity-checking and address manipulation, then submits the packet for
@@ -413,18 +400,18 @@ class _Responder(object):
             1. The :class:`Address <dhcp.Address>` ultimately used.
         :except Exception: An error occurred during serialisation or transmission.
         """
-        old_broadcast_bit = self._setBroadcastBit(packet, _IP_BROADCAST == ip)
+        (broadcast_changed, broadcast_bit) = packet.setFlag(FLAG_BROADCAST, _IP_BROADCAST == ip)
         
         #Perform any necessary packet-specific address-changes
-        if not old_broadcast_bit:
+        if not broadcast_bit: #Unicast behaviour permitted; use the packet's IP override, if set
             ip = packet.response_ip or ip
         port = packet.response_port or port
         if packet.response_source_port is not None:
             kwargs['source_port'] = packet.response_source_port
             
         bytes_sent = self._send(packet, str(ip), port, **kwargs)
-        if (_IP_BROADCAST == ip) != old_broadcast_bit: #Restore the broadcast bit, in case the packet needs to be used for something else
-            self._setBroadcastBit(packet, old_broadcast_bit)
+        if broadcast_changed: #Restore the broadcast bit, in case the packet needs to be used for something else
+            self._setBroadcastBit(packet, broadcast_bit)
         return (bytes_sent, Address(IPv4(ip), port))
         
     def _send(self, packet, ip, port, **kwargs):
