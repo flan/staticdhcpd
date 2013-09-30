@@ -96,6 +96,8 @@ _FORMAT_CONVERSION_DESERIAL = {
  constants.TYPE_NONE: lambda _: None,
 }
 
+FLAG_BROADCAST = 0b1000000000000000 #: The "broadcast bit", described in RFC 2131
+
 PXEOptions = collections.namedtuple("PXEOptions", (
  'client_system', 'client_ndi', 'uuid_guid'
 ))
@@ -385,6 +387,43 @@ class DHCPPacket(object):
             })
         return id
         
+    def _getFlags(self):
+        flags = self.getOption('flags')
+        return (flags[0] << 8) + flags[1]
+        
+    def _setFlags(self, flags):
+        self.setOption('flags', [flags >> 8, flags & 0b11111111])
+        
+    def getFlag(self, flag):
+        """
+        Retrieves a flag-bit from the header.
+        
+        :param int flag: One of the flag-constants defined in this module,
+            like ``FLAG_BROADCAST``.
+        :return bool: The state of the bit.
+        """
+        return bool(self._getFlags() & flag)
+        
+    def setFlag(self, flag, state):
+        """
+        Modifies the header to set a flag-bit.
+        
+        :param int flag: One of the flag-constants defined in this module,
+            like ``FLAG_BROADCAST``.
+        :param bool state: Whether the bit should be set or not.
+        :return tuple(2): Whether the bit was changed and its initial value.
+        """
+        flags = self._getFlags()
+        bit = bool(flags & flag)
+        if bit != state:
+            if state:
+                flags |= flag
+            else:
+                flags &= ~flag
+            self._setFlags(flags)
+            return (True, bit)
+        return (False, bit)
+        
     def _getOptionName(self, option):
         if type(option) is int:
             name = DHCP_OPTIONS_REVERSE.get(option)
@@ -572,7 +611,7 @@ class DHCPPacket(object):
         if option_93:
             value = []
             for i in xrange(0, len(option_93), 2):
-                value.append(option_93[i] * 256 + option_93[i + 1])
+                value.append((option_93[i] << 8) + option_93[i + 1])
             option_93 = tuple(value)
             
         if option_94:
@@ -864,8 +903,12 @@ class DHCPPacket(object):
          'mac': self.getHardwareAddress(),
         })
         
+        output.append("\tflags: broadcast=%(broadcast)i" % {
+         'broadcast': self.getFlag(FLAG_BROADCAST),
+        })
+        
         for field in (
-         FIELD_FLAGS, FIELD_HOPS, onstants.FIELD_SECS,
+         FIELD_HOPS, FIELD_SECS,
          FIELD_XID,
          FIELD_SIADDR, FIELD_GIADDR, FIELD_CIADDR, FIELD_YIADDR,
          FIELD_SNAME, FIELD_FILE,
