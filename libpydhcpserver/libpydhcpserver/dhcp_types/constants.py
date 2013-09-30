@@ -28,12 +28,10 @@ Legal
 import array
 
 TYPE_IPV4 = "ipv4"
-TYPE_IPV4_PLUS ="ipv4+"
+TYPE_IPV4_PLUS = "ipv4+"
 TYPE_IPV4_MULT = "ipv4*"
 TYPE_BYTE = "byte"
 TYPE_BYTE_PLUS = "byte+"
-TYPE_CHAR = "char"
-TYPE_CHAR_PLUS = "char+"
 TYPE_STRING = "string"
 TYPE_BOOL = "bool"
 TYPE_INT = "16-bits"
@@ -43,22 +41,35 @@ TYPE_LONG_PLUS = "32-bits+"
 TYPE_IDENTIFIER = "identifier"
 TYPE_NONE = "none"
 
+FIELD_OP = "op"
+FIELD_HTYPE = "htype"
+FIELD_HLEN = "hlen"
+FIELD_HOPS = "hops"
+FIELD_XID = "xid"
+FIELD_SECS = "secs"
+FIELD_FLAGS = "flags"
+FIELD_CIADDR = "ciaddr"
+FIELD_YIADDR = "yiaddr"
+FIELD_SIADDR = "siaddr"
+FIELD_GIADDR = "giaddr"
+FIELD_CHADDR = "chaddr"
+FIELD_SNAME = "sname"
+FIELD_FILE = "file"
+
 MAGIC_COOKIE = '\x63\x82\x53\x63' #: The DHCP magic cookie, per RFC 1048
 MAGIC_COOKIE_ARRAY = array.array('B', MAGIC_COOKIE) #: The DHCP magic cookie as an array of bytes
 
-DHCP_FIELDS_NAMES = {
- 'op': {0: 'ERROR_UNDEF', 1: 'BOOTREQUEST', 2: 'BOOTREPLY',},
- 'dhcp_message_type': {
-  0: 'ERROR_UNDEF',
-  1: 'DHCP_DISCOVER', 2: 'DHCP_OFFER',
-  3: 'DHCP_REQUEST', 4:'DHCP_DECLINE',
-  5: 'DHCP_ACK', 6: 'DHCP_NAK',
-  7: 'DHCP_RELEASE',
-  8: 'DHCP_INFORM',
-  9: 'DHCP_FORCERENEW',
-  10: 'DHCP_LEASEQUERY', 11: 'DHCP_LEASEUNASSIGNED',
-  12: 'DHCP_LEASEUNKNOWN', 13: 'DHCP_LEASEACTIVE',
- }
+DHCP_OP_NAMES = {0: 'ERROR_UNDEF', 1: 'BOOTREQUEST', 2: 'BOOTREPLY',}
+DHCP_TYPE_NAMES = {
+ 0: 'ERROR_UNDEF',
+ 1: 'DHCP_DISCOVER', 2: 'DHCP_OFFER',
+ 3: 'DHCP_REQUEST', 4:'DHCP_DECLINE',
+ 5: 'DHCP_ACK', 6: 'DHCP_NAK',
+ 7: 'DHCP_RELEASE',
+ 8: 'DHCP_INFORM',
+ 9: 'DHCP_FORCERENEW',
+ 10: 'DHCP_LEASEQUERY', 11: 'DHCP_LEASEUNASSIGNED',
+ 12: 'DHCP_LEASEUNKNOWN', 13: 'DHCP_LEASEACTIVE',
 } #: Mapping from DHCP option values to human-readable names.
 DHCP_NAMES = {
  'ERROR_UNDEF': 0,
@@ -74,32 +85,31 @@ DHCP_NAMES = {
 } #: Mapping from human-readable names to DHCP option values.
 
 DHCP_FIELDS = {
- 'op': (0, 1),
- 'htype': (1, 1),
- 'hlen': (2, 1),
- 'hops': (3, 1),
- 'xid': (4, 4),
- 'secs': (8, 2),
- 'flags': (10, 2),
- 'ciaddr': (12, 4),
- 'yiaddr': (16, 4),
- 'siaddr': (20, 4),
- 'giaddr': (24, 4),
- 'chaddr': (28, 6),
- 'sname': (44, 64),
- 'file': (108, 128),
+ FIELD_OP: (0, 1),
+ FIELD_HTYPE: (1, 1),
+ FIELD_HLEN: (2, 1),
+ FIELD_HOPS: (3, 1),
+ FIELD_XID: (4, 4),
+ FIELD_SECS: (8, 2),
+ FIELD_FLAGS: (10, 2),
+ FIELD_CIADDR: (12, 4),
+ FIELD_YIADDR: (16, 4),
+ FIELD_SIADDR: (20, 4),
+ FIELD_GIADDR: (24, 4),
+ FIELD_CHADDR: (28, 6),
+ FIELD_SNAME: (44, 64),
+ FIELD_FILE: (108, 128),
 } #: Maps from human-readable option field names their position within the fixed-size core packet body and the length of each field.
 
 DHCP_FIELDS_SPECS = {
- "ipv4": (4, 0, 1), "ipv4+": (0, 4, 4), "ipv4*": (0, 0, 4),
- "byte": (1, 0, 1), "byte+": (0, 1, 1),
- "char": (1, 0, 1), "char+": (0, 1, 1),
- "string": (0, 0, 1),
- "bool": (1, 0, 1),
- "16-bits": (2, 0, 1), "16-bits+": (0, 2, 2),
- "32-bits": (4, 0, 1), "32-bits+": (0, 4, 4),
- "identifier": (0, 2, 1),
- "none": (0, 0, 1),
+ TYPE_IPV4: (4, 0, 1), TYPE_IPV4_PLUS: (0, 4, 4), TYPE_IPV4_MULT: (0, 0, 4),
+ TYPE_BYTE: (1, 0, 1), TYPE_BYTE_PLUS: (0, 1, 1),
+ TYPE_STRING: (0, 0, 1),
+ TYPE_BOOL: (1, 0, 1),
+ TYPE_INT: (2, 0, 1), TYPE_INT_PLUS: (0, 2, 2),
+ TYPE_LONG: (4, 0, 1), TYPE_LONG_PLUS: (0, 4, 4),
+ TYPE_IDENTIFIER: (0, 2, 1),
+ TYPE_NONE: (0, 0, 1),
 }
 """
 Provides information about how to validate each basic DHCP option type.
@@ -115,154 +125,154 @@ following algorithm:
 """
 
 DHCP_FIELDS_TYPES = {
- 'op': "byte",
- 'htype': "byte",
- 'hlen': "byte",
- 'hops': "byte",
- 'xid': "32-bits",
- 'secs': "16-bits",
- 'flags': "16-bits",
- 'ciaddr': "ipv4",
- 'yiaddr': "ipv4",
- 'siaddr': "ipv4",
- 'giaddr': "ipv4",
- 'chaddr': "hwmac",
- 'sname': "string",
- 'file': "string",
+ FIELD_OP: TYPE_BYTE,
+ FIELD_HTYPE: TYPE_BYTE,
+ FIELD_HLEN: TYPE_BYTE,
+ FIELD_HOPS: TYPE_BYTE,
+ FIELD_XID: TYPE_LONG,
+ FIELD_SECS: TYPE_INT,
+ FIELD_FLAGS: TYPE_INT,
+ FIELD_CIADDR: TYPE_IPV4,
+ FIELD_YIADDR: TYPE_IPV4,
+ FIELD_SIADDR: TYPE_IPV4,
+ FIELD_GIADDR: TYPE_IPV4,
+ FIELD_CHADDR: "hwmac",
+ FIELD_SNAME: TYPE_STRING,
+ FIELD_FILE: TYPE_STRING,
 } #: Maps human-readable field-names to DHCP fields specs.
 
 DHCP_OPTIONS_TYPES = {
- #0: "none",
- 1: "ipv4",
- 2: "32-bits",
- 3: "ipv4+",
- 4: "ipv4+",
- 5: "ipv4+",
- 6: "ipv4+",
- 7: "ipv4+",
- 8: "ipv4+",
- 9: "ipv4+",
- 10: "ipv4+",
- 11: "ipv4+",
- 12: "string",
- 13: "16-bits",
- 14: "string",
- 15: "string",
- 16: "ipv4",
- 17: "string",
- 18: "string",
- 19: "bool",
- 20: "bool",
- 21: "ipv4+",
- 22: "16-bits",
- 23: "byte",
- 24: "32-bits",
- 25: "16-bits+",
- 26: "16-bits",
- 27: "bool",
- 28: "ipv4",
- 29: "bool",
- 30: "bool",
- 31: "bool",
- 32: "ipv4",
- 33: "ipv4+",
- 34: "bool",
- 35: "32-bits",
- 36: "bool",
- 37: "byte",
- 38: "32-bits",
- 39: "bool",
- 40: "string",
- 41: "ipv4+",
- 42: "ipv4+",
- 43: "byte+",
- 44: "ipv4+",
- 45: "ipv4+",
- 46: "byte",
- 47: "string",
- 48: "ipv4+",
- 49: "ipv4+",
- 50: "ipv4",
- 51: "32-bits",
- 52: "byte",
- 53: "byte",
- 54: "ipv4",
- 55: "byte+",
- 56: "string",
- 57: "16-bits",
- 58: "32-bits",
- 59: "32-bits",
- 60: "string",
- 61: "identifier",
- 62: "string",
- 63: "byte+",
- 64: "string",
- 65: "ipv4+",
- 66: "string",
- 67: "string",
- 68: "ipv4*",
- 69: "ipv4+",
- 70: "ipv4+",
- 71: "ipv4+",
- 72: "ipv4+",
- 73: "ipv4+",
- 74: "ipv4+",
- 75: "ipv4+",
- 76: "ipv4+",
+ #0
+ 1: TYPE_IPV4,
+ 2: TYPE_LONG,
+ 3: TYPE_IPV4_PLUS,
+ 4: TYPE_IPV4_PLUS,
+ 5: TYPE_IPV4_PLUS,
+ 6: TYPE_IPV4_PLUS,
+ 7: TYPE_IPV4_PLUS,
+ 8: TYPE_IPV4_PLUS,
+ 9: TYPE_IPV4_PLUS,
+ 10: TYPE_IPV4_PLUS,
+ 11: TYPE_IPV4_PLUS,
+ 12: TYPE_STRING,
+ 13: TYPE_INT,
+ 14: TYPE_STRING,
+ 15: TYPE_STRING,
+ 16: TYPE_IPV4,
+ 17: TYPE_STRING,
+ 18: TYPE_STRING,
+ 19: TYPE_BOOL,
+ 20: TYPE_BOOL,
+ 21: TYPE_IPV4_PLUS,
+ 22: TYPE_INT,
+ 23: TYPE_BYTE,
+ 24: TYPE_LONG,
+ 25: TYPE_INT_PLUS,
+ 26: TYPE_INT,
+ 27: TYPE_BOOL,
+ 28: TYPE_IPV4,
+ 29: TYPE_BOOL,
+ 30: TYPE_BOOL,
+ 31: TYPE_BOOL,
+ 32: TYPE_IPV4,
+ 33: TYPE_IPV4_PLUS,
+ 34: TYPE_BOOL,
+ 35: TYPE_LONG,
+ 36: TYPE_BOOL,
+ 37: TYPE_BYTE,
+ 38: TYPE_LONG,
+ 39: TYPE_BOOL,
+ 40: TYPE_STRING,
+ 41: TYPE_IPV4_PLUS,
+ 42: TYPE_IPV4_PLUS,
+ 43: TYPE_BYTE_PLUS,
+ 44: TYPE_IPV4_PLUS,
+ 45: TYPE_IPV4_PLUS,
+ 46: TYPE_BYTE,
+ 47: TYPE_STRING,
+ 48: TYPE_IPV4_PLUS,
+ 49: TYPE_IPV4_PLUS,
+ 50: TYPE_IPV4,
+ 51: TYPE_LONG,
+ 52: TYPE_BYTE,
+ 53: TYPE_BYTE,
+ 54: TYPE_IPV4,
+ 55: TYPE_BYTE_PLUS,
+ 56: TYPE_STRING,
+ 57: TYPE_INT,
+ 58: TYPE_LONG,
+ 59: TYPE_LONG,
+ 60: TYPE_STRING,
+ 61: TYPE_IDENTIFIER,
+ 62: TYPE_STRING,
+ 63: TYPE_BYTE_PLUS,
+ 64: TYPE_STRING,
+ 65: TYPE_IPV4_PLUS,
+ 66: TYPE_STRING,
+ 67: TYPE_STRING,
+ 68: TYPE_IPV4_MULT,
+ 69: TYPE_IPV4_PLUS,
+ 70: TYPE_IPV4_PLUS,
+ 71: TYPE_IPV4_PLUS,
+ 72: TYPE_IPV4_PLUS,
+ 73: TYPE_IPV4_PLUS,
+ 74: TYPE_IPV4_PLUS,
+ 75: TYPE_IPV4_PLUS,
+ 76: TYPE_IPV4_PLUS,
  77: "RFC3004_77", #Not implemented; not necessary for static model
  78: "RFC2610_78", #Implemented
  79: "RFC2610_79", #Implemented
- 80: "none",
- 81: "string",
- 82: "byte+",
+ 80: TYPE_NONE,
+ 81: TYPE_STRING,
+ 82: TYPE_BYTE_PLUS,
  83: "RFC4174_83", #Implemented
  84: "Unassigned",
- 85: "ipv4+",
- 86: "byte+",
- 87: "byte+",
+ 85: TYPE_IPV4_PLUS,
+ 86: TYPE_BYTE_PLUS,
+ 87: TYPE_BYTE_PLUS,
  88: "RFC4280_88", #Implemented
- 89: "ipv4+",
+ 89: TYPE_IPV4_PLUS,
  90: "RFC3118_90", #Not implemented; not necessary for static model
- 91: "32-bits",
- 92: "ipv4+",
- 93: "16-bits+",
- 94: "byte+",
- 95: "string", #Specifications not published
+ 91: TYPE_LONG,
+ 92: TYPE_IPV4_PLUS,
+ 93: TYPE_INT_PLUS,
+ 94: TYPE_BYTE_PLUS,
+ 95: TYPE_STRING, #Specifications not published
  96: "Unassigned",
- 97: "byte+",
- 98: "string",
- 99: "byte+",
- 100: "string",
- 101: "string",
+ 97: TYPE_BYTE_PLUS,
+ 98: TYPE_STRING,
+ 99: TYPE_BYTE_PLUS,
+ 100: TYPE_STRING,
+ 101: TYPE_STRING,
  102: "Unassigned", 103: "Unassigned", 104: "Unassigned", 105: "Unassigned",
  106: "Unassigned", 107: "Unassigned", 108: "Unassigned", 109: "Unassigned",
  110: "Unassigned", 111: "Unassigned",
- 112: "string", #Specifications not published
- 113: "string", #Specifications not published
- 114: "string", #Specifications not published
+ 112: TYPE_STRING, #Specifications not published
+ 113: TYPE_STRING, #Specifications not published
+ 114: TYPE_STRING, #Specifications not published
  115: "Unassigned",
- 116: "bool",
- 117: "16-bits+",
- 118: "ipv4",
+ 116: TYPE_BOOL,
+ 117: TYPE_INT_PLUS,
+ 118: TYPE_IPV4,
  119: "RFC3397_119", #Implemented
  120: "RFC3361_120", #Implemented
- 121: "byte+",
- 122: "string",
- 123: "byte+",
- 124: "string",
- 125: "string",
+ 121: TYPE_BYTE_PLUS,
+ 122: TYPE_STRING,
+ 123: TYPE_BYTE_PLUS,
+ 124: TYPE_STRING,
+ 125: TYPE_STRING,
  126: "Unassigned", 127: "Unassigned",
- 128: "string",
- 129: "string",
- 130: "string",
- 131: "string",
- 132: "string",
- 133: "string",
- 134: "string",
- 135: "string",
- 136: "ipv4+",
+ 128: TYPE_STRING,
+ 129: TYPE_STRING,
+ 130: TYPE_STRING,
+ 131: TYPE_STRING,
+ 132: TYPE_STRING,
+ 133: TYPE_STRING,
+ 134: TYPE_STRING,
+ 135: TYPE_STRING,
+ 136: TYPE_IPV4_PLUS,
  137: "RFC5223_137", #Implemented
- 138: "ipv4+",
+ 138: TYPE_IPV4_PLUS,
  139: "RFC5678_139", #Implemented
  140: "RFC5678_140", #Implemented
  141: "Unassigned", 142: "Unassigned", 143: "Unassigned", 144: "Unassigned",
@@ -286,10 +296,10 @@ DHCP_OPTIONS_TYPES = {
  198: "Unassigned", 199: "Unassigned", 200: "Unassigned", 201: "Unassigned",
  202: "Unassigned", 203: "Unassigned", 204: "Unassigned", 205: "Unassigned",
  206: "Unassigned", 207: "Unassigned",
- 208: "32-bits",
- 209: "string",
- 210: "string",
- 211: "32-bits",
+ 208: TYPE_LONG,
+ 209: TYPE_STRING,
+ 210: TYPE_STRING,
+ 211: TYPE_LONG,
  212: "Unassigned", 213: "Unassigned", 214: "Unassigned", 215: "Unassigned",
  216: "Unassigned", 217: "Unassigned", 218: "Unassigned", 219: "Unassigned",
  220: "Unassigned", #Subnet Allocation Option
@@ -303,7 +313,7 @@ DHCP_OPTIONS_TYPES = {
  244: "Reserved", 245: "Reserved", 246: "Reserved", 247: "Reserved",
  248: "Reserved", 249: "Reserved", 250: "Reserved", 251: "Reserved",
  252: "Reserved", 253: "Reserved", 254: "Reserved",
- #255: "none",
+ #255
 }
 """
 Maps DHCP option-numbers to DHCP fields specs.
@@ -458,5 +468,5 @@ DHCP_OPTIONS = {
  #hole
  #'end': 255
 } #: Maps human-readable DHCP option names to integer values.
-
 DHCP_OPTIONS_REVERSE = dict((v, k) for (k, v) in DHCP_OPTIONS.iteritems()) #: Maps integer values to human-readable DHCP option names.
+
