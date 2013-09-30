@@ -283,8 +283,8 @@ class DynamicPool(object):
                  'lease': definition.lease_time,
                  'target': target_time,
                 })
-                packet.setOption('renewal_time_value', target_time, convert=True)
-                packet.setOption('rebinding_time_value', target_time, convert=True)
+                packet.setOption('renewal_time_value', target_time)
+                packet.setOption('rebinding_time_value', target_time)
             return definition
         if method == 'RELEASE' or method == 'DECLINE':
             return self._reclaim(mac, client_ip)

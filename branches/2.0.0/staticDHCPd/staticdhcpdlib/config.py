@@ -197,7 +197,10 @@ else:
 if hasattr(conf, 'handleUnknownMAC'):
     if inspect.getargspec(conf.handleUnknownMAC).args == ['mac']:
         #It's pre-2.0.0, so wrap it for backwards-compatibility
-        handleUnknownMAC = lambda packet, method, mac, client_ip, relay_ip, pxe, vendor : conf.handleUnknownMAC(mac)
+        handleUnknownMAC = (
+         lambda packet, method, mac, client_ip, relay_ip, pxe, vendor:
+            conf.handleUnknownMAC(mac)
+        )
     else:
         handleUnknownMAC = conf.handleUnknownMAC
 else:
@@ -205,7 +208,19 @@ else:
 if hasattr(conf, 'loadDHCPPacket'):
     if inspect.getargspec(conf.handleUnknownMAC).args == ['packet', 'mac', 'client_ip', 'relay_ip', 'subnet', 'serial', 'pxe', 'vendor']:
         #It's pre-2.0.0, so wrap it for backwards-compatibility
-        loadDHCPPacket = lambda packet, method, mac, definition, relay_ip, pxe, vendor : conf.loadDHCPPacket(packet, mac, definition.subnet, definition.serial, definition.ip, relay_ip, pxe, vendor)
+        loadDHCPPacket = (
+         lambda packet, method, mac, definition, relay_ip, pxe, vendor:
+            conf.loadDHCPPacket(
+             packet, mac, definition.subnet, definition.serial, definition.ip, relay_ip, 
+             (pxe.client_system, pxe.client_ndi, pxe.uuid_guid),
+             (
+              vendor.vendor_specific_information,
+              vendor.vendor_class_identifier,
+              tuple(sorted(vendor.vendor_class.items())),
+              tuple((k, tuple(sorted(v.items()))) for (k, v) in sorted(vendor.vendor_specific.items()))
+             )
+            )
+        )
     else:
         loadDHCPPacket = conf.loadDHCPPacket
 else:
