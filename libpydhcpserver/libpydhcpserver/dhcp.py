@@ -48,7 +48,7 @@ Nothing should be addressable to the special response socket, but better to avoi
 
 Address = collections.namedtuple("Address", ('ip', 'port'))
 """
-Defines an inet layer-3 address, as a named tuple.
+Defines an inet layer-3 address.
 
 * ``ip``: :class:`IPv4 <dhcp_types.IPv4>`
 * ``port``: ``int``
@@ -604,8 +604,8 @@ class _L2Responder(_Responder):
         binary.append(self._ethernet_id) #Source MAC and Ethernet payload-type
         
         #<> Prepare packet data for transmission and checksumming
-        packet = packet.encodePacket()
-        packet_len = len(packet)
+        binary_packet = packet.encodePacket()
+        packet_len = len(binary_packet)
         
         #<> IP header
         binary.append(self._pack_("!BBHHHBB",
@@ -627,10 +627,10 @@ class _L2Responder(_Responder):
         #<> UDP header
         binary.append(self._pack_("!HH", source_port, port))
         binary.append(self._pack_("!H", packet_len + 8)) #8 for the header itself
-        binary.append(self._pack_("<H", self._udpChecksum(ip_destination, binary[-2], binary[-1], packet)))
+        binary.append(self._pack_("<H", self._udpChecksum(ip_destination, binary[-2], binary[-1], binary_packet)))
         
         #<> Payload
-        binary.append(packet)
+        binary.append(binary_packet)
         
         return ''.join(binary)
         

@@ -37,11 +37,6 @@ import statistics
 import libpydhcpserver.dhcp
 from libpydhcpserver.dhcp_types.ipv4 import IPv4
 from libpydhcpserver.dhcp_types.mac import MAC
-from libpydhcpserver.dhcp_types.conversion import (
- ipToList, ipsToList,
- longToList,
- strToList,
-)
 
 #Packet-type string-constants
 _PACKET_TYPE_DECLINE = 'DECLINE'
@@ -286,28 +281,28 @@ class _PacketWrapper(object):
         """
         #Core parameters.
         if not inform:
-            self.packet.setOption('yiaddr', ipToList(definition.ip))
-            self.packet.setOption('ip_address_lease_time', longToList(int(definition.lease_time)))
+            self.packet.setOption('yiaddr', definition.ip)
+            self.packet.setOption(51, definition.lease_time)
             
         #Default gateway, subnet mask, and broadcast address.
         if definition.gateway:
-            self.packet.setOption('router', ipToList(definition.gateway))
+            self.packet.setOption(3, definition.gateway)
         if definition.subnet_mask:
-            self.packet.setOption('subnet_mask', ipToList(definition.subnet_mask))
+            self.packet.setOption(1, definition.subnet_mask)
         if definition.broadcast_address:
-            self.packet.setOption('broadcast_address', ipToList(definition.broadcast_address))
+            self.packet.setOption(28, definition.broadcast_address)
             
         #Domain details.
         if definition.hostname:
-            self.packet.setOption('hostname', strToList(definition.hostname))
+            self.packet.setOption(12, definition.hostname)
         if definition.domain_name:
-            self.packet.setOption('domain_name', strToList(definition.domain_name))
+            self.packet.setOption(15, definition.domain_name)
         if definition.domain_name_servers:
-            self.packet.setOption('domain_name_servers', ipsToList(definition.domain_name_servers))
+            self.packet.setOption(6, definition.domain_name_servers)
             
         #NTP servers.
         if definition.ntp_servers:
-            self.packet.setOption('ntp_servers', ipsToList(definition.ntp_servers))
+            self.packet.setOption(42, definition.ntp_servers)
             
     def loadDHCPPacket(self, definition, inform=False):
         """
@@ -474,14 +469,14 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
         
         definition = wrapper.retrieveDefinition(override_ip=True, override_ip_value=None)
         if definition:
-            rapid_commit = wrapper.packet.getOption('rapid_commit') is not None
+            rapid_commit = wrapper.packet.isOption(80)
             if rapid_commit:
                 _logger.info('%(type)s from %(mac)s requested rapid-commit' % {
                  'type': wrapper.getType(),
                  'mac': wrapper.mac,
                 })
                 wrapper.packet.transformToDHCPAckPacket()
-                wrapper.packet.setOption('rapid_commit', [])
+                wrapper.packet.setOption(80, [])
             else:
                 wrapper.packet.transformToDHCPOfferPacket()
                 
@@ -744,7 +739,7 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
         @rtype: int
         @return: The number of bytes transmitted.
         """
-        packet.setOption('server_identifier', ipToList(self._server_address))
+        packet.setOption(54, self._server_address) #server_identifier
         
         (bytes, address) = self._sendDHCPPacket(packet, address, pxe)
         response_type = packet.getDHCPMessageTypeName()

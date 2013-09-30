@@ -53,24 +53,25 @@ class Definition(object):
     serial = None
     extra = None
 
-    def __init__(self, ip, lease_time, subnet, serial,
+    def __init__(self,
+        ip, lease_time, subnet, serial,
         hostname=None,
         gateway=None, subnet_mask=None, broadcast_address=None,
         domain_name=None, domain_name_servers=None, ntp_servers=None,
-        extra=None):
-        
+        extra=None
+    ):
         #Required values
         self.ip = IPv4(ip)
-        self.lease_time = lease_time
-        self.subnet = subnet
-        self.serial = serial
+        self.lease_time = int(lease_time)
+        self.subnet = str(subnet)
+        self.serial = int(serial)
         
         #Optional vlaues
-        self.hostname = hostname
+        self.hostname = hostname and str(hostname)
         self.gateway = gateway and IPv4(gateway)
         self.subnet_mask = subnet_mask and IPv4(subnet_mask)
         self.broadcast_address = broadcast_address and IPv4(broadcast_address)
-        self.domain_name = domain_name
+        self.domain_name = domain_name and str(domain_name)
         if domain_name_servers:
             if isinstance(domain_name_servers, StringTypes):
                 domain_name_servers = domain_name_servers.split(',')
