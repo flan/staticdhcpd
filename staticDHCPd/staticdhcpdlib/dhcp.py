@@ -91,7 +91,7 @@ class _PacketWrapper(object):
     ciaddr = None #:The IP address of the client, if any.
     giaddr = None #:The IP address of the gateway associated with the packet, if any.
     pxe = None #:Whether the packet was received from a PXE context.
-    pxe_options = None #:Any PXE options extracted from the packet.
+    _pxe_options = None #:Any PXE options extracted from the packet.
     
     def __init__(self, server, packet, packet_type, source_address, pxe):
         """
@@ -203,7 +203,7 @@ class _PacketWrapper(object):
             option_93 = self.packet.getOption(93, convert=True) #client_system
             option_94 = self.packet.getOption(94) #client_ndi
             option_97 = self.packet.getOption(97) #uuid_guid
-            self.pxe_options = PXEOptions(
+            self._pxe_options = PXEOptions(
              option_93,
              option_94 and tuple(option_94),
              option_97 and (option_97[0], option_97[1:])
@@ -283,7 +283,7 @@ class _PacketWrapper(object):
         result = config.filterPacket(
          self.packet, self._packet_type,
          self.mac, ip, self.giaddr,
-         self.pxe and self.pxe_options
+         self.pxe and self._pxe_options
         )
         if result is None:
             raise _PacketSourceBlacklist("filterPacket() returned None")
@@ -342,7 +342,7 @@ class _PacketWrapper(object):
         process = bool(config.loadDHCPPacket(
          self.packet, self._packet_type,
          self.mac, definition, self.giaddr,
-         self.pxe and self.pxe_options
+         self.pxe and self._pxe_options
         ))
         if not process:
             _logger.info('Ignoring %(type)s from %(mac)s per loadDHCPPacket()' % {
@@ -373,7 +373,7 @@ class _PacketWrapper(object):
         self._definition = self._server.getDatabase().lookupMAC(self.mac) or config.handleUnknownMAC(
          self.packet, self._packet_type,
          self.mac, ip, self.giaddr,
-         self.pxe and self.pxe_options
+         self.pxe and self._pxe_options
         )
         
         return self._definition
