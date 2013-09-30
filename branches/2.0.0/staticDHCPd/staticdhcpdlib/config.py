@@ -214,10 +214,10 @@ if hasattr(conf, 'loadDHCPPacket'):
              packet, mac, definition.subnet, definition.serial, definition.ip, relay_ip, 
              (pxe.client_system, pxe.client_ndi, pxe.uuid_guid),
              (
-              vendor.vendor_specific_information,
-              vendor.vendor_class_identifier,
-              tuple(sorted(vendor.vendor_class.items())),
-              tuple((k, tuple(sorted(v.items()))) for (k, v) in sorted(vendor.vendor_specific.items()))
+              packet.getOption('vendor_specific_information'),
+              packet.getOption('vendor_class_identifier', convert=True),
+              tuple(sorted(packet.getOption('vendor_class', convert=True).items())),
+              tuple((k, tuple(sorted(v.items()))) for (k, v) in sorted(packet.getOption('vendor_specific', convert=True).items()))
              )
             )
         )
@@ -249,6 +249,8 @@ del conversion
 
 import libpydhcpserver.dhcp_types.rfc as rfc
 conf.rfc3046_decode = rfc.rfc3046_decode
+conf.rfc3925_decode = rfc.rfc3925_decode
+conf.rfc3925_125_decode = rfc.rfc3925_125_decode
 conf.rfc1035_plus = rfc.rfc1035_plus
 conf.rfc2610_78 = rfc.rfc2610_78
 conf.rfc2610_79 = rfc.rfc2610_79

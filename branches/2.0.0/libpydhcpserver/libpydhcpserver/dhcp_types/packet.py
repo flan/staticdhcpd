@@ -24,7 +24,6 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 (C) Mathieu Ignacio, 2008 <mignacio@april.org>
 """
 from array import array
-import collections
 
 import constants
 from constants import (
@@ -41,7 +40,7 @@ from constants import (
 )
 from mac import MAC
 from ipv4 import IPv4
-from rfc import (RFC, rfc3046_decode)
+from rfc import (RFC, rfc3046_decode, rfc3925_decode)
 import conversion
 
 _MAGIC_COOKIE_POSITION = 236
@@ -95,39 +94,13 @@ _FORMAT_CONVERSION_DESERIAL = {
  constants.TYPE_IDENTIFIER: conversion.listToInts,
  constants.TYPE_NONE: lambda _: None,
 }
+_OPTION_UNPACK = {
+ 82: rfc3046_decode, #relay_agent
+ 124: rfc3925_decode, #vendor_class
+ 125: rfc3925_125_decode, #vendor_specific
+}
 
 FLAG_BROADCAST = 0b1000000000000000 #: The "broadcast bit", described in RFC 2131
-
-PXEOptions = collections.namedtuple("PXEOptions", (
- 'client_system', 'client_ndi', 'uuid_guid'
-))
-"""
-Provides PXE options in an easy-to-interpret form.
-
-* ``client_system``: `option 93`, as a tuple of ints
-* ``client_ndi``: `option 94` as a tuple of three bytes
-* ``uuid_guid``: `option 97` as a tuple with the type in the first slot as a
-    byte and a tuple of bytes in the second slot
-    
-Any unset options will be ``None``.
-"""
-
-VendorOptions = collections.namedtuple("VendorOptions", (
- 'vendor_specific_information', 'vendor_class_identifier', 'vendor_class', 'vendor_specific',
-))
-"""
-Provides vendor options in an easy-to-interpret form.
-
-* ``vendor_specific_information``: `option 43`, as a string of bytes
-* ``vendor_class_identifier``: `option 60` as a string
-* ``vendor_class``: `option 124` as a dictionary of data as strings keyed by
-    enterprise numbers
-* ``vendor_specific``: `option 125` as a dictionary of data keyed by enterprise
-    number; the values are dictionaries that map suboption IDs to data as
-    strings
-
-Any unset options will be ``None``.
-"""
 
 class DHCPPacket(object):
     """
@@ -135,7 +108,7 @@ class DHCPPacket(object):
     """
     _header = None #: The core 240 bytes that make up a DHCP packet.
     _options = None #: Any options attached to this packet.
-    _requested_options = None #: Any options explicitly requested by the client.
+    _selected_options = None #: Any options explicitly requested by the client.
     _maximum_size = None #: The maximum number of bytes permitted in the encoded packet.
     
     word_align = False #If set, every option with an odd length in bytes will be padded, to ensure 16-bit word-alignment
@@ -173,7 +146,7 @@ class DHCPPacket(object):
         #Extract configuration data
         requested_options = options.get(55) #parameter_request_list
         if requested_options:
-            self._requested_options = _MANDATORY_OPTIONS.union(requested_options)
+            self._selected_options = _MANDATORY_OPTIONS.union(requested_options)
         maximum_datagram_size = 22 in options and conversion.listToInt(options[22])
         maximum_dhcp_size = 57 in options and conversion.listToInt(options[57])
         if maximum_datagram_size and maximum_dhcp_size:
@@ -192,13 +165,13 @@ class DHCPPacket(object):
         self._header[_MAGIC_COOKIE_POSITION:_PACKET_HEADER_SIZE] = MAGIC_COOKIE_ARRAY
         
     def _copy(self, data):
-        ((packet, options, requested_options, maximum_size),
+        ((packet, options, selected_options, maximum_size),
          (word_align, word_size, terminal_pad),
          (response_mac, response_ip, response_port, response_source_port),
         ) = data
         self._header = packet[:]
         self._options = options.copy()
-        self._requested_options = requested_options.copy()
+        self._selected_options = selected_options and selected_options.copy() or None
         self._maximum_size = maximum_size
         
         self.word_align = word_align
@@ -212,7 +185,7 @@ class DHCPPacket(object):
         
     def copy(self):
         return DHCPPacket(_copy_data=(
-         (self._header, self._options, self._requested_options, self._maximum_size),
+         (self._header, self._options, self._selected_options, self._maximum_size),
          (self.word_align, self.word_size, self.terminal_pad),
          (self.response_mac, self.response_ip, self.response_port, self.response_source_port),
         ))
@@ -270,7 +243,7 @@ class DHCPPacket(object):
         #requested, assuming any specific requests were made.
         options = {}
         for (option_id, option_value) in self._options.iteritems():
-            if self._requested_options is None or option_id in self._requested_options:
+            if self.isSelectedOption(option_id):
                 options[option_id] = option = []
                 while True:
                     if len(option_value) > 255:
@@ -319,8 +292,9 @@ class DHCPPacket(object):
         return _FORMAT_CONVERSION_SERIAL[type](value)
         
     def _unconvertOptionValue(self, option, value):
-        if option == 82: #relay_agent
-            return rfc3046_decode(value)
+        decode = _OPTION_UNPACK.get(option)
+        if decode:
+            return decode(value)
             
         type = DHCP_FIELDS_TYPES.get(option) or DHCP_OPTIONS_TYPES.get(self._getOptionID(option))
         if not type in _FORMAT_CONVERSION_DESERIAL:
@@ -502,7 +476,7 @@ class DHCPPacket(object):
                 return value
         return None
         
-    def setOption(self, option, value, force=False):
+    def setOption(self, option, value, validate=True, force_selection=False):
         """
         Validates and sets the value of a DHCP option associated with this
         packet.
@@ -533,7 +507,7 @@ class DHCPPacket(object):
             dhcp_field_type = DHCP_OPTIONS_TYPES[id]
             dhcp_field_specs = DHCP_FIELDS_SPECS.get(dhcp_field_type)
             if dhcp_field_specs: #It's a normal option
-                if not force: #Validate the length of the value
+                if validate: #Validate the length of the value
                     (fixed_length, minimum_length, multiple) = dhcp_field_specs
                     length = len(value)
                     if fixed_length != length:
@@ -549,42 +523,70 @@ class DHCPPacket(object):
                          'value-length': length,
                          'value': value,
                         })
-                self._options[id] = value
             elif dhcp_field_type.startswith('RFC'): #It's an RFC option
                 #Assume the value is right
-                self._options[id] = value
+                pass
             else:
                 raise ValueError("Unsupported option: %(option)s" % {
                  'option': option,
                 })
                 
-    def getRequestedOptions(self):
+            self._options[id] = value
+            if force_selection and self._selected_options is not None:
+                self._selected_options.add(id)
+                
+    def getSelectedOptions(self):
         """
-        Returns the options requested by the client from which this packet
-        was sent.
+        Returns all options marked for serialisation.
         
-        @rtype: tuple|None
-        @return: The options requested by the client or None if option 55 was
-            omitted.
+        @rtype: tuple
         """
-        return tuple(sorted(self._requested_options))
+        if self._selected_options:
+            return tuple(sorted(self._selected_options.intersection(self._options)))
+        return tuple(sorted(self._options))
         
-    def isRequestedOption(self, option):
+    def setSelectedOptions(self, added=None, removed=None):
         """
-        Indicates whether the specified option was requested by the client or
-        the client omitted option 55, necessitating delivery of all values.
+        Changes the set of selected options, adding ``added`` and removing
+        ``removed``. This does not affect option-data currently associated with
+        the packet, just what will be serialised.
+        
+        If both ``added`` and ``removed`` are ``None``, all options will be
+        selected.
+        
+        If the all-selected state is active, setting either parameter will
+        begin with an empty set.
+        
+        ``added`` is applied before ``removed``.
+        """
+        if added is None and removed is None:
+            self._selected_options = None
+        else:
+            if self._selected_options is None:
+                self._selected_options = set()
+            if added:
+                self._selected_options.update(self._getOptionID(option) for option in added)
+            if removed:
+                self._selected_options.difference_update(self._getOptionID(option) for option in removed)
+                
+    def isSelectedOption(self, option):
+        """
+        Indicates whether the specified option is slated for serialisation.
         
         @type option: basestring|int
         @param option: The name (or numeric value) of the DHCP option being
             tested.
-        
+            
         @rtype: bool
         @return: True if the option was requested by the client.
         """
-        if self._requested_options is None:
-            return True
+        id = self._getOptionID(option)
+        if not id in self._options:
+            return False
             
-        return self._getOptionID(option) in self._requested_options
+        if self._selected_options is not None:
+            return id in self._selected_options
+        return True
         
     def extractIPOrNone(self, parameter):
         """
@@ -595,74 +597,6 @@ class DHCPPacket(object):
         if not addr or not any(addr):
             return None
         return IPv4(addr)
-        
-    def extractPXEOptions(self):
-        """
-        Strips out PXE-specific options from the packet, returning them
-        separately.
-        
-        This function is good for scrubbing information that needs to be sent
-        monodirectionally from the client.
-        """
-        option_93 = self.getOption(93) #client_system
-        option_94 = self.getOption(94) #client_ndi
-        option_97 = self.getOption(97) #uuid_guid
-        
-        if option_93:
-            value = []
-            for i in xrange(0, len(option_93), 2):
-                value.append((option_93[i] << 8) + option_93[i + 1])
-            option_93 = tuple(value)
-            
-        if option_94:
-            option_94 = tuple(option_94)
-            
-        if option_97:
-            option_97 = (option_97[0], option_97[1:])
-            
-        self.deleteOption(93)
-        self.deleteOption(94)
-        self.deleteOption(97)
-        
-        return PXEOptions(option_93, option_94, option_97)
-        
-    def _parseEnterpriseOption(self, option, identifier_size):
-        data = {}
-        while option:
-            enterprise_number = conversion.listToNumber(option[:identifier_size])
-            payload_size = option[identifier_size]
-            payload = option[1 + identifier_size:1 + identifier_size + payload_size]
-            option = option[1 + identifier_size + payload_size:]
-            data[enterprise_number] = payload
-        return data
-        
-    def extractVendorOptions(self):
-        """
-        Strips out vendor-specific options from the packet, returning them
-        separately.
-        
-        This function is good for scrubbing information that needs to be sent
-        monodirectionally from the client.
-        """
-        option_43 = self.getOption(43) #vendor_specific_information
-        option_60 = self.getOption(60) #vendor_class_identifier
-        option_124 = self.getOption(124) #vendor_class
-        option_125 = self.getOption(125) #vendor_specific
-        
-        if option_124:
-            option_124 = self._parseEnterpriseOption(option_124, 4)
-            
-        if option_125:
-            option_125 = self._parseEnterpriseOption(option_125, 4)
-            for i in option_125:
-                option_125[i] = self._parseEnterpriseOption(option_125[i], 1)
-                
-        self.deleteOption(43)
-        self.deleteOption(60)
-        self.deleteOption(124)
-        self.deleteOption(125)
-        
-        return VendorOptions(option_43, option_60, option_124, option_125)
         
     def _getDHCPMessageType(self):
         """
@@ -802,11 +736,18 @@ class DHCPPacket(object):
         self.deleteOption(FIELD_SECS)
         
         self.deleteOption(22) #maximum_datagram_reassembly_size
+        self.deleteOption(43) #vendor_specific_information
         self.deleteOption(50) #requested_ip_address
         self.deleteOption(55) #parameter_request_list
         self.deleteOption(57) #maximum_dhcp_message_size
+        self.deleteOption(60) #vendor_class_identifier
         self.deleteOption(61) #client_identifier
+        self.deleteOption(93) #client_system
+        self.deleteOption(94) #client_ndi
+        self.deleteOption(97) #uuid_guid
         self.deleteOption(118) #subnet_selection
+        self.deleteOption(124) #vendor_class
+        self.deleteOption(125) #vendor_specific
         
     def transformToDHCPAckPacket(self):
         """
