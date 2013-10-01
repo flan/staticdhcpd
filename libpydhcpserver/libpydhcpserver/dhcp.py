@@ -518,16 +518,12 @@ class _L2Responder(_Responder):
         :param sequence data: The data to be checksummed.
         :return int: The data's checksum.
         """
-        if sum(len(i) for i in data) & 1:
-            data.append('\0')
-            
-        words = self._array_('h', ''.join(data))
-        checksum = 0
-        for word in words:
-            checksum += word & 0xffff
-        hi = checksum >> 16
-        low = checksum & 0xffff
-        checksum = hi + low
+        if sum(len(i) for i in data) & 1: #Odd
+            checksum = sum(self._array_('H', ''.join(data[:-1)))
+            checksum += ord(data[-1][-1]) << 8 #Add the final byte, shifted by one
+        else: #Even
+            checksum = sum(self._array_('H', ''.join(data)))
+        checksum = (checksum >> 16) + (checksum & 0xffff)
         checksum += (checksum >> 16)
         return ~checksum & 0xffff
         
