@@ -1,3 +1,8 @@
+Mention packet.meta
+
+-------------------------------
+
+
 In addition to static parameters to configure staticDHCPd to work in your
 environment, extensive scripting is possible, allowing it to perform dynamic
 allocations, send events to other systems, and give you full control over every
