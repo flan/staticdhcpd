@@ -40,7 +40,10 @@ from constants import (
 )
 from mac import MAC
 from ipv4 import IPv4
-from rfc import (RFC, rfc3046_decode, rfc3925_decode)
+from rfc import (
+ RFC,
+ rfc3046_decode, rfc3925_decode, rfc3925_125_decode
+)
 import conversion
 
 _MAGIC_COOKIE_POSITION = 236

@@ -18,9 +18,11 @@ received and analysed, then a response packet is emitted. Between the
 object-oriented packet interface) and the :class:`DHCPServer <dhcp.DHCPServer>` class described
 below, all that's left for you to do is customising the analysis part.
 
+.. module:: dhcp
+
 Constants
 +++++++++
-.. autodata:: dhcp.IP_UNSPECIFIED_FILTER
+.. autodata:: IP_UNSPECIFIED_FILTER
 
 Classes
 +++++++
@@ -28,18 +30,18 @@ To build a DHCP server, all you need to understand are the following class-inter
 
 Address
 |||||||
-.. autoclass:: dhcp.Address
+.. autoclass:: Address
 
 DHCPServer
 ||||||||||
-.. autoclass:: dhcp.DHCPServer
+.. autoclass:: DHCPServer
     :members:
     :private-members:
     :special-members:
     :exclude-members: __weakref__
     
-    .. autoattribute:: dhcp.DHCPServer._server_address
-    .. autoattribute:: dhcp.DHCPServer._network_link
+    .. autoattribute:: DHCPServer._server_address
+    .. autoattribute:: DHCPServer._network_link
     
     
 Private API
@@ -49,9 +51,9 @@ You'll pretty much never need to touch any of this, unless you're tracking down 
 
 Constants
 +++++++++
-.. autodata:: dhcp._IP_GLOB
-.. autodata:: dhcp._IP_BROADCAST
-.. autodata:: dhcp._ETH_P_SNAP
+.. autodata:: _IP_GLOB
+.. autodata:: _IP_BROADCAST
+.. autodata:: _ETH_P_SNAP
 
 Classes
 +++++++
@@ -62,25 +64,25 @@ further.
 
 _NetworkLink
 ||||||||||||
-.. autoclass:: dhcp._NetworkLink
+.. autoclass:: _NetworkLink
     :members:
     :private-members:
     :special-members:
     :exclude-members: __weakref__
     
-    .. autoattribute:: dhcp._NetworkLink._client_port
-    .. autoattribute:: dhcp._NetworkLink._server_port
-    .. autoattribute:: dhcp._NetworkLink._pxe_port
-    .. autoattribute:: dhcp._NetworkLink._pxe_socket
-    .. autoattribute:: dhcp._NetworkLink._responder_dhcp
-    .. autoattribute:: dhcp._NetworkLink._responder_pxe
-    .. autoattribute:: dhcp._NetworkLink._responder_broadcast
-    .. autoattribute:: dhcp._NetworkLink._listening_sockets
-    .. autoattribute:: dhcp._NetworkLink._unicast_discover_supported
+    .. autoattribute:: _NetworkLink._client_port
+    .. autoattribute:: _NetworkLink._server_port
+    .. autoattribute:: _NetworkLink._pxe_port
+    .. autoattribute:: _NetworkLink._pxe_socket
+    .. autoattribute:: _NetworkLink._responder_dhcp
+    .. autoattribute:: _NetworkLink._responder_pxe
+    .. autoattribute:: _NetworkLink._responder_broadcast
+    .. autoattribute:: _NetworkLink._listening_sockets
+    .. autoattribute:: _NetworkLink._unicast_discover_supported
     
 _Responder
 ||||||||||
-.. autoclass:: dhcp._Responder
+.. autoclass:: _Responder
     :members:
     :private-members:
     :special-members:
@@ -88,50 +90,50 @@ _Responder
     
 _L3Responder
 ||||||||||||
-.. autoclass:: dhcp._L3Responder
+.. autoclass:: _L3Responder
     :members:
     :private-members:
     :special-members:
     :exclude-members: __weakref__
     :show-inheritance:
     
-    .. autoattribute:: dhcp._L3Responder._socket
+    .. autoattribute:: _L3Responder._socket
     
 _L2Responder
 ||||||||||||
-.. autoclass:: dhcp._L2Responder
+.. autoclass:: _L2Responder
     :members:
     :private-members:
     :special-members:
     :exclude-members: __weakref__
     :show-inheritance:
     
-    .. autoattribute:: dhcp._L2Responder._ethernet_id
-    .. autoattribute:: dhcp._L2Responder._server_address
-    .. autoattribute:: dhcp._L2Responder._pack_
-    .. autoattribute:: dhcp._L2Responder._array_
+    .. autoattribute:: _L2Responder._ethernet_id
+    .. autoattribute:: _L2Responder._server_address
+    .. autoattribute:: _L2Responder._pack_
+    .. autoattribute:: _L2Responder._array_
     
 _L2Responder_AF_PACKET
 ||||||||||||||||||||||
-.. autoclass:: dhcp._L2Responder_AF_PACKET
+.. autoclass:: _L2Responder_AF_PACKET
     :members:
     :private-members:
     :special-members:
     :exclude-members: __weakref__
     :show-inheritance:
     
-    .. autoattribute:: dhcp._L2Responder_AF_PACKET._socket
+    .. autoattribute:: _L2Responder_AF_PACKET._socket
     
 _L2Responder_pcap
 |||||||||||||||||
-.. autoclass:: dhcp._L2Responder_pcap
+.. autoclass:: _L2Responder_pcap
     :members:
     :private-members:
     :special-members:
     :exclude-members: __weakref__
     :show-inheritance:
     
-    .. autoattribute:: dhcp._L2Responder_pcap._fd
-    .. autoattribute:: dhcp._L2Responder_pcap._inject
-    .. autoattribute:: dhcp._L2Responder_pcap._c_int_
+    .. autoattribute:: _L2Responder_pcap._fd
+    .. autoattribute:: _L2Responder_pcap._inject
+    .. autoattribute:: _L2Responder_pcap._c_int_
     
