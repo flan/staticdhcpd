@@ -519,7 +519,7 @@ class _L2Responder(_Responder):
         :return int: The data's checksum.
         """
         if sum(len(i) for i in data) & 1: #Odd
-            checksum = sum(self._array_('H', ''.join(data[:-1)))
+            checksum = sum(self._array_('H', ''.join(data[:-1])))
             checksum += ord(data[-1][-1]) << 8 #Add the final byte, shifted by one
         else: #Even
             checksum = sum(self._array_('H', ''.join(data)))

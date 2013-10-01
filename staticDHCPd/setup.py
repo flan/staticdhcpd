@@ -6,23 +6,38 @@ from distutils.core import setup
 import os
 import platform
 import re
+import sys
 
 import staticdhcpdlib
 
 setup(
- name = 'staticDHCPd',
- version = staticdhcpdlib.VERSION,
- description = "Highly customisable, static-lease-focused DHCP server",
- author = re.search(', (.*?) <', staticdhcpdlib.COPYRIGHT).group(1),
- author_email = re.search('<(.*?)>', staticdhcpdlib.COPYRIGHT).group(1),
- license = 'GPLv3',
- url = staticdhcpdlib.URL,
- packages = [
+ name='staticDHCPd',
+ version=staticdhcpdlib.VERSION,
+ description='Highly customisable, static-lease-focused DHCP server',
+ long_description=(
+ 'staticDHCPd is an extensively customisable, high-performance,'
+ ' RFC-spec-compliant DHCP server, well-suited to labs, LAN parties, home and'
+ ' small-office networks, and specialised networks of vast size.'
+ '\n\n'
+ 'It supports all major DHCP extension RFCs and features a rich, plugin-oriented'
+ ' web-interface, has a variety of modules, ranging from statistics-management'
+ ' to notification services to dynamic address-provisioning and'
+ ' network-auto-discovery.'
+ '\n\n'
+ 'Multiple backend databases are supported, from INI files to RDBMS SQL servers,'
+ ' with examples of how to write and integrate your own, such as a REST-JSON'
+ ' endpoint, simple enough to complete in minutes.'
+ ),
+ author=re.search(', (.*?) <', staticdhcpdlib.COPYRIGHT).group(1),
+ author_email=re.search('<(.*?)>', staticdhcpdlib.COPYRIGHT).group(1),
+ license='GPLv3',
+ url=staticdhcpdlib.URL,
+ packages=[
   'staticdhcpdlib',
   'staticdhcpdlib.databases',
   'staticdhcpdlib.web',
  ],
- data_files = [
+ data_files=[
   ('/etc/staticDHCPd', [
    'conf/conf.py.sample',
   ]),
@@ -30,13 +45,13 @@ setup(
    'conf/extensions/HOWTO',
   ]),
  ],
- scripts = [
+ scripts=[
   'staticDHCPd',
  ],
 )
 
 #Post-installation stuff
-if os.getenv('DEBUILD_MODE') != 'yes': #Don't print confusing stuff when building Debian packages
+if os.getenv('DEBUILD_MODE') != 'yes' and not 'build' in sys.argv and not any('rpm' in i for i in sys.argv): #Don't print confusing stuff when building packages
     instructions = [
     "",
     "",
