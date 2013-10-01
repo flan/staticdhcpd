@@ -123,6 +123,8 @@ class DHCPPacket(object):
     response_port = None #If set to an integer, the packet will be sent to this port, rather than its default
     response_source_port = None #If set to an integer, the packet will be reported as being sent from this port, rather than its default
     
+    _meta = None #: A dictionary that can be freely manipulated to store data for the lifetime of the packet; initialised on first request
+    
     def __init__(self, data=None, _copy_data=None):
         """
         Initializes a DHCP packet, using real data, if possible.
@@ -171,6 +173,7 @@ class DHCPPacket(object):
         ((packet, options, selected_options, maximum_size),
          (word_align, word_size, terminal_pad),
          (response_mac, response_ip, response_port, response_source_port),
+         meta,
         ) = data
         self._header = packet[:]
         self._options = options.copy()
@@ -186,12 +189,26 @@ class DHCPPacket(object):
         self.response_port = response_port
         self.response_source_port = response_source_port
         
+        if meta:
+            self._meta = meta.copy()
+            
     def copy(self):
         return DHCPPacket(_copy_data=(
          (self._header, self._options, self._selected_options, self._maximum_size),
          (self.word_align, self.word_size, self.terminal_pad),
          (self.response_mac, self.response_ip, self.response_port, self.response_source_port),
+         self._meta,
         ))
+        
+    @property
+    def meta(self):
+        """
+        A dictionary that can be freely manipulated to store data for the
+        lifetime of the packet.
+        """
+        if self._meta is None:
+            self._meta = {}
+        return self._meta
         
     def _locateOptions(self, data):
         #Some servers or clients don't place the magic cookie immediately
@@ -872,17 +889,15 @@ class DHCPPacket(object):
             if option_id == 53: #dhcp_message_type
                 result = self.getDHCPMessageTypeName()
             elif option_id == 55: #parameter_request_list
-                requested_options = []
-                for d in sorted(data):
-                    requested_options.append("%(name)s (%(id)i)" % {
-                     'name': DHCP_OPTIONS_REVERSE[d],
-                     'id': d,
-                    })
-                result = ', '.join(requested_options)
+                result = ', '.join("%(name)s (%(id)i)" % {
+                 'name': DHCP_OPTIONS_REVERSE[id],
+                 'id': id,
+                } for id in self.getSelectedOptions())
             else:
                 represent = True
                 result = _FORMAT_CONVERSION_DESERIAL[DHCP_OPTIONS_TYPES[option_id]](data)
-            output.append((represent and "\t[%(id)03i] %(name)s: %(result)r" or "\t[%(id)03i] %(name)s: %(result)s") % {
+            output.append((represent and "\t[%(selected)s][%(id)03i] %(name)s: %(result)r" or "\t[%(id)03i] %(name)s: %(result)s") % {
+             'selected': self.isSelectedOption(option_id) and 'X' or ' ',
              'id': option_id,
              'name': self._getOptionName(option_id),
              'result': result,
