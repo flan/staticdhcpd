@@ -114,6 +114,9 @@ def longsToList(l):
         bytes += longToList(i)
     return bytes
     
+def listToStr(l):
+    return ''.join(chr(i) for i in l)
+    
 def strToList(s):
     """
     Converts the given string into an encoded byte format.
@@ -147,8 +150,20 @@ def strToPaddedList(s, l):
         padded_list += [0] * (l - len(padded_list))
     return padded_list[:l]
     
-def listToStr(l):
-    return ''.join(chr(i) for i in l)
+def listToIP(l):
+    global _IPv4
+    if not _IPv4:
+        from ipv4 import IPv4
+        _IPv4 = IPv4
+        
+    return _IPv4(l)
+    
+def listToIPs(l):
+    ips = []
+    for i in xrange(len(l) / 4):
+        p = i * 4
+        ips.append(listToIP(l[p:p + 4]))
+    return ips
     
 def ipToList(ip):
     """
@@ -188,20 +203,4 @@ def ipsToList(ips):
     for ip in ips:
         bytes += ipToList(ip)
     return bytes
-    
-def listToIP(l):
-    global _IPv4
-    if not _IPv4:
-        from ipv4 import IPv4
-        _IPv4 = IPv4
-        
-    return _IPv4(l)
-    
-def listToIPs(l):
-    ips = []
-    for i in xrange(len(l) / 4):
-        p = i * 4
-        ips.append(listToIP(l[p:p + 4]))
-    return ips
-    
     
