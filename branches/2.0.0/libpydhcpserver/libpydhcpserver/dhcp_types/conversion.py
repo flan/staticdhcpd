@@ -26,15 +26,35 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 _IPv4 = None #: Placeholder for a deferred import ot avoid a circular reference.
 
 def listToNumber(l):
+    """
+    Sums a sequence of bytes in big-endian order, producing an integer.
+    
+    :param sequence l: A sequence of ints, between ``0`` and ``255``.
+    :return int: The corresponding value.
+    """
     value = 0
     for (i, v) in enumerate(reversed(l)):
         value += v << (8 * i)
     return value
     
 def listToInt(l):
+    """
+    Converts a pair of bytes, in big-endian order, into an integer.
+    
+    :param sequence l: A sequence of ints, between ``0`` and ``255``. If longer
+        than two, only the head is used; if less than two, zero-padded to LSD.
+    :return int: The corresponding value.
+    """
     return listToNumber(l[:2])
     
 def listToInts(l):
+    """
+    Converts pairs of bytes, in big-endian order, into integers.
+    
+    :param sequence l: A sequence of ints, between ``0`` and ``255``. If not a
+        multiple of two, zero-padded to LSD.
+    :return list: A list of ints corresponding to the byte-pairs.
+    """
     ints = []
     for i in xrange(len(l) >> 1):
         p = i * 2
@@ -42,9 +62,23 @@ def listToInts(l):
     return ints
     
 def listToLong(l):
+    """
+    Converts a quartet of bytes, in big-endian order, into an integer.
+    
+    :param sequence l: A sequence of ints, between ``0`` and ``255``. If longer
+        than four, only the head is used; if less than four, zero-padded to LSD.
+    :return int: The corresponding value.
+    """
     return listToNumber(l[:4])
     
 def listToLongs(l):
+    """
+    Converts quartets of bytes, in big-endian order, into integers.
+    
+    :param sequence l: A sequence of ints, between ``0`` and ``255``. If not a
+        multiple of four, zero-padded to LSD.
+    :return list: A list of ints corresponding to the byte-quartets.
+    """
     longs = []
     for i in xrange(len(l) >> 2):
         p = i * 4
@@ -53,13 +87,11 @@ def listToLongs(l):
     
 def intToList(i):
     """
-    A convenience function that converts an int into a pair of bytes.
+    Converts an integer into a pair of bytes in big-endian order.
     
-    @type i: int
-    @param i: The int value to convert.
-    
-    @rtype: list
-    @return: The converted bytes.
+    :param int i: The integer to be converted. If outside the range of ``0`` to
+        ``65535``, only the low-order sixteen bits are considered.
+    :return list(2): The converted value.
     """
     return [
      i >> 8 & 0xFF,
@@ -68,13 +100,12 @@ def intToList(i):
     
 def intsToList(l):
     """
-    A convenience function that converts a sequence of ints into pairs of bytes.
+    Converts a sequence of integers into pairs of bytes in big-endian order.
     
-    @type l: sequence
-    @param l: The int values to convert.
-    
-    @rtype: list
-    @return: The converted bytes.
+    :param sequence l: The sequence to be converted. If any values are outside
+        the range of ``0`` to ``65535``, only the low-order sixteen bits are
+        considered.
+    :return list: The converted values.
     """
     pairs = []
     for i in l:
@@ -83,13 +114,11 @@ def intsToList(l):
     
 def longToList(l):
     """
-    A convenience function that converts a long into a set of four bytes.
+    Converts an integer into a quartet of bytes in big-endian order.
     
-    @type l: int
-    @param l: The long value to convert.
-    
-    @rtype: list
-    @return: The converted bytes.
+    :param int l: The integer to be converted. If outside the range of ``0`` to
+        ``4294967296``, only the low-order thirty-two bits are considered.
+    :return list(4): The converted value.
     """
     return [
      l >> 24 & 0xFF,
@@ -100,14 +129,12 @@ def longToList(l):
     
 def longsToList(l):
     """
-    A convenience function that converts a sequence of longs into a list of
-    bytes.
+    Converts a sequence of integers into quartets of bytes in big-endian order.
     
-    @type l: sequence
-    @param l: The long values to convert.
-    
-    @rtype: list
-    @return: The converted bytes.
+    :param sequence l: The sequence to be converted. If any values are outside
+        the range of ``0`` to ``4294967296``, only the low-order thirty-two
+        bits are considered.
+    :return list: The converted values.
     """
     bytes = []
     for i in l:
@@ -115,35 +142,35 @@ def longsToList(l):
     return bytes
     
 def listToStr(l):
+    """
+    Converts a sequence of bytes into a byte-string.
+    
+    :param sequence l: The bytes to be converted.
+    :return str: The converted byte-string.
+    """
     return ''.join(chr(i) for i in l)
     
 def strToList(s):
     """
-    Converts the given string into an encoded byte format.
+    Converts a string into a sequence of bytes.
     
-    @type s: basestring
-    @param s: The string to be converted.
+    This will also handle unicode strings, so sanitise all input.
     
-    @rtype: list
-    @return: An encoded byte version of the given string.
+    :param str s: The string to be converted.
+    :return list: A sequence of bytes.
     """
-    return map(ord, s)
+    return map(ord, s.encode('utf-8'))
     
 def strToPaddedList(s, l):
     """
-    Converts the given string into an encoded byte format, exactly equal to the
-    specified length.
+    Converts a string into a sequence of bytes, with a fixed length.
     
-    Strings longer than the given length will be truncated, while those shorter
-    will be null-padded.
+    This will also handle unicode strings, so sanitise all input.
     
-    @type s: basestring
-    @param s: The string to be converted.
-    @type l: int
-    @param l: The length of the list.
-
-    @rtype: list
-    @return: An encoded byte version of the given string of the specified length.
+    :param str s: The string to be converted.
+    :param int l: The length of the resulting list.
+    :return list: A sequence of bytes of length ``l``, truncated or null-padded
+        as appropriate.
     """
     padded_list = strToList(s)
     if len(padded_list) < l:
@@ -151,6 +178,13 @@ def strToPaddedList(s, l):
     return padded_list[:l]
     
 def listToIP(l):
+    """
+    Converts a quartet of bytes in big-endian order into an IPv4 address.
+    
+    :param sequence(4) l: The bytes to be converted.
+    :return: The equivalent IPv4 address.
+    :rtype: :class:`IPv4 <dhcp_types.IPv4>`
+    """
     global _IPv4
     if not _IPv4:
         from ipv4 import IPv4
@@ -159,6 +193,14 @@ def listToIP(l):
     return _IPv4(l)
     
 def listToIPs(l):
+    """
+    Converts quartets of bytes in big-endian order into IPv4 addresses.
+    
+    :param sequence l: The bytes to be converted, as a flat sequence with
+        length a multiple of four.
+    :return: The equivalent IPv4 addresses.
+    :rtype: list
+    """
     ips = []
     for i in xrange(len(l) / 4):
         p = i * 4
@@ -167,13 +209,11 @@ def listToIPs(l):
     
 def ipToList(ip):
     """
-    Converts an IPv4 address into a collection of four bytes.
+    Converts an IPv4 address into a list of four bytes in big-endian order.
     
-    @type ip: basestring
-    @param ip: The IPv4 to process.
-    
-    @rtype: list
-    @return: The IPv4 expressed as bytes.
+    :param object ip: Any valid IPv4 format (string, 32-bit integer, list of
+        bytes, :class:`IPv4 <dhcp_types.IPv4>`).
+    :return list(4): The converted address.
     """
     global _IPv4
     if not _IPv4:
@@ -186,13 +226,12 @@ def ipToList(ip):
     
 def ipsToList(ips):
     """
-    Converts a comma-delimited list of IPv4s into bytes.
+    Converts a IPv4 addresses into a flat list of multiples of four bytes in
+    big-endian order.
     
-    @type ips: basestring
-    @param ips: The list of IPv4s to process.
-    
-    @rtype: list
-    @return: A collection of bytes corresponding to the given IPv4s.
+    :param list ips: A list of any valid IPv4 formats (string, 32-bit integer,
+        list of bytes, :class:`IPv4 <dhcp_types.IPv4>`).
+    :return list: The converted addresses.
     """
     if isinstance(ips, StringTypes):
         tokens = ips.split(',')
