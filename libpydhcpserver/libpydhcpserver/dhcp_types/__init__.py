@@ -2,7 +2,7 @@
 """
 libpydhcpserver.dhcp_types
 ==========================
-Collects definitions of types internal to libpydhcpserver.
+Collects definitions of types specific to libpydhcpserver.
  
 Legal
 =====

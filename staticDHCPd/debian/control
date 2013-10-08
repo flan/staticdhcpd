@@ -2,12 +2,12 @@ Source: staticdhcpd
 Maintainer: Neil Tallim <flan@uguu.ca>
 Section: python
 Priority: optional
-Build-Depends: python (>= 2.5), python (<< 2.8), debhelper (>= 7.4.3)
+Build-Depends: python (>= 2.5), python (<< 3.0), debhelper (>= 7.4.3)
 Standards-Version: 3.9.1
 
 Package: staticdhcpd
 Architecture: all
-Depends: ${misc:Depends}, python (>=2.4), python-libpydhcpserver (=1.2.0)
+Depends: ${misc:Depends}, python (>= 2.5), python (<< 3.0), python-libpydhcpserver (=1.2.0)
 Suggests: python-scapy (>= 2.0.1), python-mysqldb (>= 1.2), python-psycopg2 (>=2.2)
 Description: Highly customisable, static-lease-focused DHCP server
  staticDHCPd is an extensively customisable, high-performance,
