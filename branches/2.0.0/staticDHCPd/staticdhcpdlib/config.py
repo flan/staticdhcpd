@@ -206,7 +206,7 @@ if hasattr(conf, 'handleUnknownMAC'):
 else:
     handleUnknownMAC = lambda *args, **kwargs : None
 if hasattr(conf, 'loadDHCPPacket'):
-    if inspect.getargspec(conf.handleUnknownMAC).args == ['packet', 'mac', 'client_ip', 'relay_ip', 'subnet', 'serial', 'pxe', 'vendor']:
+    if inspect.getargspec(conf.loadDHCPPacket).args == ['packet', 'mac', 'client_ip', 'relay_ip', 'subnet', 'serial', 'pxe', 'vendor']:
         #It's pre-2.0.0, so wrap it for backwards-compatibility
         loadDHCPPacket = (
          lambda packet, method, mac, definition, relay_ip, pxe, vendor:
