@@ -127,7 +127,7 @@ class DHCPPacket(object):
     
     def __init__(self, data=None, _copy_data=None):
         """
-        Initializes a DHCP packet, using real data, if possible.
+        Initialises a DHCP packet.
         
         @type data: str|None
         @param data: The raw packet from which this object should be instantiated or None if a

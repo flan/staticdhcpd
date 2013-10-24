@@ -574,6 +574,7 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
         Evaluates a REQUEST request from a client and determines whether an ACK
         should be sent.
         
+        #TODO: rewrite the following paragraph, because it predates the split
         This is the most important part of the system, in which the IP a client
         claims to own is validated against the database, before it can be
         formally assigned. If the IP in question belongs to the requesting MAC,
@@ -920,17 +921,14 @@ class _PacketRejection(Exception):
     """
     The base-class for indicating that a packet could not be processed.
     """
-    
 class _PacketSourceBlacklist(_PacketRejection):
     """
     Indicates that the packet was added to a blacklist, based on this event.
     """
-    
 class _PacketSourceIgnored(_PacketRejection):
     """
     Indicates that the packet's sender is currently blacklisted.
     """
-    
 class _PacketSourceUnacceptable(_PacketRejection):
     """
     Indicates that the packet's sender is not permitted by policy.
