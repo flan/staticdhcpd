@@ -35,7 +35,7 @@ except ImportError: #py3k
     pass
     
 from conversion import (longToList, listToLong)
-    
+
 class IPv4(object):
     """
     Evaluates and encodes an IPv4 for use as part of a DHCP packet. 

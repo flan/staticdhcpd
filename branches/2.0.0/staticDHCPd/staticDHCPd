@@ -132,7 +132,8 @@ def _setupLogging():
         )
         
     if not staticdhcpdlib.config.DAEMON: #Daemon-style execution disables console-based logging
-        _logger.info("Configuring console-based logging...")
+        if logging.root.handlers:
+            _logger.info("Configuring console-based logging...")
         console_logger = logging.StreamHandler()
         console_logger.setLevel(getattr(logging, staticdhcpdlib.config.LOG_CONSOLE_SEVERITY))
         console_logger.setFormatter(formatter)
@@ -140,17 +141,20 @@ def _setupLogging():
         _logger.info("Console-based logging online")
         
     if staticdhcpdlib.config.LOG_FILE: #Determine whether disk-based logging is desired
-        _logger.info("Configuring file-based logging for " + staticdhcpdlib.config.LOG_FILE + "...")
+        if logging.root.handlers:
+            _logger.info("Configuring file-based logging for " + staticdhcpdlib.config.LOG_FILE + "...")
         if staticdhcpdlib.config.LOG_FILE_HISTORY:
             #Rollover once per day, keeping the configured number of days' logs as history
             file_logger = logging.handlers.TimedRotatingFileHandler(
              staticdhcpdlib.config.LOG_FILE, 'D', 1, staticdhcpdlib.config.LOG_FILE_HISTORY
             )
-            _logger.info("Configured rotation-based logging for file, with history=" + str(staticdhcpdlib.config.LOG_FILE_HISTORY) + " days")
+            if logging.root.handlers:
+                _logger.info("Configured rotation-based logging for file, with history=" + str(staticdhcpdlib.config.LOG_FILE_HISTORY) + " days")
         else:
             #Keep writing to the specified file forever
             file_logger = logging.FileHandler(staticdhcpdlib.config.LOG_FILE)
-            _logger.info("Configured indefinite-growth logging for file")
+            if logging.root.handlers:
+                _logger.info("Configured indefinite-growth logging for file")
         file_logger.setLevel(getattr(logging, staticdhcpdlib.config.LOG_FILE_SEVERITY))
         file_logger.setFormatter(formatter)
         logging.root.addHandler(file_logger)
@@ -165,7 +169,8 @@ def _setupLogging():
          credentials=(staticdhcpdlib.config.EMAIL_USER and (staticdhcpdlib.config.EMAIL_USER, staticdhcpdlib.config.EMAIL_PASSWORD) or None),
          timeout=staticdhcpdlib.config.EMAIL_TIMEOUT
         )
-        logger.info("Configured SMTP-based logging for " + staticdhcpdlib.config.EMAIL_DESTINATION + " via " + staticdhcpdlib.config.EMAIL_SERVER + ":" + str(staticdhcpdlib.config.EMAIL_PORT))
+        if logging.root.handlers:
+            logger.info("Configured SMTP-based logging for " + staticdhcpdlib.config.EMAIL_DESTINATION + " via " + staticdhcpdlib.config.EMAIL_SERVER + ":" + str(staticdhcpdlib.config.EMAIL_PORT))
         smtp_handler.setLevel(logging.CRITICAL)
         smtp_handler.setFormatter(formatter)
         logging.root.addHandler(smtp_handler)
