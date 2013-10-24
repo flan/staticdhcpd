@@ -246,6 +246,27 @@ class DHCPPacket(object):
             position += option_length #Skip the pointer past the payload_size
         return options
         
+    def _encodeOptions(self, options, option_ordering, size_limit):
+        if size_limit <= 0:
+            raise ValueError("No space for packet payload")
+            
+        size_limit -= 1 #Leave space for the END byte.
+        ordered_options = []
+        for (i, option_id) in enumerate(option_ordering):
+            value = options[option_id]
+            if self.word_align:
+                for i in xrange(len(value) % self._word_size):
+                    value.append(0) #Add a pad
+                    
+            if size_limit - len(value) >= 0: #Ensure that there's still space
+                ordered_options += value
+            else: #No more room
+                break
+        else:
+            i = len(option_ordering)
+        ordered_options.append(255) #Add End option
+        return (ordered_options, option_ordering[i:])
+        
     def encodePacket(self):
         """
         Assembles all data into a single, C-char-packed struct.
@@ -278,28 +299,31 @@ class DHCPPacket(object):
         option_ordering = [i for i in _OPTION_ORDERING if i in keys] #Put specific options first
         option_ordering.extend(sorted(keys.difference(option_ordering))) #Then sort the rest
         
-        size_limit = (self._maximum_size or 0xFFFF) - _PACKET_HEADER_SIZE - 1 - 100 #Leave one for the end and some for the protocol header
-        #Write them to the packet's buffer
-        ordered_options = []
-        for option_id in option_ordering:
-            value = options[option_id]
-            if self.word_align:
-                for i in xrange(len(value) % self._word_size):
-                    value.append(0) #Add a pad
-                    
-            if size_limit - len(value) >= 0: #Ensure that there's still space
-                ordered_options += value
-            else: #No more room
-                break
-                
-        #Assemble data.
-        ordered_options.append(255) #Add End option
-        if self.terminal_pad:
-            for i in xrange(min(len(value) % self._word_size, size_limit)):
-                ordered_options.append(0) #Add trailing pads
-        packet = self._header[:]
-        packet.extend(ordered_options)
+        #Prepare the main payload
+        size_limit = (self._maximum_size or 0xFFFF) - _PACKET_HEADER_SIZE - 68 - 3 #Leave some for the protocol header and three for option 52, if needed
+        (payload, option_ordering) = self._encodeOptions(options, option_ordering, size_limit)
         
+        #Assemble data.
+        payload.extend((0, 0, 0)) #Space for option 52
+        if self.terminal_pad:
+            terminal_pad_size = min(len(value) % self._word_size, size_limit)
+            for i in xrange(terminal_pad_size):
+                payload.append(0) #Add trailing pads
+        else:
+            terminal_pad_size = 0
+        packet = self._header[:]
+        packet.extend(payload)
+        
+        #If there is remaining data, pack it using option 52, if possible.
+        option_52 = 0
+        if option_ordering and not any(self.getOption(FIELD_SNAME)): #SNAME is open
+            option_52 += 2
+            (location, size) = DHCP_FIELDS
+            (payload, option_ordering) = self._encodeOptions(options, option_ordering, size_limit)
+            
+        if option_52:
+            
+            
         #Encode packet.
         return packet.tostring()
         
@@ -758,6 +782,7 @@ class DHCPPacket(object):
         self.deleteOption(22) #maximum_datagram_reassembly_size
         self.deleteOption(43) #vendor_specific_information
         self.deleteOption(50) #requested_ip_address
+        self.deleteOption(52) #overload
         self.deleteOption(55) #parameter_request_list
         self.deleteOption(57) #maximum_dhcp_message_size
         self.deleteOption(60) #vendor_class_identifier
