@@ -1,60 +1,58 @@
 # -*- encoding: utf-8 -*-
 """
-libpydhcpserver module: constants
+libpydhcpserver.dhcp_types.constants
+====================================
+DHCP mappings and constant values.
 
-Purpose
-=======
- Contains constants needed by libpydhcpserver.
- 
 Legal
 =====
- This file is part of libpydhcpserver.
- libpydhcpserver is free software; you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation; either version 3 of the License, or
- (at your option) any later version.
+This file is part of libpydhcpserver.
+libpydhcpserver is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 3 of the License, or
+(at your option) any later version.
 
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
- You should have received a copy of the GNU General Public License
- along with this program. If not, see <http://www.gnu.org/licenses/>.
- 
- (C) Neil Tallim, 2010 <red.hamsterx@gmail.com>
- (C) Mathieu Ignacio, 2008 <mignacio@april.org>
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+(C) Neil Tallim, 2013 <flan@uguu.ca>
+(C) Mathieu Ignacio, 2008 <mignacio@april.org>
 """
 import array
 
-TYPE_IPV4 = "ipv4"
-TYPE_IPV4_PLUS = "ipv4+"
-TYPE_IPV4_MULT = "ipv4*"
-TYPE_BYTE = "byte"
-TYPE_BYTE_PLUS = "byte+"
-TYPE_STRING = "string"
-TYPE_BOOL = "bool"
-TYPE_INT = "16-bits"
-TYPE_INT_PLUS = "16-bits+"
-TYPE_LONG = "32-bits"
-TYPE_LONG_PLUS = "32-bits+"
-TYPE_IDENTIFIER = "identifier"
-TYPE_NONE = "none"
+TYPE_IPV4 = "ipv4" #: AFour bytes in network-byte-order
+TYPE_IPV4_PLUS = "ipv4+" #: At least one multiple of four bytes in network-byte-order
+TYPE_IPV4_MULT = "ipv4*" #: Multiples of four bytes in network-byte-order
+TYPE_BYTE = "byte" #: A single byte
+TYPE_BYTE_PLUS = "byte+" #: At least one byte
+TYPE_STRING = "string" #: Any number of bytes
+TYPE_BOOL = "bool" #: A single byte, constrained to the values 0 (false) and 1 (true)
+TYPE_INT = "16-bits" #: Two bytes in network-byte-order
+TYPE_INT_PLUS = "16-bits+" #: At least one multiple of two bytes in network-byte-order
+TYPE_LONG = "32-bits" #: Four bytes in network-byte-order
+TYPE_LONG_PLUS = "32-bits+" #: At least one multiple of four bytes in network-byte-order
+TYPE_IDENTIFIER = "identifier" #: Two bytes in small-endiant order
+TYPE_NONE = "none" #: A zero-length sequence
 
-FIELD_OP = "op"
-FIELD_HTYPE = "htype"
-FIELD_HLEN = "hlen"
-FIELD_HOPS = "hops"
-FIELD_XID = "xid"
-FIELD_SECS = "secs"
-FIELD_FLAGS = "flags"
-FIELD_CIADDR = "ciaddr"
-FIELD_YIADDR = "yiaddr"
-FIELD_SIADDR = "siaddr"
-FIELD_GIADDR = "giaddr"
-FIELD_CHADDR = "chaddr"
-FIELD_SNAME = "sname"
-FIELD_FILE = "file"
+FIELD_OP = "op" #: The DHCP operation type (Request or Response)
+FIELD_HTYPE = "htype" #: The type of hardware involved
+FIELD_HLEN = "hlen" #: The length of the hardware address
+FIELD_HOPS = "hops" #: The number of hops across which the packet has been transmitted
+FIELD_XID = "xid" #: The transaction ID
+FIELD_SECS = "secs" #: The number of seconds that have elapsed since the packet was first emitted
+FIELD_FLAGS = "flags" #: DHCP flags set on the packet
+FIELD_CIADDR = "ciaddr" #: The client's address
+FIELD_YIADDR = "yiaddr" #: The issued address
+FIELD_SIADDR = "siaddr" #: The server's address
+FIELD_GIADDR = "giaddr" #: The gateway's address
+FIELD_CHADDR = "chaddr" #: The hardware address
+FIELD_SNAME = "sname" #: BOOTP server hostname
+FIELD_FILE = "file" #: BOOTP filename
 
 MAGIC_COOKIE = '\x63\x82\x53\x63' #: The DHCP magic cookie, per RFC 1048
 MAGIC_COOKIE_ARRAY = array.array('B', MAGIC_COOKIE) #: The DHCP magic cookie as an array of bytes
@@ -71,18 +69,6 @@ DHCP_TYPE_NAMES = {
  10: 'DHCP_LEASEQUERY', 11: 'DHCP_LEASEUNASSIGNED',
  12: 'DHCP_LEASEUNKNOWN', 13: 'DHCP_LEASEACTIVE',
 } #: Mapping from DHCP option values to human-readable names.
-DHCP_NAMES = {
- 'ERROR_UNDEF': 0,
- 'BOOTREQUEST': 1, 'BOOTREPLY': 2,
- 'DHCP_DISCOVER': 1, 'DHCP_OFFER': 2,
- 'DHCP_REQUEST': 3, 'DHCP_DECLINE': 4,
- 'DHCP_ACK': 5, 'DHCP_NAK': 6,
- 'DHCP_RELEASE': 7,
- 'DHCP_INFORM': 8,
- 'DHCP_FORCERENEW': 9,
- 'DHCP_LEASEQUERY': 10, 'DHCP_LEASEUNASSIGNED': 11,
- 'DHCP_LEASEUNKNOWN': 12, 'DHCP_LEASEACTIVE': 13,
-} #: Mapping from human-readable names to DHCP option values.
 
 DHCP_FIELDS = {
  FIELD_OP: (0, 1),
@@ -99,7 +85,7 @@ DHCP_FIELDS = {
  FIELD_CHADDR: (28, 6),
  FIELD_SNAME: (44, 64),
  FIELD_FILE: (108, 128),
-} #: Maps from human-readable option field names their position within the fixed-size core packet body and the length of each field.
+} #: Byte-offset and size definitions for DHCP fields.
 
 DHCP_FIELDS_SPECS = {
  TYPE_IPV4: (4, 0, 1), TYPE_IPV4_PLUS: (0, 4, 4), TYPE_IPV4_MULT: (0, 0, 4),
@@ -112,16 +98,19 @@ DHCP_FIELDS_SPECS = {
  TYPE_NONE: (0, 0, 1),
 }
 """
-Provides information about how to validate each basic DHCP option type.
+Information about how to validate basic DHCP types.
 
 The human-readable format-name is mapped against a
 (fixed_length, minimum_length, multiple) tuple, which is handled by the
-following algorithm:
-    if `fixed_length` == 0:
-        `minimum_length` and `multiple` apply
-        resulting length must be a multiple of `multiple`
-    else:
-        only `fixed_length` is considered
+following pseudocode::
+    if fixed_length == 0:
+        if (
+            len(value) < minimum_length or
+            len(value) % (multiple * minimum_length) != 0
+        ):
+            fail
+    elif len(value) != fixed_length:
+        fail
 """
 
 DHCP_FIELDS_TYPES = {
@@ -142,7 +131,7 @@ DHCP_FIELDS_TYPES = {
 } #: Maps human-readable field-names to DHCP fields specs.
 
 DHCP_OPTIONS_TYPES = {
- #0
+ #0: PAD
  1: TYPE_IPV4,
  2: TYPE_LONG,
  3: TYPE_IPV4_PLUS,
@@ -313,7 +302,7 @@ DHCP_OPTIONS_TYPES = {
  244: "Reserved", 245: "Reserved", 246: "Reserved", 247: "Reserved",
  248: "Reserved", 249: "Reserved", 250: "Reserved", 251: "Reserved",
  252: "Reserved", 253: "Reserved", 254: "Reserved",
- #255
+ #255: END
 }
 """
 Maps DHCP option-numbers to DHCP fields specs.

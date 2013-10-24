@@ -1,28 +1,26 @@
 # -*- encoding: utf-8 -*-
 """
-staticDHCPd module: web._resources
+staticdhcpdlib.web._resources
+=============================
+Static resource definitions.
 
-Purpose
-=======
- Provides static content for the web-module.
- 
 Legal
-=====
- This file is part of staticDHCPd.
- staticDHCPd is free software; you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation; either version 3 of the License, or
- (at your option) any later version.
+-----
+This file is part of staticDHCPd.
+staticDHCPd is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 3 of the License, or
+(at your option) any later version.
 
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
- You should have received a copy of the GNU General Public License
- along with this program. If not, see <http://www.gnu.org/licenses/>.
- 
- (C) Neil Tallim, 2013 <flan@uguu.ca>
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+(C) Neil Tallim, 2013 <flan@uguu.ca>
 """
 CSS = """
 a{
@@ -182,6 +180,7 @@ function rewriteLocation(path){
 }
 """
 
+#Generated using the following statement
 #for i in textwrap.wrap(<binary-read-from-file>, expand_tabs=False, replace_whitespace=False, drop_whitespace=False, width=40): print ' ' + repr(i)
 FAVICON = (
   '\x00\x00\x01\x00\x01\x00  \x00\x00\x01\x00 \x00\xa8\x10\x00\x00\x16\x00\x00\x00(\x00\x00\x00 \x00\x00\x00@\x00\x00\x00\x01\x00 \x00\x00\x00'
