@@ -1,28 +1,27 @@
 # -*- encoding: utf-8 -*-
 """
-libpydhcpserver module: type_rfc
+libpydhcpserver.dhcp_types.rfc
+==============================
+Provides a number of convenience-classes and methods for working with RFC
+extensions to the DHCP spec.
 
-Purpose
-=======
- Defines the libpydhcpserver-specific RFC types.
- 
 Legal
-=====
- This file is part of libpydhcpserver.
- libpydhcpserver is free software; you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation; either version 3 of the License, or
- (at your option) any later version.
+-----
+This file is part of libpydhcpserver.
+libpydhcpserver is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 3 of the License, or
+(at your option) any later version.
 
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
- You should have received a copy of the GNU General Public License
- along with this program. If not, see <http://www.gnu.org/licenses/>.
- 
- (C) Neil Tallim, 2010 <red.hamsterx@gmail.com>
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+(C) Neil Tallim, 2013 <flan@uguu.ca>
 """
 try:
     from types import StringTypes
@@ -32,47 +31,47 @@ except ImportError: #py3k
 from conversion import (intToList, longToList)
 from ipv4 import IPv4
 
-def rfc3046_decode(l):
+def rfc3046_decode(s):
     """
     Extracts sub-options from an RFC3046 option (82).
     
-    @type l: list
-    @param l: The option's raw data.
-    
-    @rtype: dict
-    @return: The sub-options, as byte-lists, keyed by ID.
+    :param sequence s: The option's raw data.
+    :return dict: The sub-options, as byte-lists, keyed by ID.
     """
     sub_options = {}
-    while l:
-        id = l.pop(0)
-        length = l.pop(0)
-        sub_options[id] = l[:length]
-        l = l[length:]
+    while s:
+        id = s.pop(0)
+        length = s.pop(0)
+        sub_options[id] = s[:length]
+        s = s[length:]
     return sub_options
     
-def rfc3925_decode(l, identifier_size=4):
+def rfc3925_decode(s, identifier_size=4):
     """
-    Extracts sub-options from an RFC3925 option (124, 125).
+    Extracts sub-options from an RFC3925 option (124, 125 (with
+    identifier_size=1)).
     
-    identifier_size: the width of the identifier in bytes
-    
-    * ``vendor_class``: `option 124` as a dictionary of data as strings keyed by
-        enterprise numbers
+    :param sequence s: The option's raw data.
+    :param int identifier_size: The width of the identifier in bytes.
+    :return dict: A dictionary of data as strings keyed by ID numbers.
     """
     data = {}
-    while option:
-        enterprise_number = conversion.listToNumber(option[:identifier_size])
-        payload_size = option[identifier_size]
-        payload = option[1 + identifier_size:1 + identifier_size + payload_size]
-        option = option[1 + identifier_size + payload_size:]
+    while s:
+        enterprise_number = conversion.listToNumber(s[:identifier_size])
+        payload_size = s[identifier_size]
+        payload = s[1 + identifier_size:1 + identifier_size + payload_size]
+        s = s[1 + identifier_size + payload_size:]
         data[enterprise_number] = payload
     return data
     
 def rfc3925_125_decode(l):
     """
-    * ``vendor_specific``: `option 125` as a dictionary of data keyed by enterprise
-        number; the values are dictionaries that map suboption IDs to data as
-        strings
+    Extracts sub-options from an RFC3925 option (125).
+    
+    :param sequence s: The option's raw data.
+    :param int identifier_size: The width of the identifier in bytes.
+    :return dict: A dictionary of data as dictionaries mapping data as strings
+        keyed by ID numbers.
     """
     value = rfc3925_decode(value, identifier_size=4)
     for i in value:
@@ -85,11 +84,8 @@ def _rfc1035Parse(domain_name):
     ['g', 'o', 'o', 'g', 'l', 'e', 2, 'c', 'a', 0], in conformance with
     RFC1035.
     
-    @type domain_name: basestring
-    @param domain_name: The FQDN to be converted.
-    
-    @rtype: list
-    @return: The converted FQDN.
+    :param str domain_name: The FQDN to be converted.
+    :return list: The converted FQDN.
     """
     bytes = []
     for fragment in domain_name.split('.'):
@@ -105,18 +101,30 @@ class RFC(object):
     _value = None #: The bytes associated with this object.
     
     def getValue(self):
+        """
+        Provides the type's data as a list of bytes.
+        
+        Note that this is the actual internal list; modifications to the list
+        will be persistent.
+        
+        :return list: A list of bytes.
+        """
         return self._value
         
-    def __hash__(self):
-        return self._value.__hash__()
-        
     def __repr__(self):
-        return repr(self._value)
+        return "<%(name)s : %(value)r>" % {
+         'name': self.__class__.__name__,
+         'value': self._value,
+        }
         
-    def __nonzero__(self) :
+    def __nonzero__(self):
         return 1
         
     def __cmp__(self, other):
+        """
+        If ``other`` is an RFC instance, their values are compared. Otherwise,
+        the internal list's value is compared directly to ``other``.
+        """
         if isinstance(other, RFC):
             return cmp(self._value, other.getValue())
         return cmp(self._value, other)
@@ -124,59 +132,52 @@ class RFC(object):
 class rfc1035_plus(RFC):
     def __init__(self, data):
         """
-        Parses the given data and stores multiple RFC1035-formatted strings.
+        Parses the given ``data`` into an RFC1035-formatted sequence.
         
-        @type data: basestring
-        @param data: The comma-delimited FQDNs to process.
+        :param str data: The comma-delimited FQDNs to process.
         """
         self._value = []
-        for token in [tok for tok in [t.strip() for t in data.split(',')] if tok]:
+        for token in (tok for tok in (t.strip() for t in data.split(',')) if tok):
             self._value += _rfc1035Parse(token)
             
 class rfc2610_78(RFC):
     def __init__(self, mandatory, data):
         """
-        Parses the given data and stores multiple IPv4 addresses.
+        Parses the given ``data`` into multiple IPv4 addresses.
         
-        @type mandatory: bool
-        @param mandatory: True if the IPv4 addresses have to be respected.
-        @type data: basestring
-        @param data: The comma-delimited IPv4s to process.
+        :param bool mandatory: True if the IPv4 addresses have to be respected.
+        :param str data: The comma-delimited IPv4s to process.
         """
         self._value = [int(mandatory)]
-        for token in [tok for tok in [t.strip() for t in data.split(',')] if tok]:
-            self._value += IPv4(token)
+        for token in (tok for tok in (t.strip() for t in data.split(',')) if tok):
+            self._value.extend(IPv4(token))
 
 class rfc2610_79(RFC):
     def __init__(self, mandatory, data):
         """
-        Parses the given data and stores a scope-list.
+        Parses the given ``data`` into a scope-list.
         
-        @type mandatory: bool
-        @param mandatory: True if the scope-list has to be respected.
-        @type data: basestring
-        @param data: The scope-list to process.
+        :param bool mandatory: True if the scope-list has to be respected.
+        :param str data: The scope-list to process.
         """
         self._value = [int(mandatory)] + [ord(c) for c in data.encode('utf-8')]
 
 class rfc3361_120(RFC):
     def __init__(self, data):
         """
-        Parses the given data and stores multiple IPv4 addresses or
+        Parses the given data into multiple IPv4 addresses or
         RFC1035-formatted strings.
         
-        @type data: basestring
-        @param data: The comma-delimited IPv4s or FQDNs to process.
-        
-        @raise ValueError: Both IPv4s and FQDNs were specified.
+        :param str data: The comma-delimited IPv4s or FQDNs to process.
+        :except ValueError: Both IPv4s and FQDNs were provided.
         """
         ip_4_mode = False
         dns_mode = False
         
         self._value = []
-        for token in [tok for tok in [t.strip() for t in data.split(',')] if tok]:
+        for token in (tok for tok in (t.strip() for t in data.split(',')) if tok):
             try:
-                self._value += IPv4(token)
+                self._value.extend(IPv4(token))
                 ip_4_mode = True
             except ValueError:
                 self._value += _rfc1035Parse(token)
@@ -194,13 +195,12 @@ class rfc3397_119(rfc1035_plus): pass
 class rfc3925_124(RFC):
     def __init__(self, data):
         """
-        Sets vendor_class data.
-
-        @type data: list
-        @param data: A list of the form [(enterprise_number:int, data:string)].
+        Sets `vendor_class` data.
+        
+        :param dict data: A dictionary of data-strings keyed by ID-ints.
         """
         self._value = []
-        for (enterprise_number, payload) in data:
+        for (enterprise_number, payload) in sorted(data.items()):
             self._value += longToList(enterprise_number)
             self._value.append(chr(len(payload)))
             self._value += payload
@@ -208,18 +208,17 @@ class rfc3925_124(RFC):
 class rfc3925_125(RFC):
     def __init__(self, data):
         """
-        Sets vendor_specific data.
-
-        @type data: list
-        @param data: A list of the form
-            [(enterprise_number:int, [(subopt_code:byte, data:string)])].
+        Sets `vendor_specific` data.
+        
+        :param dict data: A dictionary of dictionaries of data-strings, keyed
+            by ID-ints at both levels.
         """
         self._value = []
-        for (enterprise_number, payload) in data:
+        for (enterprise_number, payload) in sorted(data.items()):
             self._value += longToList(enterprise_number)
             
             subdata = []
-            for (subopt_code, subpayload) in payload:
+            for (subopt_code, subpayload) in sorted(payload.items()):
                 subdata.append(chr(subopt_code))
                 subdata.append(chr(len(subpayload)))
                 subdata += subpayload
@@ -232,16 +231,11 @@ class rfc4174_83(RFC):
         """
         Sets iSNS configuration parameters.
         
-        @type isns_functions: int
-        @param isns_functions: Two bytes.
-        @type dd_access: int
-        @param dd_access: Two bytes.
-        @type admin_flags: int
-        @param admin_flags: Two bytes.
-        @type isns_security: int
-        @param isns_security: Four bytes.
-        @type ips: basestring
-        @param ips: The comma-delimited IPv4s to process.
+        :param int isns_functions: A sixteen-bit value.
+        :param int dd_access: A sixteen-bit value.
+        :param int admin_flags: A sixteen-bit value.
+        :param int isns_security: A thirty-two-bit value.
+        :param str ips: Comma-delimited IPv4s to be processed.
         """
         isns_functions = intToList(isns_functions)
         dd_access = intToList(dd_access)
@@ -250,7 +244,7 @@ class rfc4174_83(RFC):
         
         self._value = isns_functions + dd_access + admin_flags + isns_security
         for token in [tok for tok in [t.strip() for t in ips.split(',')] if tok]:
-            self._value += IPv4(token)
+            self._value.extend(IPv4(token))
 
 class rfc4280_88(rfc1035_plus): pass
 
@@ -259,28 +253,28 @@ class rfc5223_137(rfc1035_plus): pass
 class rfc5678_139(RFC):
     def __init__(self, values):
         """
-        Parses the given data and stores multiple IPv4 addresses
-        associated with sub-option codes.
+        Parses the given data into multiple IPv4 addresses associated with
+        sub-option codes.
         
-        @type values: tuple
-        @param values: A collection of (code:int, IPv4s:string) elements.
+        :param sequence values: A sequence of (code:int, IPv4s:string) elements.
         """
         self._value = []
         for (code, addresses) in values:
             self._value.append(code)
             for token in [tok for tok in [address.strip() for address in addresses.split(',')] if tok]:
-                self._value += IPv4(token)
-
+                self._value.extend(IPv4(token))
+                
 class rfc5678_140(RFC):
     def __init__(self, values):
         """
-        Parses the given data and stores multiple RFC1035-formatted strings
+        Parses the given data into multiple RFC1035-formatted strings
         associated with sub-option codes.
         
-        @type values: tuple
-        @param values: A collection of (code:int, FQDNs:string) elements.
+        :param sequence values: A sequence of (code:int, FQDNs:string)
+            elements.
         """
         self._value = []
         for (code, addresses) in values:
             self._value.append(code)
             self._value += rfc1035_plus(addresses).getValue()
+            
