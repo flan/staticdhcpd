@@ -324,8 +324,7 @@ class DHCPPacket(object):
             option_52 += option_52_value
             (location, size) = DHCP_FIELDS[field]
             (payload, option_ordering) = self._encodeOptions(options, option_ordering, size)
-            payload.extend(0 for i in xrange(size - len(payload)))
-            packet[location:location + size] = array('B', payload)
+            packet[location:location + len(payload)] = array('B', payload)
             
         #Set option 52 in the packet if it's required.
         if option_52:
