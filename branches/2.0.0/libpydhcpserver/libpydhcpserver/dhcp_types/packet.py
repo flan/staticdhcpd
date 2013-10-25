@@ -307,8 +307,7 @@ class DHCPPacket(object):
         payload.extend((0, 0, 0)) #Space for option 52
         if self.terminal_pad:
             terminal_pad_size = min(len(value) % self._word_size, size_limit)
-            for i in xrange(terminal_pad_size):
-                payload.append(0) #Add trailing pads
+            payload.extend(0 for i in xrange(terminal_pad_size)) #Add trailing pads
         else:
             terminal_pad_size = 0
         packet = self._header[:]
@@ -316,13 +315,24 @@ class DHCPPacket(object):
         
         #If there is remaining data, pack it using option 52, if possible.
         option_52 = 0
-        if option_ordering and not any(self.getOption(FIELD_SNAME)): #SNAME is open
-            option_52 += 2
-            (location, size) = DHCP_FIELDS
-            (payload, option_ordering) = self._encodeOptions(options, option_ordering, size_limit)
+        for (field, option_52_value) in ((FIELD_SNAME, 2), (FIELD_FILE, 1)):
+            if not option_ordering: #There are no more options to allocate
+                break
+            if any(i for i in self.getOption(field) if i != '\0'): #The field is occupied
+                continue
+                
+            option_52 += option_52_value
+            (location, size) = DHCP_FIELDS[field]
+            (payload, option_ordering) = self._encodeOptions(options, option_ordering, size)
+            payload.extend(0 for i in xrange(size - len(payload)))
+            packet[location:location + size] = array('B', payload)
             
+        #Set option 52 in the packet if it's required.
         if option_52:
-            
+            packet[-(4 + terminal_pad_size)] = 52 #Option ID (takes the place of former END)
+            packet[-(3 + terminal_pad_size)] = 1 #Option length
+            packet[-(2 + terminal_pad_size)] = option_52 #Option value
+            packet[-(1 + terminal_pad_size)] = 255 #END
             
         #Encode packet.
         return packet.tostring()
