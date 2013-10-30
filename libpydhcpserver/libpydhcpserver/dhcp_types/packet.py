@@ -405,8 +405,10 @@ class DHCPPacket(object):
     def _getOptionID(self, option):
         if type(option) is not int:
             id = DHCP_OPTIONS.get(option)
-        elif not 0 < option < 255:
+        elif not 0 < option < 255: #Out of range.
             id = None
+        else:
+            id = option
             
         if id is None:
             raise LookupError("Option %(option)r is unknown" % {
