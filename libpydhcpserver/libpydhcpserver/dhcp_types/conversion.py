@@ -23,6 +23,11 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 (C) Neil Tallim, 2013 <flan@uguu.ca>
 """
+try:
+    from types import StringTypes
+except ImportError: #py3k
+    StringTypes = (str,)
+
 _IPv4 = None #: Placeholder for a deferred import ot avoid a circular reference.
 
 def listToNumber(l):

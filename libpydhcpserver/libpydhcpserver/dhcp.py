@@ -268,7 +268,7 @@ class _NetworkLink(object):
                     self._responder_broadcast = _L2Responder_pcap(server_address, response_interface, qtags=response_interface_qtags)
                 except Exception, e:
                     import errno
-                    raise EnvironmentError(errno.ELIBACC, "Raw response-socket requested on %(interface)s, but neither AF_PACKET/PF_PACKET nor libpcap are available" % {'interface': response_interface,})
+                    raise EnvironmentError(errno.ELIBACC, "Raw response-socket requested on %(interface)s, but neither AF_PACKET/PF_PACKET nor libpcap are available, or the interface does not exist" % {'interface': response_interface,})
             self._unicast_discover_supported = True
         else:
             self._responder_broadcast = _L3Responder(server_address=server_address)
@@ -519,8 +519,8 @@ class _L2Responder(_Responder):
         :return int: The data's checksum.
         """
         if sum(len(i) for i in data) & 1: #Odd
-            checksum = sum(self._array_('H', ''.join(data[:-1])))
-            checksum += ord(data[-1][-1]) << 8 #Add the final byte, shifted by one
+            checksum = sum(self._array_('H', ''.join(data)[:-1]))
+            checksum += ord(data[-1][-1]) #Add the final byte
         else: #Even
             checksum = sum(self._array_('H', ''.join(data)))
         checksum = (checksum >> 16) + (checksum & 0xffff)
