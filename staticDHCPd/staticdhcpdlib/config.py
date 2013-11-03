@@ -48,13 +48,15 @@ else:
     conf_search_paths = [os.path.join(os.getcwd(), 'conf'), '/etc/staticDHCPd']
     
 for conf_path in conf_search_paths:
+    extensions_path = os.path.join(conf_path, 'extensions')
     sys.path.append(conf_path)
+    sys.path.append(extensions_path)
     try: #Attempt to import conf.py from the path
         conf = imp.load_source('conf', os.path.join(conf_path, 'conf.py'))
     except IOError:
         sys.path.remove(conf_path)
+        sys.path.remove(extensions_path)
     else:
-        sys.path.append(os.path.join(conf_path, 'extensions'))
         break
 else:
     raise ImportError("Unable to find a suitable copy of conf.py; searched: %(paths)r" % {
