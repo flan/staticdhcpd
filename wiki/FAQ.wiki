@@ -85,7 +85,7 @@ Further information:
 == How do I quickly identify issues and peek into the state of the system? ==
 Starting with 1.5.2, a simple `writeLog("Hello!")` function has been exposed to the context of `conf.py:loadDHCPPacket()`, allowing you to write anything you want to the web interface.
 
-With 2.0.0 and newer, while `writeLog()` is still supported, `logger` is a Python-logging object, supporting the methods `debug('hello')`, `info('hello')`, `warn('hello')`, `error('hello')`, and `critical('hello')`, which you should use instead, like `logger.info("I'm operational now!"). `writeLog()` is now an alias for its `warn()` method.
+With 2.0.0 and newer, while `writeLog()` is still supported, `logger` is a Python-logging object, supporting the methods `debug()`, `info()`, `warn()`, `error()`, and `critical()`, which you should use instead, like `logger.info("I'm operational now!"). `writeLog()` is now an alias for its `warn()` method.
 
 ----
 = Unsupported features =
