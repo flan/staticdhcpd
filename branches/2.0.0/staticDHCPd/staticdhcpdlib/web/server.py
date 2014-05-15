@@ -29,6 +29,7 @@ import cgi
 import hashlib
 import logging
 import re
+import select
 import SocketServer
 import threading
 import time
@@ -313,6 +314,8 @@ class WebService(threading.Thread):
         while True:
             try:
                 self._web_server.handle_request()
+            except select.error:
+                _logger.debug('Suppressed non-fatal select() error')
             except Exception:
                 _logger.critical("Unhandled exception:\n" + traceback.format_exc())
                 
