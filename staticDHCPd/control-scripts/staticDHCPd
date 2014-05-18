@@ -1,3 +1,4 @@
+#!/bin/sh
 ### BEGIN INIT INFO
 # Provides:          staticdhcpd
 # Required-Start:    $local_fs $remote_fs $network
@@ -10,31 +11,30 @@
 
 NAME=staticDHCPd
 DAEMON=/usr/bin/staticDHCPd
-ARGS = ""
+ARGS=""
 SSD_ARGS="--quiet --pidfile /var/run/staticdhcpd.pid --exec $DAEMON -- $ARGS"
 
-start_daemon {
+start_daemon () {
   echo -n "Starting $NAME: "
   start-stop-daemon --make-pidfile --start $SSD_ARGS
+  echo "$NAME."
 }
-stop_daemon {
+stop_daemon () {
   echo -n "Stopping $NAME: "
   start-stop-daemon --stop $SSD_ARGS
+  echo "$NAME."
 }
 
 case "$1" in
   start)
     start_daemon
-    echo "$NAME."
     ;;
   stop)
     stop_daemon
-    echo "$NAME."
     ;;
   force-reload|restart)
     stop_daemon
     start_daemon
-    echo "$NAME."
     ;;
   reload)
     echo -n "Reinitialising $NAME: "
