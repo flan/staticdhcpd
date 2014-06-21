@@ -20,7 +20,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-(C) Neil Tallim, 2013 <flan@uguu.ca>
+(C) Neil Tallim, 2014 <flan@uguu.ca>
 (C) Mathieu Ignacio, 2008 <mignacio@april.org>
 """
 from array import array
@@ -356,26 +356,32 @@ class DHCPPacket(object):
             })
         return _FORMAT_CONVERSION_DESERIAL[type](value)
         
+    def _validateByteList(self, value):
+        return not any(True for v in value if type(v) is not int or not 0 <= v <= 255)
+        
     def _extractList(self, value, option=None):
         """
-        option -> conversion enabled
+        Ensures that the data being processed is expressed as a list of bytes.
+        
+        :param value: The data to be processed.
+        :return list(int): The data as a list of bytes.
         """
-        if not isinstance(value, list):
-            if isinstance(value, tuple):
-                value = list(value)
-            elif isinstance(value, array):
-                value = value.tolist()
-            elif isinstance(value, RFC):
-                value = value.getValue()
-            elif option:
-                value = self._convertOptionValue(option, value)
-            else:
-                raise TypeError("Value supplied could not be realised as a list: %(value)r" % {
-                 'value': value,
-                })
-        if any(True for v in value if type(v) is not int or not 0 <= v <= 255):
-            raise TypeError("Value supplied is not a sequence of bytes: %(value)r" % {
-             'value': value,
+        original_value = value
+        #If it's another type of sequence, convert it
+        if isinstance(value, tuple):
+            value = list(value)
+        elif isinstance(value, array):
+            value = value.tolist()
+            
+        #If it isn't already a list of bytes, process it
+        if not isinstance(value, list) or not self._validateByteList(value):
+            if option:
+                return self._convertOptionValue(option, value)
+            if isinstance(value, RFC):
+                return value.getValue()
+                
+            raise TypeError("Value supplied cannot be converted into a list of bytes: %(value)r" % {
+             'value': original_value,
             })
         return value
         
