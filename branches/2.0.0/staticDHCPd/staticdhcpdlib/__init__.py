@@ -24,6 +24,6 @@ Legal
  
  (C) Neil Tallim, 2014 <flan@uguu.ca>
 """
-VERSION = '2.0.0-beta-11'
+VERSION = '2.0.0-beta-12'
 URL = 'http://uguu.ca/'
 COPYRIGHT = '2014, Neil Tallim <flan@uguu.ca>'

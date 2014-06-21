@@ -1,9 +1,3 @@
-libpydhcpserver (2.0.0~beta-1) unstable; urgency=low
-
-  * Options expressed as lists of types will now be handled properly.
-
- -- Neil Tallim <flan@uguu.ca>  Fri, 20 Jun 2014 22:57:00 -0600
-
 libpydhcpserver (2.0.0~beta) unstable; urgency=low
 
   * Finally refactored DHCPPacket.
