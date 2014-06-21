@@ -668,7 +668,8 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
                 wrapper.packet.setOption('yiaddr', wrapper.ciaddr)
                 if wrapper.loadDHCPPacket(definition):
                     self._emitDHCPPacket(
-                     wrapper.packet, (wrapper.ciaddr, 0), wrapper.pxe,
+                     wrapper.packet,
+                     libpydhcpserver.dhcp.Address(wrapper.ciaddr, 0), wrapper.pxe,
                      wrapper.mac, wrapper.ciaddr
                     )
                     wrapper.markAddressed()
@@ -676,7 +677,8 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
                 if renew:
                     wrapper.packet.transformToDHCPNakPacket()
                     self._emitDHCPPacket(
-                     wrapper.packet, (wrapper.ciaddr, 0), wrapper.pxe,
+                     wrapper.packet,
+                     libpydhcpserver.dhcp.Address(wrapper.ciaddr, 0), wrapper.pxe,
                      wrapper.mac, wrapper.ciaddr
                     )
                     wrapper.markAddressed()
