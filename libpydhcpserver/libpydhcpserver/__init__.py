@@ -21,9 +21,9 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-(C) Neil Tallim, 2013 <flan@uguu.ca>
+(C) Neil Tallim, 2014 <flan@uguu.ca>
 (C) Mathieu Ignacio, 2008 <mignacio@april.org>
 """
-VERSION = '2.0.0-beta'
+VERSION = '2.0.0-beta-1'
 URL = 'http://uguu.ca/'
 COPYRIGHT = '2013, Neil Tallim <flan@uguu.ca>'
