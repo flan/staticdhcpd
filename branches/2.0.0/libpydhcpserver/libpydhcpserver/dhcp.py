@@ -48,10 +48,15 @@ Nothing should be addressable to the special response socket, but better to avoi
 
 Address = collections.namedtuple("Address", ('ip', 'port'))
 """
-Defines an inet layer-3 address.
+An inet layer-3 address.
 
-* ``ip``: :class:`IPv4 <dhcp_types.IPv4>`
-* ``port``: ``int``
+.. py:attribute:: ip
+
+    An :class:`IPv4 <dhcp_types.IPv4>` address
+
+.. py:attribute:: port
+
+    A numeric port value.
 """
 
 class DHCPServer(object):

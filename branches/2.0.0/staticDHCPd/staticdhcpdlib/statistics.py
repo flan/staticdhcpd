@@ -38,22 +38,46 @@ Statistics = collections.namedtuple("Statistics", (
  'source_address', 'mac', 'ip', 'subnet', 'serial', 'method', 'processing_time', 'processed', 'pxe',
 ))
 """
-#REWRITE: does not include everything
+Statistics associated with a DHCP event.
 
-@type source_address: tuple(2)
-@param source_address: The (address:basestring, port:int) of the sender.
--- Now an Address tuple
-@type mac: libpydhcpserver.dhcp_types.mac.MAC
-@param mac: If a DHCP packet, the MAC for which it was sent; None otherwise.
-@type method: basestring|None
-@param method: A DHCP method, or None if the packet was not DHCP-compliant.
-@type processing_time: float
-@param processing_time: The amount of time, in seconds, required for processing.
-@type processed: bool
-@param processed: Whether the packet was processed or discarded for any reason.
-`pxe` indicates whether the request arrived via PXE.
+.. py:attribute:: source_address
 
-client_ip is an IPv4
+    An :class:`libpydhcpserver.dhcp.Address` containing the IP and port of the
+    client.
+
+.. py:attribute:: mac
+
+    A :class:`libpydhcpserver.dhcp_types.mac.MAC` containing the MAC of the
+    client; None if the event was not due to a DHCP packet.
+
+.. py:attribute:: ip
+
+    An :class:`libpydhcpserver.dhcp_types.ipv4.IPv4` containing the address
+    assigned to the client, if any.
+
+.. py:attribute:: subnet
+
+    The database-subnet associated with this event.
+
+.. py:attribute:: serial
+
+    The database-serial associated with this event.
+
+.. py:attribute:: method
+
+    The DHCP method of the received packet.
+
+.. py:attribute:: processing_time
+
+    The number of seconds required to finish processing the event.
+
+.. py:attribute:: processed
+
+    Whether a response was generated (False if non-DHCP or blacklisted).
+
+.. py:attribute:: pxe
+
+    True if the request received was PXE.
 """
 
 def emit(statistics):
