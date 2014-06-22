@@ -1,28 +1,26 @@
 # -*- encoding: utf-8 -*-
 """
-staticDHCPd module: web.server
-
-Purpose
-=======
- Provides a web interface for browsers and service-consumers.
+staticdhcpdlib.web.server
+=========================
+Provides a web interface for browsers and service-consumers.
  
 Legal
-=====
- This file is part of staticDHCPd.
- staticDHCPd is free software; you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation; either version 3 of the License, or
- (at your option) any later version.
+-----
+This file is part of staticDHCPd.
+staticDHCPd is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 3 of the License, or
+(at your option) any later version.
 
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
- You should have received a copy of the GNU General Public License
- along with this program. If not, see <http://www.gnu.org/licenses/>.
- 
- (C) Neil Tallim, 2013 <flan@uguu.ca>
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+(C) Neil Tallim, 2014 <flan@uguu.ca>
 """
 import BaseHTTPServer
 import cgi
@@ -49,12 +47,16 @@ from . import (WEB_METHOD_DASHBOARD, WEB_METHOD_TEMPLATE, WEB_METHOD_RAW)
 
 _logger = logging.getLogger('web.server')
 
-_AUTHORIZATION_RE = re.compile(r'^(?P<key>.+?)="?(?P<value>.+?)"?$')
-_NONCE_TIMEOUT = 120.0 #: The number of seconds to wait for the client to try again.
-_OPAQUE = uuid.uuid4().hex
-_NONCES = []
-_NONCE_LOCK = threading.Lock()
+_AUTHORIZATION_RE = re.compile(r'^(?P<key>.+?)="?(?P<value>.+?)"?$') #: A key-value parsing regex
+_NONCE_TIMEOUT = 120.0 #: The number of seconds to wait for the client to try again
+_OPAQUE = uuid.uuid4().hex #: An opaque value for DIGEST processing
+_NONCES = [] #: A list of all active DIGEST nonces
+_NONCE_LOCK = threading.Lock() #: A lock to prevent race-conditions
+
 def _flush_expired_nonces():
+    """
+    Clears out any nonces that have expired.
+    """
     current_time = time.time()
     stale_nonces = []
     with _NONCE_LOCK:
@@ -68,6 +70,11 @@ def _flush_expired_nonces():
             del _NONCES[i]
             
 def _generateNonce():
+    """
+    Creates and indexes, with timeout, a new nonce.
+    
+    :return str: The nonce.
+    """
     nonce = uuid.uuid4().hex
     timeout = time.time() + _NONCE_TIMEOUT
     with _NONCE_LOCK:
@@ -75,6 +82,13 @@ def _generateNonce():
     return nonce
     
 def _locateNonce(nonce, remove=False):
+    """
+    Indicates whether a nonce exists and optionally removes it.
+    
+    :param basestring nonce: The nonce to check.
+    :param bool remove: Whether the nonce should be removed.
+    :return bool: True if the nonce was found.
+    """
     with _NONCE_LOCK:
         for (i, (n, _)) in enumerate(_NONCES):
             if nonce == n:
@@ -87,6 +101,12 @@ def _locateNonce(nonce, remove=False):
         return False
         
 def _parseAuthorization(authorization):
+    """
+    Extracts authorization parameters.
+    
+    :param basestring authorization: Raw authorization data.
+    :return dict: All authorization parameters.
+    """
     parameters = (p.strip() for p in authorization[authorization.find(' ') + 1:].split(','))
     result = {}
     for parameter in parameters:
@@ -97,6 +117,14 @@ def _parseAuthorization(authorization):
     return result
     
 def _validateCredentials(parameters, method):
+    """
+    Determines whether the given authorization credentials are valid.
+    
+    :param dict parameters: The authorization parameters to validate.
+    :param basestring method: The method by which the parameters were supplied.
+    :return bool: Whether the credentials are valid.
+    :except ValueError: Ill-formed data was received.
+    """
     try:
         _logger.debug("DIGEST via %(method)s; details: %(details)r" % {
          'method': method,
@@ -135,9 +163,16 @@ def _validateCredentials(parameters, method):
             
         return target == parameters['response'].lower()
     except Exception, e:
-        raise ValueError("Authorisation data from client is not spec-compliant: " + str(e))
+        raise ValueError("Authorization data from client is not spec-compliant: " + str(e))
         
 def _isSecure(headers, method):
+    """
+    Determines whether the request qualifies as secure.
+    
+    :param headers: The headers from the request.
+    :param basestring method: The method by which the request was received.
+    :except _RequestAuthorizationRequired: Security validation failed.
+    """
     _flush_expired_nonces()
     
     authorization = headers.getheader('authorization')
@@ -162,21 +197,35 @@ def _isSecure(headers, method):
         raise _RequestAuthorizationRequired(_generateNonce(), False)
         
 def _validateRequest(headers, method, secure):
+    """
+    Determines whether the request requires authorization.
+    
+    :param headers: The headers from the request.
+    :param basestring method: The method by which the request was received.
+    :param bool secure: Whether the requested resource is secured.
+    :except _RequestAuthorizationRequired: Security validation failed.
+    """
     if secure and (config.WEB_DIGEST_USERNAME and config.WEB_DIGEST_PASSWORD):
         _isSecure(headers, method)
         
-def _webMethod(method_type):
+def _webMethod(method):
     """
     A decorator to deal with web-flows.
     
-    @type method_type: basestring
-    @param method_type: The type of method requested.
+    :param basestring method: The method used to make the request.
     """
     def decorator(http_method):
+        """
+        A decorator that puts error-handling and security around an HTTP-request
+        handler.
+        
+        :param callable http_method: A HTTP-request handler.
+        :return method: The decorated method.
+        """
         def wrappedHandler(self):
             start_time = time.time()
             _logger.debug("Received %(method)s from %(host)s:%(port)i for %(path)s" % {
-             'method': method_type,
+             'method': method,
              'host': self.client_address[0],
              'port': self.client_address[1],
              'path': self.path,
@@ -190,7 +239,7 @@ def _webMethod(method_type):
                 #First, see if it matches a registered callback
                 callback = retrieveMethodCallback(path)
                 if callback:
-                    _validateRequest(self.headers, method_type, callback.secure or (callback.display_mode == WEB_METHOD_DASHBOARD and config.WEB_DASHBOARD_SECURE))
+                    _validateRequest(self.headers, method, callback.secure or (callback.display_mode == WEB_METHOD_DASHBOARD and config.WEB_DASHBOARD_SECURE))
                     cacheable = callback.cacheable
                     if callback.display_mode == WEB_METHOD_DASHBOARD:
                         handler = lambda path, queryargs, mimetype, data, headers : _templates.renderDashboard(path, queryargs, mimetype, data, headers, featured_element=callback)
@@ -199,12 +248,14 @@ def _webMethod(method_type):
                     else:
                         handler = callback.callback
                 elif path == '/':
-                    _validateRequest(self.headers, method_type, config.WEB_DASHBOARD_SECURE)
+                    _validateRequest(self.headers, method, config.WEB_DASHBOARD_SECURE)
                     handler = _templates.renderDashboard
                 else:
                     raise _NotFound(path)
                     
+                #Extract request details
                 (mimetype, data) = http_method(self)
+                #Then execute the real request
                 (mimetype, data) = handler(path, queryargs, mimetype, data, self.headers)
                 self.send_response(200)
                 self.send_header('Last-Modified', time.strftime('%a, %d %b %Y %H:%M:%S %Z'))
@@ -243,7 +294,7 @@ def _webMethod(method_type):
                 error = traceback.format_exc()
                 _logger.error("Problem while processing request for '%(path)s' via %(method)s:\n%(error)s" % {
                  'path': self.path,
-                 'method': method_type,
+                 'method': method,
                  'error': error,
                 })
                 self.send_response(500)
@@ -253,7 +304,7 @@ def _webMethod(method_type):
                 self.wfile.write(error)
             finally:
                 _logger.debug("Processed %(method)s from %(host)s:%(port)i for %(path)s in %(time).4f seconds" % {
-                 'method': method_type,
+                 'method': method,
                  'host': self.client_address[0],
                  'port': self.client_address[1],
                  'path': self.path,
@@ -263,12 +314,25 @@ def _webMethod(method_type):
     return decorator
     
 class _WebHandler(BaseHTTPServer.BaseHTTPRequestHandler):
+    """
+    A handler for HTTP requests.
+    """
     @_webMethod('GET')
     def do_GET(self):
+        """
+        Extracts GET-specific request details.
+        
+        :return tuple(2): The request's MIME-type and data.
+        """
         return (None, None)
         
     @_webMethod('POST')
     def do_POST(self):
+        """
+        Extracts POST-specific request details.
+        
+        :return tuple(2): The request's MIME-type and data.
+        """
         (content_type, _) = cgi.parse_header(self.headers.getheader('content-type'))
         content_length = int(self.headers.getheader('content-length'))
         return (content_type, self.rfile.read(content_length))
@@ -282,14 +346,14 @@ class WebService(threading.Thread):
     """
     A thread that handles HTTP requests indefinitely, daemonically.
     """
-    _web_server = None #: The handler that responds to HTTP requests.
+    _web_server = None #: The handler that responds to HTTP requests
     
     def __init__(self):
         """
         Sets up the Web server.
         
-        @raise Exception: If a problem occurs while binding the sockets needed
-            to handle HTTP traffic.
+        :except Exception: If a problem occurs while binding the sockets needed
+                           to handle HTTP traffic.
         """
         threading.Thread.__init__(self)
         self.name = "Webservice"
@@ -315,13 +379,24 @@ class WebService(threading.Thread):
             try:
                 self._web_server.handle_request()
             except select.error:
-                _logger.debug('Suppressed non-fatal select() error')
+                _logger.debug("Suppressed non-fatal select() error")
             except Exception:
                 _logger.critical("Unhandled exception:\n" + traceback.format_exc())
                 
 class _RequestAuthorizationRequired(Exception):
+    """
+    An internal exception for cases when a request requires authorization.
+    """
     def __init__(self, nonce, stale):
+        """
+        :param basestring nonce: The nonce-value.
+        :param bool stale: Whether the nonce is stale, forcing invalidation.
+        """
         self.nonce = nonce
         self.stale = stale
         
-class _NotFound(Exception): pass
+class _NotFound(Exception):
+    """
+    An internal exception for cases when a request is made of an unknown resource.
+    """
+    

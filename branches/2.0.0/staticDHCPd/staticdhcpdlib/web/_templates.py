@@ -1,29 +1,27 @@
 # -*- encoding: utf-8 -*-
 """
-staticDHCPd module: web._templated
+staticdhcpdlib.web._templated
+=============================
+Handles all core templating requirements for rendering things like the
+dashboard.
 
-Purpose
-=======
- Handles all core templating requirements for rendering things like the
- dashboard.
- 
 Legal
-=====
- This file is part of staticDHCPd.
- staticDHCPd is free software; you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation; either version 3 of the License, or
- (at your option) any later version.
+-----
+This file is part of staticDHCPd.
+staticDHCPd is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 3 of the License, or
+(at your option) any later version.
 
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
- You should have received a copy of the GNU General Public License
- along with this program. If not, see <http://www.gnu.org/licenses/>.
- 
- (C) Neil Tallim, 2013 <flan@uguu.ca>
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+(C) Neil Tallim, 2014 <flan@uguu.ca>
 """
 import logging
 import datetime
@@ -43,7 +41,7 @@ from staticdhcpdlib.web import (
  retrieveVisibleMethodCallbacks
 )
 
-_SYSTEM_NAME = _functions.sanitise(config.SYSTEM_NAME)
+_SYSTEM_NAME = _functions.sanitise(config.SYSTEM_NAME) #: The name of the system
 _FOOTER = """<div style="float: right;">If you benefit from this system, please <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&amp;hosted_button_id=11056045">support it</a></div>
 <a href="%(staticdhcpd-url)s">staticDHCPd</a> v%(staticdhcpd-version)s |
 <a href="%(libpydhcpserver-url)s">libpydhcpserver</a> v%(libpydhcpserver-version)s""" % {
@@ -51,10 +49,21 @@ _FOOTER = """<div style="float: right;">If you benefit from this system, please 
  'staticdhcpd-version': _functions.sanitise(staticdhcpdlib.VERSION),
  'libpydhcpserver-url': _functions.sanitise(libpydhcpserver.URL),
  'libpydhcpserver-version': _functions.sanitise(libpydhcpserver.VERSION),
-}
-_BOOT_TIME = datetime.datetime.now().replace(microsecond=0)
+} #: The footer's HTML fragment
+_BOOT_TIME = datetime.datetime.now().replace(microsecond=0) #: The time at which the system was started
 
 def _renderHeaders(path, queryargs, mimetype, data, headers):
+    """
+    Renders all HTML headers.
+    
+    :param basestring path: The requested path.
+    :param dict queryargs: All query arguments.
+    :param basestring mimetype: The MIME-type of any accompanying data.
+    :param str data: Any data uploaded by the client.
+    :param headers: All HTTP headers.
+    
+    :return str: An HTML fragment.
+    """
     output = []
     for callback in retrieveHeaderCallbacks():
         try:
@@ -70,6 +79,11 @@ def _renderHeaders(path, queryargs, mimetype, data, headers):
     return '\n'.join(output)
     
 def _renderHeader():
+    """
+    Renders the header section of the web interface.
+    
+    :return str: An HTML fragment.
+    """
     current_time = datetime.datetime.now().replace(microsecond=0)
     return """<div style="float: right;">Page generated %(current-time)s</div>
 <a href="/" style="color: inherit; font-weight: bold;">%(name)s</a> online for %(uptime)s, since %(boot-time)s""" % {
@@ -80,9 +94,26 @@ def _renderHeader():
     }
     
 def _renderFooter():
+    """
+    Renders the footer section of the web interface.
+    
+    :return str: An HTML fragment.
+    """
     return _FOOTER
     
 def _renderMain(elements, path, queryargs, mimetype, data, headers):
+    """
+    Renders the main section of the web interface.
+    
+    :param elements: The elements to render.
+    :param basestring path: The requested path.
+    :param dict queryargs: All query arguments.
+    :param basestring mimetype: The MIME-type of any accompanying data.
+    :param str data: Any data uploaded by the client.
+    :param headers: All HTTP headers.
+    
+    :return str: An HTML fragment.
+    """
     output = []
     for element in elements:
         if not element:
@@ -109,6 +140,11 @@ def _renderMain(elements, path, queryargs, mimetype, data, headers):
     return '\n'.join(output)
     
 def _renderMethods():
+    """
+    Renders the methods section of the web interface.
+    
+    :return str: An HTML fragment.
+    """
     output = []
     module = None
     for (element, path) in retrieveVisibleMethodCallbacks():
@@ -134,6 +170,20 @@ def _renderMethods():
     return '\n'.join(output)
     
 def _renderTemplate(elements, path, queryargs, mimetype, data, headers, rewrite_location=False):
+    """
+    Renders the web interface.
+    
+    :param elements: The elements to render.
+    :param basestring path: The requested path.
+    :param dict queryargs: All query arguments.
+    :param basestring mimetype: The MIME-type of any accompanying data.
+    :param str data: Any data uploaded by the client.
+    :param headers: All HTTP headers.
+    :param bool rewrite_location: Whether the URI should be rewritten to point
+                                  at the dashboard.
+    
+    :return str: An HTML fragment.
+    """
     return ('application/xhtml+xml; charset=utf-8',
 """<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
 "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
@@ -168,9 +218,34 @@ def _renderTemplate(elements, path, queryargs, mimetype, data, headers, rewrite_
     })
     
 def renderTemplate(path, queryargs, mimetype, data, headers, element):
+    """
+    Renders a single-element view.
+    
+    :param basestring path: The requested path.
+    :param dict queryargs: All query arguments.
+    :param basestring mimetype: The MIME-type of any accompanying data.
+    :param str data: Any data uploaded by the client.
+    :param headers: All HTTP headers.
+    :param :class:`WebMethod <web.WebMethod>` element: The element to render.
+    
+    :return str: An HTML fragment.
+    """
     return _renderTemplate((element,), path=path, queryargs=queryargs, mimetype=mimetype, data=data, headers=headers)
     
 def renderDashboard(path, queryargs, mimetype, data, headers, featured_element=None):
+    """
+    Renders the dashboard view.
+    
+    :param basestring path: The requested path.
+    :param dict queryargs: All query arguments.
+    :param basestring mimetype: The MIME-type of any accompanying data.
+    :param str data: Any data uploaded by the client.
+    :param headers: All HTTP headers.
+    :param :class:`WebMethod <web.WebMethod>` featured_element: The element to
+        present at the start of the dashboard.
+    
+    :return str: An HTML fragment.
+    """
     elements = retrieveDashboardCallbacks()
     if featured_element:
         elements = [featured_element, None] + list(elements)
