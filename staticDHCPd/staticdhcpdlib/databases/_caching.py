@@ -1,28 +1,26 @@
 # -*- encoding: utf-8 -*-
 """
-staticDHCPd module: databases._caching
-
-Purpose
-=======
- Defines caching structures for databases.
+staticdhcpdlib.databases._caching
+=================================
+Defines caching structures for databases.
  
 Legal
-=====
- This file is part of staticDHCPd.
- staticDHCPd is free software; you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation; either version 3 of the License, or
- (at your option) any later version.
+-----
+This file is part of staticDHCPd.
+staticDHCPd is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 3 of the License, or
+(at your option) any later version.
 
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
- You should have received a copy of the GNU General Public License
- along with this program. If not, see <http://www.gnu.org/licenses/>.
- 
- (C) Neil Tallim, 2013 <flan@uguu.ca>
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+(C) Neil Tallim, 2014 <flan@uguu.ca>
 """
 import json
 import logging
@@ -33,11 +31,21 @@ from generic import (Database, Definition)
 _logger = logging.getLogger('databases._caching')
 
 class _DatabaseCache(Database):
-    _cache_lock = None
-    _chained_cache = None
-    _name = None
+    """
+    A node in a caching chain.
+    """
+    _cache_lock = None #: A lock to prevent race conditions
+    _chained_cache = None #: The next node in the caching chain
+    _name = None #: The name of this node
     
     def __init__(self, name, chained_cache=None):
+        """
+        Initialises a node in a caching chain.
+        
+        :param basestring name: The name of the cache.
+        :param :class:`_DatabaseCache <_DatabaseCache>` chained_cache: The next
+            node in the chain; None if this is the end.
+        """
         self._name = name
         _logger.debug("Initialising database-cache '%(id)s'..." % {
          'id': self,
@@ -109,9 +117,20 @@ class _DatabaseCache(Database):
     def _cacheMAC(self, mac, definition, chained): pass
     
 class MemoryCache(_DatabaseCache):
-    _persistent_cache = None
+    """
+    An optimised in-memory database cache.
+    """
+    _mac_cache = None #: A dictionary of cached MACs
+    _subnet_cache = None #: A dictionary of cached subnet/serial data
     
     def __init__(self, name, chained_cache=None):
+        """
+        Initialises the cache.
+        
+        :param basestring name: The name of the cache.
+        :param :class:`_DatabaseCache <_DatabaseCache>` chained_cache: The next
+            node in the chain; None if this is the end.
+        """
         _DatabaseCache.__init__(self, name, chained_cache=chained_cache)
         
         self._mac_cache = {}
@@ -146,10 +165,20 @@ class MemoryCache(_DatabaseCache):
         )
         
 class DiskCache(_DatabaseCache):
-    _filepath = None
-    _sqlite3 = None
+    _filepath = None #: The path to which the persistent file will be written
+    _sqlite3 = None #: A reference to the sqlite3 module
     
     def __init__(self, name, filepath, chained_cache=None):
+        """
+        Initialises the cache.
+        
+        :param basestring name: The name of the cache.
+        :param basestring filepath: The path to which a persistent on-disk
+                                    cache is written; if None, a tempfile is
+                                    used.
+        :param :class:`_DatabaseCache <_DatabaseCache>` chained_cache: The next
+            node in the chain; None if this is the end.
+        """
         _DatabaseCache.__init__(self, name, chained_cache=chained_cache)
         
         import sqlite3
@@ -159,6 +188,7 @@ class DiskCache(_DatabaseCache):
             self._filepath = filepath
         else:
             import tempfile
+            #Assigned to self so that the file stays open
             self.__tempfile = tempfile.NamedTemporaryFile()
             self._filepath = self.__tempfile.name
             

@@ -1,30 +1,28 @@
 # -*- encoding: utf-8 -*-
 """
-staticDHCPd module: databases.generic
+staticdhcpdlib.databases.generic
+================================
+Provides a uniform datasource API, to be implemented by technology-specific
+backends.
 
-Purpose
-=======
- Provides a uniform datasource API, to be implemented by technology-specific
- backends.
- 
 Legal
-=====
- This file is part of staticDHCPd.
- staticDHCPd is free software; you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation; either version 3 of the License, or
- (at your option) any later version.
+-----
+This file is part of staticDHCPd.
+staticDHCPd is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 3 of the License, or
+(at your option) any later version.
 
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
- You should have received a copy of the GNU General Public License
- along with this program. If not, see <http://www.gnu.org/licenses/>.
- 
- (C) Neil Tallim, 2013 <flan@uguu.ca>
- (C) Anthony Woods, 2013 <awoods@internap.com>
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+(C) Neil Tallim, 2014 <flan@uguu.ca>
+(C) Anthony Woods, 2013 <awoods@internap.com>
 """
 try:
     from types import StringTypes
@@ -40,19 +38,22 @@ from libpydhcpserver.dhcp_types.ipv4 import IPv4
 _logger = logging.getLogger('databases.generic')
 
 class Definition(object):
-    ip = None
-    hostname = None
-    gateway = None
-    subnet_mask = None
-    broadcast_address = None
-    domain_name = None
-    domain_name_servers = None
-    ntp_servers = None
-    lease_time = None
-    subnet = None
-    serial = None
-    extra = None
-
+    """
+    A definition of a "lease" from a database.
+    """
+    ip = None #: The :class:`IPv4 <IPv4>` to be assigned
+    hostname = None #: The hostname to assign (may be None)
+    gateway = None #: The :class:`IPv4 <IPv4>` gateway to advertise (may be None)
+    subnet_mask = None #: The :class:`IPv4 <IPv4>` netmask to advertise (may be None)
+    broadcast_address = None #: The :class:`IPv4 <IPv4>` broadcast address to advertise (may be None)
+    domain_name = None #: The domain name to advertise (may be None)
+    domain_name_servers = None #: A list of DNS IPv4s to advertise (may be None)
+    ntp_servers = None #: A list of NTP IPv4s to advertise (may be None)
+    lease_time = None #: The number of seconds for which the lease is valid
+    subnet = None #: The "subnet" identifier of the record in the database
+    serial = None #: The "serial" identifier of the record in the database
+    extra = None #: An object containing any metadata from the database
+    
     def __init__(self,
         ip, lease_time, subnet, serial,
         hostname=None,
@@ -60,6 +61,29 @@ class Definition(object):
         domain_name=None, domain_name_servers=None, ntp_servers=None,
         extra=None
     ):
+        """
+        Initialises a Definition.
+        
+        :param ip: The IP address to assign, in any main format.
+        :param basestring hostname: The hostname to assign.
+        :param gateway: The IP address to advertise, in any main format.
+        :param subnet_mask: The IP address to advertise, in any main format.
+        :param broadcast_address: The IP address to advertise, in any main
+                                  format.
+        :param basestring domain_name: The domain name to advertise.
+        :param domain_name_servers: The IP addressed to advertise, in any main
+                                    format, including comma-delimited string.
+        :param ntp_servers: The IP addressed to advertise, in any main format,
+                            including comma-delimited string.
+        :param int lease_time: The number of seconds for which the lease is
+                               valid.
+        :param basestring subnet: The "subnet" identifier of the record in the
+                                  database.
+        :param int serial: The "serial" identifier of the record in the
+                           database.
+        :param basestring extra: A string containing any metadata from the
+                                 database.
+        """
         #Required values
         self.ip = IPv4(ip)
         self.lease_time = int(lease_time)
@@ -85,20 +109,17 @@ class Definition(object):
         
 class Database(object):
     """
-    A stub documenting the features a Database object must provide.
+    A stub describing the features a Database object must provide.
     """
     def lookupMAC(self, mac):
         """
         Queries the database for the given MAC address and returns the IP and
         associated details if the MAC is known.
         
-        @type mac: basestring
-        @param mac: The MAC address to lookup.
-        
-        @rtype: Definition|None
-        @return: The definition or None, if no match was found.
-        
-        @raise Exception: If a problem occurs while accessing the database.
+        :param mac: The MAC address to lookup.
+        :return :class:`Definition <Definition>`: The definition or, if no match
+                                                  was found, None.
+        :except Exception: A problem occured while accessing the database.
         """
         raise NotImplementedError("lookupMAC() must be implemented by subclasses")
         
@@ -119,13 +140,12 @@ class CachingDatabase(Database):
     
     def __init__(self, concurrency_limit=2147483647):
         """
-        Sets up common attributes of broker objects.
-        
         Must be invoked by subclasses' __init__() methods.
         
-        @type concurrency_limit: int
-        @param concurrent_limit: The number of concurrent database hits to
-            permit, defaulting to a ridiculously large number.
+        :param int concurrency_limit: The number of concurrent database hits to
+                                      permit, defaulting to a ridiculously large
+                                      number.
+        :except Exception: Cache-initialisation failed.
         """
         _logger.debug("Initialising database with a maximum of %(count)i concurrent connections" % {'count': concurrency_limit,})
         self._resource_lock = threading.BoundedSemaphore(concurrency_limit)
@@ -137,6 +157,8 @@ class CachingDatabase(Database):
     def _setupCache(self):
         """
         Sets up the database caching environment.
+        
+        :except Exception: Cache-initialisation failed.
         """
         from .. import config
         if config.USE_CACHE:
@@ -199,26 +221,9 @@ class CachingDatabase(Database):
         
 class Null(Database):
     """
-    A database that never serves anything, useful in case other modules provide
-    definitions.
+    A database that never serves anything, useful primarily for testing or if
+    custom modules are loaded that work in the handleUnknownMAC() workflow.
     """
     def lookupMAC(self, mac):
-        """
-        Queries the database for the given MAC address and returns the IP and
-        associated details if the MAC is known.
-        
-        @type mac: basestring
-        @param mac: The MAC address to lookup.
-        
-        @rtype: None
-        @return: Nothing, because no data is managed.
-        """
         return None
-        
-    def reinitialise(self):
-        """
-        Though subclass-dependent, this will generally result in some guarantee
-        that the database will provide fresh data, whether that means flushing
-        a cache or reconnecting to the source.
-        """
         

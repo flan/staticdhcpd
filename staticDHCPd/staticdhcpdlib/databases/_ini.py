@@ -1,29 +1,27 @@
 # -*- encoding: utf-8 -*-
 """
-staticDHCPd module: databases._ini
-
-Purpose
-=======
- Provides a uniform datasource API, implementing an INI-file-based backend.
+staticdhcpdlib.databases._ini
+=============================
+Provides a uniform datasource API, implementing an INI-file-based backend.
  
 Legal
-=====
- This file is part of staticDHCPd.
- staticDHCPd is free software; you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation; either version 3 of the License, or
- (at your option) any later version.
+-----
+This file is part of staticDHCPd.
+staticDHCPd is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 3 of the License, or
+(at your option) any later version.
 
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
- You should have received a copy of the GNU General Public License
- along with this program. If not, see <http://www.gnu.org/licenses/>.
- 
- (C) Neil Tallim, 2013 <flan@uguu.ca>
- Inspiration derived from a discussion with John Stowers
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+(C) Neil Tallim, 2014 <flan@uguu.ca>
+Inspiration derived from a discussion with John Stowers
 """
 import ConfigParser
 import logging
@@ -44,17 +42,13 @@ class _Config(ConfigParser.RawConfigParser):
     """
     def get(self, section, option, default):
         """
-        Returns a custom value, if one is found. Otherwise, returns C{default}.
+        Returns a custom value, if one is found. Otherwise, returns ``default``.
         
-        @type section: basestring
-        @param section: The section to be queried.
-        @type option: basestring
-        @param option: The option to be queried.
-        @type default: object
-        @param default: The value to be returned, if the requested option is undefined.
-        
-        @rtype: object
-        @return: Either the requested value or the given default.
+        :param basestring section: The section to be queried.
+        :param basestring option: The option to be queried.
+        :param basestring default: The value to be returned, if the requested
+                                   option is undefined.
+        :return basestring : Either the requested value or the given default.
         """
         try:
             return ConfigParser.RawConfigParser.get(self, section, option)
@@ -63,53 +57,41 @@ class _Config(ConfigParser.RawConfigParser):
             
     def getint(self, section, option, default):
         """
-        Returns a custom value, if one is found. Otherwise, returns C{default}.
+        Returns a custom value, if one is found. Otherwise, returns ``default``.
         
-        @type section: basestring
-        @param section: The section to be queried.
-        @type option: basestring
-        @param option: The option to be queried.
-        @type default: int
-        @param default: The value to be returned, if the requested option is undefined.
-        
-        @rtype: int
-        @return: Either the requested value or the given default.
-        
-        @raise ValueError: The value to be returned could not be converted to an C{int}.
+        :param basestring section: The section to be queried.
+        :param basestring option: The option to be queried.
+        :param int default: The value to be returned, if the requested option
+                            is undefined.
+        :return int: Either the requested value or the given default.
+        :except ValueError: The value to be returned could not be converted to
+                            an ``int``.
         """
         return int(self.get(section, option, default))
         
     def getfloat(self, section, option, default):
         """
-        Returns a custom value, if one is found. Otherwise, returns C{default}.
+        Returns a custom value, if one is found. Otherwise, returns ``default``.
         
-        @type section: basestring
-        @param section: The section to be queried.
-        @type option: basestring
-        @param option: The option to be queried.
-        @type default: float
-        @param default: The value to be returned, if the requested option is undefined.
-        
-        @rtype: float
-        @return: Either the requested value or the given default.
-        
-        @raise ValueError: The value to be returned could not be converted to a C{float}.
+        :param basestring section: The section to be queried.
+        :param basestring option: The option to be queried.
+        :param float default: The value to be returned, if the requested
+                              option is undefined.
+        :return float: Either the requested value or the given default.
+        :except ValueError: The value to be returned could not be converted to
+                            a ``float``.
         """
         return float(self.get(section, option, default))
         
     def getboolean(self, section, option, default):
         """
-        Returns a custom value, if one is found. Otherwise, returns C{default}.
+        Returns a custom value, if one is found. Otherwise, returns ``default``.
         
-        @type section: basestring
-        @param section: The section to be queried.
-        @type option: basestring
-        @param option: The option to be queried.
-        @type default: bool
-        @param default: The value to be returned, if the requested option is undefined.
-        
-        @rtype: bool
-        @return: Either the requested value or the given default.
+        :param basestring section: The section to be queried.
+        :param basestring option: The option to be queried.
+        :param bool default: The value to be returned, if the requested option
+                             is undefined.
+        :return bool: Either the requested value or the given default.
         """
         return bool(str(self.get(section, option, default)).lower().strip() in (
          'y', 'yes',
@@ -122,9 +104,9 @@ class INI(Database):
     """
     Implements an INI broker.
     """
-    _maps = None
-    _subnets = None
-    _lock = None
+    _maps = None #: A dictionary of MAC-associations
+    _subnets = None #: A dictionary of subnet/serial associations
+    _lock = None #: A lock to avoid race-conditions
     
     def __init__(self):
         """
@@ -135,21 +117,6 @@ class INI(Database):
         self._lock = threading.Lock()
         
         self.reinitialise()
-        
-    def reinitialise(self):
-        with self._lock:
-            self._maps.clear()
-            self._subnets.clear()
-            self._parse_ini()
-        _logger.info("INI-file contents parsed and loaded into memory")
-        
-    def _parse_extra(self, reader, section, omitted, section_type):
-        extra = {}
-        for option in reader.options(section):
-            if not option in omitted:
-                (option, value) = self._parse_extra_option(section, option)
-                extra['%s.%s' % (section_type, option)] = value
-        return extra or None
         
     def _parse_extra_option(self, reader, section, option):
         method = reader.get
@@ -176,6 +143,14 @@ class INI(Database):
         else:
             return (real_option, value)
             
+    def _parse_extra(self, reader, section, omitted, section_type):
+        extra = {}
+        for option in reader.options(section):
+            if not option in omitted:
+                (option, value) = self._parse_extra_option(section, option)
+                extra['%s.%s' % (section_type, option)] = value
+        return extra or None
+        
     def _parse_ini(self):
         """
         Creates an optimal in-memory representation of the data in the INI file.
@@ -270,18 +245,6 @@ class INI(Database):
                 })
                 
     def lookupMAC(self, mac):
-        """
-        Queries the database for the given MAC address and returns the IP and
-        associated details if the MAC is known.
-        
-        @type mac: basestring
-        @param mac: The MAC address to lookup.
-        
-        @rtype: Definition|None
-        @return: The definition or None, if no match was found.
-        
-        @raise Exception: If a problem occurs while accessing the database.
-        """
         mac = int(mac)
         with self._lock:
             map = self._maps.get(mac)
@@ -304,4 +267,11 @@ class INI(Database):
          domain_name=subnet[6], domain_name_servers=subnet[5], ntp_servers=subnet[4],
          extra=extra
         )
+        
+    def reinitialise(self):
+        with self._lock:
+            self._maps.clear()
+            self._subnets.clear()
+            self._parse_ini()
+        _logger.info("INI-file contents parsed and loaded into memory")
         
