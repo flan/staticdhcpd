@@ -1,29 +1,26 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 """
-staticDHCPd module: main
+staticDHCPd
+===========
 
-Purpose
-=======
- Runs a staticDHCPd server.
- 
 Legal
-=====
- This file is part of staticDHCPd.
- staticDHCPd is free software; you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation; either version 3 of the License, or
- (at your option) any later version.
+-----
+This file is part of staticDHCPd.
+staticDHCPd is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 3 of the License, or
+(at your option) any later version.
 
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
- You should have received a copy of the GNU General Public License
- along with this program. If not, see <http://www.gnu.org/licenses/>.
- 
- (C) Neil Tallim, 2013 <flan@uguu.ca>
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+(C) Neil Tallim, 2014 <flan@uguu.ca>
 """
 import logging
 import logging.handlers
@@ -64,6 +61,10 @@ import staticdhcpdlib.config
 _logger = logging.getLogger('main')
 
 def _gracefulShutdown():
+    """
+    Attempts to shut down the daemon cleanly on the first call, but ends the
+    process if a second is made.
+    """
     if staticdhcpdlib.system.ALIVE:
         _logger.warn("System shutdown beginning...")
         staticdhcpdlib.system.ALIVE = False
@@ -71,35 +72,24 @@ def _gracefulShutdown():
         _logger.warn("System shutting down immediately")
         sys.exit(1)
         
-def _termHandler(signum, frame):
+def _termHandler(*args):
     """
     Cleanly shuts down this daemon upon receipt of a SIGTERM.
-    
-    @type signum: int
-    @param signum: The kill-signal constant received. This will always be
-        SIGTERM.
-    @type frame: int
-    @param frame: The stack-frame in which the kill-signal was received.
-        This is not used.
     """
     _logger.warn("Received SIGTERM")
     _gracefulShutdown()
     
-def _hupHandler(signum, frame):
+def _hupHandler(*args):
     """
     Reinitialises the system upon receipt of a SIGHUP.
-    
-    @type signum: int
-    @param signum: The kill-signal constant received. This will always be
-        SIGHUP.
-    @type frame: int
-    @param frame: The stack-frame in which the kill-signal was received.
-        This is not used.
     """
     _logger.warn("Received SIGHUP")
     staticdhcpdlib.system.reinitialise()
     
 def _daemonise():
+    """
+    The process of daemonising, the standard Unix way.
+    """
     if os.fork(): #The first fork, to decouple stuff
         sys.exit(0)
     os.setsid() #Ensure session semantics are configured
@@ -118,7 +108,8 @@ def _daemonise():
         
 def _setupLogging():
     """
-    Attaches handlers to the root logger, allowing for universal access to resources.
+    Attaches handlers to the root logger, allowing for universal access to
+    resources.
     """
     logging.root.setLevel(logging.DEBUG)
     
@@ -177,6 +168,9 @@ def _setupLogging():
         _logger.info("SMTP-based logging online")
         
 def _initialise():
+    """
+    Loads and configures system components.
+    """
     import staticdhcpdlib.system
     
     if staticdhcpdlib.config.WEB_ENABLED:
@@ -217,6 +211,9 @@ def _initialise():
             staticdhcpdlib.web.registerHeaderCallback(staticdhcpdlib.web.headers.favicon)
             
 def _initialiseDHCP():
+    """
+    Loads and configured DHCP system components.
+    """
     import staticdhcpdlib.system
     
     #Ready the database.
@@ -251,8 +248,6 @@ if __name__ == '__main__':
     _setupLogging()
     del _setupLogging
     for i in (
-     "----------------------------------------",
-     "----------------------------------------",
      "----------------------------------------",
      "----------------------------------------",
      "----------------------------------------",
