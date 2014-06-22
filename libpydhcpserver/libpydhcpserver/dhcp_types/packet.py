@@ -65,7 +65,7 @@ _OPTION_ORDERING = (
  DHCP_OPTIONS['dhcp_message_type'], #53
  DHCP_OPTIONS['server_identifier'], #54
  DHCP_OPTIONS['ip_address_lease_time'], #51
-)
+) #: The order in which clients usually expect to see key options.
 
 _FORMAT_CONVERSION_SERIAL = {
  constants.TYPE_IPV4: conversion.ipToList,
@@ -81,7 +81,7 @@ _FORMAT_CONVERSION_SERIAL = {
  constants.TYPE_LONG_PLUS: conversion.longsToList,
  constants.TYPE_IDENTIFIER: conversion.intsToList,
  constants.TYPE_NONE: lambda _: [],
-}
+} #: Seralising converters for DHCP types.
 _FORMAT_CONVERSION_DESERIAL = {
  constants.TYPE_IPV4: conversion.listToIP,
  constants.TYPE_IPV4_PLUS: conversion.listToIPs,
@@ -96,12 +96,12 @@ _FORMAT_CONVERSION_DESERIAL = {
  constants.TYPE_LONG_PLUS: conversion.listToLongs,
  constants.TYPE_IDENTIFIER: conversion.listToInts,
  constants.TYPE_NONE: lambda _: None,
-}
+} #: Deserialising converters for DHCP types.
 _OPTION_UNPACK = {
  82: rfc3046_decode, #relay_agent
  124: rfc3925_decode, #vendor_class
  125: rfc3925_125_decode, #vendor_specific
-}
+} #: Mappings for specific options that are decoded by default.
 
 FLAG_BROADCAST = 0b1000000000000000 #: The "broadcast bit", described in RFC 2131
 
@@ -109,19 +109,19 @@ class DHCPPacket(object):
     """
     Handles the construction, management, and export of DHCP packets.
     """
-    _header = None #: The core 240 bytes that make up a DHCP packet.
-    _options = None #: Any options attached to this packet.
-    _selected_options = None #: Any options explicitly requested by the client.
-    _maximum_size = None #: The maximum number of bytes permitted in the encoded packet.
+    _header = None #: The core 240 bytes that make up a DHCP packet
+    _options = None #: Any options attached to this packet
+    _selected_options = None #: Any options explicitly requested by the client
+    _maximum_size = None #: The maximum number of bytes permitted in the encoded packet
     
-    word_align = False #If set, every option with an odd length in bytes will be padded, to ensure 16-bit word-alignment
-    word_size = 4 #The number of bytes in a word; 32-bit by network convention by default
-    terminal_pad = False #If set, pad the packet to ``word_size``
+    word_align = False #: If set, every option with an odd length in bytes will be padded, to ensure 16-bit word-alignment
+    word_size = 4 #: The number of bytes in a word; 32-bit by network convention by default
+    terminal_pad = False #: If set, pad the packet to ``word_size``
     
-    response_mac = None #If set to something coerceable into a MAC, the packet will be sent to this MAC, rather than its default
-    response_ip = None #If set to something coerceable into an IPv4, the packet will be sent to this IP, rather than its default
-    response_port = None #If set to an integer, the packet will be sent to this port, rather than its default
-    response_source_port = None #If set to an integer, the packet will be reported as being sent from this port, rather than its default
+    response_mac = None #: If set to something coerceable into a MAC, the packet will be sent to this MAC, rather than its default
+    response_ip = None #: If set to something coerceable into an IPv4, the packet will be sent to this IP, rather than its default
+    response_port = None #: If set to an integer, the packet will be sent to this port, rather than its default
+    response_source_port = None #: If set to an integer, the packet will be reported as being sent from this port, rather than its default
     
     _meta = None #: A dictionary that can be freely manipulated to store data for the lifetime of the packet; initialised on first request
     
@@ -129,9 +129,11 @@ class DHCPPacket(object):
         """
         Initialises a DHCP packet.
         
-        @type data: str|None
-        @param data: The raw packet from which this object should be instantiated or None if a
-            blank packet should be created.
+        :param data: An optional byte-encoded DHCP packet, used to set initial
+                     values.
+        :param _copy_data: Pre-formatted data from a :class:`Packet <Packet>`,
+                           used to quickly initialise a duplicate.
+        :except ValueError: Invalid packet-data was provided.
         """
         if not data:
             if _copy_data:
@@ -145,7 +147,7 @@ class DHCPPacket(object):
         #Recast the data as an array of bytes
         packet = array('B', data)
         
-        options = self._decodeOptions(packet, options_position)
+        options = self._unpackOptions(packet, options_position)
         self._options = options
         
         #Extract configuration data
@@ -165,11 +167,19 @@ class DHCPPacket(object):
             self._header[_MAGIC_COOKIE_POSITION:_PACKET_HEADER_SIZE] = MAGIC_COOKIE_ARRAY
             
     def _initialise(self):
+        """
+        Creates a blank packet's structures.
+        """
         self._options = {}
         self._header = array('B', [0] * _PACKET_HEADER_SIZE)
         self._header[_MAGIC_COOKIE_POSITION:_PACKET_HEADER_SIZE] = MAGIC_COOKIE_ARRAY
         
     def _copy(self, data):
+        """
+        Creates a copy of an existing packet.
+        
+        :param data: The data used to initialise this packet's data-structures.
+        """
         ((packet, options, selected_options, maximum_size),
          (word_align, word_size, terminal_pad),
          (response_mac, response_ip, response_port, response_source_port),
@@ -193,6 +203,11 @@ class DHCPPacket(object):
             self._meta = meta.copy()
             
     def copy(self):
+        """
+        Provides a mutable copy of a packet.
+        
+        :return :class:`Packet <Packet>`: A copy of the packet.
+        """
         return DHCPPacket(_copy_data=(
          (self._header, self._options, self._selected_options, self._maximum_size),
          (self.word_align, self.word_size, self.terminal_pad),
@@ -205,12 +220,21 @@ class DHCPPacket(object):
         """
         A dictionary that can be freely manipulated to store data for the
         lifetime of the packet.
+        
+        This data is not used by the packet in any way.
         """
         if self._meta is None:
             self._meta = {}
         return self._meta
         
     def _locateOptions(self, data):
+        """
+        Provides the location at which DHCP options begin.
+        
+        :param str data: The raw byte-encoded packet.
+        :return int: The position at which options begin.
+        :except ValueError: No magic cookie present in the data.
+        """
         #Some servers or clients don't place the magic cookie immediately
         #after the end of the headers block, adding unnecessary padding.
         #It's necessary to find the magic cookie.
@@ -219,7 +243,14 @@ class DHCPPacket(object):
             raise ValueError("Data received does not represent a DHCP packet: Magic Cookie not found")
         return position + len(MAGIC_COOKIE)
         
-    def _decodeOptions(self, packet, position):
+    def _unpackOptions(self, packet, position):
+        """
+        Extracts all of the options from the packet.
+        
+        :param array('B') packet: The packet's raw data.
+        :param int position: The position at which option data begins.
+        :return dict: A dictionary of byte-lists, keyed by option ID.
+        """
         global DHCP_OPTIONS_TYPES
         
         options = {}
@@ -246,12 +277,21 @@ class DHCPPacket(object):
             position += option_length #Skip the pointer past the payload_size
         return options
         
-    def _encodeOptions(self, options, option_ordering, size_limit):
+    def _packOptions(self, options, option_ordering, size_limit):
+        """
+        Extracts all of the options from the packet.
+        
+        :param dict options: The option-data to be packed.
+        :param list(int) option_ordering: The order in which to pack options.
+        :param int size_limit: The number of bytes available to pack options.
+        :return tuple: A list of packed option bytes and a list containing any
+                       option-IDs that could not be packed.
+        """
+        ordered_options = []
         if size_limit <= 0:
-            raise ValueError("No space for packet payload")
+            return (ordered_options, option_ordering[:])
             
         size_limit -= 1 #Leave space for the END byte.
-        ordered_options = []
         for (i, option_id) in enumerate(option_ordering):
             value = options[option_id]
             if self.word_align:
@@ -301,7 +341,7 @@ class DHCPPacket(object):
         
         #Prepare the main payload
         size_limit = (self._maximum_size or 0xFFFF) - _PACKET_HEADER_SIZE - 68 - 3 #Leave some for the protocol header and three for option 52, if needed
-        (payload, option_ordering) = self._encodeOptions(options, option_ordering, size_limit)
+        (payload, option_ordering) = self._packOptions(options, option_ordering, size_limit)
         
         #Assemble data.
         payload.extend((0, 0, 0)) #Space for option 52
@@ -323,7 +363,7 @@ class DHCPPacket(object):
                 
             option_52 += option_52_value
             (location, size) = DHCP_FIELDS[field]
-            (payload, option_ordering) = self._encodeOptions(options, option_ordering, size)
+            (payload, option_ordering) = self._packOptions(options, option_ordering, size)
             packet[location:location + len(payload)] = array('B', payload)
             
         #Set option 52 in the packet if it's required.

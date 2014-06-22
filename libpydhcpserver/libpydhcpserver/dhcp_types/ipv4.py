@@ -20,7 +20,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-(C) Neil Tallim, 2013 <flan@uguu.ca>
+(C) Neil Tallim, 2014 <flan@uguu.ca>
 (C) Mathieu Ignacio, 2008 <mignacio@april.org>
 """
 try:
@@ -38,7 +38,8 @@ from conversion import (longToList, listToLong)
 
 class IPv4(object):
     """
-    Evaluates and encodes an IPv4 for use as part of a DHCP packet. 
+    An abstract IPv4 address that can be realised as a sequence of bytes, a
+    dotted quad, or an unsigned, 32-bit integer, as needed.
     """
     _ip = None #An IPv4 as an integer
     _ip_tuple = None #An IPv4 as a quadruple of bytes
@@ -46,8 +47,11 @@ class IPv4(object):
     
     def __init__(self, address):
         """
-        Constructs an IPv4 from `address`, which may be a dotted quad, a
-        quadruple of bytes, or a 32-bit, unsigned integer.
+        Constructs an IPv4 abstraction from a concrete representation.
+        
+        :param address: An IPv4, which may be a dotted quad, a quadruple of
+                        bytes, or a 32-bit, unsigned integer.
+        :except ValueError: The address could not be processed.
         """
         if isinstance(address, IntegerTypes):
             if not 0 <= address <= 4294967295:
