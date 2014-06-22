@@ -223,7 +223,7 @@ class DHCPPacket(object):
         
         This data is not used by the packet in any way.
         """
-        if self._meta is None:
+        if self._meta is None: #Defer instantiation if not required
             self._meta = {}
         return self._meta
         
@@ -309,17 +309,12 @@ class DHCPPacket(object):
         
     def encodePacket(self):
         """
-        Assembles all data into a single, C-char-packed struct.
+        Assembles all data into a single, byte-encoded string.
         
         All options are arranged in order, per RFC2131 (details under 'router').
         
-        @rtype: str
-        @return: The encoded packet.
+        :return str: The encoded packet.
         """
-        #Set namespace references for speed
-        global DHCP_OPTIONS
-        global _OPTION_ORDERING
-        
         #Pull options out of the payload, excluding options not specifically
         #requested, assuming any specific requests were made.
         options = {}
@@ -350,7 +345,10 @@ class DHCPPacket(object):
             payload.extend(0 for i in xrange(terminal_pad_size)) #Add trailing pads
         else:
             terminal_pad_size = 0
+            
+        #Create the byte-array based on the current header for efficiency
         packet = self._header[:]
+        #Resize it only once
         packet.extend(payload)
         
         #If there is remaining data, pack it using option 52, if possible.
@@ -376,7 +374,15 @@ class DHCPPacket(object):
         #Encode packet.
         return packet.tostring()
         
-    def _convertOptionValue(self, option, value):
+    def _serialiseOptionValue(self, option, value):
+        """
+        Serialises a DHCP option's value.
+        
+        :param option: The option's ID, either an integer or a string.
+        :param value: The option's value.
+        :return list(int): The serialised value.
+        :except ValueError: Serialisation failed.
+        """
         type = DHCP_FIELDS_TYPES.get(option) or DHCP_OPTIONS_TYPES.get(self._getOptionID(option))
         if not type or not type in _FORMAT_CONVERSION_SERIAL:
             raise ValueError("Requested option does not have a type-mapping for conversion: %(option)r" % {
@@ -384,7 +390,15 @@ class DHCPPacket(object):
             })
         return _FORMAT_CONVERSION_SERIAL[type](value)
         
-    def _unconvertOptionValue(self, option, value):
+    def _deserialiseOptionValue(self, option, value):
+        """
+        Deserialises a DHCP option's value.
+        
+        :param option: The option's ID, either an integer or a string.
+        :param list(int) value: The option's value.
+        :return: The deserialised value.
+        :except ValueError: Deserialisation failed.
+        """
         decode = _OPTION_UNPACK.get(option)
         if decode:
             return decode(value)
@@ -397,6 +411,12 @@ class DHCPPacket(object):
         return _FORMAT_CONVERSION_DESERIAL[type](value)
         
     def _validateByteList(self, value):
+        """
+        Ensures that a sequence is comprised entirely of bytes.
+        
+        :param collection value: The sequence to be tested.
+        :return bool: True if the sequence is comprised entirely of bytes.
+        """
         return not any(True for v in value if type(v) is not int or not 0 <= v <= 255)
         
     def _extractList(self, value, option=None):
@@ -404,7 +424,10 @@ class DHCPPacket(object):
         Ensures that the data being processed is expressed as a list of bytes.
         
         :param value: The data to be processed.
+        :param option: The option-ID (int or string) for which the value is
+                       being prepared, or None if it is unassociated.
         :return list(int): The data as a list of bytes.
+        :except Exception: The data could not be converted.
         """
         original_value = value
         #If it's another type of sequence, convert it
@@ -415,10 +438,12 @@ class DHCPPacket(object):
             
         #If it isn't already a list of bytes, process it
         if not isinstance(value, list) or not self._validateByteList(value):
-            if option:
-                return self._convertOptionValue(option, value)
             if isinstance(value, RFC):
                 return value.getValue()
+            #Resolve option-IDs only after all other possibilities, since other
+            #wrappers do the right thing and need no help.
+            if option:
+                return self._serialiseOptionValue(option, value)
                 
             raise TypeError("Value supplied cannot be converted into a list of bytes: %(value)r" % {
              'value': original_value,
@@ -427,8 +452,9 @@ class DHCPPacket(object):
         
     def getHardwareAddress(self):
         """
-        Extracts the client's MAC address from the DHCP packet, as a
-        `types.mac.MAC` object.
+        Provides the client's MAC address.
+        
+        :return :class:`MAC <MAC>`:
         """
         length = self.getOption(FIELD_HLEN)[0]
         full_hw = self.getOption(FIELD_CHADDR)
@@ -438,36 +464,32 @@ class DHCPPacket(object):
         
     def setHardwareAddress(self, mac):
         """
-        Sets the client's MAC address in the DHCP packet, using a
-        `types.mac.MAC` object or a sequence of bytes (this does not include strings).
+        Sets the client's MAC address.
         
-        #Raises TypeError if mac is not a sequence of bytes.
+        :param mac: The MAC to be assigned.
+        :except Exception: Proivded MAC could not be processed.
         """
         full_hw = self.getOption(FIELD_CHADDR)
         mac = self._extractList(mac)
         mac.extend([0] * (len(full_hw) - len(mac)))
         self.setOption(FIELD_CHADDR, mac)
         
-    def _getOptionID(self, option):
-        if type(option) is not int:
-            id = DHCP_OPTIONS.get(option)
-        elif not 0 < option < 255: #Out of range.
-            id = None
-        else:
-            id = option
-            
-        if id is None:
-            raise LookupError("Option %(option)r is unknown" % {
-             'option': option,
-            })
-        return id
-        
     def _getFlags(self):
+        """
+        Retrieves the flags bitmap.
+        
+        :return int: A sixteen-bit bitmap of option-flags set on the packet.
+        """
         flags = self.getOption('flags')
         return (flags[0] << 8) + flags[1]
         
     def _setFlags(self, flags):
-        self.setOption('flags', [flags >> 8, flags & 0xFF])
+        """
+        Assigns the flags bitmap.
+        
+        :param int flags: A sixteen-bit bitmap of option-flags to set.
+        """
+        self.setOption('flags', [flags >> 8 & 0xFF, flags & 0xFF])
         
     def getFlag(self, bitflag):
         """
@@ -500,7 +522,35 @@ class DHCPPacket(object):
             return (True, bit)
         return (False, bit)
         
+    def _getOptionID(self, option):
+        """
+        Resolves the numeric ID of an option.
+        
+        :param option: The numeric ID or name of an option.
+        :return int: The option's ID.
+        :except LookupError: The option is unknown or invalid.
+        """
+        if type(option) is not int:
+            id = DHCP_OPTIONS.get(option)
+        elif not 0 < option < 255: #Out of range.
+            id = None
+        else:
+            id = option
+            
+        if id is None:
+            raise LookupError("Option %(option)r is unknown" % {
+             'option': option,
+            })
+        return id
+        s
     def _getOptionName(self, option):
+        """
+        Resolves the name of an option.
+        
+        :param option: The numeric ID or name of an option.
+        :return str: The option's name.
+        :except LookupError: The option is unknown or invalid.
+        """
         if type(option) is int:
             name = DHCP_OPTIONS_REVERSE.get(option)
         elif not name in DHCP_OPTIONS:
@@ -516,28 +566,20 @@ class DHCPPacket(object):
         """
         Indicates whether an option is currently set within the packet.
         
-        @type option: basestring|int
-        @param option: The option's name or numeric value.
-        
-        @rtype: bool
-        @return: True if the option has been set.
+        :param option: The numeric ID or name of the option to check.
+        :return bool: True if the option has been set.
         """
         return self._getOptionID(option) in self._options or option in DHCP_FIELDS
         
     def deleteOption(self, option):
         """
-        Drops a value from the DHCP data-set.
+        Drops a value from the packet.
         
         If the value is part of the DHCP core, it is set to zero. Otherwise, it
         is removed from the option-pool.
         
-        @type option: basestring|int
-        @param option: The option's name or numeric value.
-        
-        LookupError on invalid option
-        
-        @rtype: bool
-        @return: True if something was removed.
+        :param option: The numeric ID or name of the option to remove.
+        :return bool: True if something was removed.
         """
         if option in DHCP_FIELDS:
             (start, length) = DHCP_FIELDS[option]
@@ -552,46 +594,41 @@ class DHCPPacket(object):
         
     def getOption(self, option, convert=False):
         """
-        Retrieves the value of an option in the packet's data.
+        Retrieves the value of a field or option from the packet.
         
-        @type option: basestring|int
-        @param option: The option's name or numeric value.
-        
-        LookupError on invalid option
-        
-        @rtype: list|None
-        @return: The value of the specified option or None if it hasn't been
-            set.
+        :param option: The numeric ID or name of the option to retrieve.
+        :param bool convert: Whether the option's value should be deserialised.
+        :return: The option's value or None, if it has not been set.
         """
         if option in DHCP_FIELDS:
             (start, length) = DHCP_FIELDS[option]
             value = self._header[start:start + length].tolist()
             if convert:
-                return self._unconvertOptionValue(option, value)
+                return self._deserialiseOptionValue(option, value)
             return value
         else:
             id = self._getOptionID(option)
             if id in self._options:
                 value = self._options[id]
                 if convert:
-                    return self._unconvertOptionValue(id, value)
+                    return self._deserialiseOptionValue(id, value)
                 return value
         return None
         
     def setOption(self, option, value, validate=True, force_selection=False):
         """
-        Validates and sets the value of a DHCP option associated with this
-        packet.
+        Validates and sets a field or option on the packet.
         
-        @type option: basestring|int
-        @param option: The option's name or numeric value.
-        @type value: list|tuple|L{RFC} -- does some coercion
-        @param value: The bytes to assign to this option or the special RFC
-            object from which they are to be derived.
-            
-        LookupError on invalid option
-        TypeError on invalid value
-        ValueError on invalid length
+        :param option: The numeric ID or name of the option to set.
+        :param value: The value to be assigned.
+        :param bool validate: Whether validation tests should be performed.
+        :param bool force_selection: Whether the option should be included in
+                                     the serialised packet, even if option 55
+                                     was provided and it was not explicitly
+                                     requested.
+        :except ValueError: Validation failed.
+        :except LookupError: Option not recognised.
+        :except TypeError: Value could not be serialised.
         """
         value = self._extractList(value, option=option)
         
@@ -629,7 +666,7 @@ class DHCPPacket(object):
                 #Assume the value is right
                 pass
             else:
-                raise ValueError("Unsupported option: %(option)s" % {
+                raise LookupError("Unsupported option: %(option)s" % {
                  'option': option,
                 })
                 
@@ -641,7 +678,7 @@ class DHCPPacket(object):
         """
         Returns all options marked for serialisation.
         
-        @rtype: tuple
+        :return tuple(int): All options slated to be included when serialised.
         """
         if self._selected_options:
             return tuple(sorted(self._selected_options.intersection(self._options)))
@@ -649,9 +686,10 @@ class DHCPPacket(object):
         
     def setSelectedOptions(self, added=None, removed=None):
         """
-        Changes the set of selected options, adding ``added`` and removing
-        ``removed``. This does not affect option-data currently associated with
-        the packet, just what will be serialised.
+        Changes the set of selected options.
+        
+        This does not affect option-data currently defined, just what will be
+        serialised.
         
         If both ``added`` and ``removed`` are ``None``, all options will be
         selected.
@@ -660,6 +698,10 @@ class DHCPPacket(object):
         begin with an empty set.
         
         ``added`` is applied before ``removed``.
+        
+        :param collection added: The numeric IDs or names of options to add.
+        :param collection removed: The numeric IDs or names of options to
+                                   remove.
         """
         if added is None and removed is None:
             self._selected_options = None
@@ -667,20 +709,16 @@ class DHCPPacket(object):
             if self._selected_options is None:
                 self._selected_options = set()
             if added:
-                self._selected_options.update(self._getOptionID(option) for option in added)
+                self._selected_options.update(i for i in (self._getOptionID(option) for option in added) if i is not None)
             if removed:
-                self._selected_options.difference_update(self._getOptionID(option) for option in removed)
+                self._selected_options.difference_update(i for i in (self._getOptionID(option) for option in removed) if i is not None)
                 
     def isSelectedOption(self, option):
         """
         Indicates whether the specified option is slated for serialisation.
         
-        @type option: basestring|int
-        @param option: The name (or numeric value) of the DHCP option being
-            tested.
-            
-        @rtype: bool
-        @return: True if the option was requested by the client.
+        :param option: The numeric ID or name of the option to check.
+        :return bool: True if the option is slated for serialisation.
         """
         id = self._getOptionID(option)
         if not id in self._options:
@@ -690,23 +728,25 @@ class DHCPPacket(object):
             return id in self._selected_options
         return True
         
-    def extractIPOrNone(self, parameter):
+    def extractIPOrNone(self, option):
         """
-        Extracts the identified packet-field-IP and returns it if it is defined,
-        None otherwise.
+        Provides the IP associated with a DHCP field or option.
+        
+        :param option: The numeric ID or name of the option to check.
+        :return :class:`IPv4 <IPv4>`: The associated address or None, if
+                                      undefined.
         """
-        addr = self.getOption(parameter)
+        addr = self.getOption(option)
         if not addr or not any(addr):
             return None
         return IPv4(addr)
         
     def _getDHCPMessageType(self):
         """
-        Returns the DHCP message-type of this packet.
+        Provides the DHCP message-type of this packet.
         
-        @rtype: int
-        @return: The DHCP message type of this packet or -1 if the
-            message-type is undefined.
+        :return int: The DHCP message-type of this packet or -1 if the
+                     message-type is undefined.
         """
         dhcp_message_type = self.getOption(53)
         if dhcp_message_type is None:
@@ -715,7 +755,9 @@ class DHCPPacket(object):
 
     def getDHCPMessageTypeName(self):
         """
-        Returns the DHCP packet-type-name of this packet as a string.
+        Provides the DHCP message-type of this packet.
+        
+        :return str: The DHCP message-type of this packet.
         """
         return DHCP_TYPE_NAMES.get(self._getDHCPMessageType(), 'UNKNOWN_UNKNOWN')
         
@@ -723,8 +765,7 @@ class DHCPPacket(object):
         """
         Indicates whether this is an ACK packet.
         
-        @rtype: bool
-        @return: True if this is an ACK packet.
+        :return bool: True if this is an ACK packet.
         """
         return self._getDHCPMessageType() == 5
 
@@ -732,8 +773,7 @@ class DHCPPacket(object):
         """
         Indicates whether this is a DECLINE packet.
         
-        @rtype: bool
-        @return: True if this is a DECLINE packet.
+        :return bool: True if this is a DECLINE packet.
         """
         return self._getDHCPMessageType() == 4
         
@@ -741,8 +781,7 @@ class DHCPPacket(object):
         """
         Indicates whether this is a DISCOVER packet.
         
-        @rtype: bool
-        @return: True if this is a DISCOVER packet.
+        :return bool: True if this is a DISCOVER packet.
         """
         return self._getDHCPMessageType() == 1
         
@@ -750,8 +789,7 @@ class DHCPPacket(object):
         """
         Indicates whether this is an INFORM packet.
         
-        @rtype: bool
-        @return: True if this is an INFORM packet.
+        :return bool: True if this is an INFORM packet.
         """
         return self._getDHCPMessageType() == 8
         
@@ -759,8 +797,7 @@ class DHCPPacket(object):
         """
         Indicates whether this is a LEASEACTIVE packet.
         
-        @rtype: bool
-        @return: True if this is a LEASEACTIVE packet.
+        :return bool: True if this is a LEASEACTIVE packet.
         """
         return self._getDHCPMessageType() == 13
         
@@ -768,8 +805,7 @@ class DHCPPacket(object):
         """
         Indicates whether this is a LEASEQUERY packet.
         
-        @rtype: bool
-        @return: True if this is a LEASEQUERY packet.
+        :return bool: True if this is a LEASEQUERY packet.
         """
         return self._getDHCPMessageType() == 10
         
@@ -777,8 +813,7 @@ class DHCPPacket(object):
         """
         Indicates whether this is a LEASEUNASSIGNED packet.
         
-        @rtype: bool
-        @return: True if this is a LEASEUNASSIGNED packet.
+        :return bool: True if this is a LEASEUNASSIGNED packet.
         """
         return self._getDHCPMessageType() == 11
         
@@ -786,8 +821,7 @@ class DHCPPacket(object):
         """
         Indicates whether this is a LEASEUNKNOWN packet.
         
-        @rtype: bool
-        @return: True if this is a LEASEUNKNOWN packet.
+        :return bool: True if this is a LEASEUNKNOWN packet.
         """
         return self._getDHCPMessageType() == 12
         
@@ -795,8 +829,7 @@ class DHCPPacket(object):
         """
         Indicates whether this is an OFFER packet.
         
-        @rtype: bool
-        @return: True if this is an OFFER packet.
+        :return bool: True if this is an OFFER packet.
         """
         return self._getDHCPMessageType() == 2
         
@@ -804,8 +837,7 @@ class DHCPPacket(object):
         """
         Indicates whether this is a NAK packet.
         
-        @rtype: bool
-        @return: True if this is a NAK packet.
+        :return bool: True if this is a NAK packet.
         """
         return self._getDHCPMessageType() == 6
         
@@ -813,8 +845,7 @@ class DHCPPacket(object):
         """
         Indicates whether this is a RELEASE packet.
         
-        @rtype: bool
-        @return: True if this is a RELEASE packet.
+        :return bool: True if this is a RELEASE packet.
         """
         return self._getDHCPMessageType() == 7
         
@@ -822,14 +853,13 @@ class DHCPPacket(object):
         """
         Indicates whether this is a REQUEST packet.
         
-        @rtype: bool
-        @return: True if this is a REQUEST packet.
+        :return bool: True if this is a REQUEST packet.
         """
         return self._getDHCPMessageType() == 3
         
     def _transformBase(self):
         """
-        Sets and removes options from the DHCP packet to make it suitable for
+        Sets and removes options from the packet to make it suitable for
         returning to the client.
         """
         self.setOption(FIELD_OP, [2])
@@ -854,16 +884,16 @@ class DHCPPacket(object):
         
     def transformToDHCPAckPacket(self):
         """
-        Transforms a DHCP packet received from a client into an ACK
-        packet to be returned to the client.
+        Transforms a packet received from a client into an ACK packet to be
+        returned to the client.
         """
         self._transformBase()
         self.setOption(53, [5]) #dhcp_message_type
         
     def transformToDHCPLeaseActivePacket(self):
         """
-        Transforms a DHCP packet received from a client into a LEASEACTIVE
-        packet to be returned to the client.
+        Transforms a packet received from a client into a LEASEACTIVE packet
+        to be returned to the client.
         """
         self._transformBase()
         self.setOption(53, [13]) #dhcp_message_type
@@ -875,8 +905,8 @@ class DHCPPacket(object):
         
     def transformToDHCPLeaseUnassignedPacket(self):
         """
-        Transforms a DHCP packet received from a client into a LEASEUNASSIGNED
-        packet to be returned to the client.
+        Transforms a packet received from a client into a LEASEUNASSIGNED packet
+        to be returned to the client.
         """
         self._transformBase()
         self.setOption(53, [11]) #dhcp_message_type
@@ -888,8 +918,8 @@ class DHCPPacket(object):
         
     def transformToDHCPLeaseUnknownPacket(self):
         """
-        Transforms a DHCP packet received from a client into a LEASEUNKNOWN
-        packet to be returned to the client.
+        Transforms a packet received from a client into a LEASEUNKNOWN packet
+        to be returned to the client.
         """
         self._transformBase()
         self.setOption(53, [12]) #dhcp_message_type
@@ -901,8 +931,8 @@ class DHCPPacket(object):
         
     def transformToDHCPOfferPacket(self):
         """
-        Transforms a DHCP packet received from a client into an OFFER
-        packet to be returned to the client.
+        Transforms a packet received from a client into an OFFER packet to be
+        returned to the client.
         """
         self._transformBase()
         self.setOption(53, [2]) #dhcp_message_type
@@ -911,8 +941,8 @@ class DHCPPacket(object):
         
     def transformToDHCPNakPacket(self):
         """
-        Transforms a DHCP packet received from a client into a NAK
-        packet to be returned to the client.
+        Transforms a packet received from a client into a NAK packet to be
+        returned to the client.
         """
         self._transformBase()
         self.setOption(53, [6]) #dhcp_message_type
@@ -928,10 +958,9 @@ class DHCPPacket(object):
         
     def __str__(self):
         """
-        Renders this packet's data in human-readable form.
+        Renders packet data in human-readable form.
         
-        @rtype: str
-        @return: This packet's contents, in human-readable form.
+        :return str: The packet's contents, in human-readable form.
         """
         global _FORMAT_CONVERSION_DESERIAL
         
