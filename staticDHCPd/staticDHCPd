@@ -3,6 +3,7 @@
 """
 staticDHCPd
 ===========
+Highly customisable, static-lease-focused DHCP server.
 
 Legal
 -----
