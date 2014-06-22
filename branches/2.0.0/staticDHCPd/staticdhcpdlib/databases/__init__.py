@@ -1,29 +1,26 @@
 # -*- encoding: utf-8 -*-
 """
-staticDHCPd package: databases
+staticdhcpdlib.databases
+========================
+Templates and implementations of database interfaces for staticDHCPd.
 
-Purpose
-=======
- Provides implementations for communication with all databases staticDHCPd can
- use.
- 
 Legal
-=====
- This file is part of staticDHCPd.
- staticDHCPd is free software; you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation; either version 3 of the License, or
- (at your option) any later version.
+-----
+This file is part of staticDHCPd.
+staticDHCPd is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 3 of the License, or
+(at your option) any later version.
 
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
- You should have received a copy of the GNU General Public License
- along with this program. If not, see <http://www.gnu.org/licenses/>.
- 
- (C) Neil Tallim, 2013 <flan@uguu.ca>
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+(C) Neil Tallim, 2014 <flan@uguu.ca>
 """
 import logging
 
@@ -33,10 +30,11 @@ def get_database():
     """
     Assembles and returns a database-interface object.
     
-    @rtype: generic.Database
-    @return A database interface, usable to access DHCP information.
+    :return :class:`Database <generic.Database>`: A database interface, usable
+                                                  to access DHCP information.
     """
-    from .. import config #Deferred import to avoid circular issues when defining custom databases that import from generic
+    #Deferred import to avoid circular issues when defining custom databases that import from generic
+    from .. import config
     
     if callable(config.DATABASE_ENGINE):
         _logger.debug("Custom database engine supplied; initialising...")
