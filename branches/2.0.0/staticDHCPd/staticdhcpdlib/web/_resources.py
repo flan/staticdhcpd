@@ -172,13 +172,13 @@ table.element td{
 table.element tfoot td{
     text-align: center;
 }
-"""
+""" #: The default CSS
 
 JS = """
 function rewriteLocation(path){
     window.history.pushState({}, document.title, path);
 }
-"""
+""" #: The default JavaScript.
 
 #Generated using the following statement
 #for i in textwrap.wrap(<binary-read-from-file>, expand_tabs=False, replace_whitespace=False, drop_whitespace=False, width=40): print ' ' + repr(i)
@@ -291,4 +291,4 @@ FAVICON = (
  '\xff\xfb#\xff\xff\xfa{\xff\xff\xfe\xfd\xff\xff\xf0\xfc?\xff\x80?\xff\xff\xff\xbf\xff\xff\xff\xbf\xff\xff\xff\xbf\xff\xff\xff\xbf\xff\xff\xff?\xff'
  '\xff\xfe\xff\xff\xff\xfd\x8f\xff\xff\xfas\xff\xff\xf6\xfd\xff\xff\xf5\xde\xff\xff\xf5\x86\xff\xff\xf5\x86\xff\xff\xf5\x86\xff\xff\xf5\xdc\xff\xff\xfe\xfd\xff'
  '\xff\xff3\xff\xff\xff\xcf\xff'
-)
+) #: The bytes that make up the default favicon
