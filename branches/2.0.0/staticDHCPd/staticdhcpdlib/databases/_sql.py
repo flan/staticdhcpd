@@ -1,29 +1,27 @@
 # -*- encoding: utf-8 -*-
 """
-staticDHCPd module: databases._sql
-
-Purpose
-=======
- Provides a uniform datasource API, implementing multiple SQL-based backends.
+staticdhcpdlib.databases._sql
+=============================
+Provides a uniform datasource API, implementing multiple SQL-based backends.
  
 Legal
-=====
- This file is part of staticDHCPd.
- staticDHCPd is free software; you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation; either version 3 of the License, or
- (at your option) any later version.
+-----
+This file is part of staticDHCPd.
+staticDHCPd is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 3 of the License, or
+(at your option) any later version.
 
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
- You should have received a copy of the GNU General Public License
- along with this program. If not, see <http://www.gnu.org/licenses/>.
- 
- (C) Neil Tallim, 2013 <flan@uguu.ca>
- (C) Matthew Boedicker, 2011 <matthewm@boedicker.org>
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+(C) Neil Tallim, 2014 <flan@uguu.ca>
+(C) Matthew Boedicker, 2011 <matthewm@boedicker.org>
 """
 import logging
 
@@ -52,10 +50,9 @@ class _SQLDatabase(CachingDatabase):
     def _getConnection(self):
         """
         Provides a connection to the database.
-
-        @return: The connection object to be used.
-
-        @raise Exception: If a problem occurs while accessing the database.
+        
+        :return: The connection object to be used.
+        :except Exception: A problem occurred while accessing the database.
         """
         raise NotImplementedError("_getConnection must be overridden")
         
@@ -63,23 +60,11 @@ class _DB20Broker(_SQLDatabase):
     """
     Defines bevahiour for a DB API 2.0-compatible broker.
     """
-    _module = None #: The db2api-compliant module to use.
-    _connection_details = None #: The module-specific details needed to connect to a database.
-    _query_mac = None #: The string used to look up a MAC's binding.
+    _module = None #: The db2api-compliant module to use
+    _connection_details = None #: The module-specific details needed to connect to a database
+    _query_mac = None #: The string used to look up a MAC's binding
     
     def _lookupMAC(self, mac):
-        """
-        Queries the database for the given MAC address and returns the IP and
-        associated details if the MAC is known.
-        
-        @type mac: basestring
-        @param mac: The MAC address to lookup.
-        
-        @rtype: Definition|None
-        @return: The definition or None, if no match was found.
-        
-        @raise Exception: If a problem occurs while accessing the database.
-        """
         mac = str(mac)
         try:
             db = self._getConnection()
@@ -120,18 +105,16 @@ class _PoolingBroker(_DB20Broker):
     Defines bevahiour for a connection-pooling-capable DB API 2.0-compatible
     broker.
     """
-    _pool = None #: The database connection pool.
-    _eventlet__db_pool = None #: A reference to the eventlet.db_pool module.
+    _pool = None #: The database connection pool
+    _eventlet__db_pool = None #: A reference to the eventlet.db_pool module
     
     def __init__(self, concurrency_limit):
         """
         Sets up connection-pooling, if it's supported by the environment.
         
-        L{_connection_details} must be defined before calling this function.
-        
-        @type concurrency_limit: int
-        @param concurrent_limit: The number of concurrent database hits to
-            permit.
+        :param int concurrency_limit: The number of concurrent database hits to
+                                      permit.
+        :except Exception: Failed to initialise pooling layer.
         """
         _DB20Broker.__init__(self, concurrency_limit)
 
@@ -151,13 +134,6 @@ class _PoolingBroker(_DB20Broker):
                 )
                 
     def _getConnection(self):
-        """
-        Provides a connection to the database.
-
-        @return: The connection object to be used.
-        
-        @raise Exception: If a problem occurs while accessing the database.
-        """
         if self._pool is not None:
             return self._eventlet__db_pool.PooledConnectionWrapper(self._pool.get(), self._pool)
         else:
@@ -168,15 +144,7 @@ class _NonPoolingBroker(_DB20Broker):
     Defines bevahiour for a non-connection-pooling-capable DB API 2.0-compatible
     broker.
     """
-    
     def _getConnection(self):
-        """
-        Provides a connection to the database.
-
-        @return: The connection object to be used.
-        
-        @raise Exception: If a problem occurs while accessing the database.
-        """
         return self._module.connect(**self._connection_details)
         
 class MySQL(_PoolingBroker):
