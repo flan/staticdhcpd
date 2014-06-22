@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 """
-types.ipv4
-==========
+libpydhcpserver.dhcp_types.ipv4
+===============================
 Defines a standard way of representing IPv4s within the library.
 
 Legal
