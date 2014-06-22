@@ -32,7 +32,7 @@ import threading
 
 from dhcp_types.ipv4 import IPv4
 from dhcp_types.mac import MAC
-from dhcp_types.packet import (DHCPPacket, FLAG_BROADCAST)
+from dhcp_types.packet import (DHCPPacket, FLAGBIT_BROADCAST)
 
 #IP constants
 _IP_GLOB = IPv4('0.0.0.0') #: The internal "everything" address.
@@ -361,7 +361,7 @@ class _NetworkLink(object):
         responder = self._responder_dhcp
         if address.ip in IP_UNSPECIFIED_FILTER: #Broadcast source; this is never valid for PXE
             if (not self._unicast_discover_supported #All responses have to be via broadcast
-                or packet.getOption('flags')[0] & 0b10000000): #Broadcast bit set; respond in kind 
+                or packet.getFlag(FLAGBIT_BROADCAST)): #Broadcast bit set; respond in kind 
                 ip = _IP_BROADCAST
             else: #The client wants unicast and this host can handle it
                 ip = packet.extractIPOrNone('yiaddr')
@@ -400,10 +400,10 @@ class _Responder(object):
             1. The :class:`Address <dhcp.Address>` ultimately used.
         :except Exception: An error occurred during serialisation or transmission.
         """
-        (broadcast_changed, broadcast_bit) = packet.setFlag(FLAG_BROADCAST, _IP_BROADCAST == ip)
+        (broadcast_changed, original_was_broadcast) = packet.setFlag(FLAGBIT_BROADCAST, _IP_BROADCAST == ip)
         
         #Perform any necessary packet-specific address-changes
-        if not broadcast_bit: #Unicast behaviour permitted; use the packet's IP override, if set
+        if not original_was_broadcast: #Unicast behaviour permitted; use the packet's IP override, if set
             ip = packet.response_ip or ip
         port = packet.response_port or port
         if packet.response_source_port is not None:
@@ -411,7 +411,7 @@ class _Responder(object):
             
         bytes_sent = self._send(packet, str(ip), port, **kwargs)
         if broadcast_changed: #Restore the broadcast bit, in case the packet needs to be used for something else
-            self._setBroadcastBit(packet, broadcast_bit)
+            packet.setFlag(FLAGBIT_BROADCAST, original_was_broadcast)
         return (bytes_sent, Address(IPv4(ip), port))
         
     def _send(self, packet, ip, port, **kwargs):

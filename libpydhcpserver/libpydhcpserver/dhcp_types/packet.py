@@ -103,7 +103,7 @@ _OPTION_UNPACK = {
  125: rfc3925_125_decode, #vendor_specific
 } #: Mappings for specific options that are decoded by default.
 
-FLAG_BROADCAST = 0b1000000000000000 #: The "broadcast bit", described in RFC 2131
+FLAGBIT_BROADCAST = 0b1000000000000000 #: The "broadcast bit", described in RFC 2131
 
 class DHCPPacket(object):
     """
@@ -284,7 +284,7 @@ class DHCPPacket(object):
         :param dict options: The option-data to be packed.
         :param list(int) option_ordering: The order in which to pack options.
         :param int size_limit: The number of bytes available to pack options.
-        :return tuple: A list of packed option bytes and a list containing any
+        :return tuple(2): A list of packed option bytes and a list containing any
                        option-IDs that could not be packed.
         """
         ordered_options = []
@@ -467,34 +467,35 @@ class DHCPPacket(object):
         return (flags[0] << 8) + flags[1]
         
     def _setFlags(self, flags):
-        self.setOption('flags', [flags >> 8, flags & 0b11111111])
+        self.setOption('flags', [flags >> 8, flags & 0xFF])
         
-    def getFlag(self, flag):
+    def getFlag(self, bitflag):
         """
         Retrieves a flag-bit from the header.
         
-        :param int flag: One of the flag-constants defined in this module,
-            like ``FLAG_BROADCAST``.
+        :param int bitflag: One of the flag-constants defined in this module,
+                            like ``FLAGBIT_BROADCAST``.
         :return bool: The state of the bit.
         """
         return bool(self._getFlags() & flag)
         
-    def setFlag(self, flag, state):
+    def setFlag(self, bitflag, state):
         """
         Modifies the header to set a flag-bit.
         
-        :param int flag: One of the flag-constants defined in this module,
-            like ``FLAG_BROADCAST``.
+        :param int bitflag: One of the flag-constants defined in this module,
+                            like ``FLAGBIT_BROADCAST``.
         :param bool state: Whether the bit should be set or not.
-        :return tuple(2): Whether the bit was changed and its initial value.
+        :return tuple(2): Whether the bit was changed and its initial value,
+                          expressed in boolean.
         """
         flags = self._getFlags()
-        bit = bool(flags & flag)
+        bit = bool(flags & bitflag)
         if bit != state:
             if state:
-                flags |= flag
+                flags |= bitflag
             else:
-                flags &= ~flag
+                flags &= ~bitflag
             self._setFlags(flags)
             return (True, bit)
         return (False, bit)
@@ -947,7 +948,7 @@ class DHCPPacket(object):
         })
         
         output.append("\tflags: broadcast=%(broadcast)i" % {
-         'broadcast': self.getFlag(FLAG_BROADCAST),
+         'broadcast': self.getFlag(FLAGBIT_BROADCAST),
         })
         
         for field in (
