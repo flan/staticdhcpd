@@ -61,12 +61,20 @@ PXEOptions = collections.namedtuple("PXEOptions", (
 """
 Provides PXE options in an easy-to-interpret form.
 
-* ``client_system``: `option 93`, as a tuple of ints
-* ``client_ndi``: `option 94` as a tuple of three bytes
-* ``uuid_guid``: `option 97` as a tuple with the type in the first slot as a
-    byte and a tuple of bytes in the second slot
-    
-Any unset options will be ``None``.
+.. py:attribute:: client_system
+
+    `option 93`, as a tuple of integers
+
+.. py:attribute:: client_ndi
+
+    `option 94` as a tuple of three bytes
+
+.. py:attribute:: uuid_guid
+
+    `option 97` as a tuple with the type in the first slot, as a byte, and a
+    tuple of bytes in the second slot
+
+Any unset options will be `None`.
 """
 
 class _PacketWrapper(object):
