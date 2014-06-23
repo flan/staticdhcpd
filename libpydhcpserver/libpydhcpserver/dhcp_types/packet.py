@@ -499,7 +499,7 @@ class DHCPPacket(object):
                             like ``FLAGBIT_BROADCAST``.
         :return bool: The state of the bit.
         """
-        return bool(self._getFlags() & flag)
+        return bool(self._getFlags() & bitflag)
         
     def setFlag(self, bitflag, state):
         """
