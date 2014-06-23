@@ -429,8 +429,9 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
         """
         Informs the operator of a potential IP collision on the network.
         
-        @type wrapper: L{_PacketWrapper}
-        @param wrapper: A wrapper around the packet, exposing helpful details.
+        :param :class:`_PacketWrapper` wrapper: The wrapped packet to process.
+        :except _PacketSourceBlacklist: The MAC appears to be generating false
+                                        information to disrupt the network.
         """
         if not wrapper.ip:
             raise _PacketSourceBlacklist("conflicting IP was not specified")
@@ -471,8 +472,9 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
         Evaluates a DISCOVER request from a client and determines whether an
         OFFER should be sent.
         
-        @type wrapper: L{_PacketWrapper}
-        @param wrapper: A wrapper around the packet, exposing helpful details.
+        :param :class:`_PacketWrapper` wrapper: The wrapped packet to process.
+        :except _PacketSourceBlacklist: The MAC can't be handled, but it also
+                                        can't be NAKed, so reduce load.
         """
         if not wrapper.filterPacket(override_ip=True, override_ip_value=None): return
         wrapper.announcePacket()
@@ -502,7 +504,7 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
                      wrapper.mac, definition.ip
                     )
                 wrapper.markAddressed()
-        else:
+        else: #No support available for the MAC
             if config.AUTHORITATIVE:
                 wrapper.packet.transformToDHCPNakPacket()
                 self._emitDHCPPacket(
@@ -519,8 +521,9 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
         Evaluates an INFORM request from a client and determines whether an ACK
         should be sent.
         
-        @type wrapper: L{_PacketWrapper}
-        @param wrapper: A wrapper around the packet, exposing helpful details.
+        :param :class:`_PacketWrapper` wrapper: The wrapped packet to process.
+        :except _PacketSourceBlacklist: The MAC can't be handled, so reduce
+                                        load.
         """
         if not wrapper.filterPacket(override_ip=True, override_ip_value=wrapper.ciaddr): return
         wrapper.announcePacket(ip=wrapper.ciaddr)
@@ -543,18 +546,17 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
     @_dhcpHandler(_PACKET_TYPE_LEASEQUERY)
     def _handleDHCPLeaseQuery(self, wrapper):
         """
-        Simply discards the packet; LeaseQuery support was dropped in 1.7.0,
+        Simply discards the packet; LEASEQUERY support was dropped in 1.7.0,
         because the implementation was wrong.
         
-        @type wrapper: L{_PacketWrapper}
-        @param wrapper: A wrapper around the packet, exposing helpful details.
+        :param :class:`_PacketWrapper` wrapper: The wrapped packet to process.
         """
         if not wrapper.filterPacket(): return
         wrapper.announcePacket()
         
         #When reimplementing LEASEQUERY, create an alternative to the
         #'Definition' model and use that to transfer data through the wrapper
-        #and handleUnknownMAC. Instead of retrieveDefinition(), it'll be
+        #and handleUnknownMAC. Instead of retrieveDefinition(), it will be
         #retrieveLeaseDefinition() and handleUnknownMAC() will need to return
         #that as a third result. Its None still means it had nothing, though.
         
@@ -564,19 +566,7 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
         Evaluates a REQUEST request from a client and determines whether an ACK
         should be sent.
         
-        #TODO: rewrite the following paragraph, because it predates the split
-        This is the most important part of the system, in which the IP a client
-        claims to own is validated against the database, before it can be
-        formally assigned. If the IP in question belongs to the requesting MAC,
-        then an ACK is sent, along with all relevant options; if not, a NAK
-        is sent to inform the client that it is not allowed to use the requested
-        IP, forcing it to DISCOVER a new one.
-        
-        If policy forbids RENEW and REBIND operations, perhaps to prepare for a
-        new configuration rollout, all such requests are NAKed immediately.
-        
-        @type wrapper: L{_PacketWrapper}
-        @param wrapper: A wrapper around the packet, exposing helpful details.
+        :param :class:`_PacketWrapper` wrapper: The wrapped packet to process.
         """
         if wrapper.sid and not wrapper.ciaddr: #SELECTING
             self._handleDHCPRequest_SELECTING(wrapper)
@@ -594,6 +584,12 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
             })
             
     def _handleDHCPRequest_SELECTING(self, wrapper):
+        """
+        Evaluates a SELECTING REQUEST from a client and determines whether an
+        ACK or NAK should be sent.
+        
+        :param :class:`_PacketWrapper` wrapper: The wrapped packet to process.
+        """
         wrapper.setType(_PACKET_TYPE_REQUEST_SELECTING)
         if wrapper.sid == self._server_address: #Chosen!
             if not wrapper.filterPacket(): return
@@ -617,6 +613,12 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
                 wrapper.markAddressed()
                 
     def _handleDHCPRequest_INIT_REBOOT(self, wrapper):
+        """
+        Evaluates and an INIT-REBOOT REQUEST from a client and determines
+        whether an ACK or NAK should be sent.
+        
+        :param :class:`_PacketWrapper` wrapper: The wrapped packet to process.
+        """
         wrapper.setType(_PACKET_TYPE_REQUEST_INIT_REBOOT)
         if not wrapper.filterPacket(): return
         wrapper.announcePacket(ip=wrapper.ip)
@@ -639,6 +641,15 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
             wrapper.markAddressed()
             
     def _handleDHCPRequest_RENEW_REBIND(self, wrapper):
+        """
+        Evaluates a RENEW or REBIND REQUEST from a client and determines whether
+        an ACK or NAK should be sent.
+        
+        If policy forbids RENEW and REBIND operations, perhaps to prepare for a
+        new configuration rollout, all such requests are NAKed immediately.
+        
+        :param :class:`_PacketWrapper` wrapper: The wrapped packet to process.
+        """
         renew = wrapper.source_address.ip not in libpydhcpserver.dhcp.IP_UNSPECIFIED_FILTER
         wrapper.setType(renew and _PACKET_TYPE_REQUEST_RENEW or _PACKET_TYPE_REQUEST_REBIND)
         if not wrapper.filterPacket(): return
@@ -676,10 +687,11 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
     @_dhcpHandler(_PACKET_TYPE_RELEASE)
     def _handleDHCPRelease(self, wrapper):
         """
-        Handles a client that has terminated its "lease".
+        Evaluates a RELEASE request, sent when a client terminates its "lease".
         
-        @type wrapper: L{_PacketWrapper}
-        @param wrapper: A wrapper around the packet, exposing helpful details.
+        :param :class:`_PacketWrapper` wrapper: The wrapped packet to process.
+        :except _PacketSourceBlacklist: The MAC appears to be generating false
+                                        information to disrupt the network.
         """
         if not wrapper.sid:
             raise _PacketSourceBlacklist("server-identifier was not specified")
