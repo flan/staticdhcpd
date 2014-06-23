@@ -1,28 +1,26 @@
 # -*- encoding: utf-8 -*-
 """
-staticDHCPd module: statistics
-
-Purpose
-=======
- Defines statistics-delegation methods and structures.
+staticdhcpdlib.statistics
+=========================
+Defines statistics-delegation methods and structures.
  
 Legal
-=====
- This file is part of staticDHCPd.
- staticDHCPd is free software; you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation; either version 3 of the License, or
- (at your option) any later version.
+-----
+This file is part of staticDHCPd.
+staticDHCPd is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 3 of the License, or
+(at your option) any later version.
 
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
- You should have received a copy of the GNU General Public License
- along with this program. If not, see <http://www.gnu.org/licenses/>.
- 
- (C) Neil Tallim, 2013 <flan@uguu.ca>
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+(C) Neil Tallim, 2014 <flan@uguu.ca>
 """
 import collections
 import logging
@@ -82,11 +80,9 @@ Statistics associated with a DHCP event.
 
 def emit(statistics):
     """
-    Invokes every registered stats handler to deliver the new statistics
-    information.
+    Invokes every registered stats handler to deliver new information.
     
-    @type statistics: Statistics
-    @param statistics: The statistics to report.
+    :param :class:`Statistics` statistics: The statistics to report.
     """
     with _stats_lock:
         for callback in _stats_callbacks:
@@ -97,13 +93,12 @@ def emit(statistics):
                 
 def registerStatsCallback(callback):
     """
-    Allows for modular registration of statistics callbacks, to be invoked
-    in the order of registration.
+    Registers a statistics callback.
     
-    @type callback: callable
-    @param callback: A callable that takes L{Statistics} as its argument; if already
-        present, it will not be registered a second time. This function must not
-        block for any significant amount of time.
+    :param callable callback: A callable that takes :class:`Statistics` as its
+                              argument; if already present, it will not be
+                              registered a second time. This function must never
+                              block for any significant amount of time.
     """
     with _stats_lock:
         if callback in _stats_callbacks:
@@ -114,15 +109,18 @@ def registerStatsCallback(callback):
             
 def unregisterStatsCallback(callback):
     """
-    Allows for modular unregistration of stats callbacks.
+    Unregisters a statistics callback.
     
-    @type callback: callable
-    @param callback: A callable; if not present, this is a no-op.
+    :param callable callback: The callable to be removed.
+    :return bool: True if a callback was removed.
     """
     with _stats_lock:
         try:
             _stats_callbacks.remove(callback)
-            _logger.debug("Unregistered stats-callback %(callback)r" % {'callback': callback,})
         except ValueError:
             _logger.error("Callback %(callback)r is not registered" % {'callback': callback,})
+            return False
+        else:
+            _logger.debug("Unregistered stats-callback %(callback)r" % {'callback': callback,})
+            return True
             
