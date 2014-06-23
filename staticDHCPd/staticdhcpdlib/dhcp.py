@@ -402,23 +402,18 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
         """
         Constructs the handler.
         
-        @type server_address: basestring
-        @param server_address: The IP of the interface from which responses
-            are to be sent.
-        @type server_port: int
-        @param server_port: The port on which DHCP requests are expected to
-            arrive.
-        @type client_port: int
-        @param client_port: The port on which clients expect DHCP responses to
-            be sent.
-        @type pxe_port: int|NoneType
-        @param pxe_port: The port on which to listen for PXE requests, or a
-            NoneType if PXE support is disabled.
-        @type database: L{databases.generic.Database}
-        @param database: The database to use for retrieving lease definitions.
-        
-        @raise Exception: If a problem occurs while initializing the sockets
-            required to process messages.
+        :param basestring address: The IP of the interface from which responses
+                                   are to be sent.
+        :param int server_port: The port on which DHCP requests are expected to
+                                arrive.
+        :param int client_port: The port on which clients expect DHCP responses
+                                to be sent.
+        :param int pxe_port: The port on which to listen for PXE requests, or
+                             None if PXE support is disabled.
+        :param :class:`databases.generic.Database` database: The database to use
+            for retrieving lease definitions.
+        :except Exception: A problem occurred while initializing the sockets
+                           required to process messages.
         """
         self._lock = threading.Lock()
         self._database = database
@@ -705,14 +700,13 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
     def _logDHCPAccess(self, mac):
         """
         Increments the number of times the given MAC address has accessed this
-        server. If the value exceeds the policy threshold, the MAC is ignored as
-        potentially belonging to a malicious user.
+        server. If suspension is enabled and the value exceeds the policy
+        threshold, the MAC is ignored as potentially belonging to a malicious
+        system.
         
-        @type mac: basestring
-        @param mac: The MAC being evaluated.
-        
-        @rtype: bool
-        @return: True if the MAC's request should be processed.
+        :param :class:`libpydhcpserver.dhcp_types.mac.MAC` mac: The MAC being
+                                                                evaluated.
+        :return bool: True if the MAC's request should be processed.
         """
         minimal_mac = tuple(mac)
         if config.ENABLE_SUSPEND:
@@ -733,29 +727,19 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
         
     def _emitDHCPPacket(self, packet, address, pxe, mac, client_ip):
         """
-        Sends the given packet to the right destination based on its properties.
+        Sends the given packet to the right destination, based on its
+        properties.
         
-        If the request originated from a host that knows its own IP, the packet
-        is transmitted via unicast; in the event of a relayed request, it is sent
-        to the 'server port', rather than the 'client port', per RFC 2131.
-        
-        If it was picked up as a broadcast packet, it is sent to the local subnet
-        via the same mechanism, but to the 'client port'.
-        
-        @type packet: L{libpydhcpserver.dhcp_types.packet.DHCPPacket}
-        @param packet: The packet to be transmitted.
-        @type address: tuple
-        @param address: The address from which the packet was received:
-            (host, port)
-        @type pxe: bool
-        @param pxe: True if the packet was received via the PXE port.
-        @type mac: basestring
-        @param mac: The MAC of the client for which this packet is destined.
-        @type client_ip: basestring
-        @param client_ip: The IP being assigned to the client.
-            
-        @rtype: int
-        @return: The number of bytes transmitted.
+        :param :class:`libpydhcpserver.dhcp_types.packet.DHCPPacket` packet: The
+            packet to be transmitted.
+        :param :class:`libpydhcpserver.dhcp.Address`: The address from which the
+                                                      packet was received.
+        :param bool pxe: True if the packet was received via the PXE port.
+        :param :class:`libpydhcpserver.dhcp_types.mac.MAC` mac: The MAC of the
+            client for which this packet is destined.
+        :param :class:`libpydhcpserver.dhcp_types.ipv4.IPv4`: The IP being
+            assigned to the client.
+        :return int: The number of bytes emitted.
         """
         packet.setOption(54, self._server_address) #server_identifier
         
@@ -774,10 +758,10 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
         
     def addToTempBlacklist(self, mac, packet_type, reason):
         """
-        Marks a MAC as ignorable for a nominal amount of time.
+        Marks a MAC as ignorable for a brief period of time.
         
-        @type mac: basestring
-        @param mac: The MAC to be ignored.
+        :param :class:`libpydhcpserver.dhcp_types.mac.MAC` mac: The MAC to be
+                                                                ignored.
         """
         with self._lock:
             self._ignored_addresses.append([tuple(mac), config.UNAUTHORIZED_CLIENT_TIMEOUT])
@@ -792,10 +776,9 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
         """
         Determines whether the MAC is, or should be, blacklisted.
         
-        @type mac: basestring
-        @param mac: The MAC to be evaluated.
-        
-        @raise _PacketSourceIgnored: The MAC is currently being ignored.
+        :param :class:`libpydhcpserver.dhcp_types.mac.MAC` mac: The MAC to be
+                                                                evaluated.
+        :except _PacketSourceIgnored: The MAC is currently being ignored.
         """
         with self._lock:
             ignored = [timeout for (ignored_mac, timeout) in self._ignored_addresses if mac == ignored_mac]
@@ -809,8 +792,8 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
         """
         Returns the database this server is configured to use.
         
-        @rtype: L{databases.generic.Database}
-        @return: The database to use for retrieving lease definitions.
+        :return :class:`databases.generic.Database`: The database used for
+            retrieving lease definitions.
         """
         return self._database
         
