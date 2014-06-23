@@ -1,28 +1,26 @@
 # -*- encoding: utf-8 -*-
 """
-staticDHCPd module: dhcp
-
-Purpose
-=======
- Provides the DHCPd side of a staticDHCPd server.
+staticdhcpdlib.dhcp
+===================
+Provides the DHCPd side of a staticDHCPd server.
  
 Legal
-=====
- This file is part of staticDHCPd.
- staticDHCPd is free software; you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation; either version 3 of the License, or
- (at your option) any later version.
+-----
+This file is part of staticDHCPd.
+staticDHCPd is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 3 of the License, or
+(at your option) any later version.
 
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
- You should have received a copy of the GNU General Public License
- along with this program. If not, see <http://www.gnu.org/licenses/>.
- 
- (C) Neil Tallim, 2013 <flan@uguu.ca>
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+(C) Neil Tallim, 2014 <flan@uguu.ca>
 """
 import collections
 import logging
@@ -83,38 +81,36 @@ class _PacketWrapper(object):
     easy statistics aggregation, exception-handling, and reduction of in-line
     processing.
     """
-    _server = None #:The server from which this packet was received.
-    _packet_type = None #:The type of packet being wrapped.
-    _discarded = True #:Whether the packet is in a discarded state.
-    _start_time = None #:The time at which processing began.
-    _associated_ip = None #:The client-ip associated with this request.
-    _definition = None #The definition associated with this request.
+    _server = None #: The server from which this packet was received.
+    _packet_type = None #: The type of packet being wrapped.
+    _discarded = True #: Whether the packet is in a discarded state.
+    _start_time = None #: The time at which processing began.
+    _associated_ip = None #: The client-ip associated with this request.
+    _definition = None #: The definition associated with this request.
     
-    valid = False #:Whether the packet passed basic sanity-tests.
-    source_address = None #:The (address, port) of the packet's origin.
-    packet = None #:The packet being wrapped.
-    mac = None #:The MAC associated with the packet.
-    ip = None #:The requested IP address associated with the packet, if any.
-    sid = None #:The IP address of the server associated with the request, if any.
-    ciaddr = None #:The IP address of the client, if any.
-    giaddr = None #:The IP address of the gateway associated with the packet, if any.
-    pxe = None #:Whether the packet was received from a PXE context.
-    _pxe_options = None #:Any PXE options extracted from the packet.
+    valid = False #: Whether the packet passed basic sanity-tests.
+    source_address = None #: The :class:`libpydhcpserver.dhcp.Address` of the packet's origin.
+    packet = None #: The packet being wrapped.
+    mac = None #: The MAC associated with the packet.
+    ip = None #: The requested IP address associated with the packet, if any.
+    sid = None #: The IP address of the server associated with the request, if any.
+    ciaddr = None #: The IP address of the client, if any.
+    giaddr = None #: The IP address of the gateway associated with the packet, if any.
+    pxe = None #: Whether the packet was received from a PXE context.
+    _pxe_options = None #: Any PXE options extracted from the packet.
     
     def __init__(self, server, packet, packet_type, source_address, pxe):
         """
         Creates a new wrapper.
         
-        @type server: L{_DHCPServer}
-        @param server: The server associated with this packet.
-        @type packet: L{libpydhcpserver.dhcp_types.packet.DHCPPacket}
-        @param packet: The packet being wrapped.
-        @type packet_type: basestring
-        @param packet_type: The type of packet being wrapped.
-        @type source_address: tuple(2)
-        @param source_address: The (address:basestring, port:int) of the source.
-        @type pxe: bool
-        @param pxe: Whether this packet arrived via PXE.
+        :param :class:`_DHCPServer` server: The server associated with this
+                                            packet.
+        :param :class:`libpydhcpserver.dhcp_types.packet.DHCPPacket` packet: The
+            packet being wrapped.
+        :param basestring packet_type: The type of packet being wrapped.
+        :param :class:`libpydhcpserver.dhcp.Address` source_address: The address
+            of the source.
+        :param bool pxe: Whether this packet arrived via PXE.
         """
         self._start_time = time.time()
         
@@ -129,9 +125,6 @@ class _PacketWrapper(object):
     def __enter__(self):
         """
         Performs validation on the packet, storing the result in 'valid'.
-        
-        @rtype: L{_PacketWrapper}
-        @return: This object, for use with with...as constructs.
         """
         self.announcePacket(verbosity=logging.DEBUG)
         
@@ -221,6 +214,8 @@ class _PacketWrapper(object):
         """
         Determines whether the received packet belongs to a relayed request or
         not and decides whether it should be allowed based on policy.
+        
+        :except _PacketSourceUnacceptable: The packet was rejected.
         """
         if self.giaddr: #Relayed request.
             if not config.ALLOW_DHCP_RELAYS: #Ignore it.
@@ -234,10 +229,8 @@ class _PacketWrapper(object):
         """
         Logs the occurance of the wrapped packet.
         
-        @type ip: basestring
-        @param ip: The IP for which the quest was sent, if known.
-        @type verbosity: int
-        @param verbosity: A logging seerity constant.
+        :param basestring ip: The IP for which the request was sent, if known.
+        :param int verbosity: A logging severity constant.
         """
         _logger.log(verbosity, '%(type)s from %(mac)s%(ip)s%(sip)s%(pxe)s' % {
          'type': self._packet_type,
@@ -253,10 +246,9 @@ class _PacketWrapper(object):
         
     def getType(self):
         """
-        Returns the type of packet being processed.
+        Provides the type of packet being processed.
         
-        @rtype: basestring
-        @return: The type of packet being processed.
+        :return basestring: The type of packet being processed.
         """
         return self._packet_type
         
@@ -264,24 +256,27 @@ class _PacketWrapper(object):
         """
         Updates the type of packet being processed.
         
-        @type packet_type: basestring
-        @param packet_type: The type of packet being processed.
+        :param basestring packet_type: The type of packet being processed.
         """
         self._packet_type = packet_type
         
     def markAddressed(self):
         """
-        Indicates that the packet was processed to completion.
+        Indicate that the packet was processed to completion.
         """
         self._discarded = False
         
     def filterPacket(self, override_ip=False, override_ip_value=None):
         """
-        @type override_ip: bool
-        @param override_ip: If True, override_ip_value will be used instead of
-            the packet's "requested_ip_address" field.
-        @type override_ip_value: sequence|None
-        @param override_ip_value: The value to substitute for the default IP.
+        A mechanism for allowing user-defined packet-filtering functionality.
+        
+        :param bool override_ip: True if the advertised client IP should be
+                                 overridden with another value.
+        :param :class:`libpydhcpserver.dhcp_types.packet.DHCPPacket` override_ip_value: The
+            IP value to use for overriding.
+        :return bool: True if the packet should be processed.
+        :except _PacketSourceBlacklist: The packet should be temporarily
+                                        blacklisted.
         """
         ip = self.ip
         if override_ip:
@@ -299,13 +294,12 @@ class _PacketWrapper(object):
         
     def _loadDHCPPacket(self, definition, inform):
         """
-        Sets option fields based on values returned from the database.
+        Sets option fields based on values returned from a database.
         
-        @type definition: L{databases.generic.Definition}
-        @param definition: The value returned from the database or surrogate source.
-        @type inform: bool
-        @param inform: True if this is a response to an INFORM message, which
-            will result in no IP being inserted into the response.
+        :param :class:`databases.generic.Definition` definition: Parameters used
+            to load the packet.
+        :param bool inform: True if this is a response to an INFORM request,
+            which will result in no IP being inserted into the response.
         """
         #Core parameters.
         if not inform:
@@ -335,16 +329,12 @@ class _PacketWrapper(object):
     def loadDHCPPacket(self, definition, inform=False):
         """
         Loads the packet with all normally required values, then passes it
-        through custom scripting to add additional fields as needed.
+        through user-defined scripting to further set fields as needed.
         
-        @type definition: L{databases.generic.Definition}
-        @param definition: The definition retrieved from the database.
-        @type inform: bool
-        @param inform: Whether this is an INFORM scenario, which omits
-            certain steps.
-            
-        @rtype: bool
-        @return: Whether processing should continue.
+        :param :class:`databases.generic.Definition` definition: Parameters used
+            to load the packet.
+        :param bool inform: True if this is a response to an INFORM request.
+        :return bool: True if processing should continue.
         """
         self._loadDHCPPacket(definition, inform)
         process = bool(config.loadDHCPPacket(
@@ -361,17 +351,15 @@ class _PacketWrapper(object):
         
     def retrieveDefinition(self, override_ip=False, override_ip_value=None):
         """
-        Queries the database and custom scripting to try to match the MAC to
-        a lease.
+        Queries the database and user-defined scripting to try to match the MAC
+        to a "lease".
         
-        @type override_ip: bool
-        @param override_ip: If True, override_ip_value will be used instead of
-            the packet's "requested_ip_address" field.
-        @type override_ip_value: sequence|None
-        @param override_ip_value: The value to substitute for the default IP.
-        
-        @rtype: L{Definition}|None
-        @return: The located Definition, or None if nothing was found.
+        :param bool override_ip: If True, `override_ip_value` will be used
+            instead of the packet's `requested_ip_address` field.
+        :param :class:`libpydhcpserver.dhcp_types.packet.DHCPPacket` override_ip_value: The
+            IP value to use for overriding.
+        :return :class:`databases.generic.Definition` definition: The associated
+            definition; None if no "lease" is available.
         """
         ip = self.ip
         if override_ip:
@@ -390,8 +378,7 @@ def _dhcpHandler(packet_type):
     """
     A decorator to abstract away the wrapper boilerplate.
     
-    @type packet_type: basestring
-    @param packet_type: The type of packet initially being processed.
+    :param basestring packet_type: The type of packet initially being processed.
     """
     def decorator(f):
         def wrappedHandler(self, packet, source_address, pxe):

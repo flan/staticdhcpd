@@ -71,7 +71,7 @@ Statistics associated with a DHCP event.
 
 .. py:attribute:: processed
 
-    Whether a response was generated (False if non-DHCP or blacklisted).
+    Whether the packet was fully processed (False if non-DHCP or blacklisted).
 
 .. py:attribute:: pxe
 
