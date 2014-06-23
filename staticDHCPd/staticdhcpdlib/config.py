@@ -1,40 +1,38 @@
 # -*- encoding: utf-8 -*-
 """
-staticDHCPd module: config
+staticdhcpdlib.config
+=====================
+Provides a buffer to seed options with default values to make upgrading easier
+for end users who do not need to manage any newly added features.
+
+Also handles the process of determining where config values should be accessed.
 
 WARNING
-=======
- If you are attempting to customise your environment, edit conf.py instead.
- If testing, it will likely be in conf/; if installed, in /etc/staticDHCPd/;
- or, if upgrading from an older version, in the same directory as main.py.
- 
- This file is intended for internal use only and modifications here will
- probably lead to headaches later.
+-------
+If you are attempting to customise your environment, edit conf.py instead.
+If testing, it will likely be in conf/; if installed, in /etc/staticDHCPd/;
+or, if upgrading from an older version, in the same directory as main.py.
 
-Purpose
-=======
- Provides a buffer to seed options with default values to make upgrading easier
- for end users who do not need to manage any newly added features.
- 
- Also handles the process of determining where config values should be accessed.
- 
+This file is intended for internal use only and modifications here will
+probably lead to headaches later.
+
 Legal
-=====
- This file is part of staticDHCPd.
- staticDHCPd is free software; you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation; either version 3 of the License, or
- (at your option) any later version.
+-----
+This file is part of staticDHCPd.
+staticDHCPd is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 3 of the License, or
+(at your option) any later version.
 
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
- You should have received a copy of the GNU General Public License
- along with this program. If not, see <http://www.gnu.org/licenses/>.
- 
- (C) Neil Tallim, 2013 <flan@uguu.ca>
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+(C) Neil Tallim, 2014 <flan@uguu.ca>
 """
 #Get the "conf" module from somewhere
 conf = None
@@ -278,6 +276,9 @@ import system
 import statistics
 import web
 class callbacks(object):
+    """
+    A data-namespace, used to isolate callback-management functions.
+    """
     systemAddReinitHandler = staticmethod(system.registerReinitialisationCallback)
     systemRemoveReinitHandler = staticmethod(system.unregisterReinitialisationCallback)
     systemAddTickHandler = staticmethod(system.registerTickCallback)
