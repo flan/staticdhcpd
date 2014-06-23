@@ -858,11 +858,11 @@ class DHCPService(threading.Thread):
         """
         Sets up the DHCP server.
         
-        @type database: L{databases.generic.Database}
-        @param database: The database to use for retrieving lease definitions.
-        
-        @raise Exception: If a problem occurs while binding the sockets needed
-            to handle DHCP traffic.
+        :param :class:`databases.generic.Database` database: The database to use
+                                                             for retrieving
+                                                             lease definitions.
+        :except Exception: A problem occurred while binding the sockets needed
+                           to handle DHCP traffic.
         """
         threading.Thread.__init__(self)
         self.name = "DHCP"
@@ -910,7 +910,7 @@ class DHCPService(threading.Thread):
                 
     def tick(self):
         """
-        Calls the underying tick() method.
+        Calls the underlying tick() method.
         """
         self._dhcp_server.tick()
     
