@@ -67,7 +67,7 @@ class _HTTPLogic(object):
          'mac': str(mac),
         })
         try:
-            response = urllib.urlopen(request)
+            response = urllib2.urlopen(request)
             _logger.debug("MAC response received from '%(uri)s' for '%(mac)s'" % {
              'uri': self._URI,
              'mac': str(mac),
@@ -125,8 +125,8 @@ class HTTPDatabase(Database, _HTTPLogic):
     def __init__(self):
         _HTTPLogic.__init__(self)
         
-    def lookupMAC(self):
-        return self._lookupMAC()
+    def lookupMAC(self, mac):
+        return self._lookupMAC(mac)
         
 class HTTPCachingDatabase(CachingDatabase, _HTTPLogic):
     def __init__(self):
