@@ -46,7 +46,6 @@ autoconversion, will handle the hard part.
 .. autofunction:: ipToList
 .. autofunction:: ipsToList
 
-
 RFC conversions
 ---------------
 DHCP has many extending RFCs, and many of those have their own data-formats.
@@ -59,7 +58,7 @@ content, letting you focus on logic, not bitwise shifts.
 Decoders
 ||||||||
 The following functions decode RFC options, providing easy-to-process data.
-They are additionally bound via autoconversion.
+They are bound and invoked, where appriopriate, via autoconversion.
 
 .. autofunction:: rfc3046_decode
 .. autofunction:: rfc3925_decode
@@ -75,49 +74,37 @@ byte-sequences, handling all logic internally.
     
 .. autoclass:: rfc1035_plus
     :show-inheritance:
-    :members: __init__
     
 .. autoclass:: rfc2610_78
     :show-inheritance:
-    :members: __init__
     
 .. autoclass:: rfc2610_79
     :show-inheritance:
-    :members: __init__
     
 .. autoclass:: rfc3361_120
     :show-inheritance:
-    :members: __init__
     
 .. autoclass:: rfc3397_119
     :show-inheritance:
-    :members: __init__
     
 .. autoclass:: rfc3925_124
     :show-inheritance:
-    :members: __init__
     
 .. autoclass:: rfc3925_125
     :show-inheritance:
-    :members: __init__
     
 .. autoclass:: rfc4174_83
     :show-inheritance:
-    :members: __init__
     
 .. autoclass:: rfc4280_88
     :show-inheritance:
-    :members: __init__
     
 .. autoclass:: rfc5223_137
     :show-inheritance:
-    :members: __init__
     
 .. autoclass:: rfc5678_139
     :show-inheritance:
-    :members: __init__
     
 .. autoclass:: rfc5678_140
     :show-inheritance:
-    :members: __init__
     

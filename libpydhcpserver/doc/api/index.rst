@@ -17,7 +17,7 @@ packet is received and analysed, then a response packet is emitted. Between the
 :doc:`types <../types/index>` *libpydhcpserver* provides (which include an
 object-oriented packet interface) and the
 :class:`DHCPServer <dhcp.DHCPServer>` class described below, all that's left
-for you to do is customising the analysis part.
+for you to do is customise the analysis part.
 
 .. module:: dhcp
 
@@ -25,22 +25,14 @@ Constants
 +++++++++
 .. autodata:: IP_UNSPECIFIED_FILTER
 
+Named Tuples
+++++++++++++
+.. autodata:: Address
+    :annotation:
+
 Classes
 +++++++
-To build a DHCP server, the following class-interfaces cover all the bases.
-
-Address
-|||||||
-.. autoclass:: Address
-
-DHCPServer
-||||||||||
 .. autoclass:: DHCPServer
     :members:
     :private-members:
-    :special-members:
-    :exclude-members: __weakref__
-    
-    .. autoattribute:: DHCPServer._server_address
-    .. autoattribute:: DHCPServer._network_link
     
