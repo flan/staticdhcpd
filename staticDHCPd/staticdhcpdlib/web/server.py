@@ -36,7 +36,7 @@ import uuid
 
 try:
     from urlparse import parse_qs
-except:
+except ImportError:
     from cgi import parse_qs
 
 from staticdhcpdlib.web import retrieveMethodCallback
