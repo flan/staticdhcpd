@@ -1,5 +1,5 @@
-Convenience functions
-=====================
+Conversion functions
+====================
 For efficiency purposes, packet-data is conceptualised as sequences of bytes,
 since it has very limited interaction with human operators. This is great for
 performance, but not so great when writing code.
@@ -10,6 +10,9 @@ within the :meth:`getOption <dhcp_types.packet.DHCPPacket.getOption>` and
 :meth:`setOption <dhcp_types.packet.DHCPPacket.setOption>` methods of
 :class:`DHCPPacket <dhcp_types.packet.DHCPPacket>`, so it is rare that you will
 need to invoke them directly.
+
+
+.. _conversion-type:
 
 Type-conversion
 ---------------
@@ -45,6 +48,9 @@ autoconversion, will handle the hard part.
 .. autofunction:: strToPaddedList
 .. autofunction:: ipToList
 .. autofunction:: ipsToList
+
+
+.. _conversion-rfc:
 
 RFC conversions
 ---------------
