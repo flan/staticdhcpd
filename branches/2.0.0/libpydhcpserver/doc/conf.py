@@ -20,6 +20,9 @@ exclude_trees = ['_build']
 
 pygments_style = 'sphinx'
 
+autodoc_member_order = 'bysource'
+autoclass_content = 'init'
+
 html_theme = 'default'
 html_static_path = ['_static']
 html_show_sourcelink = False
