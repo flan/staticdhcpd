@@ -39,7 +39,7 @@ class _HTTPLogic(object):
         Performs the actual lookup operation; this is the first thing you should
         study when customising for your site.
         """
-        headers = _HEADERS.copy() #If you need to generate per-request headers, add them here
+        headers = self._HEADERS.copy() #If you need to generate per-request headers, add them here
         
         #You can usually ignore this if-block, though you could strip out whichever method you don't use
         if self._POST:
