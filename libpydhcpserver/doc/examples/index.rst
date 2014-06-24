@@ -50,3 +50,20 @@ DHCP options are set as follows, where ``x`` is the option's ID or name and
 
 **Note:** All integers may be specified in hex (``0xF0``), octal (``020``), and
 binary (``0b10001000``).
+
+
+Examples
+--------
+Preamble
+
+Fields
+++++++
+Create a few examples, including getting data.
+
+Options
++++++++
+Copy some of the simpler examples from the wiki. Show data-retrieval.
+
+RFC options
++++++++++++
+Copy these directly from the wiki.
