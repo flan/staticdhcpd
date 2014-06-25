@@ -29,13 +29,13 @@ DHCP options are set as follows, where ``x`` is the option's ID or name and
     
     packet.setOption(x, IPv4('127.0.0.1')) #Using the libpydhcpserver IPv4 type
     packet.setOption(x, '127.0.0.1')
-    packet.setOption(x, [127, 0, 0, 1])
+    packet.setOption(x, [127,0,0,1])
     packet.setOption(x, 2130706433)
     
 * **TYPE_IPV4_PLUS**::
     
     packet.setOption(x, '127.0.0.1,192.168.0.1')
-    packet.setOption(x, [[127, 0, 0, 1], '192.168.0.1'])
+    packet.setOption(x, [[127,0,0,1], '192.168.0.1'])
     
 * **TYPE_IPV4_MULT**::
     

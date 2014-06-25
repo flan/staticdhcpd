@@ -1,10 +1,18 @@
-Introduction to the programming interfaces
+Programming interfaces
+======================
+*staticDHCPd* is designed to be easy to extend. To this end, official
+:doc:`../customisation/extensions` are provided, covering all of the major
+ways in which internal data may be accessed.
 
-Sections will include methods and datatypes relevant to the following:
-databases
-web
-statistics
-logging
-system
+This section exists as an API reference for anyone who needs to dig deeper
+than what the sample extensions provide.
 
-This is NOT staticDHCPd internal dev-doc, but rather just what a user writing extensions needs to know.
+.. toctree::
+    :maxdepth: 2
+
+    databases.rst
+    logging.rst
+    statistics.rst
+    system.rst
+    web.rst
+    
