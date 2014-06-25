@@ -1,12 +1,25 @@
-Customisation
-=============
+Customisation guidance
+======================
+While quite usable out-of-the-box, especially for its intended purpose, which
+is serving static DHCP "leases", different sites have different needs, and some
+sites want as few frills as possible.
 
-Something about what staticDHCPd is capable of
+This section exists to cover the various bells and whistles available.
 
+.. toctree::
+    :maxdepth: 2
 
-Sections
---------
+    configuration.rst
+    scripting.rst
+    extensions.rst
 
-Sub-documents will basically be configuration and scripting.
+For the sysadmins out there working in acutely memory-constrained environments
+(that still have enough space to support a Python interpreter), as a general
+design guideline, *staticDHCPd* avoids loading anything it doesn't absolutely
+need: if you choose not to enable the `web` subsystem, for example, it won't
+ever be read from disk.
 
-Maybe extensions, too.
+Additionally, staticDHCPd is pretty open to tuning, so if you know a lot about
+the wort of load your environment will handle, you can change properties like
+``checkinterval`` to adjust threading and resource priotisation and
+responsiveness.
