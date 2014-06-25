@@ -65,7 +65,8 @@ DHCP fields
 .. autodata:: DHCP_FIELDS_TYPES
     :annotation:
     
-    *Reading the source for this element is VERY strongly recommended.*
+    Reading the `source <../_modules/dhcp_types/constants.html>`_ for this
+    element is VERY strongly recommended.
 
 .. _constants-options:
 
@@ -74,12 +75,14 @@ DHCP options
 .. autodata:: DHCP_OPTIONS_TYPES
     :annotation:
     
-    *Reading the source for this element is VERY strongly recommended.*
+    Reading the `source <../_modules/dhcp_types/constants.html>`_ for this
+    element is VERY strongly recommended.
     
 .. autodata:: DHCP_OPTIONS
     :annotation:
     
-    *Reading the source for this element is VERY strongly recommended.*
+    Reading the `source <../_modules/dhcp_types/constants.html>`_ for this
+    element is VERY strongly recommended.
     
 .. autodata:: DHCP_OPTIONS_REVERSE
     :annotation:
