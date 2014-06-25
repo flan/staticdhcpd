@@ -188,7 +188,7 @@ def listToIP(l):
     
     :param sequence(4) l: The bytes to be converted.
     :return: The equivalent IPv4 address.
-    :rtype: :class:`IPv4 <dhcp_types.IPv4>`
+    :except ValueError: The list could not be processed.
     """
     global _IPv4
     if not _IPv4:
@@ -203,8 +203,8 @@ def listToIPs(l):
     
     :param sequence l: The bytes to be converted, as a flat sequence with
         length a multiple of four.
-    :return: The equivalent IPv4 addresses.
-    :rtype: list
+    :return list: The equivalent IPv4 addresses.
+    :except ValueError: The list could not be processed.
     """
     ips = []
     for i in xrange(len(l) / 4):
@@ -217,8 +217,9 @@ def ipToList(ip):
     Converts an IPv4 address into a list of four bytes in big-endian order.
     
     :param object ip: Any valid IPv4 format (string, 32-bit integer, list of
-        bytes, :class:`IPv4 <dhcp_types.IPv4>`).
+                      bytes, :class:`IPv4 <dhcp_types.IPv4>`).
     :return list(4): The converted address.
+    :except ValueError: The IP could not be processed.
     """
     global _IPv4
     if not _IPv4:
@@ -237,6 +238,7 @@ def ipsToList(ips):
     :param list ips: A list of any valid IPv4 formats (string, 32-bit integer,
         list of bytes, :class:`IPv4 <dhcp_types.IPv4>`).
     :return list: The converted addresses.
+    :except ValueError: The IPs could not be processed.
     """
     if isinstance(ips, StringTypes):
         tokens = ips.split(',')

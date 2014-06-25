@@ -52,7 +52,7 @@ An inet layer-3 address.
 
 .. py:attribute:: ip
 
-    An :class:`IPv4 <dhcp_types.IPv4>` address
+    An :class:`IPv4 <dhcp_types.ipv4.IPv4>` address
 
 .. py:attribute:: port
 
@@ -71,14 +71,14 @@ class DHCPServer(object):
         Sets up the DHCP network infrastructure.
         
         :param server_address: The IP address on which to run the DHCP service.
-        :type server_address: :class:`IPv4 <dhcp_types.IPv4>`
+        :type server_address: :class:`IPv4 <dhcp_types.ipv4.IPv4>`
         :param int port: The port on which DHCP servers and relays listen in this network.
         :param int client_port: The port on which DHCP clients listen in this network.
-        :param int|None pxe_port: The port on which DHCP servers listen for PXE traffic in this
+        :param int pxe_port: The port on which DHCP servers listen for PXE traffic in this
             network; ``None`` to disable.
-        :param str|None response_interface: The interface on which to provide raw packet support,
+        :param str response_interface: The interface on which to provide raw packet support,
             like ``"eth0"``, or ``None`` if not requested.
-        :param sequence|None response_interface_qtags: Any qtags to insert into raw packets, in
+        :param sequence response_interface_qtags: Any qtags to insert into raw packets, in
             order of appearance. Definitions take the following form:
             (pcp:`0-7`, dei:``bool``, vid:`1-4094`)
         :except Exception: A problem occurred during setup.

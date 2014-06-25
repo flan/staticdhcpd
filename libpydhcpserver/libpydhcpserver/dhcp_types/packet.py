@@ -103,27 +103,26 @@ _OPTION_UNPACK = {
  125: rfc3925_125_decode, #vendor_specific
 } #: Mappings for specific options that are decoded by default.
 
-FLAGBIT_BROADCAST = 0b1000000000000000 #: The "broadcast bit", described in RFC 2131
+FLAGBIT_BROADCAST = 0b1000000000000000 #: The "broadcast bit", described in RFC 2131.
 
 class DHCPPacket(object):
     """
-    Handles the construction, management, and export of DHCP packets.
+    A malleable representation of a DHCP packet.
     """
-    _header = None #: The core 240 bytes that make up a DHCP packet
-    _options = None #: Any options attached to this packet
-    _selected_options = None #: Any options explicitly requested by the client
-    _maximum_size = None #: The maximum number of bytes permitted in the encoded packet
+    _header = None #: The core 240 bytes that make up a DHCP packet.
+    _options = None #: Any options attached to this packet.
+    _selected_options = None #: Any options explicitly requested by the client.
+    _maximum_size = None #: The maximum number of bytes permitted in the encoded packet.
+    _meta = None #: A dictionary that can be freely manipulated to store data for the lifetime of the packet; initialised on first request.
     
-    word_align = False #: If set, every option with an odd length in bytes will be padded, to ensure 16-bit word-alignment
-    word_size = 4 #: The number of bytes in a word; 32-bit by network convention by default
-    terminal_pad = False #: If set, pad the packet to ``word_size``
+    word_align = False #: If set, every option with an odd length in bytes will be padded, to ensure 16-bit word-alignment.
+    word_size = 4 #: The number of bytes in a word; 32-bit by network convention by default.
+    terminal_pad = False #: If set, pad the packet to a multiple of ``word_size``.
     
-    response_mac = None #: If set to something coerceable into a MAC, the packet will be sent to this MAC, rather than its default
-    response_ip = None #: If set to something coerceable into an IPv4, the packet will be sent to this IP, rather than its default
-    response_port = None #: If set to an integer, the packet will be sent to this port, rather than its default
-    response_source_port = None #: If set to an integer, the packet will be reported as being sent from this port, rather than its default
-    
-    _meta = None #: A dictionary that can be freely manipulated to store data for the lifetime of the packet; initialised on first request
+    response_mac = None #: If set to something coerceable into a MAC, the packet will be sent to this MAC, rather than its default.
+    response_ip = None #: If set to something coerceable into an IPv4, the packet will be sent to this IP, rather than its default.
+    response_port = None #: If set to an integer, the packet will be sent to this port, rather than its default.
+    response_source_port = None #: If set to an integer, the packet will be reported as being sent from this port, rather than its default.
     
     def __init__(self, data=None, _copy_data=None):
         """
@@ -166,6 +165,18 @@ class DHCPPacket(object):
         if options_position != _PACKET_HEADER_SIZE: #Insert the cookie without padding.
             self._header[_MAGIC_COOKIE_POSITION:_PACKET_HEADER_SIZE] = MAGIC_COOKIE_ARRAY
             
+    @property
+    def meta(self):
+        """
+        A dictionary that can be freely manipulated to store data for the
+        lifetime of the packet.
+        
+        This data is not used by the packet in any way.
+        """
+        if self._meta is None: #Defer instantiation if not required
+            self._meta = {}
+        return self._meta
+        
     def _initialise(self):
         """
         Creates a blank packet's structures.
@@ -206,7 +217,7 @@ class DHCPPacket(object):
         """
         Provides a mutable copy of a packet.
         
-        :return :class:`Packet <Packet>`: A copy of the packet.
+        :return: A copy of the packet.
         """
         return DHCPPacket(_copy_data=(
          (self._header, self._options, self._selected_options, self._maximum_size),
@@ -214,18 +225,6 @@ class DHCPPacket(object):
          (self.response_mac, self.response_ip, self.response_port, self.response_source_port),
          self._meta,
         ))
-        
-    @property
-    def meta(self):
-        """
-        A dictionary that can be freely manipulated to store data for the
-        lifetime of the packet.
-        
-        This data is not used by the packet in any way.
-        """
-        if self._meta is None: #Defer instantiation if not required
-            self._meta = {}
-        return self._meta
         
     def _locateOptions(self, data):
         """
@@ -454,7 +453,7 @@ class DHCPPacket(object):
         """
         Provides the client's MAC address.
         
-        :return :class:`MAC <MAC>`:
+        :return: The client's MAC address.
         """
         length = self.getOption(FIELD_HLEN)[0]
         full_hw = self.getOption(FIELD_CHADDR)
@@ -733,8 +732,8 @@ class DHCPPacket(object):
         Provides the IP associated with a DHCP field or option.
         
         :param option: The numeric ID or name of the option to check.
-        :return :class:`IPv4 <IPv4>`: The associated address or None, if
-                                      undefined.
+        
+        :return: The associated address or None, if undefined.
         """
         addr = self.getOption(option)
         if not addr or not any(addr):

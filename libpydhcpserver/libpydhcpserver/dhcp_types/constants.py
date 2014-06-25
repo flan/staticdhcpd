@@ -25,39 +25,43 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 """
 import array
 
-TYPE_IPV4 = "ipv4" #: AFour bytes in network-byte-order
-TYPE_IPV4_PLUS = "ipv4+" #: At least one multiple of four bytes in network-byte-order
-TYPE_IPV4_MULT = "ipv4*" #: Multiples of four bytes in network-byte-order
-TYPE_BYTE = "byte" #: A single byte
-TYPE_BYTE_PLUS = "byte+" #: At least one byte
-TYPE_STRING = "string" #: Any number of bytes
-TYPE_BOOL = "bool" #: A single byte, constrained to the values 0 (false) and 1 (true)
-TYPE_INT = "16-bits" #: Two bytes in network-byte-order
-TYPE_INT_PLUS = "16-bits+" #: At least one multiple of two bytes in network-byte-order
-TYPE_LONG = "32-bits" #: Four bytes in network-byte-order
-TYPE_LONG_PLUS = "32-bits+" #: At least one multiple of four bytes in network-byte-order
-TYPE_IDENTIFIER = "identifier" #: Two bytes in small-endiant order
-TYPE_NONE = "none" #: A zero-length sequence
+TYPE_IPV4 = "ipv4" #: Four bytes in network-byte-order.
+TYPE_IPV4_PLUS = "ipv4+" #: At least one multiple of four bytes in network-byte-order.
+TYPE_IPV4_MULT = "ipv4*" #: Multiples of four bytes in network-byte-order.
+TYPE_BYTE = "byte" #: A single byte.
+TYPE_BYTE_PLUS = "byte+" #: At least one byte.
+TYPE_STRING = "string" #: Any number of bytes.
+TYPE_BOOL = "bool" #: A single byte, constrained to the values 0 (false) and 1 (true).
+TYPE_INT = "16-bits" #: Two bytes in network-byte-order.
+TYPE_INT_PLUS = "16-bits+" #: At least one multiple of two bytes in network-byte-order.
+TYPE_LONG = "32-bits" #: Four bytes in network-byte-order.
+TYPE_LONG_PLUS = "32-bits+" #: At least one multiple of four bytes in network-byte-order.
+TYPE_IDENTIFIER = "identifier" #: Two bytes in small-endian order.
+TYPE_NONE = "none" #: A zero-length sequence.
 
-FIELD_OP = "op" #: The DHCP operation type (Request or Response)
-FIELD_HTYPE = "htype" #: The type of hardware involved
-FIELD_HLEN = "hlen" #: The length of the hardware address
-FIELD_HOPS = "hops" #: The number of hops across which the packet has been transmitted
-FIELD_XID = "xid" #: The transaction ID
-FIELD_SECS = "secs" #: The number of seconds that have elapsed since the packet was first emitted
-FIELD_FLAGS = "flags" #: DHCP flags set on the packet
-FIELD_CIADDR = "ciaddr" #: The client's address
-FIELD_YIADDR = "yiaddr" #: The issued address
-FIELD_SIADDR = "siaddr" #: The server's address
-FIELD_GIADDR = "giaddr" #: The gateway's address
-FIELD_CHADDR = "chaddr" #: The hardware address
-FIELD_SNAME = "sname" #: BOOTP server hostname
-FIELD_FILE = "file" #: BOOTP filename
+FIELD_OP = "op" #: The DHCP operation type (Request or Response).
+FIELD_HTYPE = "htype" #: The type of hardware involved.
+FIELD_HLEN = "hlen" #: The length of the hardware address.
+FIELD_HOPS = "hops" #: The number of hops across which the packet has been transmitted.
+FIELD_XID = "xid" #: The transaction ID.
+FIELD_SECS = "secs" #: The number of seconds that have elapsed since the packet was first emitted.
+FIELD_FLAGS = "flags" #: DHCP flags set on the packet.
+FIELD_CIADDR = "ciaddr" #: The client's address.
+FIELD_YIADDR = "yiaddr" #: The issued address.
+FIELD_SIADDR = "siaddr" #: The server's address.
+FIELD_GIADDR = "giaddr" #: The gateway's address.
+FIELD_CHADDR = "chaddr" #: The hardware address.
+FIELD_SNAME = "sname" #: BOOTP server hostname.
+FIELD_FILE = "file" #: BOOTP filename.
 
-MAGIC_COOKIE = '\x63\x82\x53\x63' #: The DHCP magic cookie, per RFC 1048
-MAGIC_COOKIE_ARRAY = array.array('B', MAGIC_COOKIE) #: The DHCP magic cookie as an array of bytes
+MAGIC_COOKIE = '\x63\x82\x53\x63' #: The DHCP magic cookie, per RFC 1048.
+MAGIC_COOKIE_ARRAY = array.array('B', MAGIC_COOKIE) #: The DHCP magic cookie as an array of bytes.
 
-DHCP_OP_NAMES = {0: 'ERROR_UNDEF', 1: 'BOOTREQUEST', 2: 'BOOTREPLY',}
+DHCP_OP_NAMES = {
+ 0: 'ERROR_UNDEF',
+ 1: 'BOOTREQUEST',
+ 2: 'BOOTREPLY',
+} #: Mapping from DHCP operation types to human-readable names.
 DHCP_TYPE_NAMES = {
  0: 'ERROR_UNDEF',
  1: 'DHCP_DISCOVER', 2: 'DHCP_OFFER',
@@ -458,4 +462,3 @@ DHCP_OPTIONS = {
  #'end': 255
 } #: Maps human-readable DHCP option names to integer values.
 DHCP_OPTIONS_REVERSE = dict((v, k) for (k, v) in DHCP_OPTIONS.iteritems()) #: Maps integer values to human-readable DHCP option names.
-
