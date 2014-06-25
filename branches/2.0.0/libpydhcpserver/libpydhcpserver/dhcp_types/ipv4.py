@@ -41,9 +41,9 @@ class IPv4(object):
     An abstract IPv4 address that can be realised as a sequence of bytes, a
     dotted quad, or an unsigned, 32-bit integer, as needed.
     """
-    _ip = None #An IPv4 as an integer
-    _ip_tuple = None #An IPv4 as a quadruple of bytes
-    _ip_string = None #An IPv4 as a dotted quad
+    _ip = None #: An IPv4 as an integer.
+    _ip_tuple = None #: An IPv4 as a quadruple of bytes.
+    _ip_string = None #: An IPv4 as a dotted quad.
     
     def __init__(self, address):
         """

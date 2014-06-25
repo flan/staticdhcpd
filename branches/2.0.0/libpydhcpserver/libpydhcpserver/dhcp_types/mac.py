@@ -40,15 +40,19 @@ class MAC(object):
     """
     Provides a standardised way of representing MACs.
     """
-    _mac = None #The MAC encapsulated by this object, as a tuple of bytes
-    _mac_integer = None #The MAC as an integer
-    _mac_string = None #The MAC as a colon-delimited, lower-case string
+    _mac = None #: The MAC encapsulated by this object, as a tuple of bytes.
+    _mac_integer = None #: The MAC as an integer.
+    _mac_string = None #: The MAC as a colon-delimited, lower-case string.
     
     def __init__(self, address):
         """
-        Constructs a MAC-representation from `address`, which is either a string
-        of twelve hex digits, optionally separated by non-hex characters, like
-        ':', '.', or '-', a sequence of six bytes, or an unsigned integer.
+        Constructs a MAC abstraction from a concrete representation.
+        
+        :param address: A MAC, which may be a string of twelve hex digits,
+                        optionally separated by non-hex characters, like ':',
+                        '.', or '-', a sequence of six bytes, or an unsigned
+                        integer.
+        :except ValueError: The address could not be processed.
         """
         if isinstance(address, IntegerTypes):
             if not 0 <= address <= 281474976710655:
