@@ -1,3 +1,8 @@
+Scripting guide
+===============
+
+
+
 Mention packet.meta
 
 -------------------------------

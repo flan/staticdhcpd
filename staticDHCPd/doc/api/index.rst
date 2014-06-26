@@ -8,7 +8,7 @@ This section exists as an API reference for anyone who needs to dig deeper
 than what the sample extensions provide.
 
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 1
 
     databases.rst
     logging.rst
