@@ -55,9 +55,9 @@ class Logger(object):
         self._handler = logging_handlers.FIFOHandler(config.WEB_LOG_HISTORY)
         self._handler.setLevel(getattr(logging, config.WEB_LOG_SEVERITY))
         if config.DEBUG:
-            self._logger.setFormatter(logging.Formatter("%(asctime)s : %(levelname)s : %(name)s : %(message)s"))
+            self._handler.setFormatter(logging.Formatter("%(asctime)s : %(levelname)s : %(name)s : %(message)s"))
         else:
-            self._logger.setFormatter(logging.Formatter("%(asctime)s : %(message)s"))
+            self._handler.setFormatter(logging.Formatter("%(asctime)s : %(message)s"))
         _logger.root.addHandler(self._handler)
         _logger.info("Web-accessible logging online; buffer-size=" + str(config.WEB_LOG_HISTORY))
         
