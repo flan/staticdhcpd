@@ -71,11 +71,12 @@ Statistics associated with a DHCP event.
 
 .. py:attribute:: processed
 
-    Whether the packet was fully processed (False if non-DHCP or blacklisted).
+    Whether the packet was fully processed (``False`` if non-DHCP or
+    blacklisted).
 
 .. py:attribute:: pxe
 
-    True if the request received was PXE.
+    ``True`` if the request received was PXE.
 """
 
 def emit(statistics):
