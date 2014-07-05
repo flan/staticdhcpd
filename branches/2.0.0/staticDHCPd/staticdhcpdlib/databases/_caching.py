@@ -149,7 +149,7 @@ class MemoryCache(_DatabaseCache):
             return Definition(
              ip=ip, lease_time=details[6], subnet=subnet_id[0], serial=subnet_id[1],
              hostname=hostname,
-             gateway=details[0], subnet_mask=details[1], broadcast_address=details[2],
+             gateways=details[0], subnet_mask=details[1], broadcast_address=details[2],
              domain_name=details[3], domain_name_servers=details[4], ntp_servers=details[5],
              extra=extra
             )
@@ -159,7 +159,7 @@ class MemoryCache(_DatabaseCache):
         subnet_id = (definition.subnet, definition.serial)
         self._mac_cache[int(mac)] = (definition.ip, definition.hostname, definition.extra, subnet_id)
         self._subnet_cache[subnet_id] = (
-         definition.gateway, definition.subnet_mask, definition.broadcast_address,
+         definition.gateways, definition.subnet_mask, definition.broadcast_address,
          definition.domain_name, definition.domain_name_servers, definition.ntp_servers,
          definition.lease_time
         )
@@ -259,7 +259,7 @@ LIMIT 1""", (int(mac),))
         if result:
             return Definition(
              ip=result[0], hostname=result[1],
-             gateway=result[2], subnet_mask=result[3], broadcast_address=result[4],
+             gateways=result[2], subnet_mask=result[3], broadcast_address=result[4],
              domain_name=result[5], domain_name_servers=result[6], ntp_servers=result[7],
              lease_time=result[8], subnet=result[9], serial=result[10],
              extra=json.loads(result[11])
@@ -272,7 +272,7 @@ LIMIT 1""", (int(mac),))
          (
           definition.subnet, definition.serial,
           definition.lease_time,
-          definition.gateway and str(definition.gateway),
+          definition.gateways and ','.join(str(i) for i in definition.gateways),
           definition.subnet_mask and str(definition.subnet_mask),
           definition.broadcast_address and str(definition.broadcast_address),
           definition.ntp_servers and ','.join(str(i) for i in definition.ntp_servers),

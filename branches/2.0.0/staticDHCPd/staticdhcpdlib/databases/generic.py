@@ -33,6 +33,7 @@ import collections
 import logging
 import threading
 import traceback
+
 from libpydhcpserver.dhcp_types.ipv4 import IPv4
 
 _logger = logging.getLogger('databases.generic')
@@ -43,7 +44,7 @@ class Definition(object):
     """
     ip = None #: The :class:`IPv4 <IPv4>` to be assigned
     hostname = None #: The hostname to assign (may be None)
-    gateway = None #: The :class:`IPv4 <IPv4>` gateway to advertise (may be None)
+    gateways = None #: The :class:`IPv4 <IPv4>` gateways to advertise (may be None)
     subnet_mask = None #: The :class:`IPv4 <IPv4>` netmask to advertise (may be None)
     broadcast_address = None #: The :class:`IPv4 <IPv4>` broadcast address to advertise (may be None)
     domain_name = None #: The domain name to advertise (may be None)
@@ -57,7 +58,7 @@ class Definition(object):
     def __init__(self,
         ip, lease_time, subnet, serial,
         hostname=None,
-        gateway=None, subnet_mask=None, broadcast_address=None,
+        gateways=None, subnet_mask=None, broadcast_address=None,
         domain_name=None, domain_name_servers=None, ntp_servers=None,
         extra=None
     ):
@@ -65,23 +66,24 @@ class Definition(object):
         Initialises a Definition.
         
         :param ip: The IP address to assign, in any main format.
-        :param basestring hostname: The hostname to assign.
-        :param gateway: The IP address to advertise, in any main format.
-        :param subnet_mask: The IP address to advertise, in any main format.
-        :param broadcast_address: The IP address to advertise, in any main
-                                  format.
-        :param basestring domain_name: The domain name to advertise.
-        :param domain_name_servers: The IP addressed to advertise, in any main
-                                    format, including comma-delimited string.
-        :param ntp_servers: The IP addressed to advertise, in any main format,
-                            including comma-delimited string.
         :param int lease_time: The number of seconds for which the lease is
                                valid.
         :param basestring subnet: The "subnet" identifier of the record in the
                                   database.
         :param int serial: The "serial" identifier of the record in the
                            database.
-        :param basestring extra: A string containing any metadata from the
+        :param basestring hostname: The hostname to assign.
+        :param gateways: The IP addresses to advertise, in any main format,
+                         including comma-delimited string.
+        :param subnet_mask: The IP address to advertise, in any main format.
+        :param broadcast_address: The IP address to advertise, in any main
+                                  format.
+        :param basestring domain_name: The domain name to advertise.
+        :param domain_name_servers: The IP addresses to advertise, in any main
+                                    format, including comma-delimited string.
+        :param ntp_servers: The IP addresses to advertise, in any main format,
+                            including comma-delimited string.
+        :param extra: An objectcontaining any metadata from the
                                  database.
         """
         #Required values
@@ -92,7 +94,10 @@ class Definition(object):
         
         #Optional vlaues
         self.hostname = hostname and str(hostname)
-        self.gateway = gateway and IPv4(gateway)
+        if gateways:
+            if isinstance(gateways, StringTypes):
+                gateways = gateways.split(',')
+            self.gateways = [IPv4(i) for i in gateways]
         self.subnet_mask = subnet_mask and IPv4(subnet_mask)
         self.broadcast_address = broadcast_address and IPv4(broadcast_address)
         self.domain_name = domain_name and str(domain_name)
@@ -104,7 +109,7 @@ class Definition(object):
             if isinstance(ntp_servers, StringTypes):
                 ntp_servers = ntp_servers.split(',')
             self.ntp_servers = [IPv4(i) for i in ntp_servers[:3]]
-        self.extra = extra or None
+        self.extra = extra
         
         
 class Database(object):
@@ -132,15 +137,15 @@ class Database(object):
         
 class CachingDatabase(Database):
     """
-    A partial implementation of the Database engine, adding generic caching
-    logic and concurrency-throttling.
+    A partial implementation of the Database engine, adding efficient generic
+    caching logic and concurrency-throttling.
     """
     _resource_lock = None #: A lock used to prevent the database from being overwhelmed.
     _cache = None #: The caching structure to use, if caching is desired.
     
     def __init__(self, concurrency_limit=2147483647):
         """
-        Must be invoked by subclasses' __init__() methods.
+        A fully implemented caching layer for any real database.
         
         :param int concurrency_limit: The number of concurrent database hits to
                                       permit, defaulting to a ridiculously large
