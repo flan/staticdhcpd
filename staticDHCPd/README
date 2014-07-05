@@ -34,9 +34,8 @@ Five-minute "does this really work?" setup guide for busy administrators
 Step 1: Gather resources
     You need the code, which came with this lovely text file, and a computer
     on which to run it. Since this is a Unix-formatted file, you've probably
-    already got that, too. You'll also need sqlite3 to manage the DHCP
-    database. Chances are it's already installed, but check anyway. (Also
-    Python 2.5+, but no modern Unix-like system is without that)
+    already got that, too. (Also Python 2.5+, but no modern Unix-like system is
+    without that)
     
     The last thing you need is enough access to bind to the DHCP ports.
     Since there's no way you're going to just run this server on a production
@@ -141,12 +140,12 @@ Step 3: Set up conf.py
         INI method:
             Set DATABASE_ENGINE to 'INI'; capitalization matters.
             
-            Add the line "INI_FILE = '/home/you/that-ini-file-you-created'"
+            Add the line "INI_FILE = '/home/you/ini-file-you-created'"
             
         SQLite method:
             Set DATABASE_ENGINE to 'SQLite'; capitalization matters.
             
-            Add the line "SQLITE_FILE = '/home/you/that-sqlite-file-you-created'"
+            Add the line "SQLITE_FILE = '/home/you/sqlite-file-you-created'"
             
 Step 4: Start the server
     Run `sudo python staticDHCPd`.
@@ -164,5 +163,5 @@ Step 5: Kill the process
     process.
     
     
-You now have proof that what you have in your proverbial hands is a functional,
+You now have proof that what you have in your hands is a functional,
 ready-to-customise DHCP server.

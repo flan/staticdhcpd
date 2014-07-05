@@ -99,7 +99,7 @@ class _HTTPLogic(object):
             definition = Definition(
              ip=result['ip'], lease_time=result['lease_time'], subnet=result['subnet'], serial=result['serial'],
              hostname=result.get('hostname'),
-             gateway=result.get('gateway'), subnet_mask=result.get('subnet_mask'), broadcast_address=result.get('broadcast_address'),
+             gateways=result.get('gateway'), subnet_mask=result.get('subnet_mask'), broadcast_address=result.get('broadcast_address'),
              domain_name=result.get('domain_name'), domain_name_servers=result.get('domain_name_servers'), ntp_servers=result.get('ntp_servers'),
              extra=result.get('extra'),
             )

@@ -5,7 +5,7 @@ CREATE TABLE subnets (
     subnet VARCHAR2(18) NOT NULL, -- A human-readable subnet-identifier, large enough to hold a CIDR mask.
     serial PLS_INTEGER NOT NULL DEFAULT 0, -- A means of allowing a subnet to be reused, just in case you have two 192.168.1.0/24s.
     lease_time PLS_INTEGER NOT NULL, -- The number of seconds a "lease" is good for. This can be massive unless properties change often.
-    gateway VARCHAR2(15), -- The IPv4 gateway to supply to clients; may be null.
+    gateway VARCHAR2, -- A comma-separated list of IPv4 gateways to supply to clients; may be null.
     subnet_mask VARCHAR2(15), -- The IPv4 subnet mask to supply to clients; may be null.
     broadcast_address VARCHAR2(15), -- The IPv4 broadcast address to supply to clients; may be null.
     ntp_servers VARCHAR2(50), -- A comma-separated list of IPv4 addresses pointing to NTP servers; limit 3; may be null.
