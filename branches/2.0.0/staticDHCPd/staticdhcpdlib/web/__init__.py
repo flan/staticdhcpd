@@ -26,7 +26,7 @@ import collections
 import logging
 import threading
 
-import _functions
+import functions
 
 _logger = logging.getLogger('web')
 
@@ -142,7 +142,7 @@ def unregisterHeaderCallback(callback):
             
 def retrieveHeaderCallbacks():
     """
-    Enumerates header callbacks.
+    Enumerates header callback elements.
     
     :return tuple: All header callbacks, in registration order.
     """
@@ -183,7 +183,7 @@ def registerDashboardCallback(module, name, callback, ordering=None):
                     ordering = _web_dashboard[-1].ordering + 1
                 else:
                     ordering = 0
-            element = _WebDashboardElement(ordering, _functions.sanitise(module), _functions.sanitise(name), callback)
+            element = _WebDashboardElement(ordering, functions.sanitise(module), functions.sanitise(name), callback)
             _web_dashboard.append(element)
             _web_dashboard.sort()
             _logger.debug("Registered dashboard element %(element)r" % {'element': element,})
@@ -207,7 +207,7 @@ def unregisterDashboardCallback(callback):
             
 def retrieveDashboardCallbacks():
     """
-    Enumerates dashboard callbacks.
+    Enumerates dashboard callback elements.
     
     :return tuple: All dashboard callbacks, in display order.
     """
@@ -249,7 +249,7 @@ def registerMethodCallback(path, callback, cacheable=False, hidden=True, secure=
             _logger.error("'%(path)s' is already registered" % {'path': path,})
         else:
             _web_methods[path] = method = _WebMethod(
-             _functions.sanitise(module), _functions.sanitise(name),
+             functions.sanitise(module), functions.sanitise(name),
              hidden, secure, confirm, display_mode, cacheable, callback
             )
             _logger.debug("Registered method %(method)r at %(path)s" % {'method': method, 'path': path,})
@@ -273,7 +273,7 @@ def unregisterMethodCallback(path):
             
 def retrieveMethodCallback(path):
     """
-    Retrieves a method callback.
+    Retrieves a method callback element.
     
     :return callable: The requested method, or None if unbound.
     """
@@ -282,9 +282,9 @@ def retrieveMethodCallback(path):
         
 def retrieveVisibleMethodCallbacks():
     """
-    Enumerates method callbacks.
+    Enumerates method callback elements.
     
-    :return tuple: All method callbacks, as (`callback`, `path`) tuples, in
+    :return tuple: All method callbacks, as (`element`, `path`) tuples, in
                   lexically sorted order.
     """
     with _web_lock:

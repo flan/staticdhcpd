@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 """
-staticdhcpdlib.web._functions
-=============================
+staticdhcpdlib.web.functions
+============================
 Provides functions required to transform content for web-presentation.
  
 Legal

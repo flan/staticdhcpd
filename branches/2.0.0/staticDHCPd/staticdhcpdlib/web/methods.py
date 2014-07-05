@@ -27,7 +27,7 @@ import logging
 from .. import config
 from .. import logging_handlers
 from ..import system
-import _functions
+import functions
 import _resources
 
 _logger = logging.getLogger('web.methods')
@@ -72,7 +72,7 @@ class Logger(object):
         for (severity, line) in self._handler.readContents():
             output.append('<span class="%(severity)s">%(message)s</span>' % {
              'severity': _SEVERITY_MAP[severity],
-             'message': _functions.sanitise(line).replace('\n', '<br/>'),
+             'message': functions.sanitise(line).replace('\n', '<br/>'),
             })
             
         return """
