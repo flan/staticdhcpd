@@ -1,7 +1,7 @@
 Practical recipies that everyone can use!
 =========================================
 While there's a lot of stuff that you can do with the
-:doc:`../customisation/scripting` toolset, figuring out how to get started,
+:doc:`scripting <../customisation/scripting>` toolset, figuring out how to get started,
 especially if you're not already familiar with Python, can be a bit
 overwhelming. That's what this document is for: loaded with examples, it
 serves as a crash-course for tweaking your environment to do special things
