@@ -96,9 +96,9 @@ An invokable method.
 """
 
 #Method-rendering constants
-WEB_METHOD_DASHBOARD = 1 #: The content is rendered before the dashboard
-WEB_METHOD_TEMPLATE = 2 #: The content is rendered in the same container that would normally show the dashboard, but no dashboard elements are present
-WEB_METHOD_RAW = 3 #: The content is presented exactly as returned, identified by the given MIME-type
+WEB_METHOD_DASHBOARD = 1 #: The content is rendered before the dashboard.
+WEB_METHOD_TEMPLATE = 2 #: The content is rendered in the same container that would normally show the dashboard, but no dashboard elements are present.
+WEB_METHOD_RAW = 3 #: The content is presented exactly as returned, identified by the given MIME-type.
 
 def registerHeaderCallback(callback):
     """

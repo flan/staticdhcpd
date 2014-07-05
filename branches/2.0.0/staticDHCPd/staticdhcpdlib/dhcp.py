@@ -286,7 +286,7 @@ class _PacketWrapper(object):
         result = config.filterPacket(
          self.packet, self._packet_type,
          self.mac, ip, self.giaddr,
-         self.pxe and self._pxe_options
+         self.pxe and self._pxe_options or None
         )
         if result is None:
             raise _PacketSourceBlacklist("filterPacket() returned None")
@@ -340,7 +340,7 @@ class _PacketWrapper(object):
         process = bool(config.loadDHCPPacket(
          self.packet, self._packet_type,
          self.mac, definition, self.giaddr,
-         self.pxe and self._pxe_options
+         self.pxe and self._pxe_options or None
         ))
         if not process:
             _logger.info('Ignoring %(type)s from %(mac)s per loadDHCPPacket()' % {
@@ -369,7 +369,7 @@ class _PacketWrapper(object):
         self._definition = self._server.getDatabase().lookupMAC(self.mac) or config.handleUnknownMAC(
          self.packet, self._packet_type,
          self.mac, ip, self.giaddr,
-         self.pxe and self._pxe_options
+         self.pxe and self._pxe_options or None
         )
         
         return self._definition

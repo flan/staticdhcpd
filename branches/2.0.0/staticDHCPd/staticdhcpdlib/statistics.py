@@ -96,7 +96,7 @@ def registerStatsCallback(callback):
     """
     Registers a statistics callback.
     
-    :param callable callback: A callable that takes :class:`Statistics` as its
+    :param callable callback: A callable that takes :data:`Statistics` as its
                               argument; if already present, it will not be
                               registered a second time. This function must never
                               block for any significant amount of time.

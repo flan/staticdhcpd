@@ -1,448 +1,416 @@
 Scripting guide
 ===============
-
-
-
-Mention packet.meta
-
--------------------------------
-
-
-In addition to static parameters to configure staticDHCPd to work in your
+In addition to static parameters to configure *staticDHCPd* to work in your
 environment, extensive scripting is possible, allowing it to perform dynamic
 allocations, send events to other systems, and give you full control over every
-last detail of how DHCP works in your environment.
+last detail of how DHCP works in your domain.
 
 As with the static parameters, scripting logic is intended to be as
 forwards-compatible as possible, so newer versions of the server should work
 with any extensions you've developed, with no issues.
 (Check the changelog, though)
 
+Organising your setup
+---------------------
+To avoid potential conflicts, any non-standard functions you may define should
+be named with a leading underscore. Likewise, any modules you define should also
+be named with a leading underscore.
 
-Several functions are currently defined as hooks from staticDHCPd's core.
-To implement one, just create a function in conf.py with the corresponding
-signature.
-
-In addition, a number of callbacks exist that let you hook your code into
-staticDHCPd's core functions and modules. This, and logging, are covered below,
-too.
-
-To avoid potential conflicts, any other functions you may define should be named
-with a leading underscore. Likewise, any modules you define should also be named
-with a leading underscore.
-
-
-If you wish to encapsulate code inside of a module, place it in the extensions/
-subdirectory next to conf.py or in a subpackage thereof. The extensions/
-subdirectory is added to sys.path, so imports from a relative root should work
-just like they usually do.
+If you wish to encapsulate code inside of a module, place it in the
+``extensions/`` subdirectory next to ``conf.py`` or in a subpackage thereof. The
+``extensions/`` subdirectory is added to ``sys.path``, so imports from a
+relative root should work just like they usually do.
 
 In particular, if you expect to have a lot of custom code, you should create a
-file alongside in the extensions/ subdirectory named "_handlers.py" and import
-the main callback functions from there to keep conf.py clean. At the same level
-as the config directives, do something like the following:
+file in the ``extensions/`` subdirectory named ``_handlers.py`` and import
+the main callback functions from there to keep ``conf.py`` clean. At the same
+level as the config directives, do something like the following::
 
-from _handlers import (init, handleUnknownMAC, loadDHCPPacket)
+    from _handlers import (handleUnknownMAC, loadDHCPPacket)
+    #Where the things imported are the handlers you've defined
 
-Note that, although _handlers is in extensions/, it is imported as a root-level
-module.
+Note that, although ``_handlers`` is in ``extensions/``, it is imported as a
+root-level module.
 
+Note also that your handlers module will not have access to functions and
+namespace elements defined within ``conf.py``. For this reason, it is a good
+idea to define ``init()`` in ``conf.py()`` to do the run-once work (which is
+what most of the built-ins are for), but export the runtime operations to the
+new namespace. You can inject needed elements into it as part of ``init()``,
+too::
+    
+    def init():
+        import _handlers
+        _handlers.rfc1035_plus = rfc1035_plus
 
-The examples below will show you how to enable dynamic provisioning using the
-included 'dynamism' module. To make these examples work, copy
-extensions/official/dynamism.py to the extensions/ subdirectory.
+Important data-types
+--------------------
+*staticDHCPd* has some local data-types that are used throughout the framework.
 
-Using dynamism as an example, you should be able to write extension modules of
-your own. To customise DHCP behaviour, see the rules-writing guide:
-http://code.google.com/p/staticdhcpd/wiki/rules
+Classes
++++++++
 
+.. autoclass:: databases.generic.Definition
 
-Hook-functions
---------------------------------------------------------------------------------
+Named tuples
+++++++++++++
+
+.. autodata:: statistics.Statistics
+    :annotation:
+    
+Customising DHCP behaviour
+--------------------------
+Several functions are provisioned as hooks from *staticDHCPd*'s core. To
+make use of one, just create a function in ``conf.py`` with the corresponding
+signature.
+
+All of these functions can share packet-specific data using *libpydhcpserver*'s
+``meta`` attribute on the packet object. This is a dictionary that neither
+*staticDHCPd* nor *libpydhcpserver* ever touch, letting you use it for
+whatever you want.
+
 init()
-----------------------------------------
-This function is called immediately after all of staticDHCPd's other subsystems
-have been configured. (To do something before they're online, write your logic
-at the same level as the parameter definitions)
+++++++
+.. function:: init()
 
-Within it, you can do things like register for event callbacks or set up
-facilities required by other portions of your code.
+    Called immediately after all of staticDHCPd's other subsystems have been
+    configured.
 
 Example
-------------------------------
-def init():
-    import dynamism
-    global _dynamic_pool
-    _dynamic_pool = dynamism.DynamicPool('guest', 0, 300, 'guest-0')
-    _dynamic_pool.add_ips(['192.168.250.' + str(i) for i in range(100, 201)])
+|||||||
+::
     
-Explanation
---------------------
-When init() is called by staticDHCPd, this will import the 'dynamism' module
-and create a dynamic allocation pool with 192.168.250.100-200 (range doesn't
-include the upper-most element), making it available for use in other parts of
-conf.py.
+    def _tick_logger():
+        #A trivial function that writes to the log whenever a tick occurs
+        logger.debug("Ticked!")
+        
+    def init():
+        callbacks.systemAddTickHandler(_tick_logger)
 
-You'll probably want to pass in different parameters, though; see dynamism.py
-for details.
+When init() is called, the `_tick_logger()` function, also defined in
+``conf.py``, will be registered to be invoked every time the system generates
+a "tick" event.
 
-The 'global' line is necessary because, when init() finishes, all variables it
-declared would normally be discarded, so this says "I want to modify the variable
-'_dynamic_pool' at the conf-module level".
+To do something before *staticDHCPd* has finished bringing up its own
+subsystems, write your logic at the same level as the parameter definitions,
+where `_tick_logger()` is defined.
 
+filterPacket()
+++++++++++++++
+.. function:: filterPacket(packet, method, mac, client_ip, relay_ip, pxe, vendor)
 
-filterPacket(packet, method, mac, client_ip, relay_ip, pxe, vendor)
-----------------------------------------
-Provides a means of writing your own blacklist logic, excluding packets from
-sources you don't trust, that have done weird things, or under any other
-conceivable circumstance.
+    Provides a means of writing your own blacklist logic, excluding packets from
+    sources you don't trust, that have done weird things, or under any other
+    conceivable circumstance.
+    
+    It is called before the MAC is looked up in the database or by
+    :func:`handleUnknownMAC`. Returning ``True`` will cause the MAC to proceed
+    through the chain as normal, while returning ``False`` will cause it to be
+    discarded. Returning ``None`` will put it into the temporary blacklist, like
+    other MACs that trip *staticDHCPd*'s configurable thresholds.
 
-It is called before the MAC is looked up in the database or by
-handleUnknownMAC(). Returning True  will cause the MAC to proceed through the
-chain as normal, while returning False will cause it to be discarded. Returning
-None will put it into the temporary blacklist, like other MACs that trip
-staticDHCPd's configurable thresholds.
-
-Parameters
-------------------------------
-    packet: the packet received from the client, an instance of
-            `libpydhcpserver.dhcp_types.packet.DHCPPacket`
-    method: a string describing the type of DHCP request the packet represents,
-            one of 'DECLINE', 'DISCOVER', 'INFORM', 'RELEASE',
-            'REQUEST:INIT-REBOOT','REQUEST:REBIND', 'REQUEST:RENEW',
-            'REQUEST:SELECTING'
-    mac: an object that emulates the properties of a sextuple
-         (0, 38, 199, 214, 5, 200) and a string ("00:26:c7:d6:05:c8"), which may
-         be compared against either, including any strings parseable as MACs
-         (case/delimiter-insensitive)
-    client_ip: an object that emulates the properties of a quadruple of octets
-               (192, 168, 0, 1), a dotted quad ("192.168.0.1"), and an integer
-               (3232235521), or None, if the request didn't specify an address
-               to associate with the client
-    relay_ip: either None or an object of the type described in client_ip,
-              representing the server that relayed this request
-    pxe: False if not applicable; else, a triple containing, in order, option 93
-         (client_system) as a sequence of ints, option 94 (client_ndi) as a
-         sequence of three bytes, and option 97 (uuid_guid) as digested data:
-         (type:byte, data:[byte])
-         Any unset options are presented as None
-    vendor: a four-tuple containing, in order, option 43
-            (vendor_specific_information) as a string of bytes, option 60
-            (vendor_class_identifier) as a string, and both option 124
-            (vendor_class) and option 125 (vendor_specific) as digested data:
-            [(enterprise_number:int, data:string)] and
-            [(enterprise_number:int, [(subopt_code:byte, data:string)])],
-            respectively
-            Any unset options are presented as None
+    :param packet: The packet received from the client, an instance of
+                   :class:`libpydhcpserver.dhcp_types.packet.DHCPPacket`.
+    :param method: A string describing the type of DHCP request the packet
+                   represents, one of ``DECLINE``, ``DISCOVER``, ``INFORM``,
+                   ``RELEASE``, ``REQUEST:INIT-REBOOT``, ``REQUEST:REBIND``,
+                   ``REQUEST:RENEW``, ``REQUEST:SELECTING``.
+    :param mac: The MAC of the client, an instance of
+                :class:`libpydhcpserver.dhcp_types.mac.MAC`.
+    :param client_ip: The client's requested IP address (may be ``None``), an
+                      instance of :class:`libpydhcpserver.dhcp_types.ipv4.IPv4`.
+    :param relay_ip: The relay used by the client (may be ``None``), an
+                     instance of :class:`libpydhcpserver.dhcp_types.ipv4.IPv4`.
+    :param pxe: ``None`` if not applicable; else, a triple containing, in order,
+                option 93 (client_system) as a sequence of ints, option 94
+                (client_ndi) as a sequence of three bytes, and option 97
+                (uuid_guid) as digested data: `(type:byte, data:[byte])`.
+                
+                Any unset options are presented as ``None``.
+    :param vendor: A quadruple containing, in order, option 43
+                   (vendor_specific_information) as a string of bytes, option 60
+                   (vendor_class_identifier) as a string, and both option 124
+                   (vendor_class) and option 125 (vendor_specific) as digested
+                   data: `[(enterprise_number:int, data:string)]` and
+                   `[(enterprise_number:int, [(subopt_code:byte, data:string)])]`,
+                   respectively.
+                   
+                   Any unset options are presented as ``None``.
+    :return bool: ``False`` if the packet should be rejected; ``True``
+                  otherwise.
 
 Example
-------------------------------
-def filterPacket(packet, method, mac, client_ip, relay_ip, pxe, vendor):
+|||||||
+::
+
     import random
-    return random.random() < 0.5
+    def filterPacket(packet, method, mac, client_ip, relay_ip, pxe, vendor):
+        return random.random() > 0.2
+        
+This will fake a lossy network, dropping 20% of all packets received.
+
+handleUnknownMAC()
+++++++++++++++++++
+.. function:: handleUnknownMAC(packet, method, mac, client_ip, relay_ip, pxe, vendor)
+
+    If staticDHCPd gets a request to serve a MAC that it does not recognise,
+    this function will be invoked, allowing you to query databases of your own
+    to fill in the blanks.
     
-Explanation
---------------------
-This will just fake a lossy network, dropping 50% of all packets received.
-
-You'd probably want to do something more interesting, like checking a database
-or adding to some sort of global counter. This database could be an in-memory
-construct that you populate with a custom web-method that takes the MAC to
-block as a query-argument, described below, to make it easy to write a module
-that does this on-the-fly.
-
-
-handleUnknownMAC(packet, method, mac, client_ip, relay_ip, pxe, vendor)
-----------------------------------------
-If staticDHCPd gets a request to serve a MAC that it does not recognise, this
-function will be invoked, allowing you to query databases of your own to fill in
-the blanks.
-
-Parameters
-------------------------------
-    packet: the packet received from the client, an instance of
-            `libpydhcpserver.dhcp_types.packet.DHCPPacket`
-    method: a string describing the type of DHCP request the packet represents,
-            one of 'DECLINE', 'DISCOVER', 'INFORM', 'RELEASE',
-            'REQUEST:INIT-REBOOT','REQUEST:REBIND', 'REQUEST:RENEW',
-            'REQUEST:SELECTING'
-    mac: an object that emulates the properties of a sextuple
-         (0, 38, 199, 214, 5, 200) and a string ("00:26:c7:d6:05:c8"), which may
-         be compared against either, including any strings parseable as MACs
-         (case/delimiter-insensitive)
-    client_ip: an object that emulates the properties of a quadruple of octets
-               (192, 168, 0, 1), a dotted quad ("192.168.0.1"), and an integer
-               (3232235521), or None, if the request didn't specify an address
-               to associate with the client
-    relay_ip: either None or an object of the type described in client_ip,
-              representing the server that relayed this request
-    pxe: False if not applicable; else, a triple containing, in order, option 93
-         (client_system) as a sequence of ints, option 94 (client_ndi) as a
-         sequence of three bytes, and option 97 (uuid_guid) as digested data:
-         (type:byte, data:[byte])
-         Any unset options are presented as None
-    vendor: a four-tuple containing, in order, option 43
-            (vendor_specific_information) as a string of bytes, option 60
-            (vendor_class_identifier) as a string, and both option 124
-            (vendor_class) and option 125 (vendor_specific) as digested data:
-            [(enterprise_number:int, data:string)] and
-            [(enterprise_number:int, [(subopt_code:byte, data:string)])],
-            respectively
-            Any unset options are presented as None
-    
-The value returned must be either None, which means that the MAC will remain
-unknown, or an instance of `staticdhcpd.databases.generic.Definition`.
+    :param packet: The packet received from the client, an instance of
+                   :class:`libpydhcpserver.dhcp_types.packet.DHCPPacket`.
+    :param method: A string describing the type of DHCP request the packet
+                   represents, one of ``DECLINE``, ``DISCOVER``, ``INFORM``,
+                   ``RELEASE``, ``REQUEST:INIT-REBOOT``, ``REQUEST:REBIND``,
+                   ``REQUEST:RENEW``, ``REQUEST:SELECTING``.
+    :param mac: The MAC of the client, an instance of
+                :class:`libpydhcpserver.dhcp_types.mac.MAC`.
+    :param client_ip: The client's requested IP address (may be ``None``), an
+                      instance of :class:`libpydhcpserver.dhcp_types.ipv4.IPv4`.
+    :param relay_ip: The relay used by the client (may be ``None``), an
+                     instance of :class:`libpydhcpserver.dhcp_types.ipv4.IPv4`.
+    :param pxe: ``None`` if not applicable; else, a triple containing, in order,
+                option 93 (client_system) as a sequence of ints, option 94
+                (client_ndi) as a sequence of three bytes, and option 97
+                (uuid_guid) as digested data: `(type:byte, data:[byte])`.
+                
+                Any unset options are presented as ``None``.
+    :param vendor: A quadruple containing, in order, option 43
+                   (vendor_specific_information) as a string of bytes, option 60
+                   (vendor_class_identifier) as a string, and both option 124
+                   (vendor_class) and option 125 (vendor_specific) as digested
+                   data: `[(enterprise_number:int, data:string)]` and
+                   `[(enterprise_number:int, [(subopt_code:byte, data:string)])]`,
+                   respectively.
+                   
+                   Any unset options are presented as ``None``.
+    :return: An instance of :class:`databases.generic.Definition` or ``None``,
+             if the MAC could not be handled.
 
 Example
-------------------------------
-def handleUnknownMAC(packet, method, mac, client_ip, relay_ip, pxe, vendor):
-    return _dynamic_pool.handle(method, packet, mac, client_ip)
-    
-Explanation
---------------------
-Since '_dynamic_pool' was created in init() and made globally accessible, all
-this function has to do is pass a few parameters to dynamism.handle() and it
-will return either None or a Definition object, which is all you need.
+|||||||
+For examples of how to use this function, see the
+:doc:`extensions guide <./extensions>`.
 
+loadDHCPPacket()
+++++++++++++++++
+.. function:: loadDHCPPacket(packet, method, mac, definition, relay_ip, pxe, vendor)
 
-loadDHCPPacket(packet, method, mac, definition, relay_ip, pxe, vendor)
-----------------------------------------
-Before any response is sent to a client, an opportunity is presented to allow
-you to modify the packet, adding or removing options and setting values as
-needed for your environment's specific requirements. Or even allowing you to
-define your own blacklist rules and behaviour.
+    Before any response is sent to a client, an opportunity is presented to
+    allow you to modify the packet, adding or removing options and setting
+    values as needed for your environment's specific requirements. Or even
+    allowing you to define your own blacklist rules and behaviour.
 
-Parameters
-------------------------------
-    packet: the packet received from the client, an instance of
-            `libpydhcpserver.dhcp_types.packet.DHCPPacket`
-    method: a string describing the type of DHCP request the packet represents,
-            one of 'DECLINE', 'DISCOVER', 'INFORM', 'RELEASE',
-            'REQUEST:INIT-REBOOT','REQUEST:REBIND', 'REQUEST:RENEW',
-            'REQUEST:SELECTING'
-    mac: an object that emulates the properties of a sextuple
-         (0, 38, 199, 214, 5, 200) and a string ("00:26:c7:d6:05:c8"), which may
-         be compared against either, including any strings parseable as MACs
-         (case/delimiter-insensitive)
-    instance of libpydhcpserver.dhcp_types.mac.MAC, which can be coerced
-         into a human-readable, lower-case, colon-delimited string or a sequence
-         of bytes, or compared directly against either
-    definition: the lease-definition provided via MAC-lookup, an instance of
-         staticdhcpdlib.databases.generic.Definition
-    relay_ip: either None or an object of the type described in client_ip *rewrite this*,
-              representing the server that relayed this request
-    pxe: False if not applicable; else, a triple containing, in order, option 93
-         (client_system) as a sequence of ints, option 94 (client_ndi) as a
-         sequence of three bytes, and option 97 (uuid_guid) as digested data:
-         (type:byte, data:[byte])
-         Any unset options are presented as None
-    vendor: a four-tuple containing, in order, option 43
-            (vendor_specific_information) as a string of bytes, option 60
-            (vendor_class_identifier) as a string, and both option 124
-            (vendor_class) and option 125 (vendor_specific) as digested data:
-            [(enterprise_number:int, data:string)] and
-            [(enterprise_number:int, [(subopt_code:byte, data:string)])],
-            respectively
-            Any unset options are presented as None
-
-If the value returned evaluates to False, no response will be sent to the
-client; otherwise, `packet` will be sent as it stands when this function
-completes.
+    :param packet: The packet received from the client, an instance of
+                   :class:`libpydhcpserver.dhcp_types.packet.DHCPPacket`.
+    :param method: A string describing the type of DHCP request the packet
+                   represents, one of ``DECLINE``, ``DISCOVER``, ``INFORM``,
+                   ``RELEASE``, ``REQUEST:INIT-REBOOT``, ``REQUEST:REBIND``,
+                   ``REQUEST:RENEW``, ``REQUEST:SELECTING``.
+    :param mac: The MAC of the client, an instance of
+                :class:`libpydhcpserver.dhcp_types.mac.MAC`.
+    :param definition: The lease-definition provided via MAC-lookup, an instance
+                       of :class:`databases.generic.Definition`.
+    :param relay_ip: The relay used by the client (may be ``None``), an
+                     instance of :class:`libpydhcpserver.dhcp_types.ipv4.IPv4`.
+    :param pxe: ``None`` if not applicable; else, a triple containing, in order,
+                option 93 (client_system) as a sequence of ints, option 94
+                (client_ndi) as a sequence of three bytes, and option 97
+                (uuid_guid) as digested data: `(type:byte, data:[byte])`.
+                
+                Any unset options are presented as ``None``.
+    :param vendor: A quadruple containing, in order, option 43
+                   (vendor_specific_information) as a string of bytes, option 60
+                   (vendor_class_identifier) as a string, and both option 124
+                   (vendor_class) and option 125 (vendor_specific) as digested
+                   data: `[(enterprise_number:int, data:string)]` and
+                   `[(enterprise_number:int, [(subopt_code:byte, data:string)])]`,
+                   respectively.
+                   
+                   Any unset options are presented as ``None``.
+    :return bool: ``True`` if processing can proceed; ``False`` if the packet
+                  should be rejected.
 
 Example
-------------------------------
-def loadDHCPPacket(packet, method, mac, definition, relay_ip, pxe, vendor):
+|||||||
+::
     import random
-    
-    if definition.ip[3] % 3 == 0: #The client's IP's fourth octet is a multiple of 3
-        packet.setOption('renewal_time_value', longToList(60))
-    elif method.startswith('REQUEST:') and random.random() < 0.5:
-        packet.transformToDHCPNakPacket()
-    elif random.random() < 0.1:
-        return False
-    return True
-    
-Explanation
---------------------
+    def loadDHCPPacket(packet, method, mac, definition, relay_ip, pxe, vendor):
+        if not definition.ip[3] % 3: #The client's IP's fourth octet is a multiple of 3
+            packet.setOption('renewal_time_value', 60)
+        elif method.startswith('REQUEST:') and random.random() < 0.5:
+            packet.transformToDHCPNakPacket()
+        elif random.random() < 0.1:
+            return False
+        return True
+        
 This will set the renewal-time (T1) for clients to one minute if they have an IP
-that ends in a multiple of 3, which is one of the examples in the rules-writing
-guide: http://code.google.com/p/staticdhcpd/wiki/rules
+that ends in a multiple of 3.
 
-If the first qualifier isn't satisfied and it's a REQUEST-type request, there's
+If the first qualifier isn't satisfied and it's a REQUEST-type packet, there's
 a 50% chance that it will be changed into a NAK response.
 
 Lastly, if neither of the previous conditions were met, there's a 10% chance the
 packet will simply be dropped.
 
+Using system callbacks
+----------------------
+A number of callbacks exist that let you hook your code into *staticDHCPd*'s
+core functions and modules. All of these are accessible from anywhere within
+`conf.py`.
 
-
-
-Callback-functions
---------------------------------------------------------------------------------
-staticDHCPd provides a number of functions you can use to integrate your code
-into its internal procedures, letting you do fun things like register
-webservices, build your own statistics modules, add things to the dashboard,
-reload config files, and get stable notification about the passage of time.
-
-To use these, just call them from `init()`.
-
-
-callbacks.systemAddReinitHandler(callback)
-----------------------------------------
-Registers a callable to be invoked whenever the system is reinitialised.
-
-Parameters
-------------------------------
-    callback: The callable to be invoked; must not require any arguments
+.. function:: callbacks.systemAddReinitHandler(callback)
     
+    Registers a reinitialisation callback.
     
-callbacks.systemRemoveReinitHandler(callback)
-----------------------------------------
-Unregisters a callable from the list of those invoked during reinitialisation.
+    :param callable callback: A callable that takes no arguments; if already
+                              present, it will not be registered a second time.
+    
+.. function:: callbacks.systemRemoveReinitHandler(callback)
+    
+    Unregisters a reinitialisation callback.
+    
+    :param callable callback: The callback to remove.
+    :return bool: True if a callback was removed.
 
-Parameters
-------------------------------
-    callback: The callable to be removed
+.. function:: callbacks.systemAddTickHandler(callback)
     
+    Registers a tick callback. Tick callbacks are invoked approximately once per
+    second, but should treat this as a wake-up, not a metronome, and query the
+    system-clock if performing any time-sensitive operations.
     
-callbacks.systemAddTickHandler(callback)
-----------------------------------------
-Registers a callable to be invoked approximately once every second.
+    :param callable callback: A callable that takes no arguments; if already
+                              present, it will not be registered a second time.
+                              The given callable must not block for any
+                              significant amount of time.
+    
+.. function:: callbacks.systemRemoveTickHandler(callback)
 
-Parameters
-------------------------------
-    callback: The callable to be invoked; must not require any arguments;
-              must not block for any significant amount of time
-              
-              
-callbacks.systemRemoveTickHandler(callback)
-----------------------------------------
-Unregisters a callable from the list of those invoked every second.
+    Unregisters a tick callback.
+    
+    :param callable callback: The callback to remove.
+    :return bool: True if a callback was removed.
+    
+.. function:: callbacks.statsAddHandler(callback)
+    
+    Registers a statistics callback.
+    
+    :param callable callback: A callable that takes
+                              :data:`statistics.Statistics` as its argument; if
+                              already present, it will not be registered a
+                              second time. This function must never block for
+                              any significant amount of time.
 
-Parameters
-------------------------------
-    callback: The callable to be removed
-    
-    
-callbacks.statsAddHandler(callback)
-----------------------------------------
-Registers a callable to be invoked every time statistics information is emitted.
+.. function:: callbacks.statsRemoveHandler(callback)
 
-Parameters
-------------------------------
-    callback: A callable that accepts an instance of statistics.Statistics;
-              must not block for any significant amount of time
-              
-              
-callbacks.statsRemoveHandler(callback)
-----------------------------------------
-Unregisters a callable from the list of those invoked when statistics are
-emitted.
+    Unregisters a statistics callback.
+    
+    :param callable callback: The callable to be removed.
+    :return bool: True if a callback was removed.
+    
+.. data:: callbacks.WEB_METHOD_DASHBOARD
 
-Parameters
-------------------------------
-    callback: The callable to be removed
+    The content is rendered before the dashboard.
     
-    
-callbacks.webAddDashboard(module, name, callback, ordering=None)
-----------------------------------------
-Adds an element to the web-dashboard.
+.. data:: callbacks.WEB_METHOD_TEMPLATE
 
-Parameters
-------------------------------
-    module: something like "best module EVER"
-    name: something like "awesomifications per second"
-    callback: The callable to be invoked when the dashboard is rendered; this is
-              what you'll need to implement
-              It must accept the parameters 'path', 'queryargs', 'mimetype',
-              'data', and 'headers', with the possibility that 'mimetype' and
-              'data' may be None; 'queryargs' is a dictionary of parsed
-              query-string items, with values expressed as lists of strings;
-              'headers' is a Python BasicHTTPServer headers object
-              It must return data as a string, formatted as XHTML, to be
-              embedded inside of a <div/>, or None to suppress inclusion
-    ordering: number|None
-    ordering: A bias-specifier that controls where this element will appear in
-              relation to others. If omitted, the value will be that of the
-              highest number plus one; negatives are valid
-              
-              
-callbacks.webRemoveDashboard(callback)
-----------------------------------------
-Removes an element from the web-dashboard.
+    The content is rendered in the same container that would normally show the
+    dashboard, but no dashboard elements are present.
+    
+.. data:: callbacks.WEB_METHOD_RAW
+    
+    The content is presented exactly as returned, identified by the given
+    MIME-type.
+    
+.. function:: callbacks.webAddHeader(callback)
+    
+    Installs an element in the headers; at most one instance of any given
+    ``callback`` will be accepted.
+    
+    :param callable callback: Must accept the parameters `path`, `queryargs`,
+                              `mimetype`, `data`, and `headers`, with the
+                              possibility that `mimetype` and `data` may be
+                              None; `queryargs` is a dictionary of parsed
+                              query-string items, with values expressed as lists
+                              of strings; `headers` is a dictionary-like object.
+                              
+                              It must return data as a string, formatted as
+                              XHTML, to be embedded inside of <head/>, or None
+                              to suppress inclusion.
+                              
+.. function:: callbacks.webRemoveHeader(callback)
+    
+    Removes a header element.
+    
+    :param callable callback: The element to be removed.
+    :return bool: True if an element was removed.
 
-Parameters
-------------------------------
-    callback: The callback with which the element was initially registered
+.. function:: callbacks.webAddDashboard(module, name, callback, ordering=None)
     
+    Installs an element in the dashboard; at most one instance of any given
+    ``callback`` will be accepted.
     
-callbacks.webAddMethod(path, callback, cacheable=False, hidden=True,
-secure=False, module=None, name=None, confirm=False,
-display_mode=callbacks.WEB_METHOD_RAW)
-----------------------------------------
-Adds a webservice method.
+    :param basestring module: The name of the module to which this element
+                              belongs.
+    :param basestring name: The name under which to display the element.
+    :param callable callback: Must accept the parameters `path`, `queryargs`,
+                              `mimetype`, `data`, and `headers`, with the
+                              possibility that `mimetype` and `data` may be
+                              None; `queryargs` is a dictionary of parsed
+                              query-string items, with values expressed as lists
+                              of strings; `headers` is a dictionary-like object.
+                              
+                              It must return data as a string, formatted as
+                              XHTML, to be embedded inside of a <div/>, or None
+                              to suppress inclusion.
+    :param int ordering: A number that controls where this element will appear
+                         in relation to others. If not specified, the value will
+                         be that of the highest number plus one, placing it at
+                         the end; negatives are valid.
+                         
+.. function:: callbacks.webRemoveDashboard(callback)
+    
+    Removes a dashboard element.
+    
+    :param callable callback: The element to be removed.
+    :return bool: True if an element was removed.
 
-Parameters
-------------------------------
-    path: The path at which to register this callback, typically something like
-          "/ca/uguu/puukusoft/staticDHCPd/extension/stats/histograph.csv", but as
-          long as it's a valid URI-fragment, it's up to you
-    callback: The callable to be invoked when the method is called; this is
-              what you'll need to implement
-              It must accept the parameters 'path', 'queryargs', 'mimetype',
-              'data', and 'headers', with the possibility that 'mimetype' and
-              'data' may be None; 'queryargs' is a dictionary of parsed
-              query-string items, with values expressed as lists of strings;
-              'headers' is a Python BasicHTTPServer headers object
-              It must return a tuple of (mimetype, data, headers), with data
-              being a string or bytes-like object
-    cacheable: Whether the client should be allowed to cache the returned
-               content.
-    hidden: Whether the method should be rendered on the interface
-    secure: Whether DIGEST authentication will be required to access the method
-    module: something like "best module EVER"; optional if hidden
-    name: something like "double awesomeness levels"; optional if hidden
-    confirm: Whether JavaScript validation will be used to prompt the user to
-             confirm that they want to perform the chosen action, if not hidden
-    display_mode: One of the following:
-                   - callbacks.WEB_METHOD_RAW: The content is presented exactly
-                     as returned, identified by the given mimetype
-                   - callbacks.WEB_METHOD_TEMPLATE: The content is rendered in
-                     the same container that would normally show the dashboard,
-                     but no dashboard elements are present
-                   - callbacks.WEB_METHOD_DASHBOARD: The content is rendered
-                     before the dashboard
-                     
-                     
-callbacks.webRemoveMethod(path)
-----------------------------------------
-Removes a webservice method.
-
-Parameters
-------------------------------
-    path: The path of the method to remove
+.. function:: callbacks.webAddMethod(path, callback, cacheable=False, hidden=True, secure=False, module=None, name=None, confirm=False, display_mode=WEB_METHOD_RAW)
     
+    Installs a webservice method; at most one instance of ``path`` will be
+    accepted.
     
+    :param basestring path: The location at which the service may be called,
+        like "/ca/uguu/puukusoft/staticDHCPd/extension/stats/histograph.csv".
+    :param callable callback: Must accept the parameters `path`, `queryargs`,
+                              `mimetype`, `data`, and `headers`, with the
+                              possibility that `mimetype` and `data` may be
+                              None; `queryargs` is a dictionary of parsed
+                              query-string items, with values expressed as lists
+                              of strings; `headers` is a dictionary-like object.
+                              
+                              It must return a tuple of (mimetype, data,
+                              headers), with data being a string or bytes-like
+                              object.
+    :param bool cacheable: Whether the client is allowed to cache the method's
+                           content.
+    :param bool hidden: Whether to render a link in the side-bar.
+    :param bool secure: Whether authentication will be required before this
+                        method can be called.
+    :param basestring module: The name of the module to which this element
+                              belongs.
+    :param basestring name: The name under which to display the element.
+    :param bool confirm: Adds JavaScript validation to ask the user if they're
+                         sure they know what they're doing before the method
+                         will be invoked, if not `hidden`.
+    :param display_mode: One of the WEB_METHOD_* constants.
     
+.. function:: callbacks.webRemoveMethod(path)
     
-Logging
-----------------------------------------
-staticDHCPd uses Python's standard logging package, so writing to logs is as
-easy as the following snippet:
-    import logging
-    logger = logging.getLogger('my-module')
-    logger.info("I'm writing to the logging system!")
+    Removes a method element.
     
-Similarly, if you want to capture logging events, you can hook in easily:
-    import logging
-    logging.root.addHandler(_YOUR_HANDLER_)
-    
-An example of a custom handler, and application thereof, can be found in
-extensions/official/feedservice.py
-
-
-
-
+    :param basestring path: The element to be removed.
+    :return bool: True if an element was removed.
 
 Logging facilities
 ++++++++++++++++++
@@ -456,26 +424,20 @@ Logging facilities
     logger.error("The client provided invalid data")
     logger.critical("The database is offline")
     
+In any modules you create, do the following at the start to hook into it::
+    
+    import logging
+    logger = logging.getLogger('your-extension')
+    
 For backwards-compatibility reasons, an alias for the `warning` level is
 provided; please do not use this and be sure to change any existing code::
     
     writeLog("Something happened")
-    
-System callback hooks
-+++++++++++++++++++++
-*staticDHCPd* is an event-based system. It's also easy to hook your code into
-this framework.
 
-* :func:`callbacks.systemAddReinitHandler <>`
-
-
-
-Environment
------------
-A number of convenience resources are present in the ``conf.py`` namespace by
+``conf.py`` Environment
+-----------------------
+A number of convenience resources are present in ``conf.py``'s namespace by
 default; these are enumerated here so you know what's provided out-of-the-box.
-
-
 
 Conversion functions
 ++++++++++++++++++++
