@@ -51,6 +51,9 @@ def rfc3925_decode(s, identifier_size=4):
     Extracts sub-options from an RFC3925 option (124, 125 (with
     identifier_size=1)).
     
+    You probably want to use :func:`rfc3925_125_decode` when dealing
+    with option 125 specifically.
+    
     :param sequence s: The option's raw data.
     :param int identifier_size: The width of the identifier in bytes.
     :return dict: A dictionary of data as strings keyed by ID numbers.
@@ -69,7 +72,6 @@ def rfc3925_125_decode(l):
     Extracts sub-options from an RFC3925 option (125).
     
     :param sequence s: The option's raw data.
-    :param int identifier_size: The width of the identifier in bytes.
     :return dict: A dictionary of data as dictionaries mapping data as strings
         keyed by ID numbers.
     """
@@ -132,7 +134,7 @@ class RFC(object):
 class rfc1035_plus(RFC):
     def __init__(self, data):
         """
-        Parses the given ``data`` into an RFC1035-formatted sequence.
+        Formats FQDNs as an RFC1035-formatted sequence.
         
         :param str data: The comma-delimited FQDNs to process.
         """
@@ -143,7 +145,7 @@ class rfc1035_plus(RFC):
 class rfc2610_78(RFC):
     def __init__(self, mandatory, data):
         """
-        Parses the given ``data`` into multiple IPv4 addresses.
+        Formats native IPv4s as encoded IPv4 addresses.
         
         :param bool mandatory: True if the IPv4 addresses have to be respected.
         :param str data: The comma-delimited IPv4s to process.
@@ -155,7 +157,7 @@ class rfc2610_78(RFC):
 class rfc2610_79(RFC):
     def __init__(self, mandatory, data):
         """
-        Parses the given ``data`` into a scope-list.
+        Formats scope-list data.
         
         :param bool mandatory: True if the scope-list has to be respected.
         :param str data: The scope-list to process.
@@ -165,7 +167,7 @@ class rfc2610_79(RFC):
 class rfc3361_120(RFC):
     def __init__(self, data):
         """
-        Parses the given data into multiple IPv4 addresses or
+        Formats the given data into multiple IPv4 addresses or
         RFC1035-formatted strings.
         
         :param str data: The comma-delimited IPv4s or FQDNs to process.
@@ -253,7 +255,7 @@ class rfc5223_137(rfc1035_plus): pass
 class rfc5678_139(RFC):
     def __init__(self, values):
         """
-        Parses the given data into multiple IPv4 addresses associated with
+        Formats the given data into multiple IPv4 addresses associated with
         sub-option codes.
         
         :param sequence values: A sequence of (code:int, IPv4s:string) elements.
@@ -267,7 +269,7 @@ class rfc5678_139(RFC):
 class rfc5678_140(RFC):
     def __init__(self, values):
         """
-        Parses the given data into multiple RFC1035-formatted strings
+        Formats the given data into multiple RFC1035-formatted strings
         associated with sub-option codes.
         
         :param sequence values: A sequence of (code:int, FQDNs:string)

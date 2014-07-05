@@ -184,7 +184,7 @@ def strToPaddedList(s, l):
     
 def listToIP(l):
     """
-    Converts a quartet of bytes in big-endian order into an IPv4 address.
+    Converts almost anything into an IPv4 address.
     
     :param sequence(4) l: The bytes to be converted.
     :return: The equivalent IPv4 address.
@@ -199,7 +199,7 @@ def listToIP(l):
     
 def listToIPs(l):
     """
-    Converts quartets of bytes in big-endian order into IPv4 addresses.
+    Converts almost anything into IPv4 addresses.
     
     :param sequence l: The bytes to be converted, as a flat sequence with
         length a multiple of four.

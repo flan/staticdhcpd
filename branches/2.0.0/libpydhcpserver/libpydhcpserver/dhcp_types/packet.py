@@ -673,15 +673,24 @@ class DHCPPacket(object):
             if force_selection and self._selected_options is not None:
                 self._selected_options.add(id)
                 
-    def getSelectedOptions(self):
+    def getSelectedOptions(self, translate=False):
         """
         Returns all options marked for serialisation.
         
-        :return tuple(int): All options slated to be included when serialised.
+        :param bool translate: If ``True``, the returned items will be names,
+                               not integers.
+        :return tuple: All options slated to be included when serialised.
         """
         if self._selected_options:
-            return tuple(sorted(self._selected_options.intersection(self._options)))
-        return tuple(sorted(self._options))
+            options = self._selected_options.intersection(self._options)
+        else:
+            options = self._options
+            
+        if translate:
+            global DHCP_OPTIONS_REVERSE
+            options = (DHCP_OPTIONS_REVERSE[option] for option in options)
+            
+        return tuple(sorted(options))
         
     def setSelectedOptions(self, added=None, removed=None):
         """
