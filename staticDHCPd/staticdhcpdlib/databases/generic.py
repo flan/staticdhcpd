@@ -103,10 +103,19 @@ class Definition(object):
         self.extra = extra
         
         def _parse_addresses(self, addresses, limit=None):
+            """
+            Takes variable-type input and produces IPv4 addresses.
+            
+            :param addresses: The IP addresses to process, in any main format,
+                              including comma-delimited string.
+            :param int limit: The maximum number of addresses to return.
+            :return list: Any parsed IPv4 addresses, or None if nothing was
+                          provided.
+            """
             if addresses:
                 if isinstance(addresses, StringTypes):
                     addresses = addresses.split(',')
-                return [IPv4(i) for i in addresses[:limit]]
+                return [IPv4(i) for i in addresses[:limit]] or None
             return None
             
 class Database(object):
