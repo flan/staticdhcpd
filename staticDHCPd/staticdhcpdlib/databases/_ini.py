@@ -263,7 +263,7 @@ class INI(Database):
         return Definition(
          ip=map[0], lease_time=subnet[0], subnet=map[2][0], serial=map[2][1],
          hostname=map[1],
-         gateway=subnet[1], subnet_mask=subnet[2], broadcast_address=subnet[3],
+         gateways=subnet[1], subnet_mask=subnet[2], broadcast_address=subnet[3],
          domain_name=subnet[6], domain_name_servers=subnet[5], ntp_servers=subnet[4],
          extra=extra
         )

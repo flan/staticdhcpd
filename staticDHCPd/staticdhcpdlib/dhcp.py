@@ -307,8 +307,8 @@ class _PacketWrapper(object):
             self.packet.setOption(51, definition.lease_time)
             
         #Default gateway, subnet mask, and broadcast address.
-        if definition.gateway:
-            self.packet.setOption(3, definition.gateway)
+        if definition.gateways:
+            self.packet.setOption(3, definition.gateways)
         if definition.subnet_mask:
             self.packet.setOption(1, definition.subnet_mask)
         if definition.broadcast_address:
