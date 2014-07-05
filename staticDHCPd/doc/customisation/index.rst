@@ -20,6 +20,6 @@ need: if you choose not to enable the `web` subsystem, for example, it won't
 ever be read from disk.
 
 Additionally, staticDHCPd is pretty open to tuning, so if you know a lot about
-the wort of load your environment will handle, you can change properties like
+the sort of load your environment will handle, you can change properties like
 ``checkinterval`` to adjust threading and resource priotisation and
 responsiveness.

@@ -439,3 +439,84 @@ Similarly, if you want to capture logging events, you can hook in easily:
     
 An example of a custom handler, and application thereof, can be found in
 extensions/official/feedservice.py
+
+
+
+
+
+Logging facilities
+++++++++++++++++++
+*staticDHCPd* uses Python's native logging framework::
+    
+    logger.debug("The value of some parameter is %(param)r" % {
+        'param': my_variable,
+    })
+    logger.info("Some step finished")
+    logger.warn("The client is supposed to have been decommissioned")
+    logger.error("The client provided invalid data")
+    logger.critical("The database is offline")
+    
+For backwards-compatibility reasons, an alias for the `warning` level is
+provided; please do not use this and be sure to change any existing code::
+    
+    writeLog("Something happened")
+    
+System callback hooks
++++++++++++++++++++++
+*staticDHCPd* is an event-based system. It's also easy to hook your code into
+this framework.
+
+* :func:`callbacks.systemAddReinitHandler <>`
+
+
+
+Environment
+-----------
+A number of convenience resources are present in the ``conf.py`` namespace by
+default; these are enumerated here so you know what's provided out-of-the-box.
+
+
+
+Conversion functions
+++++++++++++++++++++
+Various functions from *libpydhcpserver*. It is very rare that you will need to
+make use of these directly from `2.0.0` onwards, but they exist for
+backwards-compatibility and special cases.
+
+* listToIP(``[127, 0, 0, 1]``) -> ``IPv4``
+* listToIPs(``[127, 0, 0, 1, 127, 0, 0, 2]``) -> ``[IPv4, IPv4]``
+* ipToList(``IPv4``) -> ``[127, 0, 0, 1]``
+* ipsToList(``[IPv4, IPv4]``) -> ``[127, 0, 0, 1, 127, 0, 0, 2]``
+* listToInt(``[127, 10]``) -> ``32522``
+* listToInts(``[127, 10, 127, 9]``) -> ``[32522, 32521]``
+* listToLong(``[16, 23, 127, 10]``) -> ``269975306``
+* listToLongs(``[16, 23, 127, 10, 16, 23, 127, 9]``) -> ``[269975306, 269975305]``
+* intToList(``32522``) -> ``[127, 10]``
+* intsToList(``[32522, 32521]``) -> ``[127, 10, 127, 9]``
+* longToList(``269975306``) -> ``[16, 23, 127, 10]``
+* longsToList(``[269975306, 269975305]``) -> ``[16, 23, 127, 10, 16, 23, 127, 9]``
+* strToList(``'hello'``) -> ``[104, 101, 108, 108, 111]``
+* strToPaddedList(``'hello', 7``) -> ``[104, 101, 108, 108, 111, 0, 0]``
+* listToStr(``[104, 101, 108, 108, 111]``) -> ``'hello'``
+
+RFC interfaces
+++++++++++++++
+Also from *libpydhcpserver* is the RFC utility-set. You may need to use these at
+some point, so it is worth reading *libpydhcpserver*'s documentation for more
+information.
+
+* rfc3046_decode
+* rfc3925_decode
+* rfc3925_125_decode
+* rfc1035_plus
+* rfc2610_78
+* rfc2610_79
+* rfc3361_120
+* rfc3397_119
+* rfc3925_124
+* rfc3925_125
+* rfc4174_83
+* rfc4280_88
+* rfc5223_137
+* rfc5678_139
+* rfc5678_140
