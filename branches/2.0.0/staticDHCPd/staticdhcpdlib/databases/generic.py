@@ -94,24 +94,21 @@ class Definition(object):
         
         #Optional vlaues
         self.hostname = hostname and str(hostname)
-        if gateways:
-            if isinstance(gateways, StringTypes):
-                gateways = gateways.split(',')
-            self.gateways = [IPv4(i) for i in gateways]
+        self.gateways = self._parse_addresses(gateways)
         self.subnet_mask = subnet_mask and IPv4(subnet_mask)
         self.broadcast_address = broadcast_address and IPv4(broadcast_address)
         self.domain_name = domain_name and str(domain_name)
-        if domain_name_servers:
-            if isinstance(domain_name_servers, StringTypes):
-                domain_name_servers = domain_name_servers.split(',')
-            self.domain_name_servers = [IPv4(i) for i in domain_name_servers[:3]]
-        if ntp_servers:
-            if isinstance(ntp_servers, StringTypes):
-                ntp_servers = ntp_servers.split(',')
-            self.ntp_servers = [IPv4(i) for i in ntp_servers[:3]]
+        self.domain_name_servers = self._parse_addresses(domain_name_servers, limit=3)
+        self.ntp_servers = self._parse_addresses(ntp_servers, limit=3)
         self.extra = extra
         
-        
+        def _parse_addresses(self, addresses, limit=None):
+            if addresses:
+                if isinstance(addresses, StringTypes):
+                    addresses = addresses.split(',')
+                return [IPv4(i) for i in addresses[:limit]]
+            return None
+            
 class Database(object):
     """
     A stub describing the features a Database object must provide.
