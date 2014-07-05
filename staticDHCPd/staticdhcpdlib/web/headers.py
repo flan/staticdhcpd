@@ -25,7 +25,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 import logging
 
 from .. import config
-import _functions
+import functions
 
 _logger = logging.getLogger('web.headers')
 
@@ -37,7 +37,7 @@ def contentType(*args, **kwargs):
     """
     return '<meta http-equiv="content-type" content="application/xhtml+xml; charset=utf-8"/>'
     
-_TITLE = '<title>' + _functions.sanitise(config.SYSTEM_NAME) + '</title>' #: The title of the web interface
+_TITLE = '<title>' + functions.sanitise(config.SYSTEM_NAME) + '</title>' #: The title of the web interface
 def title(*args, **kwargs):
     """
     Provides the default title HTML header.
