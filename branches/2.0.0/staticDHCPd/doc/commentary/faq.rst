@@ -70,7 +70,7 @@ with a leading underscore, where possible, to avoid potential future conflicts
 with *staticDHCPd*'s core code.
 
 If you want to replace the CSS or favicon completely, you'll find their
-definitions in :module:`web.resources` and handlers in :module:`web.methods`.
+definitions in :mod:`web.resources` and handlers in :mod:`web.methods`.
 Just implement your own equivalent method, then, in :ref:`scripting-init`, do
 something similar to the following::
 

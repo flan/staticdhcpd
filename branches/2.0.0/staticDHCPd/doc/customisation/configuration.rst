@@ -1,3 +1,5 @@
+:tocdepth: 3
+
 Configuration guide
 ===================
 A single config file is the only thing you need to modify in order to have
@@ -49,6 +51,9 @@ future upstream changes.
 
 Parameters
 ----------
+The various settings that may be defined within ``conf.py``. These should always
+be specified before any custom code you might add, like functions.
+
 General
 +++++++
 **DEBUG** : boolean : default=False
@@ -69,32 +74,33 @@ General
 **PID_FILE** : text, None : default=None
 ||||||||||||||||||||||||||||||||||||||||
 * The path to which a pidfile should be written
-* '/var/run/staticDHCPd.pid' is a good choice
+* ``'/var/run/staticDHCPd.pid'`` is a good choice
 * Do not set this if using the Debian initscript; it is unnecessary
 
 Server
 ++++++
 **UID** : integer : **MUST BE SPECIFIED**
-|||||||||||||||||||||||||||||||||||||
+|||||||||||||||||||||||||||||||||||||||||
 * The UID under which the server will run, after everything is bound
 * This should normally be your system's "nobody"
 
 **GID** : integer : **MUST BE SPECIFIED**
-|||||||||||||||||||||||||||||||||||||
+|||||||||||||||||||||||||||||||||||||||||
 * The GID under which the server will run, after everything is bound
 * This should normally be your system's "nobody"
 
 **DHCP_SERVER_IP** : text : **MUST BE SPECIFIED**
-|||||||||||||||||||||||||||||||||||||||||||||
+|||||||||||||||||||||||||||||||||||||||||||||||||
 * The IP of the interface to use for DHCP traffic
 * This value must be a specific IP address: ``'0.0.0.0'`` is invalid
 
 **DHCP_RESPONSE_INTERFACE** : text : default=None
 |||||||||||||||||||||||||||||||||||||||||||||||||
-* The value is the lexial name of the interface from which responses
-  should be sent, like 'eth0'
+* The value is the lexical name of the interface from which responses
+  should be sent, like ``'eth0'``
 * If set, response-packets will be crafted from layer 2, allowing for unicast
-  `OFFERS` in response to `DISCOVERs`, if the client did not set the broadcast bit
+  OFFERs in response to DISCOVERs, if the client did not set the broadcast
+  bit
 * For most environments, this will not be required and should not be set
 
 **DHCP_RESPONSE_INTERFACE_QTAGS** : list : default=None
@@ -147,10 +153,10 @@ Database
     :class:`databases.generic.CachingDatabase`; it is probably safe to inherit
     from the :class:`databases._sql._SQLDatabase` family, too, but its internal
     implementation is technically private
-  * If you need to tie into callbacks, like reinitialisation, you should do
-    this as part of the callable's logic; the `callbacks` object is not
-    available at the time that ``conf.py`` is first processed, but it is
-    available while the callable is executed
+  * If you need to tie into :ref:`callbacks <scripting-callbacks>`, like
+    reinitialisation, you should do this as part of the callable's logic; the
+    ``callbacks`` object is not available at the time that ``conf.py`` is first
+    processed, but it is available while the callable is executed
     
     * Alternatively, you can create the object at the ``conf.py`` level, write a
       simple ``lambda : _MY_INSTANTIATED_DATABASE_OBJECT`` as the callable, and
@@ -215,7 +221,7 @@ Database:SQLite
   provided in ``definition.extra``, keyed as `subnets.$COLUMN`
 
 **SQLITE_FILE** : text : *MUST BE SPECIFIED if using SQLite*
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 * The path to the file that contains your SQLite database
 
 Database:PostgreSQL
@@ -295,7 +301,7 @@ Database:PostgreSQL
 
 **POSTGRESQL_SSLMODE** : text : default='disabled'
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-* The `SSL <http://www.postgresql.org/docs/9.0/static/libpq-ssl.html#LIBPQ-SSL-SSLMODE-STATEMENTS> mode`_
+* The `SSL mode <http://www.postgresql.org/docs/9.0/static/libpq-ssl.html#LIBPQ-SSL-SSLMODE-STATEMENTS>`_
   to use
 * Ignored in local socket situations
  
@@ -401,7 +407,7 @@ Database:MySQL
   when *staticDHCPd* is restarted, to provide durability against unstable
   databases
 * The value of this option is the path to the file;
-  ``'/var/tmp/staticDHCPd.db'` is usually a good idea
+  ``'/var/tmp/staticDHCPd.db'`` is usually a good idea
 * If **CACHE_ON_DISK** is set, this file will be used; if not, the contents of
   this file will be read into memory
 

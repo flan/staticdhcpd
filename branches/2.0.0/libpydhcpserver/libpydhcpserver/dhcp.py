@@ -95,9 +95,9 @@ class DHCPServer(object):
         
         :param int timeout: The number of seconds to wait before returning.
         :param int packet_buffer: The size of the buffer to use for receiving packets.
-        :return tuple(2):
-            0. ``bool``: ``True`` if a DHCP packet was received.
-            1. :class:`Address <dhcp.Address>` or ``None``: None if the timeout was reached.
+        :return tuple(2): (DHCP-packet-received:``bool``,
+                          :class:`Address <dhcp.Address>` or ``None`` on
+                          timeout)
         """
         (source_address, data, pxe) = self._network_link.getData(timeout=timeout, packet_buffer=packet_buffer)
         if data:

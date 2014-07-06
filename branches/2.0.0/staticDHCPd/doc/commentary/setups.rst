@@ -5,7 +5,7 @@ environments, with easy-to-integrate provisioning facilities. However, special
 cases arise and that's what makes the software truly powerful. Some of the more
 interesting setups in the wild will be documented here.
 
-.. setups-dynamic:
+.. _setups-dynamic:
 
 Dynamic hybrids
 ---------------
@@ -58,12 +58,12 @@ No, DST shouldn't be relevant. Internally, leases are managed as offsets against
 UTC, so timezones are only applied when formatting the timestamps for
 presentation to operators.
 
-.. setups-pxe:
+.. _setups-pxe:
 
 PXE support
 -----------
 In general, it should be sufficient to test for option 60
-(`vendor_class_identifier`) in :ref:`_scripting-loadDHCPPacket` to see if it
+(`vendor_class_identifier`) in :ref:`scripting-loadDHCPPacket` to see if it
 matches the device-type you want to net-boot and set options 60, 66
 (`tftp_server_name`), and 67 (`bootfile_name`) accordingly, as demonstrated in
 the following example::
@@ -88,7 +88,7 @@ interface(s) as the main DHCP port. Because devices that disregard PXE
 convention are likely to be a little temperamental, *staticDHCPd* will provide
 full DHCP service on that port, too, including IP assignment.
 
-The ``pxe`` parameter in :ref:`_scripting-loadDHCPPacket` will be set when a
+The ``pxe`` parameter in :ref:`scripting-loadDHCPPacket` will be set when a
 packet is received on this port, meaning you can test it to engage special
 handling logic. You may need to make use of functions like
 ``packet.isDHCPDiscoverPacket()``, ``packet.isDHCPRequestPacket()``, and

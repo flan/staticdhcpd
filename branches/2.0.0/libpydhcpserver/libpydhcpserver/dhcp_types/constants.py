@@ -107,6 +107,7 @@ Information about how to validate basic DHCP types.
 The human-readable format-name is mapped against a
 (fixed_length, minimum_length, multiple) tuple, which is handled by the
 following pseudocode::
+    
     if fixed_length == 0:
         if (
             len(value) < minimum_length or
