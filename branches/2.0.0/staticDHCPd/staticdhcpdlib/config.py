@@ -339,9 +339,9 @@ class _Namespace(object):
             from staticdhcpdlib.config import extensions
             
             #for modules
-            globals().update(extensions.my_extension.extension_config_merge({
+            globals().update(extensions.my_extension.extension_config_merge(defaults={
                 'DEFAULT_THING': 5, #What this does
-            }, [
+            }, required=[
                 'REQUIRED_THING', #What this does
             ])
             
