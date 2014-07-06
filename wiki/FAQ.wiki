@@ -1,5 +1,8 @@
 #summary (Possibly) Frequently Asked Questions
 
+= *DEPRECATED* =
+This page will be reduced significantly when 2.0.0 is released. Most of its content has [http://static.uguu.ca/projects/staticDHCPd/doc/commentary/faq.html moved].
+
 = Release errata =
 == [http://www.rfc-archive.org/getrfc.php?rfc=4388 RFC4388] ==
 The featureset described by this RFC, LEASEQUERY, is untested, yet has been included in versions 1.4.0+, but was removed in 1.6.3, because its implementation was wrong. It will likely return soon, but better to leave out bad code than try to hack it into a semi-working state.
