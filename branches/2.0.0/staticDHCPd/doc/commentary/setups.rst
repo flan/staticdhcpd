@@ -5,6 +5,8 @@ environments, with easy-to-integrate provisioning facilities. However, special
 cases arise and that's what makes the software truly powerful. Some of the more
 interesting setups in the wild will be documented here.
 
+.. setups-dynamic:
+
 Dynamic hybrids
 ---------------
 The motivating case for adding support for dynamic provisioning to *staticDHCPd*
@@ -55,3 +57,47 @@ Is DST a factor with leases?
 No, DST shouldn't be relevant. Internally, leases are managed as offsets against
 UTC, so timezones are only applied when formatting the timestamps for
 presentation to operators.
+
+.. setups-pxe:
+
+PXE support
+-----------
+In general, it should be sufficient to test for option 60
+(`vendor_class_identifier`) in :ref:`_scripting-loadDHCPPacket` to see if it
+matches the device-type you want to net-boot and set options 60, 66
+(`tftp_server_name`), and 67 (`bootfile_name`) accordingly, as demonstrated in
+the following example::
+
+    #Note: these phones may not actually announce themselves this way; this is a guess
+    #vendor[1] is the class identifier, aready extracted for you
+    if vendor[1] == 'Aastra 57i':
+        #The device will look for a specific value; check your manual
+        packet.setOption('vendor_class_identifier', 'PXEClient')
+        #Tell it where to get its bootfile; IPs are valid, too
+        packet.setOption('tftp_server_name', 'bootserver.example.org')
+        #Have the device ask for its own MAC, stripped of colons and uppercased
+        packet.setOption('bootfile_name', str(mac).replace(':', '').upper() + '.cfg')
+
+Of course, you can use other criteria to evaluate whether an option should be
+set and what its value should be.
+
+In the event that the client tries to hit a DHCP proxy port (4011, by
+convention), you'll need to edit ``conf.py`` and assign the port number to
+**PXE_PORT**. This will cause *staticDHCPd* to bind another port on the same
+interface(s) as the main DHCP port. Because devices that disregard PXE
+convention are likely to be a little temperamental, *staticDHCPd* will provide
+full DHCP service on that port, too, including IP assignment.
+
+The ``pxe`` parameter in :ref:`_scripting-loadDHCPPacket` will be set when a
+packet is received on this port, meaning you can test it to engage special
+handling logic. You may need to make use of functions like
+``packet.isDHCPDiscoverPacket()``, ``packet.isDHCPRequestPacket()``, and
+``packet.isDHCPInformPacket()`` to decide when to strip options when working on
+this port. Chances are, in most cases, the client will have been assigned an IP
+over port 67 already, testable with ``packet.getOption('ciaddr')``, and though
+it's highly unlikely, the device may complain if the response contains an IP
+offer; ``packet.deleteOption('yiaddr')`` takes care of this.
+
+Unfortunately, *staticDHCPd*'s maintainer does not have a functional PXE setup,
+so corrections and feedback are quite welcome. If you have questions or
+problems, please open an issue against the project.
