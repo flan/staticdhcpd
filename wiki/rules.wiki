@@ -1,5 +1,10 @@
 #summary The handbook for making staticDHCPd do cool things to make administering your site easier
 
+= Deprecated =
+This page will be removed when 2.0.0 is released.
+
+Its content has been [http://static.uguu.ca/projects/staticDHCPd/doc/customisation/configuration.html moved].
+
 This article explains how to write custom DHCP-option-handling routines for staticDHCPd. This is not a feature most users will need to explore, so if you can't imagine why you would need to do it, you don't need to read on.
 
 ----
