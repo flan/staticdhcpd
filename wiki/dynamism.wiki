@@ -1,5 +1,8 @@
 #summary How to make staticDHCPd do things that aren't quite static
 
+= *DEPRECATED* =
+This page will be removed when 2.0.0 is released. Its content has [http://static.uguu.ca/projects/staticDHCPd/doc/commentary/setups.html moved].
+
 = Overview =
 staticDHCPd is meant to help administrators easily configure static environments, with easy-to-integrate provisioning facilities. However, special cases have arisen that require dynamic behaviour on limited scales.
 
