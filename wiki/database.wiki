@@ -1,5 +1,8 @@
 #summary An overview of what a database needs to contain for staticDHCPd
 
+= *DEPRECATED* =
+This page will be removed when 2.0.0 is released. Its content has [http://static.uguu.ca/projects/staticDHCPd/doc/commentary/database.html moved].
+
 This article explains how to set values in the database to provide DHCP-handling for staticDHCPd's clients.
 
 ----
