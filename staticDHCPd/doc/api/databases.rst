@@ -12,42 +12,7 @@ below.
 Classes
 -------
 .. autoclass:: databases.generic.Definition
-
-    .. autoattribute:: databases.generic.Definition.ip
-        :annotation:
-
-    .. autoattribute:: databases.generic.Definition.hostname
-        :annotation:
-
-    .. autoattribute:: databases.generic.Definition.gateway
-        :annotation:
-
-    .. autoattribute:: databases.generic.Definition.subnet_mask
-        :annotation:
-
-    .. autoattribute:: databases.generic.Definition.broadcast_address
-        :annotation:
-
-    .. autoattribute:: databases.generic.Definition.domain_name
-        :annotation:
-
-    .. autoattribute:: databases.generic.Definition.domain_name_servers
-        :annotation:
-
-    .. autoattribute:: databases.generic.Definition.ntp_servers
-        :annotation:
-
-    .. autoattribute:: databases.generic.Definition.lease_time
-        :annotation:
-
-    .. autoattribute:: databases.generic.Definition.subnet
-        :annotation:
-
-    .. autoattribute:: databases.generic.Definition.serial
-        :annotation:
-
-    .. autoattribute:: databases.generic.Definition.extra
-        :annotation:
+    :members:
 
 .. autoclass:: databases.generic.Database
     :members:

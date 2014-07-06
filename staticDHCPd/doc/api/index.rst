@@ -13,6 +13,5 @@ than what the sample extensions provide.
     databases.rst
     logging.rst
     statistics.rst
-    system.rst
     web.rst
     

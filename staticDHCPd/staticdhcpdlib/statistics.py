@@ -39,42 +39,51 @@ Statistics = collections.namedtuple("Statistics", (
 Statistics associated with a DHCP event.
 
 .. py:attribute:: source_address
+    :noindex:
 
     An :class:`libpydhcpserver.dhcp.Address` containing the IP and port of the
     client.
 
 .. py:attribute:: mac
+    :noindex:
 
     A :class:`libpydhcpserver.dhcp_types.mac.MAC` containing the MAC of the
     client; None if the event was not due to a DHCP packet.
 
 .. py:attribute:: ip
+    :noindex:
 
     An :class:`libpydhcpserver.dhcp_types.ipv4.IPv4` containing the address
     assigned to the client, if any.
 
 .. py:attribute:: subnet
+    :noindex:
 
     The database-subnet associated with this event.
 
 .. py:attribute:: serial
+    :noindex:
 
     The database-serial associated with this event.
 
 .. py:attribute:: method
+    :noindex:
 
     The DHCP method of the received packet.
 
 .. py:attribute:: processing_time
+    :noindex:
 
     The number of seconds required to finish processing the event.
 
 .. py:attribute:: processed
+    :noindex:
 
     Whether the packet was fully processed (``False`` if non-DHCP or
     blacklisted).
 
 .. py:attribute:: pxe
+    :noindex:
 
     ``True`` if the request received was PXE.
 """

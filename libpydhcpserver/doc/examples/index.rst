@@ -89,7 +89,8 @@ Getting values
 Except for RFC values, which are returned bytes-only, everything attached to a
 packet can be retreieved in a format that is either efficient (bytes) or
 friendly (like the first form of everything that can be used in the setting
-examples above).
+examples above). While there is a performance difference, it isn't significant
+enough for you to obsess over.
 
 ::
     
@@ -120,8 +121,8 @@ See if the client requested a specific option::
     if packet.isRequestedOption('router'): #Option 3
         print("The client wants 'router'")
     
-Using numeric IDs is *slightly* faster, but, really, unless you know what
-you're doing, the gains aren't worth the headaches.
+Using numeric IDs is *slightly* more efficient, but, really, unless you know
+what you're doing, the gains aren't worth the headaches.
 
 Fields
 ++++++
@@ -146,7 +147,7 @@ RFC values can be pretty complex. *libpydhcpserver* implements convenient
 handlers for a lot of them, though.
 
 :rfc:`2610`
-||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+|||||||||||
 Set :class:`Option 78 <dhcp_types.rfc.rfc2610_78>` with the following pattern::
     
     packet.setOption('directory_agent', rfc2610_78('192.168.1.1,192.168.1.2'))
@@ -171,7 +172,7 @@ There are no limits on the number of comma-delimited values you may specify.
 The only restriction is that either names xor IPs may be used, never both.
 
 :rfc:`3397`
-||||||||||
+|||||||||||
 Set :class:`Option 119 <dhcp_types.rfc.rfc3397_119>` with the following
 pattern::
 
@@ -200,7 +201,6 @@ pattern::
     dd_access = 0b0000000000111111
     admin_flags = 0b0000000000001111
     isns_security = 0b00000000000000000000000001111111
-    
     packet.setOption('internet_storage_name_service', rfc4174_83(
         isns_functions, dd_access, admin_flags, isns_security,
         '192.168.1.1,192.168.1.2,192.168.1.3'

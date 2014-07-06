@@ -45,19 +45,12 @@ too::
 
 Important data-types
 --------------------
-*staticDHCPd* has some local data-types that are used throughout the framework.
+*staticDHCPd* has some local data-types that are used throughout the framework:
 
-Classes
-+++++++
+* :class:`databases.generic.Definition`
 
-.. autoclass:: databases.generic.Definition
+* :data:`statistics.Statistics`
 
-Named tuples
-++++++++++++
-
-.. autodata:: statistics.Statistics
-    :annotation:
-    
 Customising DHCP behaviour
 --------------------------
 Several functions are provisioned as hooks from *staticDHCPd*'s core. To
@@ -115,10 +108,10 @@ filterPacket()
 
     :param packet: The packet received from the client, an instance of
                    :class:`libpydhcpserver.dhcp_types.packet.DHCPPacket`.
-    :param method: A string describing the type of DHCP request the packet
-                   represents, one of ``DECLINE``, ``DISCOVER``, ``INFORM``,
-                   ``RELEASE``, ``REQUEST:INIT-REBOOT``, ``REQUEST:REBIND``,
-                   ``REQUEST:RENEW``, ``REQUEST:SELECTING``.
+    :param str method: The type of DHCP request the packet represents, one of
+                       ``DECLINE``, ``DISCOVER``, ``INFORM``, ``RELEASE``,
+                       ``REQUEST:INIT-REBOOT``, ``REQUEST:REBIND``,
+                       ``REQUEST:RENEW``, ``REQUEST:SELECTING``.
     :param mac: The MAC of the client, an instance of
                 :class:`libpydhcpserver.dhcp_types.mac.MAC`.
     :param client_ip: The client's requested IP address (may be ``None``), an
@@ -165,10 +158,10 @@ handleUnknownMAC()
     
     :param packet: The packet received from the client, an instance of
                    :class:`libpydhcpserver.dhcp_types.packet.DHCPPacket`.
-    :param method: A string describing the type of DHCP request the packet
-                   represents, one of ``DECLINE``, ``DISCOVER``, ``INFORM``,
-                   ``RELEASE``, ``REQUEST:INIT-REBOOT``, ``REQUEST:REBIND``,
-                   ``REQUEST:RENEW``, ``REQUEST:SELECTING``.
+    :param str method: The type of DHCP request the packet represents, one of
+                       ``DECLINE``, ``DISCOVER``, ``INFORM``, ``RELEASE``,
+                       ``REQUEST:INIT-REBOOT``, ``REQUEST:REBIND``,
+                       ``REQUEST:RENEW``, ``REQUEST:SELECTING``.
     :param mac: The MAC of the client, an instance of
                 :class:`libpydhcpserver.dhcp_types.mac.MAC`.
     :param client_ip: The client's requested IP address (may be ``None``), an
@@ -212,10 +205,10 @@ loadDHCPPacket()
 
     :param packet: The packet received from the client, an instance of
                    :class:`libpydhcpserver.dhcp_types.packet.DHCPPacket`.
-    :param method: A string describing the type of DHCP request the packet
-                   represents, one of ``DECLINE``, ``DISCOVER``, ``INFORM``,
-                   ``RELEASE``, ``REQUEST:INIT-REBOOT``, ``REQUEST:REBIND``,
-                   ``REQUEST:RENEW``, ``REQUEST:SELECTING``.
+    :param str method: The type of DHCP request the packet represents, one of
+                       ``DECLINE``, ``DISCOVER``, ``INFORM``, ``RELEASE``,
+                       ``REQUEST:INIT-REBOOT``, ``REQUEST:REBIND``,
+                       ``REQUEST:RENEW``, ``REQUEST:SELECTING``.
     :param mac: The MAC of the client, an instance of
                 :class:`libpydhcpserver.dhcp_types.mac.MAC`.
     :param definition: The lease-definition provided via MAC-lookup, an instance
@@ -243,6 +236,7 @@ loadDHCPPacket()
 Example
 |||||||
 ::
+    
     import random
     def loadDHCPPacket(packet, method, mac, definition, relay_ip, pxe, vendor):
         if not definition.ip[3] % 3: #The client's IP's fourth octet is a multiple of 3
@@ -423,8 +417,10 @@ core functions and modules. All of these are accessible from anywhere within
     :param basestring path: The element to be removed.
     :return bool: True if an element was removed.
 
+.. _scripting-logging:
+
 Logging facilities
-++++++++++++++++++
+------------------
 *staticDHCPd* uses Python's native logging framework::
     
     logger.debug("The value of some parameter is %(param)r" % {
@@ -450,6 +446,8 @@ provided; please do not use this and be sure to change any existing code::
 A number of convenience resources are present in ``conf.py``'s namespace by
 default; these are enumerated here so you know what's provided out-of-the-box.
 
+.. _scripting-conversion:
+
 Conversion functions
 ++++++++++++++++++++
 Various functions from *libpydhcpserver*. It is very rare that you will need to
@@ -471,6 +469,8 @@ backwards-compatibility and special cases.
 * strToList(``'hello'``) -> ``[104, 101, 108, 108, 111]``
 * strToPaddedList(``'hello', 7``) -> ``[104, 101, 108, 108, 111, 0, 0]``
 * listToStr(``[104, 101, 108, 108, 111]``) -> ``'hello'``
+
+.. _scripting-rfc:
 
 RFC interfaces
 ++++++++++++++

@@ -97,9 +97,9 @@ In Python, it is common to see things like the following::
         
 When ``x`` is evaluated, it is asked if it holds a meaningful value and this
 is used to determine whether it is equivalent to ``True`` or ``False`` for the
-comparison. Numbers are ``False`` if equal to 0, sequences are ``False`` when
-empty, and ``None`` is always ``False``. The ``not`` keyword is a more readable
-variant of ``!``, meaning that ``True``/``False`` should be flipped.
+comparison. Numbers are ``False`` if equal to ``0``, sequences are ``False``
+when empty, and ``None`` is always ``False``. The ``not`` keyword is a more
+readable variant of ``!``, meaning that ``True``/``False`` should be flipped.
 
 Returns
 |||||||
@@ -109,22 +109,23 @@ is to end execution and report a result.
 The convention within *staticDHCPd* is to have ``return True`` indicate that
 everything is good and processing should continue, while ``return False`` means
 that the packet should be rejected. For your own sanity, when rejecting a
-packet, you should log the reason why; this is covered in the examples below.
+packet, you should :ref:`log the reason why <scripting-logging>`.
 
 Examples
-++++++++
+--------
 This section will grow as new examples are created; if you let us know how to do
-something cool or you ask a question and the result seems like a handy snippet,
-it will probably show up here.
+something cool or you ask a question and the result of the exchange boils down
+to a handy snippet, it will probably show up here.
 
 Gateway configuration
-|||||||||||||||||||||
++++++++++++++++++++++
 Tell all clients with an IP address ending in a multiple of 3 to use
 192.168.1.254 as their default gateway::
 
     def loadDHCPPacket(...):
         #...
         if definition.ip[3] % 3 == 0:
+            logger.info("I'm a log message. Please use me!")
             packet.setOption('router', '192.168.1.254')
         #...
         return True
@@ -133,7 +134,8 @@ Here, the modulus-by-3 of the last octet (zero-based array) of the IP address to
 associate with the client is checked to see if it is zero. If so, the "router"
 option (DHCP option 3) is set to 192.168.1.254
 
-Prevent clients in all "192.168.0.0/24" subnets from having a default gateway::
+Prevent clients in all ``"192.168.0.0/24"`` subnets from having a default
+gateway::
     
     def loadDHCPPacket(...):
         #...
@@ -147,7 +149,7 @@ IP/netmask, is checked to see if it matches. If so, then the "router" option is
 discarded.
 
 Override renewal times
-||||||||||||||||||||||
+++++++++++++++++++++++
 Set T1 to 60 seconds::
     
     def loadDHCPPacket(...):
@@ -157,7 +159,7 @@ Set T1 to 60 seconds::
         return True
         
 Adjust domain names
-|||||||||||||||||||
++++++++++++++++++++
 Set the client's domain name to "example.com" if the request was relayed, but
 refuse to respond if it was relayed from 10.0.0.1::
     
@@ -175,7 +177,7 @@ indicating that this request was relayed. The IP of the relay server is then
 compared and, if it matches, "domain_name" is set to "example.com".
 
 Working with option 82
-||||||||||||||||||||||
+++++++++++++++++++++++
 Refuse relays without "relay_agent" (DHCP option 82)'s agent-ID set to
 [1, 2, 3]::
     
@@ -184,6 +186,7 @@ Refuse relays without "relay_agent" (DHCP option 82)'s agent-ID set to
         if relay_ip: #The request was relayed
             relay_agent = packet.getOption('relay_agent')
             if relay_agent and not rfc3046_decode(relay_agent)[1] == [1, 2, 3]:
+                logger.warn("Rejecting relayed request from [1, 2, 3]")
                 return False
         #...
         return True
@@ -199,7 +202,7 @@ packet would be too large. For this reason, it's important to limit the relay
 IPs allowed in the config settings.
 
 Managing errors
-|||||||||||||||
++++++++++++++++
 Do something to generate an error for testing purposes::
     
     def loadDHCPPacket(...):

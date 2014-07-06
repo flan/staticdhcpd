@@ -128,9 +128,8 @@ class Database(object):
         associated details if the MAC is known.
         
         :param mac: The MAC address to lookup.
-        :return :class:`Definition <Definition>`: The definition or, if no match
-                                                  was found, None.
-        :except Exception: A problem occured while accessing the database.
+        :return: The :class:`Definition` or, if no match was found, ``None``.
+        :raise Exception: A problem occured while accessing the database.
         """
         raise NotImplementedError("lookupMAC() must be implemented by subclasses")
         
@@ -156,7 +155,7 @@ class CachingDatabase(Database):
         :param int concurrency_limit: The number of concurrent database hits to
                                       permit, defaulting to a ridiculously large
                                       number.
-        :except Exception: Cache-initialisation failed.
+        :raise Exception: Cache-initialisation failed.
         """
         _logger.debug("Initialising database with a maximum of %(count)i concurrent connections" % {'count': concurrency_limit,})
         self._resource_lock = threading.BoundedSemaphore(concurrency_limit)

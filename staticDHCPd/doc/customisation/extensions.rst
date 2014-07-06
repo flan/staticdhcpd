@@ -6,11 +6,11 @@ header sections.
 However, because including common information in each one would be redundant,
 the general flow of installing one is the following:
 
-# Ensure that there exists an ``extensions/`` subdirectory in the same
-  directory as ``conf.py``
-# Copy or link the extension-file into ``extensions/``
-# Follow its instructions to install hooks in ``conf.py``
-# (re)Start *staticDHCPd*
+#. Ensure that there exists an ``extensions/`` subdirectory in the same
+   directory as ``conf.py``
+#. Copy or link the extension-file into ``extensions/``
+#. Follow its instructions to install hooks in ``conf.py``
+#. (re)Start *staticDHCPd*
 
 Configuring modules
 -------------------
