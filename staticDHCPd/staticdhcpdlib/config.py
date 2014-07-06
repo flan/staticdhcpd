@@ -300,3 +300,76 @@ del system
 del statistics
 del web
 conf.callbacks = callbacks
+
+class _Namespace(object):
+    """
+    A data-namespace, used to centralise extensions-configuration values.
+    """
+    __final = False #: If True, then no new layers will be created
+    
+    def __init__(self, final=False):
+        """
+        :param bool final: ``False`` if new namespaces may be automatically
+                           created beneath this one.
+        """
+        self.__final = final
+        
+    def __getattr__(self, name):
+        if self.__final:
+            raise AttributeError("Namespace does not contain '%(name)s'" % {
+                'name': name,
+            })
+        namespace = self.__class__(final=True)
+        object.__setattr__(self, name, namespace)
+        return namespace
+        
+    def __setattr__(self, name, value):
+        if not self.__final:
+            raise AttributeError("Namespace does not support direct assignment")
+        object.__setattr__(self, name, value)
+        
+    def extension_config_merge(self, defaults, required):
+        """
+        Creates a namespace model from `defaults` before overlaying anything
+        defined in this namespace instance, then ensuring that all required
+        attributes exist.
+        
+        Normal usage will be something like the following::
+        
+            from staticdhcpdlib.config import extensions
+            
+            #for modules
+            globals().update(extensions.my_extension.extension_config_merge({
+                'DEFAULT_THING': 5, #What this does
+            }, [
+                'REQUIRED_THING', #What this does
+            ])
+            
+            #objects will be much the same, but will likely use self.__dict__
+            #instead of globals()
+            
+            #Any dictionary works, though, so do whatever you need
+            
+        :param dict defaults: The default attributes for the namespace, if not
+                              already present.
+        :param collection required: A collection of required attribute names.
+        :raise AttributeError: A required attribute is missing.
+        :raise ValueError: The namespace cannot be merged.
+        """
+        if not self.__final:
+            raise ValueError("Unable to merge a non-final namespace")
+            
+        namespace = defaults.copy()
+        
+        for key in [k for k in dir(self) if k.isupper()]: #Copy everything that looks like a constant.
+            namespace[key] = getattr(self, key)
+            
+        for key in required:
+            if not key in namespace:
+                raise AttributeError("Merge result does not contain '%(key)s'" % {
+                    'key': key,
+                })
+                
+        return namespace
+conf.extensions = _Namespace()
+del _Namespace
