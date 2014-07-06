@@ -69,6 +69,8 @@ All of these functions can share packet-specific data using *libpydhcpserver*'s
 *staticDHCPd* nor *libpydhcpserver* ever touch, letting you use it for
 whatever you want.
 
+.. _scripting-init:
+
 init()
 ++++++
 .. function:: init()
@@ -94,6 +96,8 @@ a "tick" event.
 To do something before *staticDHCPd* has finished bringing up its own
 subsystems, write your logic at the same level as the parameter definitions,
 where `_tick_logger()` is defined.
+
+.. _scripting-filterPacket:
 
 filterPacket()
 ++++++++++++++
@@ -149,6 +153,8 @@ Example
         
 This will fake a lossy network, dropping 20% of all packets received.
 
+.. _scripting-handleUnknownMAC:
+
 handleUnknownMAC()
 ++++++++++++++++++
 .. function:: handleUnknownMAC(packet, method, mac, client_ip, relay_ip, pxe, vendor)
@@ -189,8 +195,11 @@ handleUnknownMAC()
 
 Example
 |||||||
-For examples of how to use this function, see the
-:doc:`extensions guide <./extensions>`.
+It is difficult to provide a general example of how to use this function, since
+its role is basically that of a code-driven database. When you need to use it,
+you will know.
+
+.. _scripting-loadDHCPPacket:
 
 loadDHCPPacket()
 ++++++++++++++++
@@ -252,6 +261,8 @@ a 50% chance that it will be changed into a NAK response.
 
 Lastly, if neither of the previous conditions were met, there's a 10% chance the
 packet will simply be dropped.
+
+.. _scripting-callbacks:
 
 Using system callbacks
 ----------------------

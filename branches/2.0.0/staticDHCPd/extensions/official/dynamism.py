@@ -8,7 +8,7 @@ which it has been applied.
 If you use this module, consider setting `NAK_RENEWALS` in conf.py, to
 discourage clients from renewing before their lease-time is up. Alternatively,
 leave discourage_renewals=True when setting up a pool to suggest that clients
-avoid communicating wiht the server until their lease is almost up, rather than
+avoid communicating with the server until their lease is almost up, rather than
 at 50% and 75%, which is spec-default.
 
 To use this module, add the following to conf.py's init() function:

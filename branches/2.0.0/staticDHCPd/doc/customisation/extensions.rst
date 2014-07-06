@@ -1,49 +1,60 @@
-
-
 Working with extension modules
-------------------------------
-The examples below will show you how to enable dynamic provisioning using the
-included `dynamism` module. To make these examples work, copy
-``extensions/official/dynamism.py`` to the ``extensions/`` subdirectory.
+==============================
+All included extension modules provide specific usage instructions in their
+header sections.
 
-Using `dynamism` as an example, you should be able to write extension modules of
-your own.
+However, because including common information in each one would be redundant,
+the general flow of installing one is the following:
 
+# Ensure that there exists an ``extensions/`` subdirectory in the same
+  directory as ``conf.py``
+# Copy the extension-file into ``extensions/``
+# Follow its instructions to install hooks in ``conf.py``
+# (re)Start *staticDHCPd*
 
+Configuring modules
+-------------------
+*A univsersal means of centralising extension-module configuration is being
+considered for inclusion in RC1; for now, all modules are self-contained*
 
+*What will probably be implemented will be a namespace within ``conf.py``, not
+unlike ``callbacks``, called ``extensions``, from which modules will pull
+settings-updates on-load*
 
-Example
-------------------------------
-def init():
-    import dynamism
-    global _dynamic_pool
-    _dynamic_pool = dynamism.DynamicPool('guest', 0, 300, 'guest-0')
-    _dynamic_pool.add_ips(['192.168.250.' + str(i) for i in range(100, 201)])
+Developing your own module
+--------------------------
+The best way to start is by studying the provided modules. They range from
+simple to fairly complex, but all of them are practical.
+
+Simple -> Complex:
+
+* `recent_activity`
+
+  * Simple, self-installing web-interface dashboard element that shows
+    the last several DHCP events.
     
-Explanation
---------------------
-When init() is called by staticDHCPd, this will import the 'dynamism' module
-and create a dynamic allocation pool with 192.168.250.100-200 (range doesn't
-include the upper-most element), making it available for use in other parts of
-conf.py.
+* `httpdb`
 
-You'll probably want to pass in different parameters, though; see dynamism.py
-for details.
+  * Basic REST/JSON-based database interface.
+  
+* `feedservice`
 
-The 'global' line is necessary because, when init() finishes, all variables it
-declared would normally be discarded, so this says "I want to modify the variable
-'_dynamic_pool' at the conf-module level".
+  * Self-installing ATOM-feed interface to the logging system, using
+    web-methods to extend the webserver.
 
+* `statistics`
 
+  * Self-installing web-interface dashboard elements that display DHCP activity
+    and, if necessary packages are available, an activity graph.
+    
+* `dynamism`
 
+  * Robust dynamic DHCP facilities that can enhance or completely supplant
+    static behaviour.
 
-
-::
-    def handleUnknownMAC(packet, method, mac, client_ip, relay_ip, pxe, vendor):
-        return _dynamic_pool.handle(method, packet, mac, client_ip)
-        
-Explanation
---------------------
-Since '_dynamic_pool' was created in init() and made globally accessible, all
-this function has to do is pass a few parameters to dynamism.handle() and it
-will return either None or a Definition object, which is all you need.
+No matter what you want to build, though, understanding how it will interact
+with *staticDHCPd* is crucial. You will almost certainly be making use of
+:ref:`callbacks <scripting-callbacks>`, and some combination of the
+:ref:`scripting-init`, :ref:`scripting-filterPacket`,
+:ref:`scripting-handleUnknownMAC`, and :ref:`scripting-loadDHCPPacket`
+functions.
