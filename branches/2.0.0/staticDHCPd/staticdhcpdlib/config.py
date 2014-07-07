@@ -315,6 +315,9 @@ class _Namespace(object):
         self.__final = final
         
     def __getattr__(self, name):
+        if name.startswith('__'):
+            return object.__getattr__(self, name)
+            
         if self.__final:
             raise AttributeError("Namespace does not contain '%(name)s'" % {
                 'name': name,
@@ -322,11 +325,6 @@ class _Namespace(object):
         namespace = self.__class__(final=True)
         object.__setattr__(self, name, namespace)
         return namespace
-        
-    def __setattr__(self, name, value):
-        if not self.__final:
-            raise AttributeError("Namespace does not support direct assignment")
-        object.__setattr__(self, name, value)
         
     def extension_config_merge(self, defaults, required):
         """
