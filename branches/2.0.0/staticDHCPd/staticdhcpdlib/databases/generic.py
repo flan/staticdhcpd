@@ -109,43 +109,43 @@ class Definition(object):
         self.ntp_servers = self._parse_addresses(ntp_servers, limit=3)
         self.extra = extra
         
-        def _parse_address(self, address):
-            """
-            Takes an input-value and produces an IPv4 address.
+    def _parse_address(self, address):
+        """
+        Takes an input-value and produces an IPv4 address.
 
-            :param address: The IP address to process, in any main format.
-            :return: The parsed IPv4 address, or ``None`` if nothing was
-                     provided.
-            """
-            if isinstance(address, IPv4):
-                return address
-            if address:
-                return IPv4(address)
-            return None
-            
-        def _parse_addresses(self, addresses, limit=None):
-            """
-            Takes variable-type input and produces IPv4 addresses.
-            
-            :param addresses: The IP addresses to process, in any main format,
-                              including comma-delimited string.
-            :param int limit: The maximum number of addresses to return.
-            :return list: Any parsed IPv4 addresses, or ``None`` if nothing was
-                          provided.
-            """
-            if isinstance(addresses, IPv4):
-                return [addresses]
-            if addresses:
-                if isinstance(addresses, StringTypes):
-                    addresses = addresses.split(',')
-                elif isinstance(addresses, collections.Sequence):
-                    if all(type(i) in IntTypes for i in addresses):
-                        return conversion.listToIPs(addresses)[:limit]
-                else: #Might be a set or something non-sliceable
-                    addresses = tuple(addresses)
-                return [self._parse_address(i) for i in addresses[:limit]] or None
-            return None
-            
+        :param address: The IP address to process, in any main format.
+        :return: The parsed IPv4 address, or ``None`` if nothing was
+                 provided.
+        """
+        if isinstance(address, IPv4):
+            return address
+        if address:
+            return IPv4(address)
+        return None
+        
+    def _parse_addresses(self, addresses, limit=None):
+        """
+        Takes variable-type input and produces IPv4 addresses.
+        
+        :param addresses: The IP addresses to process, in any main format,
+                          including comma-delimited string.
+        :param int limit: The maximum number of addresses to return.
+        :return list: Any parsed IPv4 addresses, or ``None`` if nothing was
+                      provided.
+        """
+        if isinstance(addresses, IPv4):
+            return [addresses]
+        if addresses:
+            if isinstance(addresses, StringTypes):
+                addresses = addresses.split(',')
+            elif isinstance(addresses, collections.Sequence):
+                if all(type(i) in IntTypes for i in addresses):
+                    return conversion.listToIPs(addresses)[:limit]
+            else: #Might be a set or something non-sliceable
+                addresses = tuple(addresses)
+            return [self._parse_address(i) for i in addresses[:limit]] or None
+        return None
+        
 class Database(object):
     """
     A stub describing the features a Database object must provide.
