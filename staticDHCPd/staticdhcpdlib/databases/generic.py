@@ -28,12 +28,17 @@ try:
     from types import StringTypes
 except ImportError: #py3k
     StringTypes = (str,)
+try:
+    IntTypes = (int, long,)
+except NameError: #py3k
+    IntTypes = (int,)
 
 import collections
 import logging
 import threading
 import traceback
 
+import libpydhcpserver.dhcp_types.conversion
 from libpydhcpserver.dhcp_types.ipv4 import IPv4
 
 _logger = logging.getLogger('databases.generic')
@@ -113,8 +118,14 @@ class Definition(object):
                           provided.
             """
             if addresses:
+                if isinstance(addresses, IPv4):
+                    return [addresses]
                 if isinstance(addresses, StringTypes):
                     addresses = addresses.split(',')
+                elif isinstance(addresses, collections.Sequence) and all(type(i) in IntTypes for i in addresses):
+                    return conversion.listToIPs(addresses)
+                elif not isinstance(addresses, collections.Sequence): #Might be a set or something non-sliceable
+                    addresses = tuple(addresses)
                 return [IPv4(i) for i in addresses[:limit]] or None
             return None
             
