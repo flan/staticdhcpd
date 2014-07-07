@@ -116,14 +116,14 @@ into a semi-working state.
 
 Unsupported features
 --------------------
-:rfc:`3011`: Subnet selection
-+++++++++++++++++++++++++++++
-This feature is not required in a purely static environment.
-
 :rfc:`3004`: User class
 +++++++++++++++++++++++
 *staticDHCPd* requires that each client be known ahead of time, precluding any
 need for the notion of dynamic assignment from pools based on clases.
+
+:rfc:`3011`: Subnet selection
++++++++++++++++++++++++++++++
+This feature is not required in a purely static environment.
 
 :rfc:`3118`: DHCP Authentication
 ++++++++++++++++++++++++++++++++
