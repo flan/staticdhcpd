@@ -82,7 +82,7 @@ discouraged, but also roughly the same; extend that, rather than replace it.
 
 Platform-specific questions
 ---------------------------
-On Ubuntu, I get these ``non-fatal select() error`` messages in my logs at
+On Ubuntu, I get these ``non-fatal select()`` error messages in my logs at
 startup. Why?
 
 Actually, we're not quite sure why, either. It seems as though Ubuntu's default
