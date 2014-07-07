@@ -1,5 +1,5 @@
-Frequesntly asked questions and feature notes
-=============================================
+Frequently asked questions and feature notes
+============================================
 What platforms are supported?
 -----------------------------
 Almost anything POSIX-compliant should work as a server, which includes Linux,
