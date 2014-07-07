@@ -92,7 +92,9 @@ class Definition(object):
                                  database.
         """
         #Required values
-        self.ip = IPv4(ip)
+        self.ip = self._parse_address(ip)
+        if not self.ip:
+            raise ValueError("An IP address is required for assignment; received: %(ip)r" % {'ip': ip,})
         self.lease_time = int(lease_time)
         self.subnet = str(subnet)
         self.serial = int(serial)
@@ -100,13 +102,27 @@ class Definition(object):
         #Optional vlaues
         self.hostname = hostname and str(hostname)
         self.gateways = self._parse_addresses(gateways)
-        self.subnet_mask = subnet_mask and IPv4(subnet_mask)
-        self.broadcast_address = broadcast_address and IPv4(broadcast_address)
+        self.subnet_mask = self._parse_address(subnet_mask)
+        self.broadcast_address = self._parse_address(broadcast_address)
         self.domain_name = domain_name and str(domain_name)
         self.domain_name_servers = self._parse_addresses(domain_name_servers, limit=3)
         self.ntp_servers = self._parse_addresses(ntp_servers, limit=3)
         self.extra = extra
         
+        def _parse_address(self, address):
+            """
+            Takes an input-value and produces an IPv4 address.
+
+            :param address: The IP address to process, in any main format.
+            :return: The parsed IPv4 address, or ``None`` if nothing was
+                     provided.
+            """
+            if isinstance(address, IPv4):
+                return address
+            if address:
+                return IPv4(address)
+            return None
+            
         def _parse_addresses(self, addresses, limit=None):
             """
             Takes variable-type input and produces IPv4 addresses.
@@ -114,19 +130,20 @@ class Definition(object):
             :param addresses: The IP addresses to process, in any main format,
                               including comma-delimited string.
             :param int limit: The maximum number of addresses to return.
-            :return list: Any parsed IPv4 addresses, or None if nothing was
+            :return list: Any parsed IPv4 addresses, or ``None`` if nothing was
                           provided.
             """
+            if isinstance(addresses, IPv4):
+                return [addresses]
             if addresses:
-                if isinstance(addresses, IPv4):
-                    return [addresses]
                 if isinstance(addresses, StringTypes):
                     addresses = addresses.split(',')
-                elif isinstance(addresses, collections.Sequence) and all(type(i) in IntTypes for i in addresses):
-                    return conversion.listToIPs(addresses)
-                elif not isinstance(addresses, collections.Sequence): #Might be a set or something non-sliceable
+                elif isinstance(addresses, collections.Sequence):
+                    if all(type(i) in IntTypes for i in addresses):
+                        return conversion.listToIPs(addresses)[:limit]
+                else: #Might be a set or something non-sliceable
                     addresses = tuple(addresses)
-                return [IPv4(i) for i in addresses[:limit]] or None
+                return [self._parse_address(i) for i in addresses[:limit]] or None
             return None
             
 class Database(object):
