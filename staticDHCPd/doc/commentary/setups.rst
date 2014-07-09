@@ -69,7 +69,7 @@ matches the device-type you want to net-boot and set options 60, 66
 the following example::
 
     #Note: these phones may not actually announce themselves this way; this is a guess
-    #vendor[1] is the class identifier, aready extracted for you
+    #vendor[1] is the class identifier, already extracted for you
     if vendor[1] == 'Aastra 57i':
         #The device will look for a specific value; check your manual
         packet.setOption('vendor_class_identifier', 'PXEClient')
@@ -77,6 +77,20 @@ the following example::
         packet.setOption('tftp_server_name', 'bootserver.example.org')
         #Have the device ask for its own MAC, stripped of colons and uppercased
         packet.setOption('bootfile_name', str(mac).replace(':', '').upper() + '.cfg')
+        
+Those working with systems derived from BOOTP, rather than DHCP, like embedded
+BIOS-level stacks, will probably want to do something more like this::
+    
+    if pxe: #You might still want to check vendor[1]
+        #Tell it where to get its bootfile; your device probably isn't
+        #DNS-aware if it's using BOOTP, but the field is free-form text
+        packet.setOption('siaddr', DHCP_SERVER_IP) #The same address defined earlier in conf.py
+        #Tell it which file to look for; pxelinux.0 is pretty common
+        packet.setOption('file', 'pxelinux.0')
+
+The two approaches are not mutually exclusive and well-behaved clients should
+only look at the fields they understand. But it's probably safest to use ``if``s
+to be sure that you're not at risk of confusing a partial implementation.
 
 Of course, you can use other criteria to evaluate whether an option should be
 set and what its value should be.
@@ -98,6 +112,8 @@ over port 67 already, testable with ``packet.getOption('ciaddr')``, and though
 it's highly unlikely, the device may complain if the response contains an IP
 offer; ``packet.deleteOption('yiaddr')`` takes care of this.
 
+Call for help
++++++++++++++
 Unfortunately, *staticDHCPd*'s maintainer does not have a functional PXE setup,
 so corrections and feedback are quite welcome. If you have questions or
 problems, please open an issue against the project.
