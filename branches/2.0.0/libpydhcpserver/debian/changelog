@@ -1,4 +1,4 @@
-libpydhcpserver (2.0.0~beta) unstable; urgency=low
+libpydhcpserver (2.0.0) unstable; urgency=low
 
   * Finally refactored DHCPPacket.
   

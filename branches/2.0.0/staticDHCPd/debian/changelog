@@ -1,4 +1,4 @@
-staticdhcpd (2.0.0~beta) unstable; urgency=low
+staticdhcpd (2.0.0) unstable; urgency=low
   
   * Debian package support, at long last!
   
