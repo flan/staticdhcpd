@@ -91,6 +91,11 @@ DHCP_FIELDS = {
  FIELD_FILE: (108, 128),
 } #: Byte-offset and size definitions for DHCP fields.
 
+DHCP_FIELDS_TEXT = (
+    FIELD_SNAME,
+    FIELD_FILE,
+) #: All DHCP fields for which data should be padded as needed
+
 DHCP_FIELDS_SPECS = {
  TYPE_IPV4: (4, 0, 1), TYPE_IPV4_PLUS: (0, 4, 4), TYPE_IPV4_MULT: (0, 0, 4),
  TYPE_BYTE: (1, 0, 1), TYPE_BYTE_PLUS: (0, 1, 1),

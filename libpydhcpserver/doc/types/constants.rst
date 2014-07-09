@@ -95,6 +95,9 @@ DHCP miscellany
 .. autodata:: DHCP_TYPE_NAMES
     :annotation:
 
+.. autodata:: DHCP_FIELDS_TEXT
+    :annotation:
+
 .. autodata:: MAGIC_COOKIE
     :annotation:
 
