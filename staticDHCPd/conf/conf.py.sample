@@ -20,6 +20,6 @@ GID = 0
 #The IP of the interface to use for DHCP traffic
 DHCP_SERVER_IP = '192.168.1.1'
 
-#The databas-engine to use
+#The database-engine to use
 #For details, see doc/configuration
 DATABASE_ENGINE = None
