@@ -633,13 +633,19 @@ class DHCPPacket(object):
         
         if option in DHCP_FIELDS:
             (start, length) = DHCP_FIELDS[option]
-            if not len(value) == length:
+            padding = None
+            if len(value) < length and option in DHCP_FIELDS_TEXT:
+                padding = (0 for i in xrange(length - len(value)))
+            elif not len(value) == length:
                 raise ValueError("Expected a value of length %(length)i, not %(value-length)i: %(value)r" % {
                  'length': length,
                  'value-length': len(value),
                  'value': value,
                 })
-            self._header[start:start + length] = array('B', value)
+            replacement = array('B', value)
+            if padding:
+                replacement.extend(padding)
+            self._header[start:start + length] = replacement
         else:
             id = self._getOptionID(option)
             dhcp_field_type = DHCP_OPTIONS_TYPES[id]
