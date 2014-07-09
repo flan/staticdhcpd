@@ -89,8 +89,9 @@ BIOS-level stacks, will probably want to do something more like this::
         packet.setOption('file', 'pxelinux.0')
 
 The two approaches are not mutually exclusive and well-behaved clients should
-only look at the fields they understand. But it's probably safest to use ``if``s
-to be sure that you're not at risk of confusing a partial implementation.
+only look at the fields they understand. But it's probably safest to use ``if``
+clauses to be sure that you're not at risk of confusing a partial
+implementation.
 
 Of course, you can use other criteria to evaluate whether an option should be
 set and what its value should be.
