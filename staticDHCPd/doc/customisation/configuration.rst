@@ -99,9 +99,9 @@ Server
 * The value is the lexical name of the interface from which responses
   should be sent, like ``'eth0'``
 * If set, response-packets will be crafted from layer 2, allowing for unicast
-  OFFERs in response to DISCOVERs, if the client did not set the broadcast
-  bit
-* For most environments, this will not be required and should not be set
+  OFFERs in response to DISCOVERs, if the client set the broadcast bit
+* For most environments, this will not be required, but if other DHCP servers,
+  like the *ISC*'s, work and *staticDHCPd* does not, this is probably why
 
 **DHCP_RESPONSE_INTERFACE_QTAGS** : list : default=None
 |||||||||||||||||||||||||||||||||||||||||||||||||||||||
