@@ -2,7 +2,8 @@
 #/etc/staticDHCPd/, ./conf/
 
 #For a full overview of what these parameters mean, and to further customise
-#your system, please consult doc/configuration and doc/scripting
+#your system, please consult the configuration and scripting guides in the
+#standard documentation
 
 
 # Whether to daemonise on startup (you don't want this during initial setup)
