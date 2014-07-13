@@ -33,6 +33,9 @@ import threading
 from dhcp_types.ipv4 import IPv4
 from dhcp_types.mac import MAC
 from dhcp_types.packet import (DHCPPacket, FLAGBIT_BROADCAST)
+from dhcp_types.constants import (
+    FIELD_CIADDR, FIELD_YIADDR, FIELD_SIADDR, FIELD_GIADDR,
+)
 
 #IP constants
 _IP_GLOB = IPv4('0.0.0.0') #: The internal "everything" address.
@@ -361,6 +364,7 @@ class _NetworkLink(object):
         :except Exception: A problem occurred during serialisation or transmission.
         """
         ip = None
+        relayed = False
         port = self._client_port
         source_port = self._server_port
         responder = self._responder_dhcp
@@ -369,27 +373,27 @@ class _NetworkLink(object):
                 or packet.getFlag(FLAGBIT_BROADCAST)): #Broadcast bit set; respond in kind 
                 ip = _IP_BROADCAST
             else: #The client wants unicast and this host can handle it
-                ip = packet.extractIPOrNone('yiaddr')
+                ip = packet.extractIPOrNone(FIELD_YIADDR)
             responder = self._responder_broadcast
         else: #Unicast source
-            giaddr = packet.extractIPOrNone('giaddr')
             ip = address.ip
-            if giaddr: #Relayed request.
+            relayed = bool(packet.extractIPOrNone(FIELD_GIADDR))
+            if relayed: #Relayed request.
                 port = self._server_port
             else: #Request directly from client, routed or otherwise.
                 if pxe:
-                    ip = packet.extractIPOrNone('ciaddr') or ip
+                    ip = packet.extractIPOrNone(FIELD_CIADDR) or ip
                     port = address.port or self._pxe_port #BSD doesn't seem to preserve port information
                     source_port = self._pxe_port
                     responder = self._responder_pxe
                     
-        return responder.send(packet, ip, port, source_port=source_port)
+        return responder.send(packet, ip, port, relayed, source_port=source_port)
         
 class _Responder(object):
     """
     A generic responder-template, which defines common logic.
     """
-    def send(self, packet, ip, port, **kwargs):
+    def send(self, packet, ip, port, relayed, **kwargs):
         """
         Performs final sanity-checking and address manipulation, then submits the packet for
         transmission.
@@ -399,13 +403,18 @@ class _Responder(object):
         :param ip: The address to which the packet should be sent.
         :type ip: :class:`IPv4 <dhcp_types.IPv4>`
         :param int port: The port to which the packet should be sent.
+        :param bool relayed: ``True`` if the packet came from a relay.
         :param \*\*kwargs: Any technology-specific arguments.
         :return tuple(2):
             0. The number of bytes written to the network.
             1. The :class:`Address <dhcp.Address>` ultimately used.
         :except Exception: An error occurred during serialisation or transmission.
         """
-        (broadcast_changed, original_was_broadcast) = packet.setFlag(FLAGBIT_BROADCAST, _IP_BROADCAST == ip)
+        if relayed:
+            broadcast_source = packet.extractIPOrNone(FIELD_CIADDR) in IP_UNSPECIFIED_FILTER
+        else:
+            broadcast_source = ip in IP_UNSPECIFIED_FILTER
+        (broadcast_changed, original_was_broadcast) = packet.setFlag(FLAGBIT_BROADCAST, broadcast_source)
         
         #Perform any necessary packet-specific address-changes
         if not original_was_broadcast: #Unicast behaviour permitted; use the packet's IP override, if set
