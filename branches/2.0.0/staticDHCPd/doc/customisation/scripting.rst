@@ -94,7 +94,7 @@ where `_tick_logger()` is defined.
 
 filterPacket()
 ++++++++++++++
-.. function:: filterPacket(packet, method, mac, client_ip, relay_ip, pxe, vendor)
+.. function:: filterPacket(packet, method, mac, client_ip, relay_ip, pxe)
 
     Provides a means of writing your own blacklist logic, excluding packets from
     sources you don't trust, that have done weird things, or under any other
@@ -124,15 +124,6 @@ filterPacket()
                 (uuid_guid) as digested data: `(type:byte, data:[byte])`.
                 
                 Any unset options are presented as ``None``.
-    :param vendor: A quadruple containing, in order, option 43
-                   (vendor_specific_information) as a string of bytes, option 60
-                   (vendor_class_identifier) as a string, and both option 124
-                   (vendor_class) and option 125 (vendor_specific) as digested
-                   data: `[(enterprise_number:int, data:string)]` and
-                   `[(enterprise_number:int, [(subopt_code:byte, data:string)])]`,
-                   respectively.
-                   
-                   Any unset options are presented as ``None``.
     :return bool: ``False`` if the packet should be rejected; ``True``
                   otherwise.
 
@@ -141,7 +132,7 @@ Example
 ::
 
     import random
-    def filterPacket(packet, method, mac, client_ip, relay_ip, pxe, vendor):
+    def filterPacket(packet, method, mac, client_ip, relay_ip, pxe):
         return random.random() > 0.2
         
 This will fake a lossy network, dropping 20% of all packets received.
@@ -150,7 +141,7 @@ This will fake a lossy network, dropping 20% of all packets received.
 
 handleUnknownMAC()
 ++++++++++++++++++
-.. function:: handleUnknownMAC(packet, method, mac, client_ip, relay_ip, pxe, vendor)
+.. function:: handleUnknownMAC(packet, method, mac, client_ip, relay_ip, pxe)
 
     If staticDHCPd gets a request to serve a MAC that it does not recognise,
     this function will be invoked, allowing you to query databases of your own
@@ -174,15 +165,6 @@ handleUnknownMAC()
                 (uuid_guid) as digested data: `(type:byte, data:[byte])`.
                 
                 Any unset options are presented as ``None``.
-    :param vendor: A quadruple containing, in order, option 43
-                   (vendor_specific_information) as a string of bytes, option 60
-                   (vendor_class_identifier) as a string, and both option 124
-                   (vendor_class) and option 125 (vendor_specific) as digested
-                   data: `[(enterprise_number:int, data:string)]` and
-                   `[(enterprise_number:int, [(subopt_code:byte, data:string)])]`,
-                   respectively.
-                   
-                   Any unset options are presented as ``None``.
     :return: An instance of :class:`databases.generic.Definition` or ``None``,
              if the MAC could not be handled.
 
@@ -196,7 +178,7 @@ you will know.
 
 loadDHCPPacket()
 ++++++++++++++++
-.. function:: loadDHCPPacket(packet, method, mac, definition, relay_ip, pxe, vendor)
+.. function:: loadDHCPPacket(packet, method, mac, definition, relay_ip, pxe)
 
     Before any response is sent to a client, an opportunity is presented to
     allow you to modify the packet, adding or removing options and setting
@@ -221,15 +203,6 @@ loadDHCPPacket()
                 (uuid_guid) as digested data: `(type:byte, data:[byte])`.
                 
                 Any unset options are presented as ``None``.
-    :param vendor: A quadruple containing, in order, option 43
-                   (vendor_specific_information) as a string of bytes, option 60
-                   (vendor_class_identifier) as a string, and both option 124
-                   (vendor_class) and option 125 (vendor_specific) as digested
-                   data: `[(enterprise_number:int, data:string)]` and
-                   `[(enterprise_number:int, [(subopt_code:byte, data:string)])]`,
-                   respectively.
-                   
-                   Any unset options are presented as ``None``.
     :return bool: ``True`` if processing can proceed; ``False`` if the packet
                   should be rejected.
 
@@ -238,7 +211,7 @@ Example
 ::
     
     import random
-    def loadDHCPPacket(packet, method, mac, definition, relay_ip, pxe, vendor):
+    def loadDHCPPacket(packet, method, mac, definition, relay_ip, pxe):
         if not definition.ip[3] % 3: #The client's IP's fourth octet is a multiple of 3
             packet.setOption('renewal_time_value', 60)
         elif method.startswith('REQUEST:') and random.random() < 0.5:

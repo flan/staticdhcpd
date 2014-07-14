@@ -69,8 +69,7 @@ matches the device-type you want to net-boot and set options 60, 66
 the following example::
 
     #Note: these phones may not actually announce themselves this way; this is a guess
-    #vendor[1] is the class identifier, already extracted for you
-    if vendor[1] == 'Aastra 57i':
+    if packet.getOption('vendor_class_identifier', convert=True) == 'Aastra 57i':
         #The device will look for a specific value; check your manual
         packet.setOption('vendor_class_identifier', 'PXEClient')
         #Tell it where to get its bootfile; IPs are valid, too
@@ -81,7 +80,7 @@ the following example::
 Those working with systems derived from BOOTP, rather than DHCP, like embedded
 BIOS-level stacks, will probably want to do something more like this::
     
-    if pxe: #You might still want to check vendor[1]
+    if pxe: #You might still want to check 'vendor_class_identifier'
         #Tell it where to get its bootfile; your device probably isn't
         #DNS-aware if it's using BOOTP, but the field is free-form text
         packet.setOption('siaddr', DHCP_SERVER_IP) #The same address defined earlier in conf.py
