@@ -14,12 +14,51 @@ the general flow of installing one is the following:
 
 Configuring modules
 -------------------
-*A univsersal means of centralising extension-module configuration is being
-considered for inclusion in RC1; for now, all modules are self-contained*
+While it is entirely possible to contain all extension configuration within the
+module itself, it is convenient for users to define values in ``conf.py``.
 
-*What will probably be implemented will be a namespace within ``conf.py``, not
-unlike ``callbacks``, called ``extensions``, from which modules will pull
-settings-updates on-load*
+To make use of this facility, all you need to do is instruct your users to add
+lines like the following::
+
+    extensions.your_module.REFRESH_INTERVAL = 5
+    extensions.your_module.SOME_DICT = {
+        1: 2,
+        'a': 'c',
+    }
+
+Or like this, so that it's clear, at a glance, where your module fits in,
+by allowing uniform indentation::
+
+    with extensions.your_module as x:
+        x.TIMEOUT = 0.25
+
+Within your module, you then have a few ways of accessing this data. They'll
+basically all start with importing the ``extensions`` namespace::
+
+    import staticdhcpdlib.config
+    _config = staticdhcpdlib.config.extensions.your_module
+
+You can then extract data from ``_config`` as needed; you'll probably want to
+use one of the parsing methods it exposes to create a dictionary to avoid
+testing to see if every value is set or not, but how to use it is entirely up
+to you.
+
+.. automethod:: config._Namespace.extension_config_merge
+
+.. automethod:: config._Namespace.extension_config_dict
+
+.. automethod:: config._Namespace.extension_config_iter
+
+For performance reasons, it may be a good idea to assign the namespace's
+data during module setup, then discard it and any intermediate structures,
+like dictionaries compiled using these methods::
+
+    del _config #Removes the reference and lets staticDHCPd reclaim resources
+    del YOUR_CONFIG_DICTIONARY #Allows for normal Python garbage-collection
+
+Of course, if keeping a dictionary or the namespace around is how you want to
+access information, that's perfectly valid and the structures are pretty
+efficient by themselves.
 
 Developing your own module
 --------------------------
