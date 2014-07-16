@@ -1022,7 +1022,7 @@ class DHCPPacket(object):
             else:
                 represent = True
                 result = _FORMAT_CONVERSION_DESERIAL[DHCP_OPTIONS_TYPES[option_id]](data)
-            output.append((represent and "\t[%(selected)s][%(id)03i] %(name)s: %(result)r" or "\t[-] [%(id)03i] %(name)s: %(result)s") % {
+            output.append((represent and "\t[%(selected)s][%(id)03i] %(name)s: %(result)r" or "\t[-][%(id)03i] %(name)s: %(result)s") % {
              'selected': self.isSelectedOption(option_id) and 'X' or ' ',
              'id': option_id,
              'name': self._getOptionName(option_id),
