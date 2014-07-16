@@ -69,7 +69,7 @@ matches the device-type you want to net-boot and set options 60, 66
 the following example::
 
     #Note: these phones may not actually announce themselves this way; this is a guess
-    if packet.getOption('vendor_class_identifier', convert=True) == 'Aastra 57i':
+    if source_packet.getOption('vendor_class_identifier', convert=True) == 'Aastra 57i':
         #The device will look for a specific value; check your manual
         packet.setOption('vendor_class_identifier', 'PXEClient')
         #Tell it where to get its bootfile; IPs are valid, too

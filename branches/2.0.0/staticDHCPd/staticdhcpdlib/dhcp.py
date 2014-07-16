@@ -83,6 +83,7 @@ class _PacketWrapper(object):
     """
     _server = None #: The server from which this packet was received.
     _packet_type = None #: The type of packet being wrapped.
+    _original_packet = None #: The packet originally received.
     _discarded = True #: Whether the packet is in a discarded state.
     _start_time = None #: The time at which processing began.
     _associated_ip = None #: The client-ip associated with this request.
@@ -143,6 +144,7 @@ class _PacketWrapper(object):
             })
         else:
             self.valid = True
+            self._original_packet = self.packet.copy()
             
         return self
         
@@ -340,7 +342,8 @@ class _PacketWrapper(object):
         process = bool(config.loadDHCPPacket(
          self.packet, self._packet_type,
          self.mac, definition, self.giaddr,
-         self.pxe and self._pxe_options or None
+         self.pxe and self._pxe_options or None,
+         self._original_packet
         ))
         if not process:
             _logger.info('Ignoring %(type)s from %(mac)s per loadDHCPPacket()' % {
