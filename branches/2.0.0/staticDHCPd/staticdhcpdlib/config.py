@@ -326,6 +326,10 @@ class _Namespace(object):
         object.__setattr__(self, name, namespace)
         return namespace
         
+    def extension_config_dict(self):
+        for key in [k for k in dir(self) if not k.startswith('_') and not k.startswith('extension_config_')]: #Copy everything that looks useful
+            yeild (key, getattr(self, key))
+            
     def extension_config_merge(self, defaults, required):
         """
         Creates a namespace model from `defaults` before overlaying anything
