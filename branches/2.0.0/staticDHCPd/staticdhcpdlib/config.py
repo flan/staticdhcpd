@@ -314,6 +314,12 @@ class _Namespace(object):
         """
         self.__final = final
         
+    def __enter__(self):
+        return self
+        
+    def __exit__(self, type, value, tb):
+        return False
+        
     def __getattr__(self, name):
         if name.startswith('__'):
             return object.__getattr__(self, name)
@@ -326,10 +332,25 @@ class _Namespace(object):
         object.__setattr__(self, name, namespace)
         return namespace
         
-    def extension_config_dict(self):
+    def extension_config_iter(self):
+        """
+        Produces an iterable object that enumerates all interesting elements in
+        the namespace.
+        
+        :return: An iterable object that generates ``(key, value)`` tuples.
+        """
         for key in [k for k in dir(self) if not k.startswith('_') and not k.startswith('extension_config_')]: #Copy everything that looks useful
-            yeild (key, getattr(self, key))
+            yield (key, getattr(self, key))
             
+    def extension_config_dict(self):
+        """
+        Produces a dictionary containing all interesting elements in the
+        namespace.
+        
+        :return dict: User-set elements in the namespace.
+        """
+        return dict(self.extension_config_iter())
+        
     def extension_config_merge(self, defaults, required):
         """
         Creates a namespace model from `defaults` before overlaying anything
@@ -338,23 +359,21 @@ class _Namespace(object):
         
         Normal usage will be something like the following::
         
-            from staticdhcpdlib.config import extensions
-            
-            #for modules
-            globals().update(extensions.my_extension.extension_config_merge(defaults={
-                'DEFAULT_THING': 5, #What this does
+            CONFIG = this_object.extension_config_merge(defaults={
+                'DEFAULT_THING': 5, #Your description of this field
             }, required=[
-                'REQUIRED_THING', #What this does
+                'REQUIRED_THING', #Your description (with typing) of what this field means
             ])
             
-            #objects will be much the same, but will likely use self.__dict__
-            #instead of globals()
-            
-            #Any dictionary works, though, so do whatever you need
-            
+        This is effectively self-documenting and it guarantees you'll have
+        access to every attribute you want.
+        
         :param dict defaults: The default attributes for the namespace, if not
                               already present.
         :param collection required: A collection of required attribute names.
+        :return dict: `defaults` augmented with elements defined in the
+                      namespace, then validated to ensure all ``required``
+                      elements are present in some form.
         :raise AttributeError: A required attribute is missing.
         :raise ValueError: The namespace cannot be merged.
         """
@@ -362,16 +381,11 @@ class _Namespace(object):
             raise ValueError("Unable to merge a non-final namespace")
             
         namespace = defaults.copy()
-        
-        for key in [k for k in dir(self) if k.isupper()]: #Copy everything that looks like a constant.
-            namespace[key] = getattr(self, key)
-            
+        namespace.update(self.extension_config_iter())
         for key in required:
             if not key in namespace:
-                raise AttributeError("Merge result does not contain '%(key)s'" % {
+                raise AttributeError("Merged result does not contain '%(key)s'" % {
                     'key': key,
                 })
-                
         return namespace
 conf.extensions = _Namespace()
-del _Namespace
