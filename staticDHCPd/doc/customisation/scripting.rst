@@ -108,6 +108,8 @@ filterPacket()
 
     :param packet: The packet received from the client, an instance of
                    :class:`libpydhcpserver.dhcp_types.packet.DHCPPacket`.
+                   
+                   Any changes made to this packet will persist.
     :param str method: The type of DHCP request the packet represents, one of
                        ``DECLINE``, ``DISCOVER``, ``INFORM``, ``RELEASE``,
                        ``REQUEST:INIT-REBOOT``, ``REQUEST:REBIND``,
@@ -149,6 +151,8 @@ handleUnknownMAC()
     
     :param packet: The packet received from the client, an instance of
                    :class:`libpydhcpserver.dhcp_types.packet.DHCPPacket`.
+                   
+                   Any changes made to this packet will persist.
     :param str method: The type of DHCP request the packet represents, one of
                        ``DECLINE``, ``DISCOVER``, ``INFORM``, ``RELEASE``,
                        ``REQUEST:INIT-REBOOT``, ``REQUEST:REBIND``,
@@ -178,14 +182,14 @@ you will know.
 
 loadDHCPPacket()
 ++++++++++++++++
-.. function:: loadDHCPPacket(packet, method, mac, definition, relay_ip, pxe)
+.. function:: loadDHCPPacket(packet, method, mac, definition, relay_ip, pxe, source_packet)
 
     Before any response is sent to a client, an opportunity is presented to
     allow you to modify the packet, adding or removing options and setting
     values as needed for your environment's specific requirements. Or even
     allowing you to define your own blacklist rules and behaviour.
 
-    :param packet: The packet received from the client, an instance of
+    :param packet: The packet to be sent to the client, an instance of
                    :class:`libpydhcpserver.dhcp_types.packet.DHCPPacket`.
     :param str method: The type of DHCP request the packet represents, one of
                        ``DECLINE``, ``DISCOVER``, ``INFORM``, ``RELEASE``,
@@ -203,6 +207,11 @@ loadDHCPPacket()
                 (uuid_guid) as digested data: `(type:byte, data:[byte])`.
                 
                 Any unset options are presented as ``None``.
+    :param source_packet: The packet received from the client, an instance of
+                          :class:`libpydhcpserver.dhcp_types.packet.DHCPPacket`.
+                          
+                          This is a pristine copy of the original packet,
+                          unaffected by any previous modifications.
     :return bool: ``True`` if processing can proceed; ``False`` if the packet
                   should be rejected.
 
@@ -211,7 +220,7 @@ Example
 ::
     
     import random
-    def loadDHCPPacket(packet, method, mac, definition, relay_ip, pxe):
+    def loadDHCPPacket(packet, method, mac, definition, relay_ip, pxe, source_packet):
         if not definition.ip[3] % 3: #The client's IP's fourth octet is a multiple of 3
             packet.setOption('renewal_time_value', 60)
         elif method.startswith('REQUEST:') and random.random() < 0.5:
