@@ -14,8 +14,16 @@ the general flow of installing one is the following:
 
 Configuring modules
 -------------------
+Since your module is independent code that you explicitly hook into
+*staticDHCPd*, and can therefore run independently, you are free to configure
+it any way you would like; if you are its sole consumer, constants defined
+in-file are likely the simplest method and more than good enough.
+
+Supplying configuration through `conf.py`
++++++++++++++++++++++++++++++++++++++++++
 While it is entirely possible to contain all extension configuration within the
-module itself, it is convenient for users to define values in ``conf.py``.
+module itself, if you plan to share, it is convenient for users to define
+values in ``conf.py``.
 
 To make use of this facility, all you need to do is instruct your users to add
 lines like the following::
@@ -26,12 +34,14 @@ lines like the following::
         'a': 'c',
     }
 
-Or like this, so that it's clear, at a glance, where your module fits in,
-by allowing uniform indentation::
+Or like this, so that it's clear, at a glance, where your module's parameters
+are set, by encouraging uniform indentation::
 
     with extensions.your_module as x:
         x.TIMEOUT = 0.25
 
+Accessing configuration data
+++++++++++++++++++++++++++++
 Within your module, you then have a few ways of accessing this data. They'll
 basically all start with importing the ``extensions`` namespace::
 
