@@ -5,8 +5,8 @@ events of importance, without all the noise that often accompanies e-mail
 updates, especially when something fails on every single request, like someone
 pulling a cable they shouldn't have touched.
 
-To use this module, configure whatever is required in conf.py, alongside
-staticDHCPd's built-in parameters, like this:
+To use this module, configure whatever is required in conf.py, inside of init(),
+like this:
     with extensions.feedservice as x:
         #FEED_ID is something you should set uniquely on each server you run
         x.FEED_ID = 'bcd2dbbc-105b-4533-bb6d-01c2333cc55e'
