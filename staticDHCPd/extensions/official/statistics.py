@@ -15,9 +15,9 @@ Then add the following to conf.py's init() function:
 Like staticDHCPd, this module under the GNU General Public License v3
 (C) Neil Tallim, 2014 <flan@uguu.ca>
 """
-import staticdhcpdlib.config
-_config = staticdhcpdlib.config.extensions.statistics
-CONFIG = _config.extension_config_merge(defaults={
+from staticdhcpdlib import config
+_config = config.extensions.statistics
+_CONFIG = _config.extension_config_merge(defaults={
     #The name of the module to which dashboard elements belong
     'MODULE': 'statistics',
     
@@ -93,7 +93,6 @@ import logging
 import threading
 import time
 
-from staticdhcpdlib import config
 from staticdhcpdlib import dhcp
 _METHODS = tuple(sorted(getattr(dhcp, key) for key in dir(dhcp) if key.startswith('_PACKET_TYPE_')))
 
@@ -423,55 +422,55 @@ class Statistics(object):
             
 #Setup happens here
 ################################################################################
-_stats = Statistics(CONFIG['RETENTION_COUNT'], CONFIG['QUANTISATION_INTERVAL'])
+_stats = Statistics(_CONFIG['RETENTION_COUNT'], _CONFIG['QUANTISATION_INTERVAL'])
 config.callbacks.statsAddHandler(_stats.process)
 _logger.info("Statistics engine online")
 
-if CONFIG['LIFETIME_STATS_ENABLED']:
+if _CONFIG['LIFETIME_STATS_ENABLED']:
     renderer = lambda *args, **kwargs: _stats.lifetime_stats()
-    if CONFIG['LIFETIME_STATS_DISPLAY']:
+    if _CONFIG['LIFETIME_STATS_DISPLAY']:
         _logger.info("Registering lifetime stats as a dashboard element, with ordering=%(ordering)s" % {
-         'ordering': CONFIG['LIFETIME_STATS_ORDERING'],
+         'ordering': _CONFIG['LIFETIME_STATS_ORDERING'],
         })
         config.callbacks.webAddDashboard(
-         CONFIG['MODULE'], CONFIG['LIFETIME_STATS_NAME'], renderer,
-         ordering=CONFIG['LIFETIME_STATS_ORDERING']
+         _CONFIG['MODULE'], _CONFIG['LIFETIME_STATS_NAME'], renderer,
+         ordering=_CONFIG['LIFETIME_STATS_ORDERING']
         )
     else:
         _logger.info("Registering lifetime stats at '%(path)s'" % {
-         'path': CONFIG['LIFETIME_STATS_PATH'],
+         'path': _CONFIG['LIFETIME_STATS_PATH'],
         })
         config.callbacks.webAddMethod(
-         CONFIG['LIFETIME_STATS_PATH'], renderer,
-         hidden=(CONFIG['LIFETIME_STATS_NAME'] is None),
-         module=CONFIG['MODULE'],
-         name=CONFIG['LIFETIME_STATS_NAME'],
+         _CONFIG['LIFETIME_STATS_PATH'], renderer,
+         hidden=(_CONFIG['LIFETIME_STATS_NAME'] is None),
+         module=_CONFIG['MODULE'],
+         name=_CONFIG['LIFETIME_STATS_NAME'],
          display_mode=config.callbacks.WEB_METHOD_TEMPLATE
         )
         
-if CONFIG['AVERAGES_ENABLED']:
-    renderer = lambda *args, **kwargs: _stats.averages(CONFIG['AVERAGES_WINDOWS'])
-    if CONFIG['AVERAGES_DISPLAY']:
+if _CONFIG['AVERAGES_ENABLED']:
+    renderer = lambda *args, **kwargs: _stats.averages(_CONFIG['AVERAGES_WINDOWS'])
+    if _CONFIG['AVERAGES_DISPLAY']:
         _logger.info("Registering averages as a dashboard element, with ordering=%(ordering)s" % {
-         'ordering': CONFIG['AVERAGES_ORDERING'],
+         'ordering': _CONFIG['AVERAGES_ORDERING'],
         })
         config.callbacks.webAddDashboard(
-         CONFIG['MODULE'], CONFIG['AVERAGES_NAME'], renderer,
-         ordering=CONFIG['AVERAGES_ORDERING']
+         _CONFIG['MODULE'], _CONFIG['AVERAGES_NAME'], renderer,
+         ordering=_CONFIG['AVERAGES_ORDERING']
         )
     else:
         _logger.info("Registering averages at '%(path)s'" % {
-         'path': CONFIG['AVERAGES_PATH'],
+         'path': _CONFIG['AVERAGES_PATH'],
         })
         config.callbacks.webAddMethod(
-         CONFIG['AVERAGES_PATH'], renderer,
-         hidden=(CONFIG['AVERAGES_NAME'] is None),
-         module=CONFIG['MODULE'],
-         name=CONFIG['AVERAGES_NAME'],
+         _CONFIG['AVERAGES_PATH'], renderer,
+         hidden=(_CONFIG['AVERAGES_NAME'] is None),
+         module=_CONFIG['MODULE'],
+         name=_CONFIG['AVERAGES_NAME'],
          display_mode=config.callbacks.WEB_METHOD_TEMPLATE
         )
         
-if CONFIG['GRAPH_ENABLED']:
+if _CONFIG['GRAPH_ENABLED']:
     try:
         import pycha.line
         import cairo
@@ -479,40 +478,40 @@ if CONFIG['GRAPH_ENABLED']:
         _logger.warn("pycha is not available; graphs cannot be rendered: " + str(e))
     else:
         config.callbacks.webAddMethod(
-         CONFIG['GRAPH_RENDER_PATH'], lambda *args, **kwargs: _stats.graph(CONFIG['GRAPH_RENDER_DIMENSIONS']),
+         _CONFIG['GRAPH_RENDER_PATH'], lambda *args, **kwargs: _stats.graph(_CONFIG['GRAPH_RENDER_DIMENSIONS']),
          hidden=True, display_mode=config.callbacks.WEB_METHOD_RAW
         )
-        image_tag = '<div style="text-align: center; padding: 2px;"><img src="%(path)s"/></div>' % {'path': CONFIG['GRAPH_RENDER_PATH'],}
+        image_tag = '<div style="text-align: center; padding: 2px;"><img src="%(path)s"/></div>' % {'path': _CONFIG['GRAPH_RENDER_PATH'],}
         hook = lambda *args, **kwargs: image_tag
-        if CONFIG['GRAPH_DISPLAY']:
+        if _CONFIG['GRAPH_DISPLAY']:
             _logger.info("Registering graph as a dashboard element, with ordering=%(ordering)s" % {
-             'ordering': CONFIG['GRAPH_ORDERING'],
+             'ordering': _CONFIG['GRAPH_ORDERING'],
             })
             config.callbacks.webAddDashboard(
-             CONFIG['MODULE'], CONFIG['GRAPH_NAME'], hook,
-             ordering=CONFIG['GRAPH_ORDERING']
+             _CONFIG['MODULE'], _CONFIG['GRAPH_NAME'], hook,
+             ordering=_CONFIG['GRAPH_ORDERING']
             )
         else:
             _logger.info("Registering graph at '%(path)s'" % {
-             'path': CONFIG['GRAPH_PATH'],
+             'path': _CONFIG['GRAPH_PATH'],
             })
             config.callbacks.webAddMethod(
-             CONFIG['GRAPH_PATH'], hook,
-             hidden=(CONFIG['GRAPH_NAME'] is None),
-             module=CONFIG['MODULE'],
-             name=CONFIG['GRAPH_NAME'],
+             _CONFIG['GRAPH_PATH'], hook,
+             hidden=(_CONFIG['GRAPH_NAME'] is None),
+             module=_CONFIG['MODULE'],
+             name=_CONFIG['GRAPH_NAME'],
              display_mode=config.callbacks.WEB_METHOD_TEMPLATE
             )
             
-if CONFIG['GRAPH_CSV_PATH']:
+if _CONFIG['GRAPH_CSV_PATH']:
     _logger.info("Registering graph CSV-provider at '%(path)s'" % {
-     'path': CONFIG['GRAPH_CSV_PATH'],
+     'path': _CONFIG['GRAPH_CSV_PATH'],
     })
     config.callbacks.webAddMethod(
-     CONFIG['GRAPH_CSV_PATH'], lambda *args, **kwargs: _stats.graph_csv(),
-     hidden=(CONFIG['GRAPH_CSV_NAME'] is None),
-     module=CONFIG['MODULE'],
-     name=CONFIG['GRAPH_CSV_NAME'],
+     _CONFIG['GRAPH_CSV_PATH'], lambda *args, **kwargs: _stats.graph_csv(),
+     hidden=(_CONFIG['GRAPH_CSV_NAME'] is None),
+     module=_CONFIG['MODULE'],
+     name=_CONFIG['GRAPH_CSV_NAME'],
      display_mode=config.callbacks.WEB_METHOD_RAW
     )
     
