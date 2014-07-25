@@ -3,8 +3,8 @@
 Provides a means of easily tracking recent DHCP activity, so you can see if a
 device is self-configuring properly without needing to read through the logs.
 
-To use this module, configure whatever is required in conf.py, alongside
-staticDHCPd's built-in parameters, like this:
+To use this module, configure whatever is required in conf.py, inside of init(),
+like this:
     with extensions.recent_activity as x:
         x.LIFETIME_STATS_ENABLED = True
         

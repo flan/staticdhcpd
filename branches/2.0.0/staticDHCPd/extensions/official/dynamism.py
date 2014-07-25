@@ -60,7 +60,7 @@ migrated to a static context. It's usable well beyond that, but it is a
 scope-limited design.
 
 Like staticDHCPd, this module under the GNU General Public License v3
-(C) Neil Tallim, 2013 <flan@uguu.ca>
+(C) Neil Tallim, 2014 <flan@uguu.ca>
 """
 import collections
 import logging
