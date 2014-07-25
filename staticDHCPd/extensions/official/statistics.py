@@ -2,73 +2,88 @@
 """
 Processes and exposes runtime statistics information about the DHCP server.
 
-To use this module, customise the constants below, then add the following to
-conf.py's init() function:
+To use this module, configure whatever is required in conf.py, alongside
+staticDHCPd's built-in parameters, like this:
+    with extensions.statistics as x:
+        x.LIFETIME_STATS_ENABLED = True
+        
+For a list of all parameters you may define, see below.
+
+Then add the following to conf.py's init() function:
     import statistics
     
 Like staticDHCPd, this module under the GNU General Public License v3
-(C) Neil Tallim, 2013 <flan@uguu.ca>
+(C) Neil Tallim, 2014 <flan@uguu.ca>
 """
-#The name of the module to which these elements belong
-MODULE = 'statistics'
-
-#Whether lifetime stats should be made available
-LIFETIME_STATS_ENABLED = True
-#Whether lifetime stats should be included in the web dashboard
-LIFETIME_STATS_DISPLAY = True
-#The ordering-bias value to apply, as an integer; if None, appended to the end
-LIFETIME_STATS_ORDERING = None
-#If not available via the dashboard, they can be accessed at this path
-LIFETIME_STATS_PATH = '/ca/uguu/puukusoft/staticDHCPd/extension/stats/lifetime'
-#The name of the component; if None and not displayed in the dashboard, the
-#method link will be hidden
-LIFETIME_STATS_NAME = 'lifetime'
-
-#Whether averaging values should be made available
-AVERAGES_ENABLED = True
-#The periods, as quantised periods, over which statistics should be averaged
-#0 represents the current frame
-AVERAGES_WINDOWS = [0, 1, 2, 3, 12, 72, 288]
-#Whether averages should be included in the web dashboard
-AVERAGES_DISPLAY = True
-#The ordering-bias value to apply, as an integer; if None, appended to the end
-AVERAGES_ORDERING = None
-#If not available via the dashboard, they can be accessed at this path
-AVERAGES_PATH = '/ca/uguu/puukusoft/staticDHCPd/extension/stats/averages'
-#The name of the component; if None and not displayed in the dashboard, the
-#method link will be hidden
-AVERAGES_NAME = 'averages'
-
-#Whether graph generation should be made available
-#This component depends on pycha
-GRAPH_ENABLED = True
-#Whether the graph should be rendered in the web dashboard
-GRAPH_DISPLAY = True
-#The ordering-bias value to apply, as an integer; if None, appended to the end
-GRAPH_ORDERING = None
-#If not available via the dashboard, it can be accessed at this path
-GRAPH_PATH = '/ca/uguu/puukusoft/staticDHCPd/extension/stats/graph'
-#The path at which the graph can be accessed as an image
-GRAPH_RENDER_PATH = '/ca/uguu/puukusoft/staticDHCPd/extension/stats/graph.png'
-#The dimensions with which to render the graph (x, y)
-GRAPH_RENDER_DIMENSIONS = (1536, 168)
-#The name of the component; if None and not displayed in the dashboard, the
-#method link will be hidden
-GRAPH_NAME = 'packets per second'
-#The path at which a CSV version of the graph may be obtained; None to
-#disable (this is independent of GRAPH_ENABLED)
-GRAPH_CSV_PATH = '/ca/uguu/puukusoft/staticDHCPd/extension/stats/graph.csv'
-#The name of the component; if None, the method link will be hidden
-GRAPH_CSV_NAME = 'graph (csv)'
-
-#The number of seconds over which to quantise data
-#Lower values will increase resolution, but consume more memory
-QUANTISATION_INTERVAL = 60 * 5
-
-#The number of quantised elements to retain for statistical evaluation
-#Higher values will increase the amount of data that can be interpreted,
-#at the cost of more memory and processing time
-RETENTION_COUNT = 288 * 2 #At five minutes, 288 is a day
+import staticdhcpdlib.config
+_config = staticdhcpdlib.config.extensions.statistics
+CONFIG = _config.extension_config_merge(defaults={
+    #The name of the module to which dashboard elements belong
+    'MODULE': 'statistics',
+    
+    #Whether lifetime stats should be made available
+    'LIFETIME_STATS_ENABLED': True,
+    #Whether lifetime stats should be included in the web dashboard
+    'LIFETIME_STATS_DISPLAY': True,
+    #The ordering-bias value to apply, as an integer; if None, appended to the
+    #end
+    'LIFETIME_STATS_ORDERING': None,
+    #If not available via the dashboard, stats can be accessed at this path
+    'LIFETIME_STATS_PATH': '/ca/uguu/puukusoft/staticDHCPd/extension/stats/lifetime',
+    #The name of the component; if None and not displayed in the dashboard, the
+    #method link will be hidden
+    'LIFETIME_STATS_NAME': 'lifetime',
+    
+    #Whether averaging values should be made available
+    'AVERAGES_ENABLED': True,
+    #The periods, as quantised windows, over which statistics should be
+    #averaged; 0 represents the current frame
+    'AVERAGES_WINDOWS': [0, 1, 2, 3, 12, 72, 288],
+    #Whether averages should be included in the web dashboard
+    'AVERAGES_DISPLAY': True,
+    #The ordering-bias value to apply, as an integer; if None, appended to the
+    #end
+    'AVERAGES_ORDERING': None,
+    #If not available via the dashboard, stats can be accessed at this path
+    'AVERAGES_PATH': '/ca/uguu/puukusoft/staticDHCPd/extension/stats/averages',
+    #The name of the component; if None and not displayed in the dashboard, the
+    #method link will be hidden
+    'AVERAGES_NAME': 'averages',
+    
+    #Whether graph generation should be made available; this component depends
+    #on pycha
+    'GRAPH_ENABLED': True,
+    #Whether the graph should be rendered in the web dashboard
+    'GRAPH_DISPLAY': True,
+    #The ordering-bias value to apply, as an integer; if None, appended to the
+    #end
+    'GRAPH_ORDERING': None,
+    #If not available via the dashboard, the graph can be accessed at this path
+    'GRAPH_PATH': '/ca/uguu/puukusoft/staticDHCPd/extension/stats/graph',
+    #The path at which the graph can be accessed as an image
+    'GRAPH_RENDER_PATH': '/ca/uguu/puukusoft/staticDHCPd/extension/stats/graph.png',
+    #The dimensions with which to render the graph (x, y)
+    'GRAPH_RENDER_DIMENSIONS': (1536, 168),
+    #The name of the component; if None and not displayed in the dashboard, the
+    #method link will be hidden
+    'GRAPH_NAME': 'packets per second',
+    #The path at which a CSV version of the graph may be obtained; None to
+    #disable (this is independent of GRAPH_ENABLED)
+    'GRAPH_CSV_PATH': '/ca/uguu/puukusoft/staticDHCPd/extension/stats/graph.csv',
+    #The name of the component; if None, the method link will be hidden
+    'GRAPH_CSV_NAME': 'graph (csv)',
+    
+    #The number of seconds over which to quantise data; lower values will
+    #increase resolution, but consume more memory
+    'QUANTISATION_INTERVAL': 60 * 5,
+    
+    #The number of quantised elements to retain for statistical evaluation
+    #Higher values will increase the amount of data that can be interpreted,
+    #at the cost of more memory and processing time
+    'RETENTION_COUNT': 288 * 2, #At five minutes, 288 is a day
+}, required=[
+])
+del _config
 
 #Do not touch anything below this line
 ################################################################################
@@ -408,45 +423,55 @@ class Statistics(object):
             
 #Setup happens here
 ################################################################################
-_stats = Statistics(RETENTION_COUNT, QUANTISATION_INTERVAL)
+_stats = Statistics(CONFIG['RETENTION_COUNT'], CONFIG['QUANTISATION_INTERVAL'])
 config.callbacks.statsAddHandler(_stats.process)
 _logger.info("Statistics engine online")
 
-if LIFETIME_STATS_ENABLED:
+if CONFIG['LIFETIME_STATS_ENABLED']:
     renderer = lambda *args, **kwargs: _stats.lifetime_stats()
-    if LIFETIME_STATS_DISPLAY:
+    if CONFIG['LIFETIME_STATS_DISPLAY']:
         _logger.info("Registering lifetime stats as a dashboard element, with ordering=%(ordering)s" % {
-         'ordering': LIFETIME_STATS_ORDERING,
+         'ordering': CONFIG['LIFETIME_STATS_ORDERING'],
         })
-        config.callbacks.webAddDashboard(MODULE, LIFETIME_STATS_NAME, renderer, ordering=LIFETIME_STATS_ORDERING)
+        config.callbacks.webAddDashboard(
+         CONFIG['MODULE'], CONFIG['LIFETIME_STATS_NAME'], renderer,
+         ordering=CONFIG['LIFETIME_STATS_ORDERING']
+        )
     else:
         _logger.info("Registering lifetime stats at '%(path)s'" % {
-         'path': LIFETIME_STATS_PATH,
+         'path': CONFIG['LIFETIME_STATS_PATH'],
         })
         config.callbacks.webAddMethod(
-         LIFETIME_STATS_PATH, renderer,
-         hidden=(LIFETIME_STATS_NAME is None), module=MODULE, name=LIFETIME_STATS_NAME,
+         CONFIG['LIFETIME_STATS_PATH'], renderer,
+         hidden=(CONFIG['LIFETIME_STATS_NAME'] is None),
+         module=CONFIG['MODULE'],
+         name=CONFIG['LIFETIME_STATS_NAME'],
          display_mode=config.callbacks.WEB_METHOD_TEMPLATE
         )
         
-if AVERAGES_ENABLED:
-    renderer = lambda *args, **kwargs: _stats.averages(AVERAGES_WINDOWS)
-    if AVERAGES_DISPLAY:
+if CONFIG['AVERAGES_ENABLED']:
+    renderer = lambda *args, **kwargs: _stats.averages(CONFIG['AVERAGES_WINDOWS'])
+    if CONFIG['AVERAGES_DISPLAY']:
         _logger.info("Registering averages as a dashboard element, with ordering=%(ordering)s" % {
-         'ordering': AVERAGES_ORDERING,
+         'ordering': CONFIG['AVERAGES_ORDERING'],
         })
-        config.callbacks.webAddDashboard(MODULE, AVERAGES_NAME, renderer, ordering=AVERAGES_ORDERING)
+        config.callbacks.webAddDashboard(
+         CONFIG['MODULE'], CONFIG['AVERAGES_NAME'], renderer,
+         ordering=CONFIG['AVERAGES_ORDERING']
+        )
     else:
         _logger.info("Registering averages at '%(path)s'" % {
-         'path': AVERAGES_PATH,
+         'path': CONFIG['AVERAGES_PATH'],
         })
         config.callbacks.webAddMethod(
-         AVERAGES_PATH, renderer,
-         hidden=(AVERAGES_NAME is None), module=MODULE, name=AVERAGES_NAME,
+         CONFIG['AVERAGES_PATH'], renderer,
+         hidden=(CONFIG['AVERAGES_NAME'] is None),
+         module=CONFIG['MODULE'],
+         name=CONFIG['AVERAGES_NAME'],
          display_mode=config.callbacks.WEB_METHOD_TEMPLATE
         )
         
-if GRAPH_ENABLED:
+if CONFIG['GRAPH_ENABLED']:
     try:
         import pycha.line
         import cairo
@@ -454,33 +479,40 @@ if GRAPH_ENABLED:
         _logger.warn("pycha is not available; graphs cannot be rendered: " + str(e))
     else:
         config.callbacks.webAddMethod(
-         GRAPH_RENDER_PATH, lambda *args, **kwargs: _stats.graph(GRAPH_RENDER_DIMENSIONS),
+         CONFIG['GRAPH_RENDER_PATH'], lambda *args, **kwargs: _stats.graph(CONFIG['GRAPH_RENDER_DIMENSIONS']),
          hidden=True, display_mode=config.callbacks.WEB_METHOD_RAW
         )
-        image_tag = '<div style="text-align: center; padding: 2px;"><img src="%(path)s"/></div>' % {'path': GRAPH_RENDER_PATH,}
+        image_tag = '<div style="text-align: center; padding: 2px;"><img src="%(path)s"/></div>' % {'path': CONFIG['GRAPH_RENDER_PATH'],}
         hook = lambda *args, **kwargs: image_tag
-        if GRAPH_DISPLAY:
+        if CONFIG['GRAPH_DISPLAY']:
             _logger.info("Registering graph as a dashboard element, with ordering=%(ordering)s" % {
-             'ordering': GRAPH_ORDERING,
+             'ordering': CONFIG['GRAPH_ORDERING'],
             })
-            config.callbacks.webAddDashboard(MODULE, GRAPH_NAME, hook, ordering=GRAPH_ORDERING)
+            config.callbacks.webAddDashboard(
+             CONFIG['MODULE'], CONFIG['GRAPH_NAME'], hook,
+             ordering=CONFIG['GRAPH_ORDERING']
+            )
         else:
             _logger.info("Registering graph at '%(path)s'" % {
-             'path': GRAPH_PATH,
+             'path': CONFIG['GRAPH_PATH'],
             })
             config.callbacks.webAddMethod(
-             GRAPH_PATH, hook,
-             hidden=(GRAPH_NAME is None), module=MODULE, name=GRAPH_NAME,
+             CONFIG['GRAPH_PATH'], hook,
+             hidden=(CONFIG['GRAPH_NAME'] is None),
+             module=CONFIG['MODULE'],
+             name=CONFIG['GRAPH_NAME'],
              display_mode=config.callbacks.WEB_METHOD_TEMPLATE
             )
             
-if GRAPH_CSV_PATH:
+if CONFIG['GRAPH_CSV_PATH']:
     _logger.info("Registering graph CSV-provider at '%(path)s'" % {
-     'path': GRAPH_CSV_PATH,
+     'path': CONFIG['GRAPH_CSV_PATH'],
     })
     config.callbacks.webAddMethod(
-     GRAPH_CSV_PATH, lambda *args, **kwargs: _stats.graph_csv(),
-     hidden=(GRAPH_CSV_NAME is None), module=MODULE, name=GRAPH_CSV_NAME,
+     CONFIG['GRAPH_CSV_PATH'], lambda *args, **kwargs: _stats.graph_csv(),
+     hidden=(CONFIG['GRAPH_CSV_NAME'] is None),
+     module=CONFIG['MODULE'],
+     name=CONFIG['GRAPH_CSV_NAME'],
      display_mode=config.callbacks.WEB_METHOD_RAW
     )
     
