@@ -26,7 +26,7 @@ module itself, if you plan to share, it is convenient for users to define
 values in ``conf.py``.
 
 To make use of this facility, all you need to do is instruct your users to add
-lines like the following::
+lines like the following in :ref:`scripting-init`::
 
     extensions.your_module.REFRESH_INTERVAL = 5
     extensions.your_module.SOME_DICT = {
@@ -39,6 +39,12 @@ are set, by encouraging uniform indentation::
 
     with extensions.your_module as x:
         x.TIMEOUT = 0.25
+
+If, however, you are working with a module for which loading in
+:ref:`scripting-init` is too late, the convention to avoid conflicting with
+future *staticDHCPd* built-in variables is to use ``X_YOURMODULE_VARIABLE``::
+    
+    X_HTTPDB_URI = 'http://example.org/dhcp'
 
 Accessing configuration data
 ++++++++++++++++++++++++++++
@@ -69,6 +75,16 @@ like dictionaries compiled using these methods::
 Of course, if keeping a dictionary or the namespace around is how you want to
 access information, that's perfectly valid and the structures are pretty
 efficient by themselves.
+
+In the early-bind case, the following will work, and you may streamline the code
+as you see fit::
+    
+    import staticdhcpdlib.config
+    if hasattr(staticdhcpdlib.config, 'X_HTTPDB_URI'):
+        URI = staticdhcpdlib.config.X_HTTPDB_URI
+    else:
+        URI = 'http://default/value'
+        
 
 Developing your own module
 --------------------------
