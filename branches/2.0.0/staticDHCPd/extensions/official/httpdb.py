@@ -79,7 +79,6 @@ import json
 import logging
 import urllib2
 
-from staticdhcpdlib import config
 from staticdhcpdlib.databases.generic import (Definition, Database, CachingDatabase)
 
 _logger = logging.getLogger("extension.httpdb")
@@ -88,6 +87,8 @@ _logger = logging.getLogger("extension.httpdb")
 #site, all you should need to do is edit this section.
 class _HTTPLogic(object):
     def __init__(self):
+        from staticdhcpdlib import config
+        
         self._HEADERS = hasattr(config, 'X_HTTPDB_HEADERS') and config.X_HTTPDB_HEADERS or {}
         if hasattr(config, 'X_HTTPDB_POST'):
             self._POST = config.X_HTTPDB_POST
