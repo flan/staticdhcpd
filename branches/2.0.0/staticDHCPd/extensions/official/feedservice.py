@@ -23,7 +23,7 @@ Like staticDHCPd, this module under the GNU General Public License v3
 (C) Neil Tallim, 2014 <flan@uguu.ca>
 """
 from staticdhcpdlib import config
-_config = config.extensions.feedservice
+_config = config.conf.extensions.feedservice
 _CONFIG = _config.extension_config_merge(defaults={
     #The address at which your server can be reached
     #Defaults to the given web-address, if not '0.0.0.0'; 'localhost' otherwise

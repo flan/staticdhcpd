@@ -16,7 +16,7 @@ Like staticDHCPd, this module under the GNU General Public License v3
 (C) Neil Tallim, 2014 <flan@uguu.ca>
 """
 from staticdhcpdlib import config
-_config = config.extensions.statistics
+_config = config.conf.extensions.statistics
 _CONFIG = _config.extension_config_merge(defaults={
     #The name of the module to which dashboard elements belong
     'MODULE': 'statistics',
