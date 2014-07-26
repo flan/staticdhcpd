@@ -302,9 +302,6 @@ if __name__ == '__main__':
         os.setregid(staticdhcpdlib.config.GID, staticdhcpdlib.config.GID)
         os.setreuid(staticdhcpdlib.config.UID, staticdhcpdlib.config.UID)
         
-        #Run any custom configuration code
-        staticdhcpdlib.config.init()
-        
         #By this point, all extensions have had an opportunity to alias things
         #and configure themselves, so try to reclaim memory
         del staticdhcpdlib.config.conf.extensions
