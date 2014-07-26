@@ -89,12 +89,12 @@ class _HTTPLogic(object):
     def __init__(self):
         from staticdhcpdlib import config
         
-        self._HEADERS = hasattr(config, 'X_HTTPDB_HEADERS') and config.X_HTTPDB_HEADERS or {}
-        if hasattr(config, 'X_HTTPDB_POST'):
-            self._POST = config.X_HTTPDB_POST
-        else:
-            self._POST = True
-        self._URI = config.X_HTTPDB_URI
+        try:
+            self._uri = config.X_HTTPDB_URI
+        except AttributeError:
+            raise AttributeError("X_HTTPDB_URI must be specified in conf.py")
+        self._headers = getattr(config, 'X_HTTPDB_HEADERS', {})
+        self._post = getattr(config, 'X_HTTPDB_POST', True)
         
     def _lookupMAC(self, mac):
         """
@@ -104,10 +104,10 @@ class _HTTPLogic(object):
         global _parse_server_response
         
         #If you need to generate per-request headers, add them here
-        headers = self._HEADERS.copy()
+        headers = self._headers.copy()
         
         #You can usually ignore this if-block, though you could strip out whichever method you don't use
-        if self._POST:
+        if self._post:
             data = json.dumps({
              'mac': str(mac),
             })
@@ -118,33 +118,33 @@ class _HTTPLogic(object):
             })
             
             request = urllib2.Request(
-             self._URI, data=data,
+             self._uri, data=data,
              headers=headers,
             )
         else:
             request = urllib2.Request(
              "%(uri)s?mac=%(mac)s" % {
-              'uri': self._URI,
+              'uri': self._uri,
               'mac': str(mac).replace(':', '%3A'),
              },
              headers=headers,
             )
             
         _logger.debug("Sending request to '%(uri)s' for '%(mac)s'..." % {
-         'uri': self._URI,
+         'uri': self._uri,
          'mac': str(mac),
         })
         try:
             response = urllib2.urlopen(request)
             _logger.debug("MAC response received from '%(uri)s' for '%(mac)s'" % {
-             'uri': self._URI,
+             'uri': self._uri,
              'mac': str(mac),
             })
             result = json.loads(response.read())
             
             if not result: #The server sent back 'null' or an empty object
                 _logger.debug("Unknown MAC response from '%(uri)s' for '%(mac)s'" % {
-                 'uri': self._URI,
+                 'uri': self._uri,
                  'mac': str(mac),
                 })
                 return None
@@ -152,13 +152,13 @@ class _HTTPLogic(object):
             definition = _parse_server_response(result)
             
             _logger.debug("Known MAC response from '%(uri)s' for '%(mac)s'" % {
-             'uri': self._URI,
+             'uri': self._uri,
              'mac': str(mac),
             })
             return definition
         except Exception, e:
             _logger.error("Failed to lookup '%(mac)s' on '%(uri)s': %(error)s" % {
-             'uri': self._URI,
+             'uri': self._uri,
              'mac': str(mac),
              'error': str(e),
             })
