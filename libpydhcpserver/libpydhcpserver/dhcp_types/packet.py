@@ -990,8 +990,11 @@ class DHCPPacket(object):
          'mac': self.getHardwareAddress(),
         })
         
-        output.append("\tflags: broadcast=%(broadcast)i" % {
-         'broadcast': self.getFlag(FLAGBIT_BROADCAST),
+        flags = []
+        if self.getFlag(FLAGBIT_BROADCAST):
+            flags.append('broadcast')
+        output.append("\tflags: %(flags)s" % {
+         'flags': ', '.join(flags),
         })
         
         for field in (
