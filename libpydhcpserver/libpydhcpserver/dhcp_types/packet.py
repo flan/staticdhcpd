@@ -1002,9 +1002,12 @@ class DHCPPacket(object):
         ):
             (start, length) = DHCP_FIELDS[field]
             data = self._header[start:start + length]
-            output.append("\t%(field)s: %(result)r" % {
+            data = _FORMAT_CONVERSION_DESERIAL[DHCP_FIELDS_TYPES[field]](data)
+            if field in (FIELD_SNAME, FIELD_FILE):
+                data = data.rstrip('\x00')
+            output.append("\t%(field)s: %(data)r" % {
              'field': field,
-             'result': _FORMAT_CONVERSION_DESERIAL[DHCP_FIELDS_TYPES[field]](data),
+             'data': data,
             })
             
         output.append('')
