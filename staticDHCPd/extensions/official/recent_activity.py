@@ -19,7 +19,7 @@ Like staticDHCPd, this module under the GNU General Public License v3
 Inspiration derived from a discussion with John Stowers
 """
 from staticdhcpdlib import config
-_config = config.extensions.recent_activity
+_config = config.conf.extensions.recent_activity
 _CONFIG = _config.extension_config_merge(defaults={
     #The number of events to track; if None, no limit will be applied
     'MAX_EVENTS': 10,
