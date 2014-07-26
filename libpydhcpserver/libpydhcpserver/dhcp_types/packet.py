@@ -1018,9 +1018,9 @@ class DHCPPacket(object):
             if option_id == 53: #dhcp_message_type
                 result = self.getDHCPMessageTypeName()
             elif option_id == 55: #parameter_request_list
-                result = ', '.join("%(name)s (%(id)i)" % {
-                 'name': DHCP_OPTIONS_REVERSE[id],
+                result = ', '.join("%(id)03i:%(name)s" % {
                  'id': id,
+                 'name': DHCP_OPTIONS_REVERSE[id],
                 } for id in self.getSelectedOptions())
             else:
                 represent = True
