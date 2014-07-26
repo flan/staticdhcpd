@@ -82,33 +82,31 @@ import urllib2
 from staticdhcpdlib import config
 from staticdhcpdlib.databases.generic import (Definition, Database, CachingDatabase)
 
-_HEADERS = hasattr(config, 'X_HTTPDB_HEADERS') and config.X_HTTPDB_HEADERS or {}
-if hasattr(config, 'X_HTTPDB_POST'):
-    _POST = config.X_HTTPDB_POST
-else:
-    _POST = True
-_URI = config.X_HTTPDB_URI
-
 _logger = logging.getLogger("extension.httpdb")
 
 #This class implements your lookup method; to customise this module for your
 #site, all you should need to do is edit this section.
 class _HTTPLogic(object):
+    def __init__(self):
+        self._HEADERS = hasattr(config, 'X_HTTPDB_HEADERS') and config.X_HTTPDB_HEADERS or {}
+        if hasattr(config, 'X_HTTPDB_POST'):
+            self._POST = config.X_HTTPDB_POST
+        else:
+            self._POST = True
+        self._URI = config.X_HTTPDB_URI
+        
     def _lookupMAC(self, mac):
         """
         Performs the actual lookup operation; this is the first thing you should
         study when customising for your site.
         """
-        global _HEADERS
-        global _POST
-        global _URI
         global _parse_server_response
         
         #If you need to generate per-request headers, add them here
-        headers = _HEADERS.copy()
+        headers = self._HEADERS.copy()
         
         #You can usually ignore this if-block, though you could strip out whichever method you don't use
-        if _POST:
+        if self._POST:
             data = json.dumps({
              'mac': str(mac),
             })
@@ -119,33 +117,33 @@ class _HTTPLogic(object):
             })
             
             request = urllib2.Request(
-             _URI, data=data,
+             self._URI, data=data,
              headers=headers,
             )
         else:
             request = urllib2.Request(
              "%(uri)s?mac=%(mac)s" % {
-              'uri': _URI,
+              'uri': self._URI,
               'mac': str(mac).replace(':', '%3A'),
              },
              headers=headers,
             )
             
         _logger.debug("Sending request to '%(uri)s' for '%(mac)s'..." % {
-         'uri': _URI,
+         'uri': self._URI,
          'mac': str(mac),
         })
         try:
             response = urllib2.urlopen(request)
             _logger.debug("MAC response received from '%(uri)s' for '%(mac)s'" % {
-             'uri': _URI,
+             'uri': self._URI,
              'mac': str(mac),
             })
             result = json.loads(response.read())
             
             if not result: #The server sent back 'null' or an empty object
                 _logger.debug("Unknown MAC response from '%(uri)s' for '%(mac)s'" % {
-                 'uri': _URI,
+                 'uri': self._URI,
                  'mac': str(mac),
                 })
                 return None
@@ -153,13 +151,13 @@ class _HTTPLogic(object):
             definition = _parse_server_response(result)
             
             _logger.debug("Known MAC response from '%(uri)s' for '%(mac)s'" % {
-             'uri': _URI,
+             'uri': self._URI,
              'mac': str(mac),
             })
             return definition
         except Exception, e:
             _logger.error("Failed to lookup '%(mac)s' on '%(uri)s': %(error)s" % {
-             'uri': _URI,
+             'uri': self._URI,
              'mac': str(mac),
              'error': str(e),
             })
