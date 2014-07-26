@@ -52,7 +52,7 @@ Within your module, you then have a few ways of accessing this data. They'll
 basically all start with importing the ``extensions`` namespace::
 
     import staticdhcpdlib.config
-    _config = staticdhcpdlib.config.extensions.your_module
+    _config = staticdhcpdlib.config.conf.extensions.your_module
 
 You can then extract data from ``_config`` as needed; you'll probably want to
 use one of the parsing methods it exposes to create a dictionary to avoid
