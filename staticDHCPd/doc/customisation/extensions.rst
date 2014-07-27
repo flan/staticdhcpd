@@ -80,11 +80,7 @@ In the early-bind case, the following will work, and you may streamline the code
 as you see fit::
     
     import staticdhcpdlib.config
-    if hasattr(staticdhcpdlib.config, 'X_HTTPDB_URI'):
-        URI = staticdhcpdlib.config.X_HTTPDB_URI
-    else:
-        URI = 'http://default/value'
-        
+    URI = getattr(staticdhcpdlib.config, 'X_HTTPDB_URI', 'http://default/value')
 
 Developing your own module
 --------------------------
