@@ -46,8 +46,8 @@ if __name__ == '__main__' and len(sys.argv) > 1:
     (parser_options, args) = parser.parse_args()
     if parser_options.version:
         print(
-         "staticDHCPd v" + staticdhcpdlib.VERSION + " - " + staticdhcpdlib.URL +
-         " | libpydhcpserver v" + libpydhcpserver.VERSION + " - " + libpydhcpserver.URL
+            "staticDHCPd v" + staticdhcpdlib.VERSION + " - " + staticdhcpdlib.URL +
+            " | libpydhcpserver v" + libpydhcpserver.VERSION + " - " + libpydhcpserver.URL
         )
         sys.exit(0)
     if parser_options.config:
@@ -114,11 +114,11 @@ def _setupLogging():
     
     if staticdhcpdlib.config.DEBUG:
         formatter = logging.Formatter(
-         "%(asctime)s : %(levelname)s : %(name)s:%(lineno)d[%(threadName)s] : %(message)s"
+            "%(asctime)s : %(levelname)s : %(name)s:%(lineno)d[%(threadName)s] : %(message)s"
         )
     else:
         formatter = logging.Formatter(
-         "%(asctime)s : %(levelname)s : %(message)s"
+            "%(asctime)s : %(levelname)s : %(message)s"
         )
         
     if not staticdhcpdlib.config.DAEMON: #Daemon-style execution disables console-based logging
@@ -152,15 +152,14 @@ def _setupLogging():
         
     if staticdhcpdlib.config.EMAIL_ENABLED: #Add an SMTP handler
         smtp_handler = logging.handlers.SMTPHandler(
-         (staticdhcpdlib.config.EMAIL_SERVER, staticdhcpdlib.config.EMAIL_PORT),
-         staticdhcpdlib.config.EMAIL_SOURCE,
-         staticdhcpdlib.config.EMAIL_DESTINATION,
-         staticdhcpdlib.config.EMAIL_SUBJECT,
-         credentials=(staticdhcpdlib.config.EMAIL_USER and (staticdhcpdlib.config.EMAIL_USER, staticdhcpdlib.config.EMAIL_PASSWORD) or None),
-         timeout=staticdhcpdlib.config.EMAIL_TIMEOUT
+            (staticdhcpdlib.config.EMAIL_SERVER, staticdhcpdlib.config.EMAIL_PORT),
+            staticdhcpdlib.config.EMAIL_SOURCE,
+            staticdhcpdlib.config.EMAIL_DESTINATION,
+            staticdhcpdlib.config.EMAIL_SUBJECT,
+            credentials=(staticdhcpdlib.config.EMAIL_USER and (staticdhcpdlib.config.EMAIL_USER, staticdhcpdlib.config.EMAIL_PASSWORD) or None)
         )
         if logging.root.handlers:
-            logger.info("Configured SMTP-based logging for " + staticdhcpdlib.config.EMAIL_DESTINATION + " via " + staticdhcpdlib.config.EMAIL_SERVER + ":" + str(staticdhcpdlib.config.EMAIL_PORT))
+            _logger.info("Configured SMTP-based logging for " + staticdhcpdlib.config.EMAIL_DESTINATION + " via " + staticdhcpdlib.config.EMAIL_SERVER + ":" + str(staticdhcpdlib.config.EMAIL_PORT))
         smtp_handler.setLevel(logging.CRITICAL)
         smtp_handler.setFormatter(formatter)
         logging.root.addHandler(smtp_handler)
@@ -192,10 +191,10 @@ def _initialise():
         
         if staticdhcpdlib.config.WEB_REINITIALISE_ENABLED:
             staticdhcpdlib.web.registerMethodCallback(
-             '/ca/uguu/puukusoft/staticDHCPd/reinitialise', staticdhcpdlib.web.methods.reinitialise,
-             hidden=staticdhcpdlib.config.WEB_REINITIALISE_HIDDEN, module='core', name='reinitialise',
-             secure=staticdhcpdlib.config.WEB_REINITIALISE_SECURE, confirm=staticdhcpdlib.config.WEB_REINITIALISE_CONFIRM,
-             display_mode=staticdhcpdlib.web.WEB_METHOD_DASHBOARD
+                '/ca/uguu/puukusoft/staticDHCPd/reinitialise', staticdhcpdlib.web.methods.reinitialise,
+                hidden=staticdhcpdlib.config.WEB_REINITIALISE_HIDDEN, module='core', name='reinitialise',
+                secure=staticdhcpdlib.config.WEB_REINITIALISE_SECURE, confirm=staticdhcpdlib.config.WEB_REINITIALISE_CONFIRM,
+                display_mode=staticdhcpdlib.web.WEB_METHOD_DASHBOARD
             )
             
         if staticdhcpdlib.config.WEB_HEADER_TITLE:
