@@ -373,7 +373,8 @@ class _NetworkLink(object):
                 or packet.getFlag(FLAGBIT_BROADCAST)): #Broadcast bit set; respond in kind 
                 ip = _IP_BROADCAST
             else: #The client wants unicast and this host can handle it
-                ip = packet.extractIPOrNone(FIELD_YIADDR)
+                #Try to get the client's address first, falling back to broadcast if missing
+                ip = packet.extractIPOrNone(FIELD_YIADDR) or _IP_BROADCAST
             responder = self._responder_broadcast
         else: #Unicast source
             ip = address.ip

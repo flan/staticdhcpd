@@ -747,8 +747,9 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
         
         :param :class:`libpydhcpserver.dhcp_types.packet.DHCPPacket` packet: The
             packet to be transmitted.
-        :param :class:`libpydhcpserver.dhcp.Address`: The address from which the
-                                                      packet was received.
+        :param :class:`libpydhcpserver.dhcp.Address` address: The address from
+                                                              which the packet
+                                                              was received.
         :param bool pxe: True if the packet was received via the PXE port.
         :param :class:`libpydhcpserver.dhcp_types.mac.MAC` mac: The MAC of the
             client for which this packet is destined.
