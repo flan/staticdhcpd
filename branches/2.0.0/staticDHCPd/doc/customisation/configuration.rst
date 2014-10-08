@@ -640,10 +640,6 @@ E-mail
 |||||||||||||||||||||||||||||||||||||
 * The SMTP port your server uses
 
-**EMAIL_TIMEOUT** : decimal : default=4.0
-|||||||||||||||||||||||||||||||||||||||||
-* The number of seconds to wait for e-mail to be accepted before timing out
-
 **EMAIL_SOURCE** : text : *MUST BE SPECIFIED if using e-mail*
 |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 * The address to put in the `FROM` field
