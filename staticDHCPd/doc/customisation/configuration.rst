@@ -299,7 +299,7 @@ Database:PostgreSQL
 * If **POSTGRESQL_HOST** is ``None``, a local socket will be used and this value
   will be ignored
 
-**POSTGRESQL_SSLMODE** : text : default='disabled'
+**POSTGRESQL_SSLMODE** : text : default='disable'
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 * The `SSL mode <http://www.postgresql.org/docs/9.0/static/libpq-ssl.html#LIBPQ-SSL-SSLMODE-STATEMENTS>`_
   to use
