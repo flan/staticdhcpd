@@ -1023,7 +1023,7 @@ class DHCPPacket(object):
             elif option_id == 55: #parameter_request_list
                 result = ', '.join("%(id)03i:%(name)s" % {
                  'id': id,
-                 'name': DHCP_OPTIONS_REVERSE[id],
+                 'name': DHCP_OPTIONS_REVERSE.get(id, "unsupported"),
                 } for id in self.getSelectedOptions())
             else:
                 represent = True
