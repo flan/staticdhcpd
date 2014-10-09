@@ -212,7 +212,7 @@ if hasattr(conf, 'loadDHCPPacket'):
          lambda packet, method, mac, definition, relay_ip, pxe, original_packet:
             conf.loadDHCPPacket(
              packet, mac, definition.ip, relay_ip, definition.subnet, definition.serial,
-             (pxe.client_system, pxe.client_ndi, pxe.uuid_guid),
+             pxe and (pxe.client_system, pxe.client_ndi, pxe.uuid_guid),
              (
               original_packet.getOption('vendor_specific_information'),
               original_packet.getOption('vendor_class_identifier', convert=True),
