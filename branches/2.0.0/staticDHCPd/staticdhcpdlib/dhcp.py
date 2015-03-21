@@ -163,7 +163,7 @@ class _PacketWrapper(object):
                 _logger.critical("Unable to handle %(type)s from  %(mac)s:\n%(error)s" % {
                  'type': self._packet_type,
                  'mac': self.mac,
-                 'error': traceback.format_exc(),
+                 'error': "\n".join(traceback.format_exception(type, value, tb)),
                 })
                 return True
         finally:
