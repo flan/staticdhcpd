@@ -218,7 +218,7 @@ DHCP_OPTIONS_TYPES = {
  74: TYPE_IPV4_PLUS,
  75: TYPE_IPV4_PLUS,
  76: TYPE_IPV4_PLUS,
- 77: "RFC3004_77", #Not implemented; not necessary for static model
+ 77: TYPE_STRING,
  78: "RFC2610_78", #Implemented
  79: "RFC2610_79", #Implemented
  80: TYPE_NONE,
@@ -284,7 +284,7 @@ DHCP_OPTIONS_TYPES = {
  163: "Unassigned", 164: "Unassigned", 165: "Unassigned", 166: "Unassigned",
  167: "Unassigned", 168: "Unassigned", 169: "Unassigned", 170: "Unassigned",
  171: "Unassigned", 172: "Unassigned", 173: "Unassigned", 174: "Unassigned",
- 175: "Unassigned", #Etherboot
+ 175: TYPE_STRING,
  176: "Unassigned", #IP Telephone
  177: "Unassigned", #Etherboot
  178: "Unassigned", 179: "Unassigned", 180: "Unassigned", 181: "Unassigned",
@@ -459,6 +459,8 @@ DHCP_OPTIONS = {
  'capwap_ac_v4': 138,
  'ipv4_mos': 139,
  'fqdn_mos': 140,
+ #hole
+ 'ipxe_test': 175,
  #hole
  'pxelinux_magic': 208,
  'configuration_file': 209,
