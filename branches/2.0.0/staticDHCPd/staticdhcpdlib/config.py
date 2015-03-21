@@ -256,6 +256,7 @@ conf.rfc2610_78 = rfc.rfc2610_78
 conf.rfc2610_79 = rfc.rfc2610_79
 conf.rfc3361_120 = rfc.rfc3361_120
 conf.rfc3397_119 = rfc.rfc3397_119
+conf.rfc3442_121 = rfc.rfc3442_121
 conf.rfc3925_124 = rfc.rfc3925_124
 conf.rfc3925_125 = rfc.rfc3925_125
 conf.rfc4174_83 = rfc.rfc4174_83

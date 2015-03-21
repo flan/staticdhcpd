@@ -93,6 +93,9 @@ byte-sequences, handling all logic internally.
 .. autoclass:: rfc3397_119
     :show-inheritance:
     
+.. autoclass:: rfc3442_121
+    :show-inheritance:
+    
 .. autoclass:: rfc3925_124
     :show-inheritance:
     

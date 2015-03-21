@@ -194,6 +194,36 @@ class rfc3361_120(RFC):
 
 class rfc3397_119(rfc1035_plus): pass
 
+class rfc3442_121(RFC):
+    def __init__(self, classless_addresses):
+        """
+        Accepts a sequence of CIDR entries and routers to produce classless
+        static route byte-blocks.
+        
+        You'll probably want to put (("0.0.0.0", 0), packet.getOption("router"))
+        at the start to ensure the default gateway is set as expected.
+        
+        :param classless_addresses: ((network IPv4, CIDR-mask), router IPv4)
+            elements, like (("169.254.0.0", 16), "0.0.0.0").
+        :except ValueError: An illegal address or mask was encountered.
+        """
+        self._value = []
+        for ((ip, mask), router) in classless_addresses:
+            ip = IPv4(ip)
+            router = IPv4(router)
+            if not 0 <= mask <= 32:
+                raise ValueError("CIDR mask %(mask)i is not between 0 and 32" % {
+                    'mask': mask,
+                })
+            width = mask / 8
+            if mask % 8:
+                width += 1
+                
+            self._value.append(mask)
+            if width:
+                self._value.extend(tuple(ip)[:width])
+            self._value.extend(router)
+            
 class rfc3925_124(RFC):
     def __init__(self, data):
         """
