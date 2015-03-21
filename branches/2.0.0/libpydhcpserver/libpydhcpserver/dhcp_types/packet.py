@@ -661,7 +661,7 @@ class DHCPPacket(object):
                              'value-length': length,
                              'value': value,
                             })
-                    elif not fixed_length:
+                    elif minimum_length and not fixed_length:
                         raise ValueError("Expected a value of length %(length)i, not %(value-length)i: %(value)r" % {
                          'length': fixed_length,
                          'value-length': length,
