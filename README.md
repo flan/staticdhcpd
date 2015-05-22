@@ -4,7 +4,7 @@ staticDHCPd is an all-Python, [RFC 2131](http://www.ietf.org/rfc/rfc2131.txt)-co
 
 **staticDHCPd 2.0.0 is finally in rc1 status!**
 
-Anything in the 2.0.0 branch from [r774](https://code.google.com/p/staticdhcpd/source/detail?r=774)+ now needs to be tested; the running checklist follows (if you test a thing, send e-mail to Neil Tallim at the address in any source file or comment on the [announcement post](http://uguu.ca/514/staticdhcpd-2-0-0-rc1/)):
+The 2.0.0 branch now needs to be tested; the running checklist follows (if you test a thing, send e-mail to Neil Tallim at the address in any source file or comment on the [announcement post](http://uguu.ca/514/staticdhcpd-2-0-0-rc1/)):
   * staticDHCPd
     * Long-term soak-test
       * Stable memory usage **settles after logs finish growing**
@@ -64,7 +64,7 @@ On the other hand, it's the wrong choice in the following cases:
     * staticDHCPd will let you take your config file and custom code from version 1.0 and drop it into 2.0 with no changes required, even though the codebase running it is entirely different
   * The concept of a feature-rich server running with a 4MB footprint scares you
 
-If you think it might be a good match for your needs, take a look at its [five-minute quick-start guide](http://code.google.com/p/staticdhcpd/source/browse/branches/logging-web/staticDHCPd/doc/README?r=727#26).
+If you think it might be a good match for your needs, take a look at its [five-minute quick-start guide](https://github.com/flan/staticdhcpd/blob/2.0.x/staticDHCPd/README).
 
 
 ---
@@ -101,7 +101,7 @@ staticDHCPd: http://static.uguu.ca/projects/staticDHCPd/doc/
 
 # Making it go #
 ## Downloading ##
-Stable releases of staticDHCPd are available from the [downloads page](https://code.google.com/p/staticdhcpd/downloads/list); you may also be interested in its [changelog](changelog.md).
+Stable releases of staticDHCPd are available from the [releases page](https://github.com/flan/staticdhcpd/releases).
 
 Debian packages coming shortly after 2.0.0 is released.
 
