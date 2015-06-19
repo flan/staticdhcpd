@@ -288,5 +288,5 @@ def retrieveVisibleMethodCallbacks():
                   lexically sorted order.
     """
     with _web_lock:
-        return tuple(sorted((element, path) for (path, element) in _web_methods.items() if not element.hidden))
+        return tuple(sorted((element, path) for (path, element) in _web_methods.iteritems() if not element.hidden))
         
