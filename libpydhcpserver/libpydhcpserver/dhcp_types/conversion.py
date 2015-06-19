@@ -164,7 +164,7 @@ def strToList(s):
     :param str s: The string to be converted.
     :return list: A sequence of bytes.
     """
-    return map(ord, s.encode('utf-8'))
+    return [ord(c) for c in s.encode('utf-8')]
     
 def strToPaddedList(s, l):
     """
