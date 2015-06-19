@@ -375,7 +375,7 @@ class Statistics(object):
                     if not gram:
                         continue
                         
-                    for (k, v) in gram.dhcp_packets.items():
+                    for (k, v) in gram.dhcp_packets.iteritems():
                         packets[k] += v
                     packets_discarded += sum(gram.dhcp_packets_discarded.values())
                     pxe += gram.pxe_packets
