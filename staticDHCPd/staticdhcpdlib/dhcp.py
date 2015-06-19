@@ -677,7 +677,7 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
                      wrapper.mac, wrapper.ciaddr
                     )
                     wrapper.markAddressed()
-            else:
+            elif definition or config.AUTHORITATIVE:
                 if renew:
                     wrapper.packet.transformToDHCPNakPacket()
                     self._emitDHCPPacket(
