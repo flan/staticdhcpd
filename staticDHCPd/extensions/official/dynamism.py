@@ -168,8 +168,8 @@ class DynamicPool(object):
         self._gateway = gateway and IPv4(gateway) or None
         self._broadcast_address = broadcast_address and IPv4(broadcast_address) or None
         self._domain_name = domain_name
-        self._domain_name_servers = domain_name_servers and map(IPv4, domain_name_servers) or None
-        self._ntp_servers = ntp_servers and map(IPv4, ntp_servers) or None
+        self._domain_name_servers = domain_name_servers and [IPv4(i) for i in domain_name_servers] or None
+        self._ntp_servers = ntp_servers and [IPv4(i) for i in ntp_servers] or None
         self._discourage_renewals = discourage_renewals
         
         self._logger = _logger.getChild(self._hostname_prefix)
