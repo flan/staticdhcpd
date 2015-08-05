@@ -85,7 +85,7 @@ except ImportError:
 else:
     if system == 'FreeBSD':
         l2sock = scapy.arch.conf.L2socket
-    else
+    else:
         l2sock = scapy.arch.conf.L2Socket
     if not l2sock:
         _logger.warn("scapy was unable to construct layer-2 socketing rules; if using a BSD-based system (including OS X), please follow its documentation for installing pcap bindings; addresses added to pools cannot be automatically ARPed")
