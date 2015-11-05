@@ -88,7 +88,7 @@ class Definition(object):
                                     format, including comma-delimited string.
         :param ntp_servers: The IP addresses to advertise, in any main format,
                             including comma-delimited string.
-        :param extra: An objectcontaining any metadata from the
+        :param extra: An object containing any metadata from the
                                  database.
         """
         #Required values
