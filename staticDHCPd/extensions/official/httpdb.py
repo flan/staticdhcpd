@@ -231,6 +231,7 @@ class _HTTPLogic(object):
         else:
             #packet_or_mac is a packet
             results = self._lookupMAC(mac)
+            _logger.debug(isinstance(results, (list, tuple)))
             if not (isinstance(results, (list, tuple)) or
                     self._use_local_relays):
                 return None
@@ -263,11 +264,17 @@ class HTTPDatabase(Database, _HTTPLogic):
 
 class HTTPCachingDatabase(CachingDatabase, _HTTPLogic):
     def __init__(self):
+        from staticdhcpdlib import config
         if hasattr(config, 'X_HTTPDB_CONCURRENCY_LIMIT'):
             CachingDatabase.__init__(self, concurrency_limit=config.X_HTTPDB_CONCURRENCY_LIMIT)
         else:
             CachingDatabase.__init__(self)
         _HTTPLogic.__init__(self)
+
+    def lookupMAC(self, packet_or_mac, packet_type=None, mac=None, ip=None,
+                  giaddr=None, pxe_options=None):
+        return self._retrieveDefinition(packet_or_mac, packet_type, mac, ip,
+                                        giaddr, pxe_options)
 
 http_database = None
 def _handle_unknown_mac(packet, packet_type, mac, ip,

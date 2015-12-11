@@ -44,7 +44,7 @@ if 'STATICDHCPD_CONF_PATH' in os.environ:
     conf_search_paths = [os.path.dirname(os.environ['STATICDHCPD_CONF_PATH'])]
 else:
     conf_search_paths = [os.path.join(os.getcwd(), 'conf'), '/etc/staticDHCPd']
-    
+
 for conf_path in conf_search_paths:
     extensions_path = os.path.join(conf_path, 'extensions')
     sys.path.append(conf_path)
@@ -60,7 +60,7 @@ else:
     raise ImportError("Unable to find a suitable copy of conf.py; searched: %(paths)r" % {
      'paths': conf_search_paths,
     })
-    
+
 del conf_search_paths
 del conf_path
 del os
@@ -98,6 +98,11 @@ _defaults.update({
  'PERSISTENT_CACHE': None,
  'CACHE_ON_DISK': False,
 
+ 'MEMCACHED_CACHE': False,
+ 'MEMCACHED_HOST': None,
+ 'MEMCACHED_PORT': 11211,
+ 'MEMCACHED_AGE_TIME': 300,
+
  'CASE_INSENSITIVE_MACS': False,
 
  'EXTRA_MAPS': None,
@@ -111,7 +116,7 @@ _defaults.update({
  'POSTGRESQL_MAXIMUM_CONNECTIONS': 4,
 
  'ORACLE_MAXIMUM_CONNECTIONS': 4,
- 
+
  'MYSQL_HOST': None,
  'MYSQL_PORT': 3306,
  'MYSQL_MAXIMUM_CONNECTIONS': 4,
@@ -284,10 +289,10 @@ class callbacks(object):
     systemRemoveReinitHandler = staticmethod(system.unregisterReinitialisationCallback)
     systemAddTickHandler = staticmethod(system.registerTickCallback)
     systemRemoveTickHandler = system.unregisterTickCallback
-    
+
     statsAddHandler = staticmethod(statistics.registerStatsCallback)
     statsRemoveHandler = statistics.unregisterStatsCallback
-    
+
     WEB_METHOD_DASHBOARD = web.WEB_METHOD_DASHBOARD
     WEB_METHOD_TEMPLATE = web.WEB_METHOD_TEMPLATE
     WEB_METHOD_RAW = web.WEB_METHOD_RAW
@@ -307,24 +312,24 @@ class _Namespace(object):
     A data-namespace, used to centralise extensions-configuration values.
     """
     __final = False #: If True, then no new layers will be created
-    
+
     def __init__(self, final=False):
         """
         :param bool final: ``False`` if new namespaces may be automatically
                            created beneath this one.
         """
         self.__final = final
-        
+
     def __enter__(self):
         return self
-        
+
     def __exit__(self, type, value, tb):
         return False
-        
+
     def __getattr__(self, name):
         if name.startswith('__'):
             return object.__getattr__(self, name)
-            
+
         if self.__final:
             raise AttributeError("Namespace does not contain '%(name)s'" % {
                 'name': name,
@@ -332,43 +337,43 @@ class _Namespace(object):
         namespace = self.__class__(final=True)
         object.__setattr__(self, name, namespace)
         return namespace
-        
+
     def extension_config_iter(self):
         """
         Produces an iterable object that enumerates all interesting elements in
         the namespace.
-        
+
         :return: An iterable object that generates ``(key, value)`` tuples.
         """
         for key in [k for k in dir(self) if not k.startswith('_') and not k.startswith('extension_config_')]: #Copy everything that looks useful
             yield (key, getattr(self, key))
-            
+
     def extension_config_dict(self):
         """
         Produces a dictionary containing all interesting elements in the
         namespace.
-        
+
         :return dict: User-set elements in the namespace.
         """
         return dict(self.extension_config_iter())
-        
+
     def extension_config_merge(self, defaults, required):
         """
         Creates a namespace model from `defaults` before overlaying anything
         defined in this namespace instance, then ensuring that all required
         attributes exist.
-        
+
         Normal usage will be something like the following::
-        
+
             CONFIG = this_object.extension_config_merge(defaults={
                 'DEFAULT_THING': 5, #Your description of this field
             }, required=[
                 'REQUIRED_THING', #Your description (with typing) of what this field means
             ])
-            
+
         This is effectively self-documenting and it guarantees you'll have
         access to every attribute you want.
-        
+
         :param dict defaults: The default attributes for the namespace, if not
                               already present.
         :param collection required: A collection of required attribute names.
@@ -380,7 +385,7 @@ class _Namespace(object):
         """
         if not self.__final:
             raise ValueError("Unable to merge a non-final namespace")
-            
+
         namespace = defaults.copy()
         namespace.update(self.extension_config_iter())
         for key in required:
