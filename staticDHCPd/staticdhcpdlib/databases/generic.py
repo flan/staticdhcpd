@@ -221,9 +221,9 @@ class CachingDatabase(Database):
                 _logger.debug("Setting up memcached-cache")
                 address = '%(server)s:%(port)d' % {
                  'server': config.MEMCACHED_SERVER,
-                 'mac': config.MEMCACHED_PORT,
+                 'port': config.MEMCACHED_PORT,
                 }
-                self._cache = _caching.MemcachedCache('memory', address, config.MEMCACHED_AGE_TIME)
+                self._cache = _caching.MemcachedCache('memcached', address, config.MEMCACHED_AGE_TIME)
             else:
                 _logger.debug("Setting up memory-cache")
                 self._cache = _caching.MemoryCache('memory')

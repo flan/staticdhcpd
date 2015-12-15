@@ -25,10 +25,11 @@ ALLOW_DHCP_RELAYS = True
 #The IP of the interface to use for DHCP traffic
 DHCP_SERVER_IP = '10.244.36.61'
 
-DHCP_RESPONSE_INTERFACE = 'vboxnet0'
+DHCP_RESPONSE_INTERFACE = 'vboxnet1'
 
+USE_CACHE = True
 MEMCACHED_CACHE = True
-MEMCACHED_HOST = '127.0.0.1'
+MEMCACHED_SERVER = '127.0.0.1'
 
 #The database-engine to use
 #For details, see the configuration guide in the documentation.

@@ -24,7 +24,6 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 """
 import json
 import logging
-import memcache
 import threading
 
 from generic import (Database, Definition)
@@ -183,6 +182,7 @@ class MemcachedCache(_DatabaseCache):
             node in the chain; None if this is the end.
         """
         _DatabaseCache.__init__(self, name, chained_cache=chained_cache)
+        import memcache
 
         self.mc_client = memcache.Client([memcached_server])
         self.memcached_age_time = memcached_age_time
@@ -192,10 +192,11 @@ class MemcachedCache(_DatabaseCache):
         self.mc_client.flush_all()
 
     def _lookupMAC(self, mac):
-        data = self.mc_client.get(int(mac))
+        data = self.mc_client.get(str(mac))
         if data:
             (ip, hostname, extra, subnet_id) = data
-            details = self.mc_client[subnet_id]
+            subnet_str = "%s-%s" % subnet_id
+            details = self.mc_client.get(subnet_str)
             return Definition(
              ip=ip, lease_time=details[6], subnet=subnet_id[0], serial=subnet_id[1],
              hostname=hostname,
@@ -207,12 +208,13 @@ class MemcachedCache(_DatabaseCache):
 
     def _cacheMAC(self, mac, definition, chained):
         subnet_id = (definition.subnet, definition.serial)
-        self.mc_client.set(int(mac), (definition.ip, definition.hostname, definition.extra, subnet_id), self.memcached_age_time)
-        self.mc_client.set(subnet_id, (
+        subnet_str = "%s-%s" % subnet_id
+        self.mc_client.set(str(mac), (definition.ip, definition.hostname, definition.extra, subnet_id), self.memcached_age_time)
+        self.mc_client.set(subnet_str, (
          definition.gateways, definition.subnet_mask, definition.broadcast_address,
          definition.domain_name, definition.domain_name_servers, definition.ntp_servers,
          definition.lease_time
-        ), self.memcached_age_time)
+         ), self.memcached_age_time)
 
 class DiskCache(_DatabaseCache):
     _filepath = None #: The path to which the persistent file will be written

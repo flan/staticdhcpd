@@ -79,7 +79,9 @@ import json
 import logging
 import urllib2
 import netaddr
+import traceback
 
+from libpydhcpserver.dhcp_types.mac import MAC
 from staticdhcpdlib.databases.generic import (Definition, Database, CachingDatabase)
 
 _logger = logging.getLogger("extension.httpdb")
@@ -273,8 +275,24 @@ class HTTPCachingDatabase(CachingDatabase, _HTTPLogic):
 
     def lookupMAC(self, packet_or_mac, packet_type=None, mac=None, ip=None,
                   giaddr=None, pxe_options=None):
-        return self._retrieveDefinition(packet_or_mac, packet_type, mac, ip,
-                                        giaddr, pxe_options)
+        cache_mac = packet_or_mac if type(packet_or_mac) == MAC else mac
+
+        if self._cache and cache_mac:
+            try:
+                definition = self._cache.lookupMAC(cache_mac)
+            except Exception, e:
+                _logger.error("Cache lookup failed:\n" + traceback.format_exc())
+            else:
+                if definition:
+                    return definition
+        definition = self._retrieveDefinition(packet_or_mac, packet_type, mac, ip,
+                                              giaddr, pxe_options)
+        if definition and self._cache and cache_mac:
+            try:
+                self._cache.cacheMAC(cache_mac, definition)
+            except Exception, e:
+                _logger.error("Cache update failed:\n" + traceback.format_exc())
+        return definition
 
 http_database = None
 def _handle_unknown_mac(packet, packet_type, mac, ip,
