@@ -120,7 +120,7 @@ filterPacket()
                       instance of :class:`libpydhcpserver.dhcp_types.ipv4.IPv4`.
     :param relay_ip: The relay used by the client (may be ``None``), an
                      instance of :class:`libpydhcpserver.dhcp_types.ipv4.IPv4`.
-    :param pxe: ``None`` if not applicable; else, a triple containing, in order,
+    :param pxe: ``None`` if not applicable; else, a `namedtuple` containing
                 option 93 (client_system) as a sequence of ints, option 94
                 (client_ndi) as a sequence of three bytes, and option 97
                 (uuid_guid) as digested data: `(type:byte, data:[byte])`.
@@ -163,7 +163,7 @@ handleUnknownMAC()
                       instance of :class:`libpydhcpserver.dhcp_types.ipv4.IPv4`.
     :param relay_ip: The relay used by the client (may be ``None``), an
                      instance of :class:`libpydhcpserver.dhcp_types.ipv4.IPv4`.
-    :param pxe: ``None`` if not applicable; else, a triple containing, in order,
+    :param pxe: ``None`` if not applicable; else, a `namedtuple` containing
                 option 93 (client_system) as a sequence of ints, option 94
                 (client_ndi) as a sequence of three bytes, and option 97
                 (uuid_guid) as digested data: `(type:byte, data:[byte])`.
@@ -201,7 +201,7 @@ loadDHCPPacket()
                        of :class:`databases.generic.Definition`.
     :param relay_ip: The relay used by the client (may be ``None``), an
                      instance of :class:`libpydhcpserver.dhcp_types.ipv4.IPv4`.
-    :param pxe: ``None`` if not applicable; else, a triple containing, in order,
+    :param pxe: ``None`` if not applicable; else, a `namedtuple` containing
                 option 93 (client_system) as a sequence of ints, option 94
                 (client_ndi) as a sequence of three bytes, and option 97
                 (uuid_guid) as digested data: `(type:byte, data:[byte])`.
