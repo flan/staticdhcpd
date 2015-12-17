@@ -36,6 +36,8 @@ except ImportError: #py3k
     
 from conversion import (longToList, listToLong)
 
+_MAX_IP_INT = 4294967295
+
 class IPv4(object):
     """
     An abstract IPv4 address that can be realised as a sequence of bytes, a
@@ -54,7 +56,7 @@ class IPv4(object):
         :except ValueError: The address could not be processed.
         """
         if isinstance(address, IntegerTypes):
-            if not 0 <= address <= 4294967295:
+            if not 0 <= address <= _MAX_IP_INT:
                 raise ValueError("'%(ip)i' is not a valid IP: not a 32-bit unsigned integer" % {
                  'ip': address,
                 })
@@ -118,4 +120,44 @@ class IPv4(object):
         if not self._ip_string:
             self._ip_string = "%i.%i.%i.%i" % self._ip_tuple
         return self._ip_string
+        
+    def isSubnetMember(self, address, prefix):
+        """
+        Evaluates whether this IPv4 address is a member of the specifed subnet.
+        
+        :param address: An IPv4, which may be a dotted quad, a quadruple of
+                        bytes, or a 32-bit, unsigned integer.
+        :param prefix: A subnet mask or CIDR prefix, like `'255.255.255.0'`
+                       or `24`.
+        :return bool: `True` if this IPv4 is a member of the subnet.
+        :except ValueError: The address or prefix could not be processed.
+        """
+        if isinstance(prefix, IntegerTypes):
+            if 0 <= prefix <= 32:
+                mask = (_MAX_IP_INT << (32 - prefix))
+            else:
+                raise ValueError("Invalid CIDR prefix: %(prefix)i" % {
+                 'prefix': prefix,
+                })
+        else:
+            mask = int(IPv4(prefix))
+        return mask & int(IPv4(address)) == mask & int(self)
+        
+    @classmethod
+    def parseSubnet(cls, subnet):
+        """
+        Splits a subnet-specifier written in common "ip/mask" notation into its
+        constituent parts, allowing patterns like 
+        `(address, prefix) = IPv4.parseSubnet("10.50.0.0/255.255.0.0")` and
+        `<IPv4>.isSubnetMember(*<IPv4>.parseSubnet("192.168.0.0/24"))`.
+        
+        :param subnet: A string, using dotted-quad-slash-notation, with either
+                       an IPv4 mask or a CIDR integer as its complement.
+        :return tuple(2): The address and prefix components of the subnet.
+        :except ValueError: The subnet could not be interpreted.
+        """
+        (address, prefix) = subnet.split('/', 1)
+        if prefix.isdigit():
+            return (address, int(prefix))
+        return (address, prefix)
         
