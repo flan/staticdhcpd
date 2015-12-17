@@ -79,7 +79,9 @@ import json
 import logging
 import urllib2
 import netaddr
+import traceback
 
+from libpydhcpserver.dhcp_types.mac import MAC
 from staticdhcpdlib.databases.generic import (Definition, Database, CachingDatabase)
 
 _logger = logging.getLogger("extension.httpdb")
@@ -263,11 +265,33 @@ class HTTPDatabase(Database, _HTTPLogic):
 
 class HTTPCachingDatabase(CachingDatabase, _HTTPLogic):
     def __init__(self):
+        from staticdhcpdlib import config
         if hasattr(config, 'X_HTTPDB_CONCURRENCY_LIMIT'):
             CachingDatabase.__init__(self, concurrency_limit=config.X_HTTPDB_CONCURRENCY_LIMIT)
         else:
             CachingDatabase.__init__(self)
         _HTTPLogic.__init__(self)
+
+    def lookupMAC(self, packet_or_mac, packet_type=None, mac=None, ip=None,
+                  giaddr=None, pxe_options=None):
+        cache_mac = packet_or_mac if type(packet_or_mac) == MAC else mac
+
+        if self._cache and cache_mac:
+            try:
+                definition = self._cache.lookupMAC(cache_mac)
+            except Exception as exc:
+                _logger.error("Cache lookup failed:\n%s" % exc, exc_info=True)
+            else:
+                if definition:
+                    return definition
+        definition = self._retrieveDefinition(packet_or_mac, packet_type, mac, ip,
+                                              giaddr, pxe_options)
+        if definition and self._cache and cache_mac:
+            try:
+                self._cache.cacheMAC(cache_mac, definition)
+            except Exception as exc:
+                _logger.error("Cache update failed:\n%s" % exc, exc_info=True)
+        return definition
 
 http_database = None
 def _handle_unknown_mac(packet, packet_type, mac, ip,
@@ -294,7 +318,6 @@ def _handle_unknown_mac(packet, packet_type, mac, ip,
         global http_database
         http_database = HTTPDatabase()
 
-    _logger.debug('Handling %s' % str((packet, packet_type, mac, ip,
-     giaddr, pxe_options)))
+    _logger.debug('Unknown MAC %(mac)s (ip=%(ip)s; giaddr=%(giaddr)s)' % {'mac':mac, 'ip':ip, 'giaddr':giaddr})
     return http_database.lookupMAC(packet, packet_type, mac, ip,
                                    giaddr, pxe_options)

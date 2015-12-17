@@ -25,12 +25,16 @@ ALLOW_DHCP_RELAYS = True
 #The IP of the interface to use for DHCP traffic
 DHCP_SERVER_IP = '10.244.36.61'
 
-DHCP_RESPONSE_INTERFACE = 'vboxnet0'
+DHCP_RESPONSE_INTERFACE = 'vboxnet1'
+
+USE_CACHE = True
+MEMCACHED_CACHE = True
+MEMCACHED_SERVER = '127.0.0.1'
 
 #The database-engine to use
 #For details, see the configuration guide in the documentation.
 import httpdb
-DATABASE_ENGINE = httpdb.HTTPDatabase #or httpdb.HTTPCachingDatabase
+DATABASE_ENGINE = httpdb.HTTPCachingDatabase #or httpdb.HTTPCachingDatabase
 
 X_HTTPDB_ADDITIONAL_INFO = {'datacenter':'ANDOVERQA'}
 
@@ -41,6 +45,7 @@ X_HTTPDB_URI = 'http://%s:%d/dhcpconfig/' % (X_HTTPDB_SERVICE_ADDRESS, X_HTTPDB_
 X_HTTPDB_DEFAULT_NAME_SERVERS = '8.8.8.8,8.8.4.4'
 X_HTTPDB_DEFAULT_LEASE_TIME = 43200
 X_HTTPDB_DEFAULT_SERIAL = 0
+X_HTTPDB_LOCAL_RELAYS = False
 
 #test = requests.get('http://app-stage:8200/netconfig?datacenter=ANDOVERQA&mac=00:50:56:92:78:46')
 
