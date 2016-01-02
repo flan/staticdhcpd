@@ -125,6 +125,7 @@ def longToList(l):
         ``4294967296``, only the low-order thirty-two bits are considered.
     :return list(4): The converted value.
     """
+    l = int(l)
     return [
      l >> 24 & 0xFF,
      l >> 16 & 0xFF,
@@ -246,7 +247,7 @@ def ipsToList(ips):
         tokens = ips
         
     bytes = []
-    for ip in ips:
+    for ip in tokens:
         bytes += ipToList(ip)
     return bytes
     
