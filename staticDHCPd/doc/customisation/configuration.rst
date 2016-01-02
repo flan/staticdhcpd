@@ -75,7 +75,6 @@ General
 ||||||||||||||||||||||||||||||||||||||||
 * The path to which a pidfile should be written
 * ``'/var/run/staticDHCPd.pid'`` is a good choice
-* Do not set this if using the Debian initscript; it is unnecessary
 
 Server
 ++++++
