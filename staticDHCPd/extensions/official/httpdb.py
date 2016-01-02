@@ -13,16 +13,24 @@ To use this module, make the following changes to conf.py:
 
     Anywhere above the 'import httpdb' line, define any of the following
     parameters that you need to override:
+
         #The address of your webservice; MUST BE SET
         X_HTTPDB_URI = 'http://example.org/lookup'
+
         #Whether 'mac' should be an element in a POSTed JSON object, like
         #{"mac": "aa:bb:cc:dd:ee:ff"}, or encoded in the query-string as 'mac',
         #like "mac=aa%3Abb%3Acc%3Add%3Aee%3Aff"; DEFAULTS TO True
         X_HTTPDB_POST = True
+        
+        #If X_HTTPDB_POST is False, you can provide the URI format with
+        X_HTTPDB_FORMAT = '%(uri)s?mac=%(mac)s' #(default)
+
         #Any custom HTTP headers your service requires; DEFAULTS TO {}
+
         X_HTTPDB_HEADERS = {
             'Your-Company-Token': "hello",
         }
+
         #If using HTTPCachingDatabase, the maximum number of requests to run
         #at a time; successive requests will block; DEFAULTS TO (effectively)
         #INFINITE
@@ -95,7 +103,8 @@ class _HTTPLogic(object):
             raise AttributeError("X_HTTPDB_URI must be specified in conf.py")
         self._headers = getattr(config, 'X_HTTPDB_HEADERS', {})
         self._post = getattr(config, 'X_HTTPDB_POST', True)
-        
+        self._format = getattr(config, 'X_HTTPDB_FORMAT', "%(uri)s?mac=%(mac)s")
+ 
     def _lookupMAC(self, mac):
         """
         Performs the actual lookup operation; this is the first thing you should
@@ -123,7 +132,7 @@ class _HTTPLogic(object):
             )
         else:
             request = urllib2.Request(
-             "%(uri)s?mac=%(mac)s" % {
+             self._format % {
               'uri': self._uri,
               'mac': str(mac).replace(':', '%3A'),
              },
