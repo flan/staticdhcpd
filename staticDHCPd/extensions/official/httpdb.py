@@ -25,7 +25,8 @@ To use this module, make the following changes to conf.py:
         #If X_HTTPDB_POST is False, you can provide the URI format with
         X_HTTPDB_FORMAT = '%(uri)s?mac=%(mac)s' #(default)
 
-        #Any custom HTTP headers your service requires; DEFAULTS TO {}
+        #Any custom HTTP headers your service requires;
+        #DEFAULTS TO {'Accept': 'application/json',}
 
         X_HTTPDB_HEADERS = {
             'Your-Company-Token': "hello",
@@ -85,7 +86,13 @@ def _parse_server_response(json_data):
 ################################################################################
 import json
 import logging
-import urllib2
+try:
+    from urllib.request import urlopen, Request
+    from urllib.parse import urlencode
+except ImportError:
+    from urllib  import urlencode
+    from urllib2 import urlopen, Request
+
 
 from staticdhcpdlib.databases.generic import (Definition, Database, CachingDatabase)
 
@@ -101,11 +108,11 @@ class _HTTPLogic(object):
             self._uri = config.X_HTTPDB_URI
         except AttributeError:
             raise AttributeError("X_HTTPDB_URI must be specified in conf.py")
-        self._headers = getattr(config, 'X_HTTPDB_HEADERS', {})
+        self._headers = getattr(config, 'X_HTTPDB_HEADERS', {'Accept': 'application/json',})
         self._post = getattr(config, 'X_HTTPDB_POST', True)
-        self._format = getattr(config, 'X_HTTPDB_FORMAT', "%(uri)s?mac=%(mac)s")
- 
-    def _lookupMAC(self, mac):
+        self._format = getattr(config, 'X_HTTPDB_FORMAT', "%(uri)s?%(querystring)s")
+
+    def _lookupATTRS(self, attrs):
         """
         Performs the actual lookup operation; this is the first thing you should
         study when customising for your site.
@@ -114,71 +121,80 @@ class _HTTPLogic(object):
         
         #If you need to generate per-request headers, add them here
         headers = self._headers.copy()
-        
+        _logger.debug("HTTPDB Attributes: '%(attrs)s'..." % {
+            'attrs': str(attrs),
+            })
+ 
         #You can usually ignore this if-block, though you could strip out whichever method you don't use
         if self._post:
-            data = json.dumps({
-             'mac': str(mac),
-            })
+            data = json.dumps(attrs)
             
             headers.update({
              'Content-Length': str(len(data)),
              'Content-Type': 'application/json',
             })
             
-            request = urllib2.Request(
+            request = Request(
              self._uri, data=data,
              headers=headers,
             )
+            _logger.debug("Sending POST request to '%(uri)s' with JSON data from '%(attrs)s'..." % {
+                'uri': request.get_full_url(),
+                'attrs': str(attrs),
+                })
         else:
-            request = urllib2.Request(
+            request = Request(
              self._format % {
               'uri': self._uri,
-              'mac': str(mac).replace(':', '%3A'),
+              'querystring': urlencode(attrs),
+              'mac': str(attrs['mac']),
              },
              headers=headers,
             )
+            _logger.debug("Sending GET request to '%(uri)s' with Querystring from '%(attrs)s'..." % {
+                'uri': request.get_full_url(),
+                'attrs': str(attrs),
+                })
             
-        _logger.debug("Sending request to '%(uri)s' for '%(mac)s'..." % {
-         'uri': self._uri,
-         'mac': str(mac),
-        })
         try:
-            response = urllib2.urlopen(request)
-            _logger.debug("MAC response received from '%(uri)s' for '%(mac)s'" % {
+            response = urlopen(request)
+            _logger.debug("OK response received from '%(uri)s' for '%(attrs)s'" % {
              'uri': self._uri,
-             'mac': str(mac),
+             'attrs': str(attrs),
             })
             result = json.loads(response.read())
             
             if not result: #The server sent back 'null' or an empty object
-                _logger.debug("Unknown MAC response from '%(uri)s' for '%(mac)s'" % {
+                _logger.debug("NOTOK response from '%(uri)s' for '%(attrs)s'" % {
                  'uri': self._uri,
-                 'mac': str(mac),
+                 'attrs': str(attrs),
                 })
                 return None
                 
             definition = _parse_server_response(result)
             
-            _logger.debug("Known MAC response from '%(uri)s' for '%(mac)s'" % {
+            _logger.debug("PARSE_OK response from '%(uri)s' for '%(attrs)s'" % {
              'uri': self._uri,
-             'mac': str(mac),
+             'attrs': str(attrs),
             })
             return definition
         except Exception, e:
-            _logger.error("Failed to lookup '%(mac)s' on '%(uri)s': %(error)s" % {
+            _logger.error("PARSE_FAIL for response from '%(uri)s' for '%(attrs): %(error)s" % {
              'uri': self._uri,
-             'mac': str(mac),
+             'attrs': str(attrs),
              'error': str(e),
             })
             raise
-            
+
 class HTTPDatabase(Database, _HTTPLogic):
     def __init__(self):
         _HTTPLogic.__init__(self)
         
     def lookupMAC(self, mac):
-        return self._lookupMAC(mac)
+        return self._lookupATTRS({'mac': str(mac),})
+
+    def lookupATTRS(self, attrs):
+        return self._lookupATTRS(attrs)
         
 class HTTPCachingDatabase(CachingDatabase, _HTTPLogic):
     def __init__(self):
