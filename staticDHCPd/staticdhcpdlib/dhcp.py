@@ -328,10 +328,10 @@ class _PacketWrapper(object):
         if definition.ntp_servers:
             self.packet.setOption(42, definition.ntp_servers)
             
-        if definition.extra:
-            for k in definition.extra.keys():
-                _logger.debug('Trying to set extra option [%s]=[%s]' % (k, definition.extra[k]))
-                self.packet.setOption(k,definition.extra[k], force_selection=True)
+        if definition.options:
+            for k in definition.options.keys():
+                _logger.debug('Setting additional option [%s]=[%s]' % (k, definition.options[k]))
+                self.packet.setOption(k,definition.options[k], force_selection=True)
 
     def loadDHCPPacket(self, definition, inform=False):
         """

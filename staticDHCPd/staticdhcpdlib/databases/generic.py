@@ -58,6 +58,7 @@ class Definition(object):
     lease_time = None #: The number of seconds for which the lease is valid
     subnet = None #: The "subnet" identifier of the record in the database
     serial = None #: The "serial" identifier of the record in the database
+    options = None #: An associative array with option names/option id as keys
     extra = None #: An object containing any metadata from the database
     
     def __init__(self,
@@ -65,7 +66,7 @@ class Definition(object):
         hostname=None,
         gateways=None, subnet_mask=None, broadcast_address=None,
         domain_name=None, domain_name_servers=None, ntp_servers=None,
-        extra=None
+        options=None,extra=None
     ):
         """
         Initialises a Definition.
@@ -88,6 +89,7 @@ class Definition(object):
                                     format, including comma-delimited string.
         :param ntp_servers: The IP addresses to advertise, in any main format,
                             including comma-delimited string.
+        :param options: An associative array with option names/option id as keys
         :param extra: An object containing any metadata from the
                                  database.
         """
@@ -107,6 +109,7 @@ class Definition(object):
         self.domain_name = domain_name and str(domain_name)
         self.domain_name_servers = self._parse_addresses(domain_name_servers, limit=3)
         self.ntp_servers = self._parse_addresses(ntp_servers, limit=3)
+        self.options = options
         self.extra = extra
         
     def _parse_address(self, address):
