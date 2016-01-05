@@ -25,6 +25,11 @@ To use this module, make the following changes to conf.py:
         #If X_HTTPDB_POST is False, you can provide the URI format with
         X_HTTPDB_FORMAT = '%(uri)s?mac=%(mac)s' #(default)
 
+        #If X_HTTPDB_USER is defined, look for X_HTTPDB_PASS and use it
+        #with basic authentication (Default to None)
+        X_HTTPDB_USER = myuser
+        X_HTTPDB_PASS = mypass
+
         #Any custom HTTP headers your service requires;
         #DEFAULTS TO {'Accept': 'application/json',}
 
@@ -86,6 +91,8 @@ def _parse_server_response(json_data):
 ################################################################################
 import json
 import logging
+from base64 import encodestring
+# Python2&3 compatible imports
 try:
     from urllib.request import urlopen, Request
     from urllib.parse import urlencode
@@ -109,8 +116,10 @@ class _HTTPLogic(object):
         except AttributeError:
             raise AttributeError("X_HTTPDB_URI must be specified in conf.py")
         self._headers = getattr(config, 'X_HTTPDB_HEADERS', {'Accept': 'application/json',})
-        self._post = getattr(config, 'X_HTTPDB_POST', True)
         self._format = getattr(config, 'X_HTTPDB_FORMAT', "%(uri)s?%(querystring)s")
+        self._post = getattr(config, 'X_HTTPDB_POST', True)
+        self._user = getattr(config, 'X_HTTPDB_USER', None)
+        self._pass = getattr(config, 'X_HTTPDB_PASS', None)
 
     def _lookupATTRS(self, attrs):
         """
@@ -124,7 +133,14 @@ class _HTTPLogic(object):
         _logger.debug("HTTPDB Attributes: '%(attrs)s'..." % {
             'attrs': str(attrs),
             })
- 
+
+        ## Handle basic authentication...
+        if self._user and self._pass:
+            b64auth = encodestring(('%s:%s' % (self._user, self._pass)).encode())
+            headers.update({
+             'Authorization': 'Basic %s' % b64auth.decode().strip('\n')
+            })
+        
         #You can usually ignore this if-block, though you could strip out whichever method you don't use
         if self._post:
             data = json.dumps(attrs)
@@ -179,7 +195,7 @@ class _HTTPLogic(object):
             })
             return definition
         except Exception, e:
-            _logger.error("PARSE_FAIL for response from '%(uri)s' for '%(attrs): %(error)s" % {
+            _logger.error("PARSE_FAIL for response from '%(uri)s' for '%(attrs)s: %(error)s" % {
              'uri': self._uri,
              'attrs': str(attrs),
              'error': str(e),
