@@ -3,7 +3,7 @@
 staticdhcpdlib.databases._caching
 =================================
 Defines caching structures for databases.
- 
+
 Legal
 -----
 This file is part of staticDHCPd.
@@ -37,11 +37,11 @@ class _DatabaseCache(Database):
     _cache_lock = None #: A lock to prevent race conditions
     _chained_cache = None #: The next node in the caching chain
     _name = None #: The name of this node
-    
+
     def __init__(self, name, chained_cache=None):
         """
         Initialises a node in a caching chain.
-        
+
         :param basestring name: The name of the cache.
         :param :class:`_DatabaseCache <_DatabaseCache>` chained_cache: The next
             node in the chain; None if this is the end.
@@ -56,14 +56,14 @@ class _DatabaseCache(Database):
             _logger.debug("Chained database-cache: %(chained)s" % {
              'chained': chained_cache,
             })
-            
+
     def __str__(self):
         return "%(name)s <%(type)s : 0x%(id)x>" % {
          'name': self._name,
          'type': self.__class__.__name__,
          'id': id(self),
         }
-        
+
     def reinitialise(self):
         _logger.debug("Reinitialising database-cache '%(id)s'..." % {
          'id': self,
@@ -76,7 +76,7 @@ class _DatabaseCache(Database):
          'id': self,
         })
     def _reinitialise(self): pass
-        
+
     def lookupMAC(self, mac):
         _mac = str(mac)
         _logger.debug("Searching for '%(mac)s' in database-cache '%(id)s'..." % {
@@ -85,7 +85,7 @@ class _DatabaseCache(Database):
         })
         with self._cache_lock:
             definition = self._lookupMAC(mac)
-            
+
         if not definition:
             _logger.debug("No match for '%(mac)s' in database-cache '%(id)s'" % {
              'mac': _mac,
@@ -100,10 +100,10 @@ class _DatabaseCache(Database):
              'mac': _mac,
              'id': self,
             })
-            
+
         return definition
     def _lookupMAC(self, mac): return None
-    
+
     def cacheMAC(self, mac, definition, chained=False):
         _logger.debug("Setting definition for '%(mac)s' in database-cache '%(id)s'..." % {
          'mac': mac,
@@ -111,36 +111,36 @@ class _DatabaseCache(Database):
         })
         with self._cache_lock:
             self._cacheMAC(mac, definition, chained=chained)
-            
+
         if self._chained_cache and not chained:
             self._chained_cache.cacheMAC(mac, definition, chained=False)
     def _cacheMAC(self, mac, definition, chained): pass
-    
+
 class MemoryCache(_DatabaseCache):
     """
     An optimised in-memory database cache.
     """
     _mac_cache = None #: A dictionary of cached MACs
     _subnet_cache = None #: A dictionary of cached subnet/serial data
-    
+
     def __init__(self, name, chained_cache=None):
         """
         Initialises the cache.
-        
+
         :param basestring name: The name of the cache.
         :param :class:`_DatabaseCache <_DatabaseCache>` chained_cache: The next
             node in the chain; None if this is the end.
         """
         _DatabaseCache.__init__(self, name, chained_cache=chained_cache)
-        
+
         self._mac_cache = {}
         self._subnet_cache = {}
         _logger.debug("In-memory database-cache initialised")
-        
+
     def _reinitialise(self):
         self._mac_cache.clear()
         self._subnet_cache.clear()
-        
+
     def _lookupMAC(self, mac):
         data = self._mac_cache.get(int(mac))
         if data:
@@ -154,7 +154,7 @@ class MemoryCache(_DatabaseCache):
              extra=extra
             )
         return None
-        
+
     def _cacheMAC(self, mac, definition, chained):
         subnet_id = (definition.subnet, definition.serial)
         self._mac_cache[int(mac)] = (definition.ip, definition.hostname, definition.extra, subnet_id)
@@ -163,15 +163,82 @@ class MemoryCache(_DatabaseCache):
          definition.domain_name, definition.domain_name_servers, definition.ntp_servers,
          definition.lease_time
         )
-        
+
+class MemcachedCache(_DatabaseCache):
+    """
+    A memory database cache using memcache.
+    """
+    _mac_cache = None #: A dictionary of cached MACs
+    _subnet_cache = None #: A dictionary of cached subnet/serial data
+
+    def __init__(self, name, memcached_server_data, memcached_age_time, chained_cache=None):
+        """
+        Initialises the cache.
+
+        :param basestring name: The name of the cache.
+        :param tuple memcached_server_data: Address and port to connect to the memcached server.
+        :param basestring memcached_age_time: number of seconds to store items in memcache.
+        :param :class:`_DatabaseCache <_DatabaseCache>` chained_cache: The next
+            node in the chain; None if this is the end.
+        """
+        _DatabaseCache.__init__(self, name, chained_cache=chained_cache)
+        import memcache
+        memcached_address = '%(server)s:%(port)d' % {
+         'server': memcached_server_data[0],
+         'port': memcached_server_data[1],
+        }
+        self.mc_client = memcache.Client([memcached_address])
+        self.memcached_age_time = memcached_age_time
+        _logger.debug("Memcached database-cache initialised")
+
+    def _reinitialise(self):
+        pass
+
+    def _lookupMAC(self, mac):
+        data = self.mc_client.get(str(mac))
+        if data:
+            (ip, hostname, extra, subnet_id) = data
+            subnet_str = self._create_subnet_key(subnet_id)
+            details = self.mc_client.get(subnet_str)
+            if details:
+                return Definition(
+                 ip=ip, lease_time=details[6], subnet=subnet_id[0], serial=subnet_id[1],
+                 hostname=hostname,
+                 gateways=details[0], subnet_mask=details[1], broadcast_address=details[2],
+                 domain_name=details[3], domain_name_servers=details[4], ntp_servers=details[5],
+                 extra=extra
+                )
+        return None
+
+    def _cacheMAC(self, mac, definition, chained):
+        subnet_id = (definition.subnet, definition.serial)
+        subnet_str = self._create_subnet_key(subnet_id)
+        self.mc_client.set(
+         str(mac),
+         (definition.ip, definition.hostname, definition.extra, subnet_id),
+         self.memcached_age_time
+        )
+        self.mc_client.set(
+         subnet_str,
+         (
+          definition.gateways, definition.subnet_mask, definition.broadcast_address,
+          definition.domain_name, definition.domain_name_servers, definition.ntp_servers,
+          definition.lease_time
+         ),
+         self.memcached_age_time
+        )
+
+    def _create_subnet_key(self, subnet_id):
+        return "%s-%i" % (subnet_id[0].replace(" ", "_"), subnet_id[1])
+
 class DiskCache(_DatabaseCache):
     _filepath = None #: The path to which the persistent file will be written
     _sqlite3 = None #: A reference to the sqlite3 module
-    
+
     def __init__(self, name, filepath, chained_cache=None):
         """
         Initialises the cache.
-        
+
         :param basestring name: The name of the cache.
         :param basestring filepath: The path to which a persistent on-disk
                                     cache is written; if None, a tempfile is
@@ -180,10 +247,10 @@ class DiskCache(_DatabaseCache):
             node in the chain; None if this is the end.
         """
         _DatabaseCache.__init__(self, name, chained_cache=chained_cache)
-        
+
         import sqlite3
         self._sqlite3 = sqlite3
-        
+
         if filepath:
             self._filepath = filepath
         else:
@@ -191,14 +258,14 @@ class DiskCache(_DatabaseCache):
             #Assigned to self so that the file stays open
             self.__tempfile = tempfile.NamedTemporaryFile()
             self._filepath = self.__tempfile.name
-            
+
         self._setupDatabase()
         _logger.debug("On-disk database-cache initialised at " + self._filepath)
-        
+
     def _connect(self):
         database = self._sqlite3.connect(self._filepath)
         return (database, database.cursor())
-        
+
     def _disconnect(self, database, cursor):
         try:
             cursor.close()
@@ -208,10 +275,10 @@ class DiskCache(_DatabaseCache):
             database.close()
         except Exception, e:
             _logger.warn("Unable to close cache database: " + str(e))
-            
+
     def _setupDatabase(self):
         (database, cursor) = self._connect()
-        
+
         #These definitions omit a lot of integrity logic, since the underlying database is to enforce that
         cursor.execute("""CREATE TABLE IF NOT EXISTS subnets (
     subnet TEXT,
@@ -235,14 +302,14 @@ class DiskCache(_DatabaseCache):
 )""")
         database.commit()
         self._disconnect(database, cursor)
-        
+
     def _reinitialise(self):
         (database, cursor) = self._connect()
         cursor.execute("DELETE FROM maps")
         cursor.execute("DELETE FROM subnets")
         database.commit()
         self._disconnect(database, cursor)
-        
+
     def _lookupMAC(self, mac):
         (database, cursor) = self._connect()
         cursor.execute("""SELECT
@@ -265,7 +332,7 @@ LIMIT 1""", (int(mac),))
              extra=json.loads(result[11])
             )
         return None
-        
+
     def _cacheMAC(self, mac, definition, chained):
         (database, cursor) = self._connect()
         cursor.execute("INSERT OR IGNORE INTO subnets (subnet, serial, lease_time, gateway, subnet_mask, broadcast_address, ntp_servers, domain_name_servers, domain_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -290,4 +357,3 @@ LIMIT 1""", (int(mac),))
         )
         database.commit()
         self._disconnect(database, cursor)
-        
