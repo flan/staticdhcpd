@@ -6,7 +6,8 @@ Specifically, this module implements a very generic REST-JSON system, with
 optional support for caching. To implement another protocol, only one method
 needs to be rewritten, so just look for the comments.
 
-To use this module, make the following changes to conf.py:
+To use this module without making any code changes, make the following changes
+to conf.py; if anything more sophisticated is required, fork it and hack away:
     Locate the DATABASE_ENGINE line and replace it with the following two lines:
         import httpdb
         DATABASE_ENGINE = httpdb.HTTPDatabase #or httpdb.HTTPCachingDatabase
@@ -15,13 +16,17 @@ To use this module, make the following changes to conf.py:
     parameters that you need to override:
         #The address of your webservice; MUST BE SET
         X_HTTPDB_URI = 'http://example.org/lookup'
-        #Whether 'mac' should be an element in a POSTed JSON object, like
-        #{"mac": "aa:bb:cc:dd:ee:ff"}, or encoded in the query-string as 'mac',
-        #like "mac=aa%3Abb%3Acc%3Add%3Aee%3Aff"; DEFAULTS TO True
+        #Additional parameters to be passed with the request, DEFAULTS TO {}
+        X_HTTPDB_PARAMETERS = {
+            'some_request_thing': 7002,
+        }
+        #Whether the parameters should be serialised to JSON and POSTed, like
+        #{"mac": "aa:bb:cc:dd:ee:ff"}, or encoded in the query-string, like
+        #"mac=aa%3Abb%3Acc%3Add%3Aee%3Aff"; DEFAULTS TO True
         X_HTTPDB_POST = True
         #Any custom HTTP headers your service requires; DEFAULTS TO {}
         X_HTTPDB_HEADERS = {
-            'Your-Company-Token': "hello",
+            'Your-Site-Token': "hello",
         }
         #If using HTTPCachingDatabase, the maximum number of requests to run
         #at a time; successive requests will block; DEFAULTS TO (effectively)
@@ -34,9 +39,10 @@ If concurrent connections to your HTTP server should be limited, use
 HTTPCachingDatabase instead of HTTPDatabase.
 
 Like staticDHCPd, this module under the GNU General Public License v3
-(C) Neil Tallim, 2014 <flan@uguu.ca>
+(C) Neil Tallim, 2016 <flan@uguu.ca>
 
 Created in response to a request from Aleksandr Chusov.
+Enhanced with feedback from Helios de Creisquer.
 """
 ################################################################################
 #Rewrite _parse_server_response() as needed to work with your service.
@@ -77,6 +83,7 @@ def _parse_server_response(json_data):
 ################################################################################
 import json
 import logging
+import urllib
 import urllib2
 
 from staticdhcpdlib.databases.generic import (Definition, Database, CachingDatabase)
@@ -94,6 +101,7 @@ class _HTTPLogic(object):
         except AttributeError:
             raise AttributeError("X_HTTPDB_URI must be specified in conf.py")
         self._headers = getattr(config, 'X_HTTPDB_HEADERS', {})
+        self._parameters = getattr(config, 'X_HTTPDB_PARAMETERS', {})
         self._post = getattr(config, 'X_HTTPDB_POST', True)
         
     def _lookupMAC(self, mac):
@@ -106,61 +114,66 @@ class _HTTPLogic(object):
         #If you need to generate per-request headers, add them here
         headers = self._headers.copy()
         
+        #To alter the parameters supplied with the request, alter this
+        parameters = self._parameters.copy()
+        #Dynamic items 
+        parameters.update({
+            'mac': str(mac),
+        })
+        
         #You can usually ignore this if-block, though you could strip out whichever method you don't use
         if self._post:
-            data = json.dumps({
-             'mac': str(mac),
-            })
+            data = json.dumps(parameters)
             
             headers.update({
-             'Content-Length': str(len(data)),
-             'Content-Type': 'application/json',
+                'Content-Length': str(len(data)),
+                'Content-Type': 'application/json',
             })
             
             request = urllib2.Request(
-             self._uri, data=data,
-             headers=headers,
+                self._uri, data=data,
+                headers=headers,
             )
         else:
             request = urllib2.Request(
-             "%(uri)s?mac=%(mac)s" % {
-              'uri': self._uri,
-              'mac': str(mac).replace(':', '%3A'),
+             "%(uri)s?%(parameters)s" % {
+                'uri': self._uri,
+                'parameters': urllib.urlencode(parameters, doseq=True),
              },
              headers=headers,
             )
             
         _logger.debug("Sending request to '%(uri)s' for '%(mac)s'..." % {
-         'uri': self._uri,
-         'mac': str(mac),
+            'uri': self._uri,
+            'mac': str(mac),
         })
         try:
             response = urllib2.urlopen(request)
             _logger.debug("MAC response received from '%(uri)s' for '%(mac)s'" % {
-             'uri': self._uri,
-             'mac': str(mac),
+                'uri': self._uri,
+                'mac': str(mac),
             })
             result = json.loads(response.read())
             
             if not result: #The server sent back 'null' or an empty object
                 _logger.debug("Unknown MAC response from '%(uri)s' for '%(mac)s'" % {
-                 'uri': self._uri,
-                 'mac': str(mac),
+                    'uri': self._uri,
+                    'mac': str(mac),
                 })
                 return None
                 
             definition = _parse_server_response(result)
             
             _logger.debug("Known MAC response from '%(uri)s' for '%(mac)s'" % {
-             'uri': self._uri,
-             'mac': str(mac),
+                'uri': self._uri,
+                'mac': str(mac),
             })
             return definition
         except Exception, e:
             _logger.error("Failed to lookup '%(mac)s' on '%(uri)s': %(error)s" % {
-             'uri': self._uri,
-             'mac': str(mac),
-             'error': str(e),
+                'uri': self._uri,
+                'mac': str(mac),
+                'error': str(e),
             })
             raise
             
