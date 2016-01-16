@@ -67,6 +67,9 @@ import logging
 import threading
 import time
 
+import platform
+system = platform.system()
+
 from staticdhcpdlib.databases.generic import Definition
 
 from libpydhcpserver.dhcp_types.ipv4 import IPv4
@@ -80,7 +83,11 @@ except ImportError:
     _logger.warn("scapy is unavailable; addresses added to pools cannot be automatically ARPed")
     arping = None
 else:
-    if not scapy.arch.conf.L2Socket:
+    if system == 'FreeBSD':
+        l2sock = scapy.arch.conf.L2socket
+    else:
+        l2sock = scapy.arch.conf.L2Socket
+    if not l2sock:
         _logger.warn("scapy was unable to construct layer-2 socketing rules; if using a BSD-based system (including OS X), please follow its documentation for installing pcap bindings; addresses added to pools cannot be automatically ARPed")
         arping = None
     else:
@@ -116,7 +123,7 @@ def _dynamic_method(method):
                 return Definition(
                  ip=ip, lease_time=self._lease_time, subnet=self._subnet, serial=self._serial,
                  hostname=(self._hostname_pattern % {'ip': str(ip).replace('.', '-'),}),
-                 gateway=self._gateway, subnet_mask=self._subnet_mask, broadcast_address=self._broadcast_address,
+                 gateways=self._gateway, subnet_mask=self._subnet_mask, broadcast_address=self._broadcast_address,
                  domain_name=self._domain_name, domain_name_servers=self._domain_name_servers, ntp_servers=self._ntp_servers,
                  extra=None
                 )

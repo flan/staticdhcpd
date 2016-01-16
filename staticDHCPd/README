@@ -82,7 +82,7 @@ Step 2: Set up the DHCP database
     SQLite method:
         Open a terminal and run `sqlite3 dhcp.sqlite3`
         
-        Copy and paste the contents of samples/sqlite.sql into the prompt.
+        Copy and paste the contents of databases/sqlite.sql into the prompt.
         
         Now that your database is ready to go (SQLite is easy), add some rules.
             
