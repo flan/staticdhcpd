@@ -20,6 +20,8 @@ to conf.py; if anything more sophisticated is required, fork it and hack away:
         X_HTTPDB_PARAMETERS = {
             'some_request_thing': 7002,
         }
+        #The parameter-key for the MAC; defaults to 'mac'
+        X_HTTPDB_PARAMETER_KEY_MAC = 'hwaddr'
         #Whether the parameters should be serialised to JSON and POSTed, like
         #{"mac": "aa:bb:cc:dd:ee:ff"}, or encoded in the query-string, like
         #"mac=aa%3Abb%3Acc%3Add%3Aee%3Aff"; DEFAULTS TO True
@@ -102,6 +104,7 @@ class _HTTPLogic(object):
             raise AttributeError("X_HTTPDB_URI must be specified in conf.py")
         self._headers = getattr(config, 'X_HTTPDB_HEADERS', {})
         self._parameters = getattr(config, 'X_HTTPDB_PARAMETERS', {})
+        self._parameter_key_mac = getattr(config, 'X_HTTPDB_PARAMETER_KEY_MAC', 'mac')
         self._post = getattr(config, 'X_HTTPDB_POST', True)
         
     def _lookupMAC(self, mac):
@@ -118,7 +121,7 @@ class _HTTPLogic(object):
         parameters = self._parameters.copy()
         #Dynamic items 
         parameters.update({
-            'mac': str(mac),
+            self._parameter_key_mac: str(mac),
         })
         
         #You can usually ignore this if-block, though you could strip out whichever method you don't use
