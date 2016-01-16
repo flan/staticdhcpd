@@ -246,7 +246,7 @@ def ipsToList(ips):
         tokens = ips
         
     bytes = []
-    for ip in ips:
+    for ip in tokens:
         bytes += ipToList(ip)
     return bytes
     
