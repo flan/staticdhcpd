@@ -714,6 +714,7 @@ class _L2Responder_pcap(_L2Responder):
         import ctypes
         self._c_int_ = ctypes.c_int
         import ctypes.util
+        import getifaddrslib
         
         pcap = ctypes.util.find_library('pcap')
         if not pcap:
@@ -730,36 +731,13 @@ class _L2Responder_pcap(_L2Responder):
             warnings.warn(errbuf.value)
             
         try:
-            mac = self._getMAC(response_interface)
+            mac = ''.join(chr(i) for i in MAC(getifaddrslib.get_mac_address(response_interface)))
         except Exception:
             pcap.pcap_close(self._fd)
             raise
         else:
             _L2Responder.__init__(self, server_address, mac, qtags=qtags)
         self._inject = pcap.pcap_inject
-        
-    def _getMAC(self, response_interface):
-        """
-        Mostly portable means of getting the MAC address for the interface.
-        
-        :param str response_interface: The interface on which to provide raw packet support, like
-            ``"eth0"``.
-        :return str: The MAC address, in network-byte order.
-        :except Exception: The MAC could not be retrieved.
-        """
-        import subprocess
-        import re
-        if platform.system() == 'Linux':
-            command = ('/sbin/ip', 'link', 'show', response_interface)
-        else:
-            command = ('/sbin/ifconfig', response_interface)
-        ifconfig_output = subprocess.check_output(command)
-        m = re.search(r'\b(?P<mac>(?:[0-9A-Fa-f]{2}:){5}(?:[0-9A-Fa-f]{2}))\b', ifconfig_output)
-        if not m:
-            raise Exception("Unable to determine MAC of %(interface)s" % {
-             'interface': response_interface,
-            })
-        return ''.join(chr(i) for i in MAC(m.group('mac')))
         
     def _send_(self, packet):
         """
