@@ -49,6 +49,12 @@ Internal-only Ethernet-frame-grabbing for Linux.
 Nothing should be addressable to the special response socket, but better to avoid wasting memory.
 """
 
+_AF_PACKET = (hasattr(socket, 'AF_PACKET') and socket.AF_PACKET) or 17
+"""
+Linux constant for AF_PACKET, just in case Python wasn't built against complete
+headers.
+"""
+
 Address = collections.namedtuple("Address", ('ip', 'port'))
 """
 An inet layer-3 address.
@@ -276,7 +282,7 @@ class _NetworkLink(object):
                     self._responder_broadcast = _L2Responder_pcap(server_address, response_interface, qtags=response_interface_qtags)
                 except Exception, e:
                     import errno
-                    raise EnvironmentError(errno.ELIBACC, "Raw response-socket requested on %(interface)s, but neither AF_PACKET/PF_PACKET nor libpcap are available, or the interface does not exist" % {'interface': response_interface,})
+                    raise EnvironmentError(errno.ELIBACC, "Raw response-socket requested on %(interface)s, but neither AF_PACKET nor libpcap are available, or the interface does not exist" % {'interface': response_interface,})
             self._unicast_discover_supported = True
         else:
             self._responder_broadcast = _L3Responder(server_address=server_address)
@@ -651,7 +657,7 @@ class _L2Responder(_Responder):
         
 class _L2Responder_AF_PACKET(_L2Responder):
     """
-    A Linux-specific layer 2 responder that uses AF_PACKET/PF_PACKET.
+    A Linux-specific layer 2 responder that uses AF_PACKET.
     """
     _socket = None #: The socket used for responses.
     
@@ -666,10 +672,7 @@ class _L2Responder_AF_PACKET(_L2Responder):
             Definitions take the following form: (pcp:`0-7`, dei:``bool``, vid:`1-4094`)
         :except socket.error: The socket could not be configured.
         """
-        socket_type = ((hasattr(socket, 'AF_PACKET') and socket.AF_PACKET) or (hasattr(socket, 'PF_PACKET') and socket.PF_PACKET))
-        if not socket_type:
-            raise Exception("Neither AF_PACKET nor PF_PACKET found")
-        self._socket = socket.socket(socket_type, socket.SOCK_RAW, socket.htons(_ETH_P_SNAP))
+        self._socket = socket.socket(_AF_PACKET, socket.SOCK_RAW, socket.htons(_ETH_P_SNAP))
         self._socket.bind((response_interface, _ETH_P_SNAP))
         self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 2 ** 12)
         self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 2 ** 12)
