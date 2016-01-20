@@ -98,6 +98,11 @@ _defaults.update({
  'PERSISTENT_CACHE': None,
  'CACHE_ON_DISK': False,
 
+ 'MEMCACHED_CACHE': False,
+ 'MEMCACHED_HOST': None,
+ 'MEMCACHED_PORT': 11211,
+ 'MEMCACHED_AGE_TIME': 300, #5 minutes
+
  'CASE_INSENSITIVE_MACS': False,
 
  'EXTRA_MAPS': None,
