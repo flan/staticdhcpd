@@ -3,7 +3,7 @@
 staticdhcpdlib.dhcp
 ===================
 Provides the DHCPd side of a staticDHCPd server.
- 
+
 Legal
 -----
 This file is part of staticDHCPd.
@@ -35,6 +35,8 @@ import statistics
 import libpydhcpserver.dhcp
 from libpydhcpserver.dhcp_types.ipv4 import IPv4
 from libpydhcpserver.dhcp_types.mac import MAC
+
+from databases.generic import Definition
 
 #Packet-type string-constants
 _PACKET_TYPE_DECLINE = 'DECLINE'
@@ -88,7 +90,7 @@ class _PacketWrapper(object):
     _start_time = None #: The time at which processing began.
     _associated_ip = None #: The client-ip associated with this request.
     _definition = None #: The definition associated with this request.
-    
+
     valid = False #: Whether the packet passed basic sanity-tests.
     source_address = None #: The :class:`libpydhcpserver.dhcp.Address` of the packet's origin.
     packet = None #: The packet being wrapped.
@@ -99,11 +101,11 @@ class _PacketWrapper(object):
     giaddr = None #: The IP address of the gateway associated with the packet, if any.
     pxe = None #: Whether the packet was received from a PXE context.
     _pxe_options = None #: Any PXE options extracted from the packet.
-    
+
     def __init__(self, server, packet, packet_type, source_address, pxe):
         """
         Creates a new wrapper.
-        
+
         :param :class:`_DHCPServer` server: The server associated with this
                                             packet.
         :param :class:`libpydhcpserver.dhcp_types.packet.DHCPPacket` packet: The
@@ -114,21 +116,21 @@ class _PacketWrapper(object):
         :param bool pxe: Whether this packet arrived via PXE.
         """
         self._start_time = time.time()
-        
+
         self._server = server
         self._packet_type = packet_type
         self.packet = packet
         self.source_address = source_address
         self.pxe = pxe
-        
+
         self._extractInterestingFields()
-        
+
     def __enter__(self):
         """
         Performs validation on the packet, storing the result in 'valid'.
         """
         self.announcePacket(verbosity=logging.DEBUG)
-        
+
         try:
             self._evaluateSource()
             self._server.evaluateAbuse(self.mac)
@@ -145,14 +147,14 @@ class _PacketWrapper(object):
         else:
             self.valid = True
             self._original_packet = self.packet.copy()
-            
+
         return self
-        
+
     def __exit__(self, type, value, tb):
         """
         Handles logging and notification in the event that processing terminated
         with an exception.
-        
+
         Also ensures that statistical information is assembled and dispatched.
         """
         try:
@@ -172,14 +174,14 @@ class _PacketWrapper(object):
                 'type': self._packet_type,
                 'mac': self.mac,
                 })
-                
+
             time_taken = time.time() - self._start_time
             _logger.debug("%(type)s request from %(mac)s processed in %(seconds).4f seconds" % {
              'type': self._packet_type,
              'mac': self.mac,
              'seconds': time_taken,
             })
-            
+
             if self._definition:
                 ip = self._definition.ip
                 subnet = self._definition.subnet
@@ -190,7 +192,7 @@ class _PacketWrapper(object):
             statistics.emit(statistics.Statistics(
              self.source_address, self.mac, ip, subnet, serial, self._packet_type, time_taken, not self._discarded, self.pxe,
             ))
-            
+
     def _extractInterestingFields(self):
         """
         Pulls commonly needed fields out of the packet, to avoid line-noise in
@@ -211,12 +213,12 @@ class _PacketWrapper(object):
              option_94 and tuple(option_94),
              option_97 and (option_97[0], option_97[1:])
             )
-            
+
     def _evaluateSource(self):
         """
         Determines whether the received packet belongs to a relayed request or
         not and decides whether it should be allowed based on policy.
-        
+
         :except _PacketSourceUnacceptable: The packet was rejected.
         """
         if self.giaddr: #Relayed request.
@@ -226,11 +228,11 @@ class _PacketWrapper(object):
                 raise _PacketSourceUnacceptable("relay not authorised")
         elif not config.ALLOW_LOCAL_DHCP and not self.pxe: #Local request, but denied.
             raise _PacketSourceUnacceptable("neither link-local traffic nor PXE is enabled")
-            
+
     def announcePacket(self, ip=None, verbosity=logging.INFO):
         """
         Logs the occurance of the wrapped packet.
-        
+
         :param basestring ip: The IP for which the request was sent, if known.
         :param int verbosity: A logging severity constant.
         """
@@ -245,33 +247,33 @@ class _PacketWrapper(object):
          ),
          'pxe': self.pxe and " (PXE)" or '',
         })
-        
+
     def getType(self):
         """
         Provides the type of packet being processed.
-        
+
         :return basestring: The type of packet being processed.
         """
         return self._packet_type
-        
+
     def setType(self, packet_type):
         """
         Updates the type of packet being processed.
-        
+
         :param basestring packet_type: The type of packet being processed.
         """
         self._packet_type = packet_type
-        
+
     def markAddressed(self):
         """
         Indicate that the packet was processed to completion.
         """
         self._discarded = False
-        
+
     def filterPacket(self, override_ip=False, override_ip_value=None):
         """
         A mechanism for allowing user-defined packet-filtering functionality.
-        
+
         :param bool override_ip: True if the advertised client IP should be
                                  overridden with another value.
         :param :class:`libpydhcpserver.dhcp_types.packet.DHCPPacket` override_ip_value: The
@@ -284,7 +286,7 @@ class _PacketWrapper(object):
         if override_ip:
             ip = override_ip_value
             self._associated_ip = ip
-            
+
         result = config.filterPacket(
          self.packet, self._packet_type,
          self.mac, ip, self.giaddr,
@@ -293,11 +295,11 @@ class _PacketWrapper(object):
         if result is None:
             raise _PacketSourceBlacklist("filterPacket() returned None")
         return result
-        
+
     def _loadDHCPPacket(self, definition, inform):
         """
         Sets option fields based on values returned from a database.
-        
+
         :param :class:`databases.generic.Definition` definition: Parameters used
             to load the packet.
         :param bool inform: True if this is a response to an INFORM request,
@@ -307,7 +309,7 @@ class _PacketWrapper(object):
         if not inform:
             self.packet.setOption('yiaddr', definition.ip)
             self.packet.setOption(51, definition.lease_time)
-            
+
         #Default gateway, subnet mask, and broadcast address.
         if definition.gateways:
             self.packet.setOption(3, definition.gateways)
@@ -315,7 +317,7 @@ class _PacketWrapper(object):
             self.packet.setOption(1, definition.subnet_mask)
         if definition.broadcast_address:
             self.packet.setOption(28, definition.broadcast_address)
-            
+
         #Domain details.
         if definition.hostname:
             self.packet.setOption(12, definition.hostname)
@@ -323,16 +325,16 @@ class _PacketWrapper(object):
             self.packet.setOption(15, definition.domain_name)
         if definition.domain_name_servers:
             self.packet.setOption(6, definition.domain_name_servers)
-            
+
         #NTP servers.
         if definition.ntp_servers:
             self.packet.setOption(42, definition.ntp_servers)
-            
+
     def loadDHCPPacket(self, definition, inform=False):
         """
         Loads the packet with all normally required values, then passes it
         through user-defined scripting to further set fields as needed.
-        
+
         :param :class:`databases.generic.Definition` definition: Parameters used
             to load the packet.
         :param bool inform: True if this is a response to an INFORM request.
@@ -351,12 +353,12 @@ class _PacketWrapper(object):
              'mac': self.mac,
             })
         return process
-        
+
     def retrieveDefinition(self, override_ip=False, override_ip_value=None):
         """
         Queries the database and user-defined scripting to try to match the MAC
         to a "lease".
-        
+
         :param bool override_ip: If True, `override_ip_value` will be used
             instead of the packet's `requested_ip_address` field.
         :param :class:`libpydhcpserver.dhcp_types.packet.DHCPPacket` override_ip_value: The
@@ -368,19 +370,30 @@ class _PacketWrapper(object):
         if override_ip:
             ip = override_ip_value
             self._associated_ip = ip
-            
-        self._definition = self._server.getDatabase().lookupMAC(self.mac) or config.handleUnknownMAC(
+
+        definition = self._server.getDatabase().lookupMAC(self.mac) or config.handleUnknownMAC(
          self.packet, self._packet_type,
          self.mac, ip, self.giaddr,
          self.pxe and self._pxe_options or None
         )
-        
+
+        #Allow for DBs to return multiple definitions that can then
+        #be filtered based on the the additional information
+        if definition and not isinstance(definition, Definition):
+            _logger.debug('Multiple (count=%i) definitions found', len(definition))
+            self._definition = config.filterRetrievedDefinitions(
+             definition, self.packet, self._packet_type, self.mac, ip,
+             self.giaddr, self.pxe and self._pxe_options or None
+            )
+        else:
+            self._definition = definition or None
+
         return self._definition
-        
+
 def _dhcpHandler(packet_type):
     """
     A decorator to abstract away the wrapper boilerplate.
-    
+
     :param basestring packet_type: The type of packet initially being processed.
     """
     def decorator(f):
@@ -391,7 +404,7 @@ def _dhcpHandler(packet_type):
                 f(self, wrapper)
         return wrappedHandler
     return decorator
-    
+
 class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
     """
     The handler that responds to all received requests.
@@ -400,11 +413,11 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
     _database = None #: The database to use for retrieving lease definitions.
     _dhcp_actions = None #: The MACs and the number of actions each has performed, decremented by one each tick.
     _ignored_addresses = None #: A list of all MACs currently ignored, plus the time remaining until requests will be honoured again.
-    
+
     def __init__(self, server_address, server_port, client_port, pxe_port, response_interface, response_interface_qtags, database):
         """
         Constructs the handler.
-        
+
         :param basestring address: The IP of the interface from which responses
                                    are to be sent.
         :param int server_port: The port on which DHCP requests are expected to
@@ -422,29 +435,29 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
         self._database = database
         self._dhcp_actions = {}
         self._ignored_addresses = []
-        
+
         libpydhcpserver.dhcp.DHCPServer.__init__(
          self, server_address, server_port, client_port, pxe_port, response_interface=response_interface, response_interface_qtags=response_interface_qtags
         )
-        
+
     @_dhcpHandler(_PACKET_TYPE_DECLINE)
     def _handleDHCPDecline(self, wrapper):
         """
         Informs the operator of a potential IP collision on the network.
-        
+
         :param :class:`_PacketWrapper` wrapper: The wrapped packet to process.
         :except _PacketSourceBlacklist: The MAC appears to be generating false
                                         information to disrupt the network.
         """
         if not wrapper.ip:
             raise _PacketSourceBlacklist("conflicting IP was not specified")
-            
+
         if not wrapper.sid:
             raise _PacketSourceBlacklist("server-identifier was not specified")
-            
+
         if wrapper.sid == self._server_address: #Rejected!
             if not wrapper.filterPacket(): return
-            
+
             definition = wrapper.retrieveDefinition()
             if definition and definition.ip == wrapper.ip: #Known client.
                 _logger.error('%(type)s from %(mac)s for %(ip)s on (%(subnet)s, %(serial)i)' % {
@@ -468,20 +481,20 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
                  'ip': wrapper.ip,
                  'mac': wrapper.mac,
                 })
-                
+
     @_dhcpHandler(_PACKET_TYPE_DISCOVER)
     def _handleDHCPDiscover(self, wrapper):
         """
         Evaluates a DISCOVER request from a client and determines whether an
         OFFER should be sent.
-        
+
         :param :class:`_PacketWrapper` wrapper: The wrapped packet to process.
         :except _PacketSourceBlacklist: The MAC can't be handled, but it also
                                         can't be NAKed, so reduce load.
         """
         if not wrapper.filterPacket(override_ip=True, override_ip_value=None): return
         wrapper.announcePacket()
-        
+
         definition = wrapper.retrieveDefinition(override_ip=True, override_ip_value=None)
         if definition:
             rapid_commit = wrapper.packet.isOption(80)
@@ -494,7 +507,7 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
                 wrapper.packet.setOption(80, [])
             else:
                 wrapper.packet.transformToDHCPOfferPacket()
-                
+
             if wrapper.loadDHCPPacket(definition):
                 if rapid_commit:
                     self._emitDHCPPacket(
@@ -517,23 +530,23 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
                 wrapper.markAddressed()
             else:
                 raise _PacketSourceBlacklist("unknown MAC and server is not authoritative; ignoring because rejection is impossible")
-                
+
     @_dhcpHandler(_PACKET_TYPE_INFORM)
     def _handleDHCPInform(self, wrapper):
         """
         Evaluates an INFORM request from a client and determines whether an ACK
         should be sent.
-        
+
         :param :class:`_PacketWrapper` wrapper: The wrapped packet to process.
         :except _PacketSourceBlacklist: The MAC can't be handled, so reduce
                                         load.
         """
         if not wrapper.filterPacket(override_ip=True, override_ip_value=wrapper.ciaddr): return
         wrapper.announcePacket(ip=wrapper.ciaddr)
-        
+
         if not wrapper.ciaddr:
             raise _PacketSourceBlacklist("ciaddr was not specified")
-            
+
         definition = wrapper.retrieveDefinition(override_ip=True, override_ip_value=wrapper.ciaddr)
         if definition:
             wrapper.packet.transformToDHCPAckPacket()
@@ -545,30 +558,30 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
                 wrapper.markAddressed()
         else:
             raise _PacketSourceBlacklist("unknown MAC")
-            
+
     @_dhcpHandler(_PACKET_TYPE_LEASEQUERY)
     def _handleDHCPLeaseQuery(self, wrapper):
         """
         Simply discards the packet; LEASEQUERY support was dropped in 1.7.0,
         because the implementation was wrong.
-        
+
         :param :class:`_PacketWrapper` wrapper: The wrapped packet to process.
         """
         if not wrapper.filterPacket(): return
         wrapper.announcePacket()
-        
+
         #When reimplementing LEASEQUERY, create an alternative to the
         #'Definition' model and use that to transfer data through the wrapper
         #and handleUnknownMAC. Instead of retrieveDefinition(), it will be
         #retrieveLeaseDefinition() and handleUnknownMAC() will need to return
         #that as a third result. Its None still means it had nothing, though.
-        
+
     @_dhcpHandler(_PACKET_TYPE_REQUEST)
     def _handleDHCPRequest(self, wrapper):
         """
         Evaluates a REQUEST request from a client and determines whether an ACK
         should be sent.
-        
+
         :param :class:`_PacketWrapper` wrapper: The wrapped packet to process.
         """
         if wrapper.sid and not wrapper.ciaddr: #SELECTING
@@ -585,19 +598,19 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
              'ip': wrapper.ip,
              'mac': wrapper.mac,
             })
-            
+
     def _handleDHCPRequest_SELECTING(self, wrapper):
         """
         Evaluates a SELECTING REQUEST from a client and determines whether an
         ACK or NAK should be sent.
-        
+
         :param :class:`_PacketWrapper` wrapper: The wrapped packet to process.
         """
         wrapper.setType(_PACKET_TYPE_REQUEST_SELECTING)
         if wrapper.sid == self._server_address: #Chosen!
             if not wrapper.filterPacket(): return
             wrapper.announcePacket(ip=wrapper.ip)
-            
+
             definition = wrapper.retrieveDefinition()
             if definition and (not wrapper.ip or definition.ip == wrapper.ip):
                 wrapper.packet.transformToDHCPAckPacket()
@@ -614,18 +627,18 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
                  wrapper.mac, _IP_REJECTED
                 )
                 wrapper.markAddressed()
-                
+
     def _handleDHCPRequest_INIT_REBOOT(self, wrapper):
         """
         Evaluates and an INIT-REBOOT REQUEST from a client and determines
         whether an ACK or NAK should be sent.
-        
+
         :param :class:`_PacketWrapper` wrapper: The wrapped packet to process.
         """
         wrapper.setType(_PACKET_TYPE_REQUEST_INIT_REBOOT)
         if not wrapper.filterPacket(): return
         wrapper.announcePacket(ip=wrapper.ip)
-        
+
         definition = wrapper.retrieveDefinition()
         if definition and definition.ip == wrapper.ip:
             wrapper.packet.transformToDHCPAckPacket()
@@ -642,22 +655,22 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
              wrapper.mac, wrapper.ip
             )
             wrapper.markAddressed()
-            
+
     def _handleDHCPRequest_RENEW_REBIND(self, wrapper):
         """
         Evaluates a RENEW or REBIND REQUEST from a client and determines whether
         an ACK or NAK should be sent.
-        
+
         If policy forbids RENEW and REBIND operations, perhaps to prepare for a
         new configuration rollout, all such requests are NAKed immediately.
-        
+
         :param :class:`_PacketWrapper` wrapper: The wrapped packet to process.
         """
         renew = wrapper.source_address.ip not in libpydhcpserver.dhcp.IP_UNSPECIFIED_FILTER
         wrapper.setType(renew and _PACKET_TYPE_REQUEST_RENEW or _PACKET_TYPE_REQUEST_REBIND)
         if not wrapper.filterPacket(): return
         wrapper.announcePacket(ip=wrapper.ip)
-        
+
         if config.NAK_RENEWALS and not wrapper.pxe and (renew or config.AUTHORITATIVE):
             wrapper.packet.transformToDHCPNakPacket()
             self._emitDHCPPacket(
@@ -686,19 +699,19 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
                      wrapper.mac, wrapper.ciaddr
                     )
                     wrapper.markAddressed()
-                    
+
     @_dhcpHandler(_PACKET_TYPE_RELEASE)
     def _handleDHCPRelease(self, wrapper):
         """
         Evaluates a RELEASE request, sent when a client terminates its "lease".
-        
+
         :param :class:`_PacketWrapper` wrapper: The wrapped packet to process.
         :except _PacketSourceBlacklist: The MAC appears to be generating false
                                         information to disrupt the network.
         """
         if not wrapper.sid:
             raise _PacketSourceBlacklist("server-identifier was not specified")
-            
+
         if wrapper.sid == self._server_address: #Released!
             if not wrapper.filterPacket(override_ip=True, override_ip_value=wrapper.ciaddr): return
             definition = wrapper.retrieveDefinition(override_ip=True, override_ip_value=wrapper.ciaddr)
@@ -711,14 +724,14 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
                  'ip': wrapper.ciaddr,
                  'mac': wrapper.mac,
                 })
-                
+
     def _logDHCPAccess(self, mac):
         """
         Increments the number of times the given MAC address has accessed this
         server. If suspension is enabled and the value exceeds the policy
         threshold, the MAC is ignored as potentially belonging to a malicious
         system.
-        
+
         :param :class:`libpydhcpserver.dhcp_types.mac.MAC` mac: The MAC being
                                                                 evaluated.
         :return bool: True if the MAC's request should be processed.
@@ -739,12 +752,12 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
                         self._ignored_addresses.append([minimal_mac, config.MISBEHAVING_CLIENT_TIMEOUT])
                         return False
         return True
-        
+
     def _emitDHCPPacket(self, packet, address, pxe, mac, client_ip):
         """
         Sends the given packet to the right destination, based on its
         properties.
-        
+
         :param :class:`libpydhcpserver.dhcp_types.packet.DHCPPacket` packet: The
             packet to be transmitted.
         :param :class:`libpydhcpserver.dhcp.Address` address: The address from
@@ -758,7 +771,7 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
         :return int: The number of bytes emitted.
         """
         packet.setOption(54, self._server_address) #server_identifier
-        
+
         (bytes, address) = self._sendDHCPPacket(packet, address, pxe)
         response_type = packet.getDHCPMessageTypeName()
         _logger.info('%(type)s sent at %(mac)s for %(client)s via %(ip)s:%(port)i %(pxe)s[%(bytes)i bytes]' % {
@@ -771,11 +784,11 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
          'pxe': pxe and '(PXE) ' or '',
         })
         return bytes
-        
+
     def addToTempBlacklist(self, mac, packet_type, reason):
         """
         Marks a MAC as ignorable for a brief period of time.
-        
+
         :param :class:`libpydhcpserver.dhcp_types.mac.MAC` mac: The MAC to be
                                                                 ignored.
         """
@@ -787,11 +800,11 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
          'packet_type': packet_type,
          'reason': reason,
         })
-        
+
     def evaluateAbuse(self, mac):
         """
         Determines whether the MAC is, or should be, blacklisted.
-        
+
         :param :class:`libpydhcpserver.dhcp_types.mac.MAC` mac: The MAC to be
                                                                 evaluated.
         :except _PacketSourceIgnored: The MAC is currently being ignored.
@@ -800,19 +813,19 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
             ignored = [timeout for (ignored_mac, timeout) in self._ignored_addresses if mac == ignored_mac]
         if ignored:
             raise _PacketSourceIgnored("MAC is on cooldown for another %(count)i seconds" % {'count': max(ignored)})
-            
+
         if not self._logDHCPAccess(mac):
             raise _PacketSourceIgnored("MAC has been ignored for excessive activity")
-            
+
     def getDatabase(self):
         """
         Returns the database this server is configured to use.
-        
+
         :return :class:`databases.generic.Database`: The database used for
             retrieving lease definitions.
         """
         return self._database
-        
+
     def getNextDHCPPacket(self):
         """
         Listens for a DHCP packet and initiates processing upon receipt.
@@ -822,7 +835,7 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
             statistics.emit(statistics.Statistics(
              source_address, None, None, None, None, None, 0.0, False, False
             ))
-            
+
     def tick(self):
         """
         Cleans up the MAC blacklist and the abuse-monitoring list.
@@ -834,7 +847,7 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
                     del self._ignored_addresses[i]
                 else:
                     ignored_address[1] -= 1
-                    
+
             if config.ENABLE_SUSPEND:
                 dead_keys = []
                 for (k, v) in self._dhcp_actions.iteritems():
@@ -842,21 +855,21 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
                         dead_keys.append(k)
                     else:
                         self._dhcp_actions[k] -= 1
-                        
+
                 for k in dead_keys:
                     del self._dhcp_actions[k]
-                    
-                    
+
+
 class DHCPService(threading.Thread):
     """
     A thread that handles DHCP requests indefinitely, daemonically.
     """
     _dhcp_server = None #: The handler that responds to DHCP requests.
-    
+
     def __init__(self, database):
         """
         Sets up the DHCP server.
-        
+
         :param :class:`databases.generic.Database` database: The database to use
                                                              for retrieving
                                                              lease definitions.
@@ -866,7 +879,7 @@ class DHCPService(threading.Thread):
         threading.Thread.__init__(self)
         self.name = "DHCP"
         self.daemon = True
-        
+
         server_address = IPv4(config.DHCP_SERVER_IP)
         _logger.info("Prepared to bind to %(address)s; ports: server: %(server)s, client: %(client)s, pxe: %(pxe)s%(response-interface)s" % {
          'address': server_address,
@@ -890,11 +903,11 @@ class DHCPService(threading.Thread):
          database
         )
         _logger.info("Configured DHCP server")
-        
+
     def run(self):
         """
         Runs the DHCP server indefinitely.
-        
+
         In the event of an unexpected error, e-mail will be sent and processing
         will continue with the next request.
         """
@@ -906,13 +919,13 @@ class DHCPService(threading.Thread):
                 _logger.debug('Suppressed non-fatal select() error')
             except Exception:
                 _logger.critical("Unhandled exception:\n" + traceback.format_exc())
-                
+
     def tick(self):
         """
         Calls the underlying tick() method.
         """
         self._dhcp_server.tick()
-    
+
 class _PacketRejection(Exception):
     """
     The base-class for indicating that a packet could not be processed.
@@ -929,4 +942,3 @@ class _PacketSourceUnacceptable(_PacketRejection):
     """
     Indicates that the packet's sender is not permitted by policy.
     """
-    

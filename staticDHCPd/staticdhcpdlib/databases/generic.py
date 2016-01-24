@@ -59,7 +59,7 @@ class Definition(object):
     subnet = None #: The "subnet" identifier of the record in the database
     serial = None #: The "serial" identifier of the record in the database
     extra = None #: An object containing any metadata from the database
-    
+
     def __init__(self,
         ip, lease_time, subnet, serial,
         hostname=None,
@@ -69,7 +69,7 @@ class Definition(object):
     ):
         """
         Initialises a Definition.
-        
+
         :param ip: The IP address to assign, in any main format.
         :param int lease_time: The number of seconds for which the lease is
                                valid.
@@ -98,7 +98,7 @@ class Definition(object):
         self.lease_time = int(lease_time)
         self.subnet = str(subnet)
         self.serial = int(serial)
-        
+
         #Optional vlaues
         self.hostname = hostname and str(hostname)
         self.gateways = self._parse_addresses(gateways)
@@ -108,7 +108,7 @@ class Definition(object):
         self.domain_name_servers = self._parse_addresses(domain_name_servers, limit=3)
         self.ntp_servers = self._parse_addresses(ntp_servers, limit=3)
         self.extra = extra
-        
+
     def _parse_address(self, address):
         """
         Takes an input-value and produces an IPv4 address.
@@ -122,11 +122,11 @@ class Definition(object):
         if address:
             return IPv4(address)
         return None
-        
+
     def _parse_addresses(self, addresses, limit=None):
         """
         Takes variable-type input and produces IPv4 addresses.
-        
+
         :param addresses: The IP addresses to process, in any main format,
                           including comma-delimited string.
         :param int limit: The maximum number of addresses to return.
@@ -145,7 +145,7 @@ class Definition(object):
                 addresses = tuple(addresses)
             return [self._parse_address(i) for i in addresses[:limit]] or None
         return None
-        
+
 class Database(object):
     """
     A stub describing the features a Database object must provide.
@@ -154,20 +154,20 @@ class Database(object):
         """
         Queries the database for the given MAC address and returns the IP and
         associated details if the MAC is known.
-        
+
         :param mac: The MAC address to lookup.
         :return: The :class:`Definition` or, if no match was found, ``None``.
         :raise Exception: A problem occured while accessing the database.
         """
         raise NotImplementedError("lookupMAC() must be implemented by subclasses")
-        
+
     def reinitialise(self):
         """
         Though subclass-dependent, this will generally result in some guarantee
         that the database will provide fresh data, whether that means flushing
         a cache or reconnecting to the source.
         """
-        
+
 class CachingDatabase(Database):
     """
     A partial implementation of the Database engine, adding efficient generic
@@ -175,11 +175,11 @@ class CachingDatabase(Database):
     """
     _resource_lock = None #: A lock used to prevent the database from being overwhelmed.
     _cache = None #: The caching structure to use, if caching is desired.
-    
+
     def __init__(self, concurrency_limit=2147483647):
         """
         A fully implemented caching layer for any real database.
-        
+
         :param int concurrency_limit: The number of concurrent database hits to
                                       permit, defaulting to a ridiculously large
                                       number.
@@ -191,11 +191,11 @@ class CachingDatabase(Database):
             self._setupCache()
         except Exception, e:
             _logger.error("Cache initialisation failed:\n" + traceback.format_exc())
-            
+
     def _setupCache(self):
         """
         Sets up the database caching environment.
-        
+
         :except Exception: Cache-initialisation failed.
         """
         from .. import config
@@ -217,10 +217,15 @@ class CachingDatabase(Database):
                         self._cache = _caching.MemoryCache('memory-nonpersist')
                     elif config.CACHE_ON_DISK:
                         _logger.warn("Caching is disabled: memory-caching was not requested, so no fallback exists")
+            elif config.MEMCACHED_CACHE:
+                _logger.debug("Setting up memcached-cache")
+                self._cache = _caching.MemcachedCache('memcached',
+                                                      (config.MEMCACHED_SERVER, config.MEMCACHED_PORT),
+                                                      config.MEMCACHED_AGE_TIME)
             else:
                 _logger.debug("Setting up memory-cache")
                 self._cache = _caching.MemoryCache('memory')
-                
+
             if self._cache:
                 _logger.info("Database caching enabled; top-level cache: " + str(self._cache))
             else:
@@ -230,14 +235,16 @@ class CachingDatabase(Database):
                 _logger.warn("PERSISTENT_CACHE was set, but USE_CACHE was not")
             if config.CACHE_ON_DISK:
                 _logger.warn("CACHE_ON_DISK was set, but USE_CACHE was not")
-                
+            if config.MEMCACHED_CACHE:
+                _logger.warn("MEMCACHED_CACHE was set, but USE_CACHE was not")
+
     def reinitialise(self):
         if self._cache:
             try:
                 self._cache.reinitialise()
             except Exception, e:
                 _logger.error("Cache reinitialisation failed:\n" + traceback.format_exc())
-                
+
     def lookupMAC(self, mac):
         if self._cache:
             try:
@@ -247,7 +254,7 @@ class CachingDatabase(Database):
             else:
                 if definition:
                     return definition
-                    
+
         with self._resource_lock:
             definition = self._lookupMAC(mac)
         if definition and self._cache:
@@ -256,7 +263,7 @@ class CachingDatabase(Database):
             except Exception, e:
                 _logger.error("Cache update failed:\n" + traceback.format_exc())
         return definition
-        
+
 class Null(Database):
     """
     A database that never serves anything, useful primarily for testing or if
@@ -264,4 +271,3 @@ class Null(Database):
     """
     def lookupMAC(self, mac):
         return None
-        
