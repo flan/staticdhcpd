@@ -49,6 +49,21 @@ Internal-only Ethernet-frame-grabbing for Linux.
 Nothing should be addressable to the special response socket, but better to avoid wasting memory.
 """
 
+_SO_BINDTODEVICE = 25 #Assume the most common Linux value by default
+"""
+The value for `SO_BINDTODEVICE` on the current platform; for BSD and other
+UNIXes, `IP_RECVIF` is used instead, but it has the same usage semantics.
+"""
+if platform.system() == 'Linux':
+    if hasattr(socket, 'SO_BINDTODEVICE'):
+        _SO_BINDTODEVICE = socket.SO_BINDTODEVICE
+    elif platform.machine() == 'sparc':
+        _SO_BINDTODEVICE = 0x0d
+    elif platform.machine() == 'parisc':
+        _SO_BINDTODEVICE = 0x4019
+else: #Assume BSD/OS X
+   _SO_BINDTODEVICE = 20 #IP_RECVIF as defined in FreeBSD
+
 Address = collections.namedtuple("Address", ('ip', 'port'))
 """
 An inet layer-3 address.
@@ -61,11 +76,6 @@ An inet layer-3 address.
 
     A numeric port value.
 """
-
-try: #see if Python was built against a specific platform
-    _SO_BINDTODEVICE = socket.SO_BINDTODEVICE
-except AttributeError: #Fall back to the common value
-    _SO_BINDTODEVICE = 25
 
 class DHCPServer(object):
     """
