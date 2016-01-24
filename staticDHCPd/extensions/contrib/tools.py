@@ -39,6 +39,5 @@ def filterRetrievedDefinitions(definitions, packet, packet_type, mac,
             #TODO: What happens under multiple relays in the chain?
             if giaddr.isSubnetMember(definition.ip, definition.subnet_mask):
                return definition
-    else:
-        _logger.debug("No match found in filtering.")
-        return None
+    _logger.debug("No match found in filtering.")
+    return None
