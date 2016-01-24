@@ -216,12 +216,7 @@ if hasattr(conf, 'filterRetrievedDefinitions'):
     filterRetrievedDefinitions = conf.filterRetrievedDefinitions
 else:
     def filterRetrievedDefinitions(definitions, *args, **kwargs):
-        if not definitions:
-            return None
-        elif len(definitions) == 1:
-            return definitions[0]
-        else:
-            raise ValueError('Multiple definitions received and no filtering mechanism implemented')
+        raise ValueError('No handler exists for multi-definition matches; implement filterRetrievedDefinitions()')
 
 if hasattr(conf, 'loadDHCPPacket'):
     if inspect.getargspec(conf.loadDHCPPacket).args == ['packet', 'mac', 'client_ip', 'relay_ip', 'subnet', 'serial', 'pxe', 'vendor']:
