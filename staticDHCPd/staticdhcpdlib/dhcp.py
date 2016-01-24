@@ -36,6 +36,8 @@ import libpydhcpserver.dhcp
 from libpydhcpserver.dhcp_types.ipv4 import IPv4
 from libpydhcpserver.dhcp_types.mac import MAC
 
+from databases.generic import Definition
+
 #Packet-type string-constants
 _PACKET_TYPE_DECLINE = 'DECLINE'
 _PACKET_TYPE_DISCOVER = 'DISCOVER'
@@ -376,9 +378,9 @@ class _PacketWrapper(object):
         )
 
         #Allow for DBs to return multiple definitions that can then
-        # be filtered based on the the additional information
-        if definition and isinstance(definition, (list,tuple)):
-            _logger.debug('Multiple (%s) definitions found', len(definition))
+        #be filtered based on the the additional information
+        if definition and not isinstance(definition, Definition):
+            _logger.debug('Multiple (count=%i) definitions found', len(definition))
             self._definition = config.filterRetrievedDefinitions(
              definition, self.packet, self._packet_type, self.mac, ip,
              self.giaddr, self.pxe and self._pxe_options or None
