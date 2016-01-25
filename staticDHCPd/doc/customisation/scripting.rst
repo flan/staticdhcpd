@@ -178,6 +178,55 @@ It is difficult to provide a general example of how to use this function, since
 its role is basically that of a code-driven database. When you need to use it,
 you will know.
 
+filterRetrievedDefinitions()
+++++++++++++++++++++++++++++
+.. function:: filterRetrievedDefinitions(definitions, packet, method, mac, client_ip, relay_ip, pxe)
+
+    Some databases produce collections of :class:`databases.generic.Definition`
+    objects, rather than simply returning one or ``None``. This function allows
+    you to use runtime information, not necessarily passed back to the database,
+    to make a decision about which :class:`databases.generic.Definition` to use
+    for processing the request.
+    
+    :param definitions: A collection of :class:`databases.generic.Definition`s.
+    :param packet: The packet received from the client, an instance of
+                   :class:`libpydhcpserver.dhcp_types.packet.DHCPPacket`.
+                   
+                   Any changes made to this packet will persist.
+    :param str method: The type of DHCP request the packet represents, one of
+                       ``DECLINE``, ``DISCOVER``, ``INFORM``, ``RELEASE``,
+                       ``REQUEST:INIT-REBOOT``, ``REQUEST:REBIND``,
+                       ``REQUEST:RENEW``, ``REQUEST:SELECTING``.
+    :param mac: The MAC of the client, an instance of
+                :class:`libpydhcpserver.dhcp_types.mac.MAC`.
+    :param client_ip: The client's requested IP address (may be ``None``), an
+                      instance of :class:`libpydhcpserver.dhcp_types.ipv4.IPv4`.
+    :param relay_ip: The relay used by the client (may be ``None``), an
+                     instance of :class:`libpydhcpserver.dhcp_types.ipv4.IPv4`.
+    :param pxe: ``None`` if not applicable; else, a `namedtuple` containing
+                option 93 (client_system) as a sequence of ints, option 94
+                (client_ndi) as a sequence of three bytes, and option 97
+                (uuid_guid) as digested data: `(type:byte, data:[byte])`.
+                
+                Any unset options are presented as ``None``.
+    :return: An instance of :class:`databases.generic.Definition` or ``None``,
+             if the `definitons` could not be processed.
+
+Example
+|||||||
+This is a very site-specific feature, since no built-in database modules
+support cases with MAC-collisions.
+
+Likely users of this feature will be heavy users of VM environments, where
+images may be loaded on multiple systems in various subnets, without the MAC
+being redefined.
+
+Before resorting to this approach for resolving such conflicts, consider using
+`handleUnknownMAC()`_ and passing the parameters it receives to your database
+engine. `filterRetrievedDefinitions()`_ is appropriate only in the case where
+the database layer cannot do additional processing on its own or runtime context
+is only available on the DHCP server for technical reasons.
+
 .. _scripting-loadDHCPPacket:
 
 loadDHCPPacket()
