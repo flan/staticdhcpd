@@ -348,12 +348,12 @@ class _NetworkLink(object):
             })
 
         if server_address:
-            import ipv4_to_iface
-            listen_interface = ipv4_to_iface.get_network_interface(server_address)
+            import getifaddrslib
+            listen_interface = getifaddrslib.get_network_interface(server_address)
             try:
                 dhcp_socket.setsockopt(socket.SOL_SOCKET, _SO_BINDTODEVICE, listen_interface)
             except socket.error, msg:
-                raise OSError(msg.errno, 'Unable to listen only on %(listen_interface)s: %(err)s' % {
+                raise OSError(msg.errno, 'Unable to limit listening to %(listen_interface)s: %(err)s' % {
                  'listen_interface': listen_interface,
                  'err': msg.strerror,
                 })
