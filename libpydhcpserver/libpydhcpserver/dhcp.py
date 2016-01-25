@@ -64,6 +64,12 @@ if platform.system() == 'Linux':
 else: #Assume BSD/OS X
    _SO_BINDTODEVICE = 20 #IP_RECVIF as defined in FreeBSD
 
+_AF_PACKET = (hasattr(socket, 'AF_PACKET') and socket.AF_PACKET) or 17
+"""
+Linux constant for AF_PACKET, just in case Python wasn't built against complete
+headers.
+"""
+
 Address = collections.namedtuple("Address", ('ip', 'port'))
 """
 An inet layer-3 address.
@@ -291,7 +297,7 @@ class _NetworkLink(object):
                     self._responder_broadcast = _L2Responder_pcap(server_address, response_interface, qtags=response_interface_qtags)
                 except Exception, e:
                     import errno
-                    raise EnvironmentError(errno.ELIBACC, "Raw response-socket requested on %(interface)s, but neither AF_PACKET/PF_PACKET nor libpcap are available, or the interface does not exist" % {'interface': response_interface,})
+                    raise EnvironmentError(errno.ELIBACC, "Raw response-socket requested on %(interface)s, but neither AF_PACKET nor libpcap are available, or the interface does not exist" % {'interface': response_interface,})
             self._unicast_discover_supported = True
         else:
             self._responder_broadcast = _L3Responder(server_address=server_address)
@@ -678,7 +684,7 @@ class _L2Responder(_Responder):
 
 class _L2Responder_AF_PACKET(_L2Responder):
     """
-    A Linux-specific layer 2 responder that uses AF_PACKET/PF_PACKET.
+    A Linux-specific layer 2 responder that uses AF_PACKET.
     """
     _socket = None #: The socket used for responses.
 
@@ -693,10 +699,7 @@ class _L2Responder_AF_PACKET(_L2Responder):
             Definitions take the following form: (pcp:`0-7`, dei:``bool``, vid:`1-4094`)
         :except socket.error: The socket could not be configured.
         """
-        socket_type = ((hasattr(socket, 'AF_PACKET') and socket.AF_PACKET) or (hasattr(socket, 'PF_PACKET') and socket.PF_PACKET))
-        if not socket_type:
-            raise Exception("Neither AF_PACKET nor PF_PACKET found")
-        self._socket = socket.socket(socket_type, socket.SOCK_RAW, socket.htons(_ETH_P_SNAP))
+        self._socket = socket.socket(_AF_PACKET, socket.SOCK_RAW, socket.htons(_ETH_P_SNAP))
         self._socket.bind((response_interface, _ETH_P_SNAP))
         self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 2 ** 12)
         self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 2 ** 12)
@@ -739,6 +742,8 @@ class _L2Responder_pcap(_L2Responder):
         self._c_int_ = ctypes.c_int
         import ctypes.util
 
+        import getifaddrslib
+        
         pcap = ctypes.util.find_library('pcap')
         if not pcap:
             raise Exception("libpcap not found")
@@ -754,36 +759,13 @@ class _L2Responder_pcap(_L2Responder):
             warnings.warn(errbuf.value)
 
         try:
-            mac = self._getMAC(response_interface)
+            mac = ''.join(chr(i) for i in MAC(getifaddrslib.get_mac_address(response_interface)))
         except Exception:
             pcap.pcap_close(self._fd)
             raise
         else:
             _L2Responder.__init__(self, server_address, mac, qtags=qtags)
         self._inject = pcap.pcap_inject
-
-    def _getMAC(self, response_interface):
-        """
-        Mostly portable means of getting the MAC address for the interface.
-
-        :param str response_interface: The interface on which to provide raw packet support, like
-            ``"eth0"``.
-        :return str: The MAC address, in network-byte order.
-        :except Exception: The MAC could not be retrieved.
-        """
-        import subprocess
-        import re
-        if platform.system() == 'Linux':
-            command = ('/sbin/ip', 'link', 'show', response_interface)
-        else:
-            command = ('/sbin/ifconfig', response_interface)
-        ifconfig_output = subprocess.check_output(command)
-        m = re.search(r'\b(?P<mac>(?:[0-9A-Fa-f]{2}:){5}(?:[0-9A-Fa-f]{2}))\b', ifconfig_output)
-        if not m:
-            raise Exception("Unable to determine MAC of %(interface)s" % {
-             'interface': response_interface,
-            })
-        return ''.join(chr(i) for i in MAC(m.group('mac')))
 
     def _send_(self, packet):
         """
