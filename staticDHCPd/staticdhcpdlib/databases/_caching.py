@@ -195,9 +195,6 @@ class MemcachedCache(_DatabaseCache):
         self.memcached_age_time = memcached_age_time
         _logger.debug("Memcached database-cache initialised")
 
-    def _reinitialise(self):
-        pass
-
     def _lookupMAC(self, mac):
         data = self.mc_client.get(str(mac))
         if data:
