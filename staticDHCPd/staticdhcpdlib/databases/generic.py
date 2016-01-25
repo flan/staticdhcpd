@@ -228,9 +228,13 @@ class CachingDatabase(Database):
                                                       config.MEMCACHED_AGE_TIME)
 
             if self._cache:
-                _logger.info("Database caching enabled; top-level cache: " + str(self._cache))
+                _logger.info("Database caching enabled; top-level cache: %(cache)s" % {
+                    'cache': self._cache,
+                })
             else:
-                _logger.warn("Database caching could not be enabled")
+                _logger.warn("'%(model)s' database caching could not be enabled" % {
+                    'model': config.CACHING_MODEL,
+                })
         else:
             if config.PERSISTENT_CACHE:
                 _logger.warn("PERSISTENT_CACHE was set, but USE_CACHE was not")
