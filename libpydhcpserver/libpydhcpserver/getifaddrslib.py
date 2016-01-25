@@ -48,14 +48,14 @@ class struct_sockaddr_in(ctypes.Structure):
     _fields_ = (
         ('sin_family', ctypes.c_ushort),
         ('sin_port', ctypes.c_uint16),
-        ('sin_addr', ctypes.c_byte * 4),
+        ('sin_addr', ctypes.c_ubyte * 4),
     )
 
 class struct_ifaddrs(ctypes.Structure): pass
 struct_ifaddrs._fields_ = (
         ('ifa_next', ctypes.POINTER(struct_ifaddrs)),
         ('ifa_name', ctypes.c_char_p),
-        ('ifa_flags', ctypes.c_uint),
+        ('ifa_flags', ctypes.c_uint32),
         ('ifa_addr', ctypes.POINTER(struct_sockaddr)),
     ) #Linux diverges from BSD for the rest, but it's safe to omit the tail
 
@@ -65,22 +65,22 @@ class struct_sockaddr_dl(ctypes.Structure):
         ('sdl_len', ctypes.c_byte),
         ('sdl_family', ctypes.c_byte),
         ('sdl_index', ctypes.c_ushort),
-        ('sdl_type', ctypes.c_byte),
-        ('sdl_nlen', ctypes.c_byte),
-        ('sdl_alen', ctypes.c_byte),
-        ('sdl_slen', ctypes.c_byte),
-        ('sdl_data', ctypes.c_char * 12),
+        ('sdl_type', ctypes.c_ubyte),
+        ('sdl_nlen', ctypes.c_ubyte),
+        ('sdl_alen', ctypes.c_ubyte),
+        ('sdl_slen', ctypes.c_ubyte),
+        ('sdl_data', ctypes.c_ubyte * 12),
     )
 #AF_PACKET
 class struct_sockaddr_ll(ctypes.Structure):
     _fields_ = (
         ('sll_family', ctypes.c_ushort),
         ('sll_protocol', ctypes.c_ushort),
-        ('sll_ifindex', ctypes.c_int),
+        ('sll_ifindex', ctypes.c_int32),
         ('sll_hatype', ctypes.c_ushort),
-        ('sll_pkttype', ctypes.c_byte),
-        ('sll_halen', ctypes.c_byte),
-        ('sll_addr', ctypes.c_char * 8),
+        ('sll_pkttype', ctypes.c_ubyte),
+        ('sll_halen', ctypes.c_ubyte),
+        ('sll_addr', ctypes.c_ubyte * 8),
     )
     
 def _evaluate_ipv4(ifaddr, ipv4):
@@ -110,7 +110,7 @@ def _extract_mac(ifaddr):
     else:
         sockaddr_dl = ctypes.cast(ctypes.pointer(sockaddr), ctypes.POINTER(struct_sockaddr_dl)).contents
         mac = sockaddr_dl.sdl_data[sockaddr_dl.sdl_nlen:sockaddr_dl.sdl_nlen + sockaddr_dl.sdl_alen]
-    return ':'.join('%02x' % b for b in (ord(c) for c in mac))
+    return ':'.join('%02x' % b for b in mac)
     
 def _evaluate_ifaddrs(evaluator, extractor):
     ifap = ctypes.POINTER(struct_ifaddrs)()
