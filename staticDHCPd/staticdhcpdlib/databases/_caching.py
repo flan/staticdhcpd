@@ -215,9 +215,11 @@ class MemcachedCache(_DatabaseCache):
                 return results
         return None
 
-    def _cacheMAC(self, mac, definitions, chained):
-        if not isinstance(definitions, (list,tuple)):
-            definitions = [definitions]
+    def _cacheMAC(self, mac, definition, chained):
+        if isinstance(definition, Definition):
+            definitions = [definition]
+        else:
+            definitions = definition
 
         mac_list = []
         for definition in definitions:
