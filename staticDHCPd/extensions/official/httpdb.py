@@ -160,25 +160,6 @@ class _HTTPLogic(object):
                 'mac': str(mac),
             })
             results = json.loads(response.read())
-            if not isinstance(results, (list,tuple)):
-                results = [results]
-
-            if not results: #The server sent back 'null' or an empty object
-                _logger.debug("Unknown MAC response from '%(uri)s' for '%(mac)s'" % {
-                    'uri': self._uri,
-                    'mac': str(mac),
-                })
-                return None
-
-            _logger.debug("Results from HTTPDB call: %s" % results)
-
-            _logger.debug("Known MAC response from '%(uri)s' for '%(mac)s'" % {
-                'uri': self._uri,
-                'mac': str(mac),
-            })
-
-            return [_parse_server_response(self._set_defaults(result)) for result in results]
-
         except Exception, e:
             _logger.error("Failed to lookup '%(mac)s' on '%(uri)s': %(error)s" % {
                 'uri': self._uri,
@@ -186,6 +167,24 @@ class _HTTPLogic(object):
                 'error': str(e),
             })
             raise
+        else:
+            if results:
+                _logger.debug("Known MAC response from '%(uri)s' for '%(mac)s': %(results)r" % {
+                    'uri': self._uri,
+                    'mac': str(mac),
+                    'results': results,
+                })
+
+                if isinstance(results, list): #Multi-definition response
+                    return [_parse_server_response(self._set_defaults(result)) for result in results]
+                return _parse_server_response(self._set_defaults(result))
+            else: #The server sent back 'null' or an empty object
+                _logger.debug("Unknown MAC response from '%(uri)s' for '%(mac)s': %(results)r" % {
+                    'uri': self._uri,
+                    'mac': str(mac),
+                    'results': results,
+                })
+                return None
 
     def _set_defaults(self, json_data):
         """
