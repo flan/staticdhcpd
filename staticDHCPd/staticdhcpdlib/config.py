@@ -95,10 +95,11 @@ _defaults.update({
 #######################################
 _defaults.update({
  'USE_CACHE': False,
+ 'CACHING_MODEL': 'in-process',
+
  'PERSISTENT_CACHE': None,
  'CACHE_ON_DISK': False,
 
- 'MEMCACHED_CACHE': False,
  'MEMCACHED_HOST': None,
  'MEMCACHED_PORT': 11211,
  'MEMCACHED_AGE_TIME': 300, #5 minutes

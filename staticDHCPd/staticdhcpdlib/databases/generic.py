@@ -201,30 +201,31 @@ class CachingDatabase(Database):
         from .. import config
         if config.USE_CACHE:
             import _caching
-            if config.PERSISTENT_CACHE or config.CACHE_ON_DISK:
-                try:
-                    disk_cache = _caching.DiskCache(config.PERSISTENT_CACHE and 'persistent' or 'disk', config.PERSISTENT_CACHE)
-                    if config.CACHE_ON_DISK:
-                        _logger.debug("Combining local caching database and persistent caching database")
-                        self._cache = disk_cache
-                    else:
-                        _logger.debug("Setting up memory-cache on top of persistent caching database")
-                        self._cache = _caching.MemoryCache('memory', chained_cache=disk_cache)
-                except Exception, e:
-                    _logger.error("Unable to initialise disk-based caching:\n" + traceback.format_exc())
-                    if config.PERSISTENT_CACHE and not config.CACHE_ON_DISK:
-                        _logger.warn("Persistent caching is not available")
-                        self._cache = _caching.MemoryCache('memory-nonpersist')
-                    elif config.CACHE_ON_DISK:
-                        _logger.warn("Caching is disabled: memory-caching was not requested, so no fallback exists")
-            elif config.MEMCACHED_CACHE:
+            if config.CACHING_MODEL == 'in-process':
+                if config.PERSISTENT_CACHE or config.CACHE_ON_DISK:
+                    try:
+                        disk_cache = _caching.DiskCache(config.PERSISTENT_CACHE and 'persistent' or 'disk', config.PERSISTENT_CACHE)
+                        if config.CACHE_ON_DISK:
+                            _logger.debug("Combining local caching database and persistent caching database")
+                            self._cache = disk_cache
+                        else:
+                            _logger.debug("Setting up memory-cache on top of persistent caching database")
+                            self._cache = _caching.MemoryCache('memory', chained_cache=disk_cache)
+                    except Exception, e:
+                        _logger.error("Unable to initialise disk-based caching:\n" + traceback.format_exc())
+                        if config.PERSISTENT_CACHE and not config.CACHE_ON_DISK:
+                            _logger.warn("Persistent caching is not available")
+                            self._cache = _caching.MemoryCache('memory-nonpersist')
+                        elif config.CACHE_ON_DISK:
+                            _logger.warn("Caching is disabled: memory-caching was not requested, so no fallback exists")
+                else:
+                    _logger.debug("Setting up memory-cache")
+                    self._cache = _caching.MemoryCache('memory')
+            elif config.CACHING_MODEL == 'memcached':
                 _logger.debug("Setting up memcached-cache")
                 self._cache = _caching.MemcachedCache('memcached',
                                                       (config.MEMCACHED_SERVER, config.MEMCACHED_PORT),
                                                       config.MEMCACHED_AGE_TIME)
-            else:
-                _logger.debug("Setting up memory-cache")
-                self._cache = _caching.MemoryCache('memory')
 
             if self._cache:
                 _logger.info("Database caching enabled; top-level cache: " + str(self._cache))
@@ -235,8 +236,6 @@ class CachingDatabase(Database):
                 _logger.warn("PERSISTENT_CACHE was set, but USE_CACHE was not")
             if config.CACHE_ON_DISK:
                 _logger.warn("CACHE_ON_DISK was set, but USE_CACHE was not")
-            if config.MEMCACHED_CACHE:
-                _logger.warn("MEMCACHED_CACHE was set, but USE_CACHE was not")
 
     def reinitialise(self):
         if self._cache:

@@ -128,6 +128,54 @@ Server
 * The port to use for PXE-processing, if required; PXE is disabled if not set
 * PXE normally runs on ``4011``
 
+
+Caching
++++++++
+Caches are only enabled if the database engine supports them and **USE_CACHE**
+is set.
+
+**CACHING_MODEL** : text : default="in-process"
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+* The database-engine to use for handling static lease data
+
+  * ``'in-process'``: manage the cache using in-process constructs, either
+    memory or an on-disk file accessed exclusively by *staticDHCPd*
+  * ``'memcached'``: use a *memcached* server as an external store
+
+**CACHE_ON_DISK** : boolean : default=False
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+* Causes the local cache to be managed as a local file, rather than a purely
+  in-memory construct
+
+  * For largeish caches that are accessed infrequently, but where local access
+    through disk (or hotspot-cached pages in RAM) is still expected to be more
+    efficient than a remote database call
+  * This file will be temporary, unless **PERSISTENT_CACHE** is set; in that
+    case, the file will be the same
+
+**PERSISTENT_CACHE** : text : default=None
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+* Causes the cache to be written to a local database file, which will be used
+  when *staticDHCPd* is restarted, to provide durability against unstable
+  databases
+* The value of this option is the path to the file;
+  ``'/var/tmp/staticDHCPd.db'`` is usually a good choice
+* If **CACHE_ON_DISK** is set, this file will be used directly as a buffer; if
+  not, the contents of this file will be read into memory and this file will be
+  write-only at runtime
+
+**MEMCACHED_HOST** : text : default=None
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+* The address of the *memcached* server to use with the corresponding model
+
+**MEMCACHED_PORT** : integer : default=11211
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+* The port of the *memcached* server to use with the corresponding model
+
+**MEMCACHED_AGE_TIME** : integer : default=300
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+* The lifetime to apply to cached data within the *memcached* server
+
 Database
 ++++++++
 **DATABASE_ENGINE** : text, None : **MUST BE SPECIFIED**
@@ -185,30 +233,6 @@ Database:SQLite
   cache is flushed via reinitialisation
 * For SQLite, this should normally be ``False``
 
-**CACHE_ON_DISK** : boolean : default=False
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-* Causes the local cache to be managed as a local file, rather than a purely
-  in-memory construct
-  
-  * Most kernels will keep the file in memory if accessed frequently, but
-    its data-compaction is a little bit tighter, and the cache should reach
-    its final state quickly, so reclaiming memory is swap-free
-  * This file will be temporary, unless **PERSISTENT_CACHE** is set; in that case,
-    the file will be the same
-    
-* For SQLite, this should normally be ``False``
-
-**PERSISTENT_CACHE** : text : default=None
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-* Causes the cache to be written to a local database file, which will be used
-  when *staticDHCPd* is restarted, to provide durability against unstable
-  databases
-* The value of this option is the path to the file;
-  ``'/var/tmp/staticDHCPd.db'`` is usually a good choice
-* If **CACHE_ON_DISK** is set, this file will be used; if not, the contents of
-  this file will be read into memory
-* For SQLite, this should normally be ``False``
-
 **EXTRA_MAPS** : list : default=None
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 * Any non-standard fields to read from the `maps` table, which will be
@@ -236,27 +260,6 @@ Database:PostgreSQL
 * Causes data retrieved from the database to be stored in memory until the
   cache is flushed via reinitialisation
 * Can greatly improve performance in stable, high-load environments
-
-**CACHE_ON_DISK** : boolean : default=False
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-* Causes the local cache to be managed as a local file, rather than a purely
-  in-memory construct
-  
-  * Most kernels will keep the file in memory if accessed frequently, but
-    its data-compaction is a little bit tighter, and the cache should reach
-    its final state quickly, so reclaiming memory is swap-free
-  * This file will be temporary, unless **PERSISTENT_CACHE** is set; in that
-    case, the file will be the same
-
-**PERSISTENT_CACHE** : text : default=None
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-* Causes the cache to be written to a local database file, which will be used
-  when *staticDHCPd* is restarted, to provide durability against unstable
-  databases
-* The value of this option is the path to the file;
-  ``'/var/tmp/staticDHCPd.db'`` is usually a good choice
-* If **CACHE_ON_DISK** is set, this file will be used; if not, the contents of
-  this file will be read into memory
 
 **EXTRA_MAPS** : list : default=None
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -322,27 +325,6 @@ Database:Oracle
   cache is flushed via reinitialisation
 * Can greatly improve performance in stable, high-load environments
 
-**CACHE_ON_DISK** : boolean : default=False
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-* Causes the local cache to be managed as a local file, rather than a purely
-  in-memory construct
-  
-  * Most kernels will keep the file in memory if accessed frequently, but
-    its data-compaction is a little bit tighter, and the cache should reach
-    its final state quickly, so reclaiming memory is swap-free
-  * This file will be temporary, unless **PERSISTENT_CACHE** is set; in that
-    case, the file will be the same
-
-**PERSISTENT_CACHE** : text : default=None
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-* Causes the cache to be written to a local database file, which will be used
-  when *staticDHCPd* is restarted, to provide durability against unstable
-  databases
-* The value of this option is the path to the file;
-  ``'/var/tmp/staticDHCPd.db'`` is usually a good choice
-* If **CACHE_ON_DISK** is set, this file will be used; if not, the contents of
-  this file will be read into memory
-
 **EXTRA_MAPS** : list : default=None
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 * Any non-standard fields to read from the `maps` table, which will be
@@ -388,27 +370,6 @@ Database:MySQL
 * Causes data retrieved from the database to be stored in memory until the
   cache is flushed via reinitialisation
 * Can greatly improve performance in stable, high-load environments
-
-**CACHE_ON_DISK** : boolean : default=False
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-* Causes the local cache to be managed as a local file, rather than a purely
-  in-memory construct
-  
-  * Most kernels will keep the file in memory if accessed frequently, but
-    its data-compaction is a little bit tighter, and the cache should reach
-    its final state quickly, so reclaiming memory is swap-free
-  * This file will be temporary, unless **PERSISTENT_CACHE** is set; in that
-    case, the file will be the same
-
-**PERSISTENT_CACHE** : text : default=None
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-* Causes the cache to be written to a local database file, which will be used
-  when *staticDHCPd* is restarted, to provide durability against unstable
-  databases
-* The value of this option is the path to the file;
-  ``'/var/tmp/staticDHCPd.db'`` is usually a good idea
-* If **CACHE_ON_DISK** is set, this file will be used; if not, the contents of
-  this file will be read into memory
 
 **EXTRA_MAPS** : list : default=None
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
