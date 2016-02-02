@@ -222,19 +222,24 @@ else:
 if hasattr(conf, 'loadDHCPPacket'):
     if inspect.getargspec(conf.loadDHCPPacket).args == ['packet', 'mac', 'client_ip', 'relay_ip', 'subnet', 'serial', 'pxe', 'vendor']:
         #It's pre-2.0.0, so wrap it for backwards-compatibility
-        loadDHCPPacket = (
-         lambda packet, method, mac, definition, relay_ip, pxe, original_packet:
-            conf.loadDHCPPacket(
-             packet, mac, definition.ip, relay_ip, definition.subnet, definition.serial,
-             pxe and (pxe.client_system, pxe.client_ndi, pxe.uuid_guid),
-             (
-              original_packet.getOption('vendor_specific_information'),
-              original_packet.getOption('vendor_class_identifier', convert=True),
-              tuple(sorted(original_packet.getOption('vendor_class', convert=True).items())),
-              tuple((k, tuple(sorted(v.items()))) for (k, v) in sorted(original_packet.getOption('vendor_specific', convert=True).items()))
-             )
+        def _loadDHCPPacket(packet, method, mac, definition, relay_ip, pxe, original_packet):
+            vendor_class = None
+            if original_packet.isOption('vendor_class'):
+                vendor_class = tuple(sorted(original_packet.getOption('vendor_class', convert=True).items()))
+            if original_packet.isOption('vendor_class_identifier'):
+                vendor_class_identifier = tuple((k, tuple(sorted(v.items()))) for (k, v) in sorted(original_packet.getOption('vendor_specific', convert=True).items()))
+            return conf.loadDHCPPacket(
+                packet, mac, definition.ip, relay_ip, definition.subnet, definition.serial,
+                pxe and (pxe.client_system, pxe.client_ndi, pxe.uuid_guid),
+                (
+                    original_packet.getOption('vendor_specific_information'),
+                    original_packet.getOption('vendor_class_identifier', convert=True),
+                    vendor_class,
+                    vendor_class_identifier,
+                ),
             )
-        )
+        loadDHCPPacket = _loadDHCPPacket
+        del _loadDHCPPacket
     else:
         loadDHCPPacket = conf.loadDHCPPacket
 else:
