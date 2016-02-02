@@ -93,14 +93,25 @@ Server
 * The IP of the interface to use for DHCP traffic
 * This value must be a specific IP address: ``'0.0.0.0'`` is invalid
 
-**DHCP_RESPONSE_INTERFACE** : text : default=None
-|||||||||||||||||||||||||||||||||||||||||||||||||
+**DHCP_RESPONSE_INTERFACE** : text : default='-'
+||||||||||||||||||||||||||||||||||||||||||||||||
 * The value is the lexical name of the interface from which responses
   should be sent, like ``'eth0'``
+* A special value of ``'-'`` may be used to automatically resolve the interface
+  based on `DHCP_SERVER_IP`
 * If set, response-packets will be crafted from layer 2, allowing for unicast
   OFFERs in response to DISCOVERs, if the client set the broadcast bit
-* For most environments, this will not be required, but if other DHCP servers,
-  like the *ISC*'s, work and *staticDHCPd* does not, this is probably why
+* For the vast majority of environments where staticDHCPd is likely to be used,
+  it is perfectly fine, and recommended, to disable this feature with ``None``
+  
+  * This feature was historically not enabled by default because it incurs a
+    slight performance penalty (calculating IP and UDP checksums in Python) and
+    some additional overhead (interfacing with *libpcap* from Python if Linux's
+    *AF_PACKET* (which has its own syscalls) is not available) on all
+    broadcast-scope exchanges, whether they use unicast MAC-broadcasts or not,
+    plus a persistent filehandle and some memory, and complications with VLANs
+    if the server is expected to handle them
+  * Unfortunately, some Windows firewalling configurations require it
 
 **DHCP_RESPONSE_INTERFACE_QTAGS** : list : default=None
 |||||||||||||||||||||||||||||||||||||||||||||||||||||||
