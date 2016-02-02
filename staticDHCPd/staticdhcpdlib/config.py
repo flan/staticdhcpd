@@ -88,7 +88,7 @@ _defaults.update({
  'DHCP_RESPONSE_INTERFACE_QTAGS': None,
  'DHCP_SERVER_PORT': 67,
  'DHCP_CLIENT_PORT': 68,
- 'PXE_PORT': None,
+ 'PROXY_PORT': None,
 })
 
 #Database settings
@@ -191,6 +191,12 @@ for (key, value) in _defaults.iteritems():
         globals()[key] = value
 del _defaults
 
+#Bind known functions and handle backwards-compatibility
+#######################################
+#PXE_PORT was renamed to PROXY_PORT because its role was misunderstood
+if 'PXE_PORT' in globals() and 'PROXY_PORT' not in globals():
+    PROXY_PORT = PXE_PORT
+
 import inspect
 if hasattr(conf, 'init'):
     init = conf.init
@@ -205,7 +211,7 @@ if hasattr(conf, 'handleUnknownMAC'):
     if inspect.getargspec(conf.handleUnknownMAC).args == ['mac']:
         #It's pre-2.0.0, so wrap it for backwards-compatibility
         handleUnknownMAC = (
-         lambda packet, method, mac, client_ip, relay_ip, pxe:
+         lambda packet, method, mac, client_ip, relay_ip, port:
             conf.handleUnknownMAC(mac)
         )
     else:
@@ -222,24 +228,40 @@ else:
 if hasattr(conf, 'loadDHCPPacket'):
     if inspect.getargspec(conf.loadDHCPPacket).args == ['packet', 'mac', 'client_ip', 'relay_ip', 'subnet', 'serial', 'pxe', 'vendor']:
         #It's pre-2.0.0, so wrap it for backwards-compatibility
-        def _loadDHCPPacket(packet, method, mac, definition, relay_ip, pxe, original_packet):
+        import collections
+        __PXEOptions = collections.namedtuple("PXEOptions", (
+            'client_system', 'client_ndi', 'uuid_guid'
+        ))
+        del collections
+        
+        def loadDHCPPacket(packet, method, mac, definition, relay_ip, port, source_packet):
             vendor_class = None
-            if original_packet.isOption('vendor_class'):
-                vendor_class = tuple(sorted(original_packet.getOption('vendor_class', convert=True).items()))
-            if original_packet.isOption('vendor_class_identifier'):
-                vendor_class_identifier = tuple((k, tuple(sorted(v.items()))) for (k, v) in sorted(original_packet.getOption('vendor_specific', convert=True).items()))
+            if source_packet.isOption('vendor_class'):
+                vendor_class = tuple(sorted(source_packet.getOption('vendor_class', convert=True).items()))
+            if source_packet.isOption('vendor_class_identifier'):
+                vendor_class_identifier = tuple((k, tuple(sorted(v.items()))) for (k, v) in sorted(source_packet.getOption('vendor_specific', convert=True).items()))
+                
+            pxe_options = None
+            if port == PROXY_PORT:
+                option_93 = source_packet.getOption(93, convert=True) #client_system
+                option_94 = source_packet.getOption(94) #client_ndi
+                option_97 = source_packet.getOption(97) #uuid_guid
+                pxe_options = __PXEOptions(
+                    option_93,
+                    option_94 and tuple(option_94),
+                    option_97 and (option_97[0], option_97[1:])
+                )
+                
             return conf.loadDHCPPacket(
                 packet, mac, definition.ip, relay_ip, definition.subnet, definition.serial,
-                pxe and (pxe.client_system, pxe.client_ndi, pxe.uuid_guid),
+                pxe_options,
                 (
-                    original_packet.getOption('vendor_specific_information'),
-                    original_packet.getOption('vendor_class_identifier', convert=True),
+                    source_packet.getOption('vendor_specific_information'),
+                    source_packet.getOption('vendor_class_identifier', convert=True),
                     vendor_class,
                     vendor_class_identifier,
                 ),
             )
-        loadDHCPPacket = _loadDHCPPacket
-        del _loadDHCPPacket
     else:
         loadDHCPPacket = conf.loadDHCPPacket
 else:
