@@ -94,7 +94,7 @@ where `_tick_logger()` is defined.
 
 filterPacket()
 ++++++++++++++
-.. function:: filterPacket(packet, method, mac, client_ip, relay_ip, pxe)
+.. function:: filterPacket(packet, method, mac, client_ip, relay_ip, port)
 
     Provides a means of writing your own blacklist logic, excluding packets from
     sources you don't trust, that have done weird things, or under any other
@@ -120,12 +120,7 @@ filterPacket()
                       instance of :class:`libpydhcpserver.dhcp_types.ipv4.IPv4`.
     :param relay_ip: The relay used by the client (may be ``None``), an
                      instance of :class:`libpydhcpserver.dhcp_types.ipv4.IPv4`.
-    :param pxe: ``None`` if not applicable; else, a `namedtuple` containing
-                option 93 (client_system) as a sequence of ints, option 94
-                (client_ndi) as a sequence of three bytes, and option 97
-                (uuid_guid) as digested data: `(type:byte, data:[byte])`.
-                
-                Any unset options are presented as ``None``.
+    :param int port : The port on which the packet was received.
     :return bool: ``False`` if the packet should be rejected; ``True``
                   otherwise.
 
@@ -134,7 +129,7 @@ Example
 ::
 
     import random
-    def filterPacket(packet, method, mac, client_ip, relay_ip, pxe):
+    def filterPacket(packet, method, mac, client_ip, relay_ip, port):
         return random.random() > 0.2
         
 This will fake a lossy network, dropping 20% of all packets received.
@@ -143,7 +138,7 @@ This will fake a lossy network, dropping 20% of all packets received.
 
 handleUnknownMAC()
 ++++++++++++++++++
-.. function:: handleUnknownMAC(packet, method, mac, client_ip, relay_ip, pxe)
+.. function:: handleUnknownMAC(packet, method, mac, client_ip, relay_ip, port)
 
     If staticDHCPd gets a request to serve a MAC that it does not recognise,
     this function will be invoked, allowing you to query databases of your own
@@ -163,12 +158,7 @@ handleUnknownMAC()
                       instance of :class:`libpydhcpserver.dhcp_types.ipv4.IPv4`.
     :param relay_ip: The relay used by the client (may be ``None``), an
                      instance of :class:`libpydhcpserver.dhcp_types.ipv4.IPv4`.
-    :param pxe: ``None`` if not applicable; else, a `namedtuple` containing
-                option 93 (client_system) as a sequence of ints, option 94
-                (client_ndi) as a sequence of three bytes, and option 97
-                (uuid_guid) as digested data: `(type:byte, data:[byte])`.
-                
-                Any unset options are presented as ``None``.
+    :param int port : The port on which the packet was received.
     :return: An instance of :class:`databases.generic.Definition` or ``None``,
              if the MAC could not be handled.
 
@@ -180,7 +170,7 @@ you will know.
 
 filterRetrievedDefinitions()
 ++++++++++++++++++++++++++++
-.. function:: filterRetrievedDefinitions(definitions, packet, method, mac, client_ip, relay_ip, pxe)
+.. function:: filterRetrievedDefinitions(definitions, packet, method, mac, client_ip, relay_ip, port)
 
     Some databases produce collections of :class:`databases.generic.Definition`
     objects, rather than simply returning one or ``None``. This function allows
@@ -203,12 +193,7 @@ filterRetrievedDefinitions()
                       instance of :class:`libpydhcpserver.dhcp_types.ipv4.IPv4`.
     :param relay_ip: The relay used by the client (may be ``None``), an
                      instance of :class:`libpydhcpserver.dhcp_types.ipv4.IPv4`.
-    :param pxe: ``None`` if not applicable; else, a `namedtuple` containing
-                option 93 (client_system) as a sequence of ints, option 94
-                (client_ndi) as a sequence of three bytes, and option 97
-                (uuid_guid) as digested data: `(type:byte, data:[byte])`.
-                
-                Any unset options are presented as ``None``.
+    :param int port : The port on which the packet was received.
     :return: An instance of :class:`databases.generic.Definition` or ``None``,
              if the `definitons` could not be processed.
 
@@ -231,7 +216,7 @@ is only available on the DHCP server for technical reasons.
 
 loadDHCPPacket()
 ++++++++++++++++
-.. function:: loadDHCPPacket(packet, method, mac, definition, relay_ip, pxe, source_packet)
+.. function:: loadDHCPPacket(packet, method, mac, definition, relay_ip, port, source_packet)
 
     Before any response is sent to a client, an opportunity is presented to
     allow you to modify the packet, adding or removing options and setting
@@ -250,12 +235,7 @@ loadDHCPPacket()
                        of :class:`databases.generic.Definition`.
     :param relay_ip: The relay used by the client (may be ``None``), an
                      instance of :class:`libpydhcpserver.dhcp_types.ipv4.IPv4`.
-    :param pxe: ``None`` if not applicable; else, a `namedtuple` containing
-                option 93 (client_system) as a sequence of ints, option 94
-                (client_ndi) as a sequence of three bytes, and option 97
-                (uuid_guid) as digested data: `(type:byte, data:[byte])`.
-                
-                Any unset options are presented as ``None``.
+    :param int port : The port on which the packet was received.
     :param source_packet: The packet received from the client, an instance of
                           :class:`libpydhcpserver.dhcp_types.packet.DHCPPacket`.
                           
@@ -269,7 +249,7 @@ Example
 ::
     
     import random
-    def loadDHCPPacket(packet, method, mac, definition, relay_ip, pxe, source_packet):
+    def loadDHCPPacket(packet, method, mac, definition, relay_ip, port, source_packet):
         if not definition.ip[3] % 3: #The client's IP's fourth octet is a multiple of 3
             packet.setOption('renewal_time_value', 60)
         elif method.startswith('REQUEST:') and random.random() < 0.5:

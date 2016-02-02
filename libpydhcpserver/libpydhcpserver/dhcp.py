@@ -90,25 +90,28 @@ class DHCPServer(object):
     _server_address = None #: The IP associated with this server.
     _network_link = None #: The I/O-handler; you don't want to touch this.
 
-    def __init__(self, server_address, server_port, client_port, pxe_port=None, response_interface=None, response_interface_qtags=None):
+    def __init__(self, server_address, server_port, client_port, proxy_port=None, response_interface=None, response_interface_qtags=None):
         """
         Sets up the DHCP network infrastructure.
 
         :param server_address: The IP address on which to run the DHCP service.
         :type server_address: :class:`IPv4 <dhcp_types.ipv4.IPv4>`
-        :param int port: The port on which DHCP servers and relays listen in this network.
-        :param int client_port: The port on which DHCP clients listen in this network.
-        :param int pxe_port: The port on which DHCP servers listen for PXE traffic in this
-            network; ``None`` to disable.
-        :param str response_interface: The interface on which to provide raw packet support,
-            like ``"eth0"``, or ``None`` if not requested.
+        :param int port: The port on which DHCP servers and relays listen in
+                         this network.
+        :param int client_port: The port on which DHCP clients listen in this
+                                network.
+        :param int proxy_port: The port on which ProxyDHCP servers listen for in
+                               this network; ``None`` to disable.
+        :param str response_interface: The interface on which to provide raw
+                                       packet support, like ``"eth0"``, or
+                                       ``None`` if not requested.
         :param sequence response_interface_qtags: Any qtags to insert into raw packets, in
             order of appearance. Definitions take the following form:
             (pcp:`0-7`, dei:``bool``, vid:`1-4094`)
         :except Exception: A problem occurred during setup.
         """
         self._server_address = server_address
-        self._network_link = _NetworkLink(str(server_address), server_port, client_port, pxe_port, response_interface, response_interface_qtags=response_interface_qtags)
+        self._network_link = _NetworkLink(str(server_address), server_port, client_port, proxy_port, response_interface, response_interface_qtags=response_interface_qtags)
 
     def _getNextDHCPPacket(self, timeout=60, packet_buffer=2048):
         """
@@ -123,7 +126,7 @@ class DHCPServer(object):
                           :class:`Address <dhcp.Address>` or ``None`` on
                           timeout)
         """
-        (source_address, data, pxe) = self._network_link.getData(timeout=timeout, packet_buffer=packet_buffer)
+        (source_address, data, port) = self._network_link.getData(timeout=timeout, packet_buffer=packet_buffer)
         if data:
             try:
                 packet = DHCPPacket(data=data)
@@ -131,21 +134,21 @@ class DHCPServer(object):
                 pass
             else:
                 if packet.isDHCPRequestPacket():
-                    threading.Thread(target=self._handleDHCPRequest, args=(packet, source_address, pxe)).start()
+                    threading.Thread(target=self._handleDHCPRequest, args=(packet, source_address, port)).start()
                 elif packet.isDHCPDiscoverPacket():
-                    threading.Thread(target=self._handleDHCPDiscover, args=(packet, source_address, pxe)).start()
+                    threading.Thread(target=self._handleDHCPDiscover, args=(packet, source_address, port)).start()
                 elif packet.isDHCPInformPacket():
-                    threading.Thread(target=self._handleDHCPInform, args=(packet, source_address, pxe)).start()
+                    threading.Thread(target=self._handleDHCPInform, args=(packet, source_address, port)).start()
                 elif packet.isDHCPReleasePacket():
-                    threading.Thread(target=self._handleDHCPRelease, args=(packet, source_address, pxe)).start()
+                    threading.Thread(target=self._handleDHCPRelease, args=(packet, source_address, port)).start()
                 elif packet.isDHCPDeclinePacket():
-                    threading.Thread(target=self._handleDHCPDecline, args=(packet, source_address, pxe)).start()
+                    threading.Thread(target=self._handleDHCPDecline, args=(packet, source_address, port)).start()
                 elif packet.isDHCPLeaseQueryPacket():
-                    threading.Thread(target=self._handleDHCPLeaseQuery, args=(packet, source_address, pxe)).start()
+                    threading.Thread(target=self._handleDHCPLeaseQuery, args=(packet, source_address, port)).start()
                 return (True, source_address)
         return (False, source_address)
 
-    def _handleDHCPDecline(self, packet, source_address, pxe):
+    def _handleDHCPDecline(self, packet, source_address, port):
         """
         Processes a DECLINE packet.
 
@@ -155,10 +158,10 @@ class DHCPServer(object):
         :type packet: :class:`DHCPPacket <dhcp_types.packet.DHCPPacket>`
         :param source_address: The address from which the request was received.
         :type source_address: :class:`Address <dhcp.Address>`
-        :param bool pxe: ``True`` if the packet was received on the PXE port.
+        :param int port: The port on which the packet was received.
         """
 
-    def _handleDHCPDiscover(self, packet, source_address, pxe):
+    def _handleDHCPDiscover(self, packet, source_address, port):
         """
         Processes a DISCOVER packet.
 
@@ -168,10 +171,10 @@ class DHCPServer(object):
         :type packet: :class:`DHCPPacket <dhcp_types.packet.DHCPPacket>`
         :param source_address: The address from which the request was received.
         :type source_address: :class:`Address <dhcp.Address>`
-        :param bool pxe: ``True`` if the packet was received on the PXE port.
+        :param int port: The port on which the packet was received.
         """
 
-    def _handleDHCPInform(self, packet, source_address, pxe):
+    def _handleDHCPInform(self, packet, source_address, port):
         """
         Processes an INFORM packet.
 
@@ -181,10 +184,10 @@ class DHCPServer(object):
         :type packet: :class:`DHCPPacket <dhcp_types.packet.DHCPPacket>`
         :param source_address: The address from which the request was received.
         :type source_address: :class:`Address <dhcp.Address>`
-        :param bool pxe: ``True`` if the packet was received on the PXE port.
+        :param int port: The port on which the packet was received.
         """
 
-    def _handleDHCPLeaseQuery(self, packet, source_address, pxe):
+    def _handleDHCPLeaseQuery(self, packet, source_address, port):
         """
         Processes a LEASEQUERY packet.
 
@@ -194,10 +197,10 @@ class DHCPServer(object):
         :type packet: :class:`DHCPPacket <dhcp_types.packet.DHCPPacket>`
         :param source_address: The address from which the request was received.
         :type source_address: :class:`Address <dhcp.Address>`
-        :param bool pxe: ``True`` if the packet was received on the PXE port.
+        :param int port: The port on which the packet was received.
         """
 
-    def _handleDHCPRelease(self, packet, source_address):
+    def _handleDHCPRelease(self, packet, source_address, port):
         """
         Processes a RELEASE packet.
 
@@ -207,10 +210,10 @@ class DHCPServer(object):
         :type packet: :class:`DHCPPacket <dhcp_types.packet.DHCPPacket>`
         :param source_address: The address from which the request was received.
         :type source_address: :class:`Address <dhcp.Address>`
-        :param bool pxe: ``True`` if the packet was received on the PXE port.
+        :param int port: The port on which the packet was received.
         """
 
-    def _handleDHCPRequest(self, packet, source_address, pxe):
+    def _handleDHCPRequest(self, packet, source_address, port):
         """
         Processes a REQUEST packet.
 
@@ -220,10 +223,10 @@ class DHCPServer(object):
         :type packet: :class:`DHCPPacket <dhcp_types.packet.DHCPPacket>`
         :param source_address: The address from which the request was received.
         :type source_address: :class:`Address <dhcp.Address>`
-        :param bool pxe: ``True`` if the packet was received on the PXE port.
+        :param int port: The port on which the packet was received.
         """
 
-    def _sendDHCPPacket(self, packet, source_address, pxe):
+    def _sendDHCPPacket(self, packet, source_address, port):
         """
         Encodes and sends a DHCP packet to its destination.
 
@@ -235,12 +238,12 @@ class DHCPServer(object):
         :type packet: :class:`DHCPPacket <dhcp_types.packet.DHCPPacket>`
         :param source_address: The address from which the request was received.
         :type source_address: :class:`Address <dhcp.Address>`
-        :param bool pxe: ``True`` if the packet was received on the PXE port.
+        :param int port: The port on which the packet was received.
         :return int: The number of bytes transmitted.
         :except Exception: A problem occurred during serialisation or
             transmission.
         """
-        return self._network_link.sendData(packet, source_address, pxe)
+        return self._network_link.sendData(packet, source_address, port)
 
 
 class _NetworkLink(object):
@@ -249,23 +252,23 @@ class _NetworkLink(object):
     """
     _client_port = None #: The port on which clients expect to receive DHCP traffic.
     _server_port = None #: The port on which servers expect to receive DHCP traffic.
-    _pxe_port = None #: The port on which PXE clients expect to receive traffic.
-    _pxe_socket = None #: The internal socket to use for PXE traffic.
+    _proxy_port = None #: The port on which ProxyDHCP traffic is expected to be exchanged.
+    _proxy_socket = None #: The internal socket to use for ProxyDHCP traffic.
     _responder_dhcp = None #: The internal socket to use for responding to DHCP requests.
-    _responder_pxe = None #: The internal socket to use for responding to PXE requests.
+    _responder_proxy = None #: The internal socket to use for responding to ProxyDHCP requests.
     _responder_broadcast = None #: The internal socket to use for responding to broadcast requests.
     _listening_sockets = None #: All sockets on which to listen for activity.
     _unicast_discover_supported = False #: Whether unicast responses to DISCOVERs are supported.
 
-    def __init__(self, server_address, server_port, client_port, pxe_port, response_interface=None, response_interface_qtags=None):
+    def __init__(self, server_address, server_port, client_port, proxy_port, response_interface=None, response_interface_qtags=None):
         """
         Sets up the DHCP network infrastructure.
 
         :param str server_address: The IP address on which to run the DHCP service.
         :param int server_port: The port on which DHCP servers and relays listen in this network.
         :param int client_port: The port on which DHCP clients listen in this network.
-        :param int|None pxe_port: The port on which DHCP servers listen for PXE traffic in this
-            network.
+        :param int|None proxy_port: The port on which DHCP servers listen for ProxyDHCP traffic in
+            this network.
         :param str|None response_interface: The interface on which to provide raw packet support,
             like 'eth0', or None if not requested.
         :param sequence|None response_interface_qtags: Any qtags to insert into raw packets, in
@@ -275,19 +278,19 @@ class _NetworkLink(object):
         """
         self._client_port = client_port
         self._server_port = server_port
-        self._pxe_port = pxe_port
+        self._proxy_port = proxy_port
 
         #Create and bind unicast sockets
-        (dhcp_socket, pxe_socket) = self._setupListeningSockets(server_port, pxe_port, server_address)
-        if pxe_socket:
-            self._listening_sockets = (dhcp_socket, pxe_socket)
-            self._pxe_socket = pxe_socket
+        (dhcp_socket, proxy_socket) = self._setupListeningSockets(server_port, proxy_port, server_address)
+        if proxy_socket:
+            self._listening_sockets = (dhcp_socket, proxy_socket)
+            self._proxy_socket = proxy_socket
         else:
             self._listening_sockets = (dhcp_socket,)
 
         #Wrap the sockets with appropriate logic and set options
         self._responder_dhcp = _L3Responder(socketobj=dhcp_socket)
-        self._responder_pxe = _L3Responder(socketobj=pxe_socket)
+        self._responder_proxy = _L3Responder(socketobj=proxy_socket)
         #Either create a raw-response socket or a generic broadcast-response socket
         if response_interface:
             try:
@@ -302,29 +305,29 @@ class _NetworkLink(object):
         else:
             self._responder_broadcast = _L3Responder(server_address=server_address)
 
-    def _setupListeningSockets(self, server_port, pxe_port, server_address=None):
+    def _setupListeningSockets(self, server_port, proxy_port, server_address=None):
         """
         Creates and binds the listening sockets.
 
         :param int server_port: The port on which to listen for DHCP traffic.
-        :param int pxe_port: The port on which to listen for PXE traffic.
+        :param int proxy_port: The port on which to listen for ProxyDHCP traffic.
         :param string server_address: The IP address to listen for DHCP traffic on
-        :return tuple(2): The DHCP and PXE sockets, the latter of which may be ``None`` if not
-            requested.
+        :return tuple(2): The DHCP and ProxyDHCP sockets, the latter of which may be ``None`` if
+            not requested.
         :except socket.error: Sockets could not be created or bound.
         """
-        dhcp_socket = pxe_socket = None
+        dhcp_socket = proxy_socket = None
         try:
             dhcp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            if pxe_port:
-                pxe_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            if proxy_port:
+                proxy_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         except socket.error, msg:
             raise Exception('Unable to create socket: %(err)s' % {'err': str(msg),})
 
         try:
             dhcp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            if pxe_socket:
-                pxe_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            if proxy_socket:
+                proxy_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         except socket.error, msg:
             import warnings
             warnings.warn('Unable to set SO_REUSEADDR; multiple DHCP servers cannot be run in parallel: %(err)s' % {'err': str(msg),})
@@ -332,16 +335,16 @@ class _NetworkLink(object):
         if platform.system() != 'Linux':
             try:
                 dhcp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
-                if pxe_port:
-                    pxe_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+                if proxy_port:
+                    proxy_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
             except socket.error, msg:
                 import warnings
                 warnings.warn('Unable to set SO_REUSEPORT; multiple DHCP servers cannot be run in parallel: %(err)s' % {'err': str(msg),})
 
         try:
             dhcp_socket.bind(('', server_port))
-            if pxe_port:
-                pxe_socket.bind(('', pxe_port))
+            if proxy_port:
+                proxy_socket.bind(('', proxy_port))
         except socket.error, e:
             raise Exception('Unable to bind sockets: %(error)s' % {
              'error': str(e),
@@ -358,7 +361,7 @@ class _NetworkLink(object):
                  'err': msg.strerror,
                 })
 
-        return (dhcp_socket, pxe_socket)
+        return (dhcp_socket, proxy_socket)
 
     def getData(self, timeout, packet_buffer):
         """
@@ -369,20 +372,23 @@ class _NetworkLink(object):
         :return tuple(3):
             0. :class:`Address <dhcp.Address>` or ``None``: None if the timeout was reached.
             1. The received data as a ``str`` or ``None`` if the timeout was reached.
-            2. A ``bool`` indicating whether the data was received via PXE.
+            2. the port on which the packet was received; -1 on timeout or error. 
         :except select.error: The `select()` operation did not complete gracefully.
         """
-        pxe = False
+        port = -1
         active_sockets = select.select(self._listening_sockets, [], [], timeout)[0]
         if active_sockets:
             active_socket = active_sockets[0]
-            pxe = active_socket == self._pxe_socket
+            if active_socket == self._proxy_socket:
+                port = self._proxy_port
+            else:
+                port = self._server_port
             (data, source_address) = active_socket.recvfrom(packet_buffer)
             if data:
-                return (Address(IPv4(source_address[0]), source_address[1]), data, pxe)
-        return (None, None, False)
+                return (Address(IPv4(source_address[0]), source_address[1]), data, port)
+        return (None, None, port)
 
-    def sendData(self, packet, address, pxe):
+    def sendData(self, packet, address, port):
         """
         Writes the packet to to appropriate socket, addressed to the appropriate recipient.
 
@@ -390,7 +396,7 @@ class _NetworkLink(object):
         :type packet: :class:`DHCPPacket <dhcp_types.packet.DHCPPacket>`
         :param address: The address from which the original packet was received.
         :type address: :class:`Address <dhcp.Address>`
-        :param bool pxe: Whether the request was received via PXE.
+        :param int port: The port on which the packet was received.
         :return tuple(2):
             0. The number of bytes written to the network.
             1. The :class:`Address <dhcp.Address>` ultimately used.
@@ -401,7 +407,7 @@ class _NetworkLink(object):
         port = self._client_port
         source_port = self._server_port
         responder = self._responder_dhcp
-        if address.ip in IP_UNSPECIFIED_FILTER: #Broadcast source; this is never valid for PXE
+        if address.ip in IP_UNSPECIFIED_FILTER: #Broadcast source; this is never valid for ProxyDHCP
             if (not self._unicast_discover_supported #All responses have to be via broadcast
                 or packet.getFlag(FLAGBIT_BROADCAST)): #Broadcast bit set; respond in kind
                 ip = _IP_BROADCAST
@@ -415,11 +421,11 @@ class _NetworkLink(object):
             if relayed: #Relayed request.
                 port = self._server_port
             else: #Request directly from client, routed or otherwise.
-                if pxe:
+                if port == self._proxy_port:
                     ip = packet.extractIPOrNone(FIELD_CIADDR) or ip
-                    port = address.port or self._pxe_port #BSD doesn't seem to preserve port information
-                    source_port = self._pxe_port
-                    responder = self._responder_pxe
+                    port = address.port or port #BSD doesn't seem to preserve port information
+                    source_port = port
+                    responder = self._responder_proxy
 
         return responder.send(packet, ip, port, relayed, source_port=source_port)
 
