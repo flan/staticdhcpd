@@ -61,7 +61,7 @@ _logger = logging.getLogger('extension.recent_activity')
 _events = collections.deque(maxlen=_CONFIG['MAX_EVENTS'])
 _lock = threading.Lock()
 
-_Event = collections.namedtuple('Event', ('time', 'mac', 'ip', 'subnet', 'serial', 'method', 'pxe'))
+_Event = collections.namedtuple('Event', ('time', 'mac', 'ip', 'subnet', 'serial', 'method', 'port'))
 
 def _drop_old_events():
     """
@@ -101,7 +101,7 @@ def _render(*args, **kwargs):
             elements.append("""
             <tr>
                 <td>%(event)s</td>
-                <td>%(pxe)s</td>
+                <td>%(port)i</td>
                 <td>%(mac)s</td>
                 <td>%(ip)s</td>
                 <td>%(subnet)s</td>
@@ -109,7 +109,7 @@ def _render(*args, **kwargs):
                 <td>%(time)s</td>
             </tr>""" % {
              'event': event.method,
-             'pxe': event.pxe and 'Yes' or 'No',
+             'port': event.port,
              'mac': event.mac,
              'ip': event.ip or '-',
              'subnet': event.subnet,
@@ -121,7 +121,7 @@ def _render(*args, **kwargs):
             <thead>
                 <tr>
                     <th>Event</th>
-                    <th>PXE</th>
+                    <th>Port</th>
                     <th>MAC</th>
                     <th>IP</th>
                     <th>Subnet</th>
@@ -148,7 +148,7 @@ def _update(statistics):
                 del _events[i]
                 break
                 
-        _events.appendleft(_Event(time.time(), mac, statistics.ip, statistics.subnet, statistics.serial, statistics.method, statistics.pxe))
+        _events.appendleft(_Event(time.time(), mac, statistics.ip, statistics.subnet, statistics.serial, statistics.method, statistics.port))
         
 #Setup happens here
 ################################################################################

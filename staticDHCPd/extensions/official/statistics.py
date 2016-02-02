@@ -99,7 +99,7 @@ _METHODS = tuple(sorted(getattr(dhcp, key) for key in dir(dhcp) if key.startswit
 _logger = logging.getLogger('extension.statistics')
 
 _Gram = collections.namedtuple('Gram', (
- 'dhcp_packets', 'dhcp_packets_discarded', 'pxe_packets', 'other_packets', 'processing_time',
+ 'dhcp_packets', 'dhcp_packets_discarded', 'other_packets', 'processing_time',
 ))
 
 def _generate_dhcp_packets_dict():
@@ -114,7 +114,6 @@ class Statistics(object):
         
         self._dhcp_packets = _generate_dhcp_packets_dict()
         self._dhcp_packets_discarded = _generate_dhcp_packets_dict()
-        self._pxe_packets = 0
         self._other_packets = 0
         
         self._processing_time = 0.0
@@ -134,7 +133,6 @@ class Statistics(object):
         self._gram_start_time -= self._gram_start_time % self._gram_size #Round down
         self._current_gram = {
          'other-packets': 0,
-         'pxe-packets': 0,
          'dhcp-packets': _generate_dhcp_packets_dict(),
          'dhcp-packets-discarded': _generate_dhcp_packets_dict(),
          'processing-time': 0.0,
@@ -156,7 +154,6 @@ class Statistics(object):
                     self._graph.append(_Gram(
                      self._current_gram['dhcp-packets'],
                      self._current_gram['dhcp-packets-discarded'],
-                     self._current_gram['pxe-packets'],
                      self._current_gram['other-packets'],
                      self._current_gram['processing-time']
                     ))
@@ -179,9 +176,6 @@ class Statistics(object):
                 if not statistics.processed:
                     self._dhcp_packets_discarded[statistics.method] += 1
                     self._current_gram['dhcp-packets-discarded'][statistics.method] += 1
-                if statistics.pxe:
-                    self._pxe_packets += 1
-                    self._current_gram['pxe-packets'] += 1
             else:
                 self._other_packets += 1
                 self._current_gram['other-packets'] += 1
@@ -331,7 +325,7 @@ class Statistics(object):
                 </thead>
                 <tfoot>
                     <tr>
-                        <td colspan="%(span)i">%(dhcp)i DHCP; %(pxe)i PXE; %(non-dhcp)i non-DHCP; average turnaround: %(average).4fs</td>
+                        <td colspan="%(span)i">%(dhcp)i DHCP; %(non-dhcp)i non-DHCP; average turnaround: %(average).4fs</td>
                     </tr>
                 </tfoot>
                 <tbody>
@@ -347,7 +341,6 @@ class Statistics(object):
              'span': len(_METHODS) + 1,
              'average': received_total and (self._processing_time / received_total) or 0.0,
              'dhcp': received_total,
-             'pxe': self._pxe_packets,
              'non-dhcp': self._other_packets,
             }
             
@@ -364,7 +357,6 @@ class Statistics(object):
             for window in windows:
                 packets = self._current_gram['dhcp-packets'].copy()
                 packets_discarded = sum(self._current_gram['dhcp-packets-discarded'].values())
-                pxe = self._current_gram['pxe-packets']
                 other = self._current_gram['other-packets']
                 processing_time = self._current_gram['processing-time']
                 timestamp = self._gram_start_time
@@ -378,7 +370,6 @@ class Statistics(object):
                     for (k, v) in gram.dhcp_packets.iteritems():
                         packets[k] += v
                     packets_discarded += sum(gram.dhcp_packets_discarded.values())
-                    pxe += gram.pxe_packets
                     other += gram.other_packets
                     processing_time += gram.processing_time
                     
@@ -389,14 +380,12 @@ class Statistics(object):
                     <td>%(time)s</td>
                     %(methods)s
                     <td>%(discarded).4f/s</td>
-                    <td>%(pxe).4f/s</td>
                     <td>%(other).4f/s</td>
                     <td>%(average).4fs</td>
                 </tr>""" % {
                  'time': str(datetime.timedelta(seconds=(total_time))),
                  'methods': '\n'.join('<td>%(method).4f/s</td>' % {'method': packets[method] / total_time} for method in _METHODS),
                  'discarded': packets_discarded / total_time,
-                 'pxe': pxe / total_time,
                  'other': other / total_time,
                  'average': total_packets and (processing_time / total_packets) or 0.0,
                 })
@@ -407,7 +396,6 @@ class Statistics(object):
                         <th>Time period</th>
                         %(methods)s
                         <th>Discarded</th>
-                        <th>PXE</th>
                         <th>Other</th>
                         <th>Turnaround</th>
                     </tr>
