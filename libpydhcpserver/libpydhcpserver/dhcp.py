@@ -101,13 +101,17 @@ class DHCPServer(object):
         :param int pxe_port: The port on which DHCP servers listen for PXE traffic in this
             network; ``None`` to disable.
         :param str response_interface: The interface on which to provide raw packet support,
-            like ``"eth0"``, or ``None`` if not requested.
+            like ``"eth0"``, or ``None`` if not requested. ``'-'`` enables automatic resolution
+            based on `server_address`.
         :param sequence response_interface_qtags: Any qtags to insert into raw packets, in
             order of appearance. Definitions take the following form:
             (pcp:`0-7`, dei:``bool``, vid:`1-4094`)
         :except Exception: A problem occurred during setup.
         """
         self._server_address = server_address
+        if response_interface == '-':
+            import getifaddrslib
+            response_interface = getifaddrslib.get_network_interface(server_address)
         self._network_link = _NetworkLink(str(server_address), server_port, client_port, pxe_port, response_interface, response_interface_qtags=response_interface_qtags)
 
     def _getNextDHCPPacket(self, timeout=60, packet_buffer=2048):
