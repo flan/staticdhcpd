@@ -112,6 +112,7 @@ Server
     plus a persistent filehandle and some memory, and complications with VLANs
     if the server is expected to handle them
   * Unfortunately, some Windows firewalling configurations require it
+  * Surprisingly, the Linux kernel's DHCP autoconfiguration mechanism does, too
 
 **DHCP_RESPONSE_INTERFACE_QTAGS** : list : default=None
 |||||||||||||||||||||||||||||||||||||||||||||||||||||||
