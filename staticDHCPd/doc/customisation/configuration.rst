@@ -136,7 +136,7 @@ Server
 * The port on which to respond to DHCP clients
 
 **PROXY_PORT** : integer, None : default=None
-|||||||||||||||||||||||||||||||||||||||||||
+|||||||||||||||||||||||||||||||||||||||||||||
 * The port to use for ProxyDHCP-processing, if required
 * ProxyDHCP normally runs on ``4011``
 
@@ -147,7 +147,7 @@ Caches are only enabled if the database engine supports them and **USE_CACHE**
 is set.
 
 **CACHING_MODEL** : text : default="in-process"
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+|||||||||||||||||||||||||||||||||||||||||||||||
 * The database-engine to use for handling static lease data
 
   * ``'in-process'``: manage the cache using in-process constructs, either
@@ -155,7 +155,7 @@ is set.
   * ``'memcached'``: use a *memcached* server as an external store
 
 **CACHE_ON_DISK** : boolean : default=False
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+|||||||||||||||||||||||||||||||||||||||||||
 * Causes the local cache to be managed as a local file, rather than a purely
   in-memory construct
 
@@ -166,7 +166,7 @@ is set.
     case, the file will be the same
 
 **PERSISTENT_CACHE** : text : default=None
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+||||||||||||||||||||||||||||||||||||||||||
 * Causes the cache to be written to a local database file, which will be used
   when *staticDHCPd* is restarted, to provide durability against unstable
   databases
@@ -177,15 +177,15 @@ is set.
   write-only at runtime
 
 **MEMCACHED_HOST** : text : default=None
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+||||||||||||||||||||||||||||||||||||||||
 * The address of the *memcached* server to use with the corresponding model
 
 **MEMCACHED_PORT** : integer : default=11211
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+||||||||||||||||||||||||||||||||||||||||||||
 * The port of the *memcached* server to use with the corresponding model
 
 **MEMCACHED_AGE_TIME** : integer : default=300
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+||||||||||||||||||||||||||||||||||||||||||||||
 * The lifetime to apply to cached data within the *memcached* server
 
 Database
