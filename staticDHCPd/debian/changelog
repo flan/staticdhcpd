@@ -59,7 +59,9 @@ staticdhcpd (2.0.0) unstable; urgency=low
   * SIGTERM (^C) now causes immediate termination if received while the system
     is already in a shutting-down state.
 
- -- Neil Tallim <flan@uguu.ca>  Tue, 20 Aug 2013 11:47:57 -0600
+  * The difference between PXE and ProxyDHCP is now handled properly.
+
+ -- Neil Tallim <flan@uguu.ca>  Tue, 02 Jan 2016 13:23:00 -0700
 
 staticdhcpd (1.6.4) stable; urgency=low
 

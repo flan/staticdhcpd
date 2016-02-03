@@ -135,10 +135,10 @@ Server
 |||||||||||||||||||||||||||||||||||||||||||
 * The port on which to respond to DHCP clients
 
-**PXE_PORT** : integer, None : default=None
+**PROXY_PORT** : integer, None : default=None
 |||||||||||||||||||||||||||||||||||||||||||
-* The port to use for PXE-processing, if required; PXE is disabled if not set
-* PXE normally runs on ``4011``
+* The port to use for ProxyDHCP-processing, if required
+* ProxyDHCP normally runs on ``4011``
 
 
 Caching

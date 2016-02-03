@@ -33,7 +33,7 @@ _stats_lock = threading.Lock()
 _stats_callbacks = []
 
 Statistics = collections.namedtuple("Statistics", (
- 'source_address', 'mac', 'ip', 'subnet', 'serial', 'method', 'processing_time', 'processed', 'pxe',
+ 'source_address', 'mac', 'ip', 'subnet', 'serial', 'method', 'processing_time', 'processed', 'port',
 ))
 """
 Statistics associated with a DHCP event.
@@ -82,10 +82,10 @@ Statistics associated with a DHCP event.
     Whether the packet was fully processed (``False`` if non-DHCP or
     blacklisted).
 
-.. py:attribute:: pxe
+.. py:attribute:: port
     :noindex:
 
-    ``True`` if the request received was PXE.
+    The port on which the request was received.
 """
 
 def emit(statistics):

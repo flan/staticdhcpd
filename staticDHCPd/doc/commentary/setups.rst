@@ -68,10 +68,10 @@ matches the device-type you want to net-boot and set options 60, 66
 (`tftp_server_name`), and 67 (`bootfile_name`) accordingly, as demonstrated in
 the following example::
 
-    #Note: these phones may not actually announce themselves this way; this is a guess
-    if source_packet.getOption('vendor_class_identifier', convert=True) == 'Aastra 57i':
-        #The device will look for a specific value; check your manual
-        packet.setOption('vendor_class_identifier', 'PXEClient')
+    vendor_class_identifier = source_packet.getOption('vendor_class_identifier', convert=True)
+    if vendor_class_identifier and vendor_class_identifier.startswith('PXEClient'):
+        #The device may look for a specific value; check your manual
+        packet.setOption('vendor_class_identifier', 'PXEServer:staticDHCPd')
         #Tell it where to get its bootfile; IPs are valid, too
         packet.setOption('tftp_server_name', 'bootserver.example.org')
         #Have the device ask for its own MAC, stripped of colons and uppercased
@@ -80,7 +80,8 @@ the following example::
 Those working with systems derived from BOOTP, rather than DHCP, like embedded
 BIOS-level stacks, will probably want to do something more like this::
     
-    if pxe: #You might still want to check 'vendor_class_identifier'
+    vendor_class_identifier = source_packet.getOption('vendor_class_identifier', convert=True)
+    if vendor_class_identifier and vendor_class_identifier.startswith('PXEClient'):
         #Tell it where to get its bootfile; your device probably isn't
         #DNS-aware if it's using BOOTP, but the field is free-form text
         packet.setOption('siaddr', DHCP_SERVER_IP) #The same address defined earlier in conf.py
@@ -95,25 +96,20 @@ implementation.
 Of course, you can use other criteria to evaluate whether an option should be
 set and what its value should be.
 
-In the event that the client tries to hit a DHCP proxy port (4011, by
+In the event that the client tries to hit a ProxyDHCP port (4011, by
 convention), you'll need to edit ``conf.py`` and assign the port number to
-**PXE_PORT**. This will cause *staticDHCPd* to bind another port on the same
-interface(s) as the main DHCP port. Because devices that disregard PXE
-convention are likely to be a little temperamental, *staticDHCPd* will provide
-full DHCP service on that port, too, including IP assignment.
+**PROXY_PORT**. This will cause *staticDHCPd* to bind another port on the same
+interface(s) as the main DHCP port; full DHCP service will be provided on that
+port, too, including IP assignment.
 
-The ``pxe`` parameter in :ref:`scripting-loadDHCPPacket` will be set when a
-packet is received on this port, meaning you can test it to engage special
-handling logic. You may need to make use of functions like
-``packet.isDHCPDiscoverPacket()``, ``packet.isDHCPRequestPacket()``, and
-``packet.isDHCPInformPacket()`` to decide when to strip options when working on
-this port. Chances are, in most cases, the client will have been assigned an IP
-over port 67 already, testable with ``packet.getOption('ciaddr')``, and though
-it's highly unlikely, the device may complain if the response contains an IP
-offer; ``packet.deleteOption('yiaddr')`` takes care of this.
-
-Call for help
-+++++++++++++
-Unfortunately, *staticDHCPd*'s maintainer does not have a functional PXE setup,
-so corrections and feedback are quite welcome. If you have questions or
-problems, please open an issue against the project.
+The ``port`` parameter in :ref:`scripting-loadDHCPPacket` and other functions
+will allow site-specific code to respond differently depending on how the packet
+was received; you can use simple tests like this to apply appropriate logic::
+    
+    if port == PROXY_PORT: #The address defined in conf.py
+        #set special fields
+        
+Chances are, in most cases, the client will have been assigned an IP over the
+standard DHCP port already, testable with ``packet.getOption('ciaddr')``, and
+though it's highly unlikely, the device may complain if the response contains an
+IP offer; ``packet.deleteOption('yiaddr')`` takes care of this.
