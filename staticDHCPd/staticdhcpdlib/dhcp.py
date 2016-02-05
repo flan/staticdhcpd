@@ -467,7 +467,7 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
 
         definition = wrapper.retrieveDefinition(override_ip=True, override_ip_value=None)
         if definition:
-            if wrapper.packet.isOption(80): #rapid-commit, RFC 4039
+            if config.ENABLE_RAPIDCOMMIT and wrapper.packet.isOption(80):
                 _logger.info('%(type)s from %(mac)s requested rapid-commit' % {
                  'type': wrapper.getType(),
                  'mac': wrapper.mac,
