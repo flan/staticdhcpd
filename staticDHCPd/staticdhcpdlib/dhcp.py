@@ -479,16 +479,10 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
                 wrapper.packet.transformToDHCPOfferPacket()
 
             if wrapper.loadDHCPPacket(definition):
-                if rapid_commit:
-                    self._emitDHCPPacket(
-                     wrapper.packet, wrapper.source_address, wrapper.port,
-                     wrapper.mac, definition.ip
-                    )
-                else:
-                    self._emitDHCPPacket(
-                     wrapper.packet, wrapper.source_address, wrapper.port,
-                     wrapper.mac, definition.ip
-                    )
+                self._emitDHCPPacket(
+                    wrapper.packet, wrapper.source_address, wrapper.port,
+                    wrapper.mac, definition.ip
+                )
                 wrapper.markAddressed()
         else: #No support available for the MAC
             if config.AUTHORITATIVE:
