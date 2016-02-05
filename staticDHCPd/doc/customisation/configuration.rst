@@ -452,6 +452,12 @@ Server behaviour
   ``['192.168.1.1', '192.168.2.1']``, will limit which ones will be accepted
 * If empty, all relays are considered acceptable
 
+**ENABLE_RAPIDCOMMIT** : boolean : default=True
+|||||||||||||||||||||||||||||||||||||||||||||||
+* Whether rapid-commit (RFC 4039) semantics should be processed for supporting
+  clients.
+* If this causes problems, please report it as a bug and provide details.
+
 **AUTHORITATIVE** : boolean : default=False
 |||||||||||||||||||||||||||||||||||||||||||
 * Controls whether unknown MACs should be NAKed instead of ignored

@@ -467,8 +467,7 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
 
         definition = wrapper.retrieveDefinition(override_ip=True, override_ip_value=None)
         if definition:
-            rapid_commit = wrapper.packet.isOption(80)
-            if rapid_commit:
+            if config.ENABLE_RAPIDCOMMIT and wrapper.packet.isOption(80):
                 _logger.info('%(type)s from %(mac)s requested rapid-commit' % {
                  'type': wrapper.getType(),
                  'mac': wrapper.mac,
@@ -479,16 +478,10 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
                 wrapper.packet.transformToDHCPOfferPacket()
 
             if wrapper.loadDHCPPacket(definition):
-                if rapid_commit:
-                    self._emitDHCPPacket(
-                     wrapper.packet, wrapper.source_address, wrapper.port,
-                     wrapper.mac, definition.ip
-                    )
-                else:
-                    self._emitDHCPPacket(
-                     wrapper.packet, wrapper.source_address, wrapper.port,
-                     wrapper.mac, definition.ip
-                    )
+                self._emitDHCPPacket(
+                    wrapper.packet, wrapper.source_address, wrapper.port,
+                    wrapper.mac, definition.ip
+                )
                 wrapper.markAddressed()
         else: #No support available for the MAC
             if config.AUTHORITATIVE:

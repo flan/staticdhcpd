@@ -129,6 +129,7 @@ _defaults.update({
  'ALLOW_LOCAL_DHCP': True,
  'ALLOW_DHCP_RELAYS': False,
  'ALLOWED_DHCP_RELAYS': [],
+ 'ENABLE_RAPIDCOMMIT': True,
 
  'AUTHORITATIVE': False,
  'NAK_RENEWALS': False,
