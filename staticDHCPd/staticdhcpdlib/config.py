@@ -237,10 +237,11 @@ if hasattr(conf, 'loadDHCPPacket'):
         
         def loadDHCPPacket(packet, method, mac, definition, relay_ip, port, source_packet):
             vendor_class = None
+            vendor_specific = None
             if source_packet.isOption('vendor_class'):
                 vendor_class = tuple(sorted(source_packet.getOption('vendor_class', convert=True).items()))
-            if source_packet.isOption('vendor_class_identifier'):
-                vendor_class_identifier = tuple((k, tuple(sorted(v.items()))) for (k, v) in sorted(source_packet.getOption('vendor_specific', convert=True).items()))
+            if source_packet.isOption('vendor_specific'):
+                vendor_specific = tuple((k, tuple(sorted(v.items()))) for (k, v) in sorted(source_packet.getOption('vendor_specific', convert=True).items()))
                 
             pxe_options = None
             if port == PROXY_PORT:
@@ -260,7 +261,7 @@ if hasattr(conf, 'loadDHCPPacket'):
                     source_packet.getOption('vendor_specific_information'),
                     source_packet.getOption('vendor_class_identifier', convert=True),
                     vendor_class,
-                    vendor_class_identifier,
+                    vendor_specific,
                 ),
             )
     else:
