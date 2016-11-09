@@ -177,7 +177,7 @@ class _HTTPLogic(object):
 
                 if isinstance(results, list): #Multi-definition response
                     return [_parse_server_response(self._set_defaults(result)) for result in results]
-                return _parse_server_response(self._set_defaults(result))
+                return _parse_server_response(self._set_defaults(results))
             else: #The server sent back 'null' or an empty object
                 _logger.debug("Unknown MAC response from '%(uri)s' for '%(mac)s': %(results)r" % {
                     'uri': self._uri,
