@@ -28,8 +28,8 @@ try:
 except ImportError: #py3k
     StringTypes = (str,)
     
-from conversion import (intToList, longToList)
-from ipv4 import IPv4
+from .conversion import (intToList, longToList)
+from .ipv4 import IPv4
 
 def rfc3046_decode(s):
     """

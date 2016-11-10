@@ -25,8 +25,8 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 """
 from array import array
 
-import constants
-from constants import (
+from . import constants
+from .constants import (
  FIELD_OP,
  FIELD_HTYPE, FIELD_HLEN, FIELD_HOPS,
  FIELD_XID, FIELD_SECS, FIELD_FLAGS,
@@ -38,13 +38,13 @@ from constants import (
  DHCP_FIELDS, DHCP_FIELDS_TEXT, DHCP_FIELDS_SPECS, DHCP_FIELDS_TYPES,
  DHCP_OPTIONS_TYPES, DHCP_OPTIONS, DHCP_OPTIONS_REVERSE,
 )
-from mac import MAC
-from ipv4 import IPv4
-from rfc import (
+from .mac import MAC
+from .ipv4 import IPv4
+from .rfc import (
  RFC,
  rfc3046_decode, rfc3925_decode, rfc3925_125_decode
 )
-import conversion
+from . import conversion
 
 _MAGIC_COOKIE_POSITION = 236
 _PACKET_HEADER_SIZE = 240
@@ -317,7 +317,7 @@ class DHCPPacket(object):
         #Pull options out of the payload, excluding options not specifically
         #requested, assuming any specific requests were made.
         options = {}
-        for (option_id, option_value) in self._options.iteritems():
+        for (option_id, option_value) in self._options.items():
             if self.isSelectedOption(option_id):
                 options[option_id] = option = []
                 while True:

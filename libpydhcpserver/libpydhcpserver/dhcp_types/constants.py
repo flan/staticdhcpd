@@ -54,8 +54,8 @@ FIELD_CHADDR = "chaddr" #: The hardware address.
 FIELD_SNAME = "sname" #: BOOTP server hostname.
 FIELD_FILE = "file" #: BOOTP filename.
 
-MAGIC_COOKIE = '\x63\x82\x53\x63' #: The DHCP magic cookie, per RFC 1048.
-MAGIC_COOKIE_ARRAY = array.array('B', MAGIC_COOKIE) #: The DHCP magic cookie as an array of bytes.
+MAGIC_COOKIE = b'\x63\x82\x53\x63' #: The DHCP magic cookie, per RFC 1048.
+MAGIC_COOKIE_ARRAY = [MAGIC_COOKIE] #: The DHCP magic cookie as an array of bytes.
 
 DHCP_OP_NAMES = {
  0: 'ERROR_UNDEF',
@@ -469,4 +469,4 @@ DHCP_OPTIONS = {
  #hole
  #'end': 255
 } #: Maps human-readable DHCP option names to integer values.
-DHCP_OPTIONS_REVERSE = dict((v, k) for (k, v) in DHCP_OPTIONS.iteritems()) #: Maps integer values to human-readable DHCP option names.
+DHCP_OPTIONS_REVERSE = dict((v, k) for (k, v) in DHCP_OPTIONS.items()) #: Maps integer values to human-readable DHCP option names.

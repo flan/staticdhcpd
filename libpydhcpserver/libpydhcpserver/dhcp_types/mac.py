@@ -31,10 +31,10 @@ except ImportError: #py3k
 IntegerTypes = (int,)
 try:
     IntegerTypes = (int, long)
-except ImportError: #py3k
+except (ImportError, NameError): #py3k
     pass
     
-from conversion import (listToNumber)
+from .conversion import (listToNumber)
 
 class MAC(object):
     """

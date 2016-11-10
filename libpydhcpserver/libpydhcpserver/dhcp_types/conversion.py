@@ -61,7 +61,7 @@ def listToInts(l):
     :return list: A list of ints corresponding to the byte-pairs.
     """
     ints = []
-    for i in xrange(len(l) >> 1):
+    for i in range(len(l) >> 1):
         p = i * 2
         ints.append(listToInt(l[p:p + 2]))
     return ints
@@ -85,7 +85,7 @@ def listToLongs(l):
     :return list: A list of ints corresponding to the byte-quartets.
     """
     longs = []
-    for i in xrange(len(l) >> 2):
+    for i in range(len(l) >> 2):
         p = i * 4
         longs.append(listToLong(l[p:p + 4]))
     return longs
@@ -164,7 +164,7 @@ def strToList(s):
     :param str s: The string to be converted.
     :return list: A sequence of bytes.
     """
-    return [ord(c) for c in s.encode('utf-8')]
+    return [c for c in s.encode('utf-8')]
     
 def strToPaddedList(s, l):
     """
@@ -192,7 +192,7 @@ def listToIP(l):
     """
     global _IPv4
     if not _IPv4:
-        from ipv4 import IPv4
+        from .ipv4 import IPv4
         _IPv4 = IPv4
         
     return _IPv4(l)
@@ -207,7 +207,7 @@ def listToIPs(l):
     :except ValueError: The list could not be processed.
     """
     ips = []
-    for i in xrange(len(l) / 4):
+    for i in range(len(l) / 4):
         p = i * 4
         ips.append(listToIP(l[p:p + 4]))
     return ips
@@ -223,7 +223,7 @@ def ipToList(ip):
     """
     global _IPv4
     if not _IPv4:
-        from ipv4 import IPv4
+        from .ipv4 import IPv4
         _IPv4 = IPv4
         
     if not isinstance(ip, _IPv4):

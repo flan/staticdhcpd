@@ -299,7 +299,7 @@ class _NetworkLink(object):
             except Exception:
                 try:
                     self._responder_broadcast = _L2Responder_pcap(server_address, response_interface, qtags=response_interface_qtags)
-                except Exception, e:
+                except Exception:
                     import errno
                     raise EnvironmentError(errno.ELIBACC, "Raw response-socket requested on %(interface)s, but neither AF_PACKET nor libpcap are available, or the interface does not exist" % {'interface': response_interface,})
             self._unicast_discover_supported = True
@@ -322,14 +322,14 @@ class _NetworkLink(object):
             dhcp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             if proxy_port:
                 proxy_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        except socket.error, msg:
+        except socket.error as msg:
             raise Exception('Unable to create socket: %(err)s' % {'err': str(msg),})
 
         try:
             dhcp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             if proxy_socket:
                 proxy_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        except socket.error, msg:
+        except socket.error as msg:
             import warnings
             warnings.warn('Unable to set SO_REUSEADDR; multiple DHCP servers cannot be run in parallel: %(err)s' % {'err': str(msg),})
 
@@ -338,7 +338,7 @@ class _NetworkLink(object):
                 dhcp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
                 if proxy_port:
                     proxy_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
-            except socket.error, msg:
+            except socket.error as msg:
                 import warnings
                 warnings.warn('Unable to set SO_REUSEPORT; multiple DHCP servers cannot be run in parallel: %(err)s' % {'err': str(msg),})
 
@@ -346,7 +346,7 @@ class _NetworkLink(object):
             dhcp_socket.bind(('', server_port))
             if proxy_port:
                 proxy_socket.bind(('', proxy_port))
-        except socket.error, e:
+        except socket.error as e:
             raise Exception('Unable to bind sockets: %(error)s' % {
              'error': str(e),
             })
@@ -356,7 +356,7 @@ class _NetworkLink(object):
             listen_interface = getifaddrslib.get_network_interface(server_address)
             try:
                 dhcp_socket.setsockopt(socket.SOL_SOCKET, _SO_BINDTODEVICE, listen_interface)
-            except socket.error, msg:
+            except socket.error as msg:
                 raise OSError(msg.errno, 'Unable to limit listening to %(listen_interface)s: %(err)s' % {
                  'listen_interface': listen_interface,
                  'err': msg.strerror,
@@ -507,12 +507,12 @@ class _L3Responder(_Responder):
 
             try:
                 self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-            except socket.error, e:
+            except socket.error as e:
                 raise Exception('Unable to set SO_BROADCAST: %(err)s' % {'err': e,})
 
             try:
                 self._socket.bind((server_address or '', 0))
-            except socket.error, e:
+            except socket.error as e:
                 raise Exception('Unable to bind socket: %(error)s' % {'error': e,})
 
     def _send(self, packet, ip, port, **kwargs):
