@@ -137,7 +137,8 @@ Server
 
 **PROXY_PORT** : integer, None : default=None
 |||||||||||||||||||||||||||||||||||||||||||||
-* The port to use for ProxyDHCP-processing, if required
+* The port to use for ProxyDHCP-processing, often referred to as PXE, if
+  required
 * ProxyDHCP normally runs on ``4011``
 
 
