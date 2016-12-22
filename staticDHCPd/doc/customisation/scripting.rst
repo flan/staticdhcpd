@@ -120,7 +120,7 @@ filterPacket()
                       instance of :class:`libpydhcpserver.dhcp_types.ipv4.IPv4`.
     :param relay_ip: The relay used by the client (may be ``None``), an
                      instance of :class:`libpydhcpserver.dhcp_types.ipv4.IPv4`.
-    :param int port : The port on which the packet was received.
+    :param int port: The port on which the packet was received.
     :return bool: ``False`` if the packet should be rejected; ``True``
                   otherwise.
 
@@ -158,7 +158,7 @@ handleUnknownMAC()
                       instance of :class:`libpydhcpserver.dhcp_types.ipv4.IPv4`.
     :param relay_ip: The relay used by the client (may be ``None``), an
                      instance of :class:`libpydhcpserver.dhcp_types.ipv4.IPv4`.
-    :param int port : The port on which the packet was received.
+    :param int port: The port on which the packet was received.
     :return: An instance of :class:`databases.generic.Definition` or ``None``,
              if the MAC could not be handled.
 
@@ -193,7 +193,7 @@ filterRetrievedDefinitions()
                       instance of :class:`libpydhcpserver.dhcp_types.ipv4.IPv4`.
     :param relay_ip: The relay used by the client (may be ``None``), an
                      instance of :class:`libpydhcpserver.dhcp_types.ipv4.IPv4`.
-    :param int port : The port on which the packet was received.
+    :param int port: The port on which the packet was received.
     :return: An instance of :class:`databases.generic.Definition` or ``None``,
              if the `definitons` could not be processed.
 
@@ -235,7 +235,7 @@ loadDHCPPacket()
                        of :class:`databases.generic.Definition`.
     :param relay_ip: The relay used by the client (may be ``None``), an
                      instance of :class:`libpydhcpserver.dhcp_types.ipv4.IPv4`.
-    :param int port : The port on which the packet was received.
+    :param int port: The port on which the packet was received.
     :param source_packet: The packet received from the client, an instance of
                           :class:`libpydhcpserver.dhcp_types.packet.DHCPPacket`.
                           
