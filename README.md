@@ -16,7 +16,7 @@ The 2.0.0 branch now needs to be tested; the running checklist follows (if you t
       * Oracle _external validation required_
       * SQLite
   * Extensions
-    * httpdb _external validation required_
+    * httpdb **done**
     * statistics (with various config options)
     * statistics (with pycha)
     * dynamism
