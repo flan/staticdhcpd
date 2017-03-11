@@ -131,10 +131,18 @@ def _evaluate_ifaddrs(evaluator, extractor):
     return None
 
 def get_network_interface(ipv4):
-    return _evaluate_ifaddrs(
+    interface =  _evaluate_ifaddrs(
         lambda ifaddr : _evaluate_ipv4(ifaddr, ipv4),
         _extract_ipv4,
     )
+    needle = ":"
+    pos = interface.upper().find(needle.upper())
+    if pos < 0: # primary interface
+        return interface
+    else: # aliased secondary interface, strip of :<alias_id>
+        real_interface,alias_id = interface.split(":")
+        return real_interface
+
     
 def get_mac_address(iface):
     return _evaluate_ifaddrs(
