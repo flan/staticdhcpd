@@ -135,15 +135,9 @@ def get_network_interface(ipv4):
         lambda ifaddr : _evaluate_ipv4(ifaddr, ipv4),
         _extract_ipv4,
     )
-    needle = ":"
-    pos = interface.upper().find(needle.upper())
-    if pos < 0: # primary interface
-        return interface
-    else: # aliased secondary interface, strip of :<alias_id>
-        real_interface,alias_id = interface.split(":")
-        return real_interface
+    #Handle aliased interfaces, like 'eth0:1'
+    return interface.split(':', 1)[0]
 
-    
 def get_mac_address(iface):
     return _evaluate_ifaddrs(
         lambda ifaddr : _evaluate_mac(ifaddr, iface),
