@@ -164,6 +164,24 @@ handleUnknownMAC()
 
 Example
 |||||||
+::
+    
+    import databases.generic.Definition
+    handleUnknownMAC(packet, method, mac, client_ip, relay_ip, port):
+        if mac == 'aa:bb:cc:dd:ee:ff':
+            return databases.generic.Definition(
+                ip='192.168.0.100', lease_time=600,
+                subnet='192.168.0.0/24', serial=0,
+                hostname='guestbox',
+                #gateways=None, #The old format didn't support per-definition gateways
+                subnet_mask='255.255.255.0',
+                broadcast_address='192.168.0.255',
+                domain_name='guestbox.example.org.',
+                domain_name_servers=['192.168.0.5', '192.168.0.6', '192.168.0.7'],
+                ntp_servers=['192.168.0.8', '192.168.0.9'],
+            )
+        return None
+
 It is difficult to provide a general example of how to use this function, since
 its role is basically that of a code-driven database. When you need to use it,
 you will know.
