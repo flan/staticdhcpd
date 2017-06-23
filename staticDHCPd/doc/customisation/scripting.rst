@@ -167,7 +167,7 @@ Example
 ::
     
     import databases.generic.Definition
-    handleUnknownMAC(packet, method, mac, client_ip, relay_ip, port):
+    def handleUnknownMAC(packet, method, mac, client_ip, relay_ip, port):
         if mac == 'aa:bb:cc:dd:ee:ff':
             return databases.generic.Definition(
                 ip='192.168.0.100', lease_time=600,
