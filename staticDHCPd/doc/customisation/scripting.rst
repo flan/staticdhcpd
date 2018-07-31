@@ -122,7 +122,8 @@ filterPacket()
                      instance of :class:`libpydhcpserver.dhcp_types.ipv4.IPv4`.
     :param int port: The port on which the packet was received.
     :return bool: ``False`` if the packet should be rejected; ``True``
-                  otherwise.
+                  if it should be accepted; ``None`` if the source should be
+                  ignored temporarily.
 
 Example
 |||||||
