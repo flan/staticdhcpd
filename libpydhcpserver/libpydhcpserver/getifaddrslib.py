@@ -135,6 +135,9 @@ def get_network_interface(ipv4):
         lambda ifaddr : _evaluate_ipv4(ifaddr, ipv4),
         _extract_ipv4,
     )
+    if interface is None:
+        raise ValueError("Unable to find an interface with IP address %s" % (ipv4))
+        
     #Handle aliased interfaces, like 'eth0:1'
     return interface.split(':', 1)[0]
 
