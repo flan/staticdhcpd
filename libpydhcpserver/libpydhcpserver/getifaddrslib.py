@@ -131,11 +131,13 @@ def _evaluate_ifaddrs(evaluator, extractor):
     return None
 
 def get_network_interface(ipv4):
-    return _evaluate_ifaddrs(
+    interface =  _evaluate_ifaddrs(
         lambda ifaddr : _evaluate_ipv4(ifaddr, ipv4),
         _extract_ipv4,
     )
-    
+    #Handle aliased interfaces, like 'eth0:1'
+    return interface.split(':', 1)[0]
+
 def get_mac_address(iface):
     return _evaluate_ifaddrs(
         lambda ifaddr : _evaluate_mac(ifaddr, iface),
