@@ -110,18 +110,20 @@ filterPacket()
                    :class:`libpydhcpserver.dhcp_types.packet.DHCPPacket`.
                    
                    Any changes made to this packet will persist.
-    :param str method: The type of DHCP request the packet represents, one of
+    :param method: The type of DHCP request the packet represents, one of
                        ``DECLINE``, ``DISCOVER``, ``INFORM``, ``RELEASE``,
                        ``REQUEST:INIT-REBOOT``, ``REQUEST:REBIND``,
                        ``REQUEST:RENEW``, ``REQUEST:SELECTING``.
+    :type method: str
     :param mac: The MAC of the client, an instance of
                 :class:`libpydhcpserver.dhcp_types.mac.MAC`.
     :param client_ip: The client's requested IP address (may be ``None``), an
                       instance of :class:`libpydhcpserver.dhcp_types.ipv4.IPv4`.
     :param relay_ip: The relay used by the client (may be ``None``), an
                      instance of :class:`libpydhcpserver.dhcp_types.ipv4.IPv4`.
-    :param int port: The port on which the packet was received.
-    :return bool: ``False`` if the packet should be rejected; ``True``
+    :param port: The port on which the packet was received.
+    :type port: int
+    :return: ``False`` if the packet should be rejected; ``True``
                   if it should be accepted; ``None`` if the source should be
                   ignored temporarily.
 
@@ -149,17 +151,19 @@ handleUnknownMAC()
                    :class:`libpydhcpserver.dhcp_types.packet.DHCPPacket`.
                    
                    Any changes made to this packet will persist.
-    :param str method: The type of DHCP request the packet represents, one of
+    :param method: The type of DHCP request the packet represents, one of
                        ``DECLINE``, ``DISCOVER``, ``INFORM``, ``RELEASE``,
                        ``REQUEST:INIT-REBOOT``, ``REQUEST:REBIND``,
                        ``REQUEST:RENEW``, ``REQUEST:SELECTING``.
+    :type method: str
     :param mac: The MAC of the client, an instance of
                 :class:`libpydhcpserver.dhcp_types.mac.MAC`.
     :param client_ip: The client's requested IP address (may be ``None``), an
                       instance of :class:`libpydhcpserver.dhcp_types.ipv4.IPv4`.
     :param relay_ip: The relay used by the client (may be ``None``), an
                      instance of :class:`libpydhcpserver.dhcp_types.ipv4.IPv4`.
-    :param int port: The port on which the packet was received.
+    :param port: The port on which the packet was received.
+    :type port: int
     :return: An instance of :class:`databases.generic.Definition` or ``None``,
              if the MAC could not be handled.
 
@@ -202,17 +206,19 @@ filterRetrievedDefinitions()
                    :class:`libpydhcpserver.dhcp_types.packet.DHCPPacket`.
                    
                    Any changes made to this packet will persist.
-    :param str method: The type of DHCP request the packet represents, one of
+    :param method: The type of DHCP request the packet represents, one of
                        ``DECLINE``, ``DISCOVER``, ``INFORM``, ``RELEASE``,
                        ``REQUEST:INIT-REBOOT``, ``REQUEST:REBIND``,
                        ``REQUEST:RENEW``, ``REQUEST:SELECTING``.
+    :type method: str
     :param mac: The MAC of the client, an instance of
                 :class:`libpydhcpserver.dhcp_types.mac.MAC`.
     :param client_ip: The client's requested IP address (may be ``None``), an
                       instance of :class:`libpydhcpserver.dhcp_types.ipv4.IPv4`.
     :param relay_ip: The relay used by the client (may be ``None``), an
                      instance of :class:`libpydhcpserver.dhcp_types.ipv4.IPv4`.
-    :param int port: The port on which the packet was received.
+    :param port: The port on which the packet was received.
+    :type port: int
     :return: An instance of :class:`databases.generic.Definition` or ``None``,
              if the `definitons` could not be processed.
 
@@ -244,24 +250,26 @@ loadDHCPPacket()
 
     :param packet: The packet to be sent to the client, an instance of
                    :class:`libpydhcpserver.dhcp_types.packet.DHCPPacket`.
-    :param str method: The type of DHCP request the packet represents, one of
+    :param method: The type of DHCP request the packet represents, one of
                        ``DECLINE``, ``DISCOVER``, ``INFORM``, ``RELEASE``,
                        ``REQUEST:INIT-REBOOT``, ``REQUEST:REBIND``,
                        ``REQUEST:RENEW``, ``REQUEST:SELECTING``.
+    :type method: str
     :param mac: The MAC of the client, an instance of
                 :class:`libpydhcpserver.dhcp_types.mac.MAC`.
     :param definition: The lease-definition provided via MAC-lookup, an instance
                        of :class:`databases.generic.Definition`.
     :param relay_ip: The relay used by the client (may be ``None``), an
                      instance of :class:`libpydhcpserver.dhcp_types.ipv4.IPv4`.
-    :param int port: The port on which the packet was received.
+    :param port: The port on which the packet was received.
+    :type port: int
     :param source_packet: The packet received from the client, an instance of
                           :class:`libpydhcpserver.dhcp_types.packet.DHCPPacket`.
                           
                           This is a pristine copy of the original packet,
                           unaffected by any previous modifications.
-    :return bool: ``True`` if processing can proceed; ``False`` if the packet
-                  should be rejected.
+    :return: ``True`` if processing can proceed; ``False`` if the packet
+             should be rejected.
 
 Example
 |||||||
@@ -306,7 +314,7 @@ core functions and modules. All of these are accessible from anywhere within
     Unregisters a reinitialisation callback.
     
     :param callable callback: The callback to remove.
-    :return bool: True if a callback was removed.
+    :return: True if a callback was removed.
 
 .. function:: callbacks.systemAddTickHandler(callback)
     
