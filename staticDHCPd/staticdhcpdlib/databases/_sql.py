@@ -242,7 +242,7 @@ class Oracle(_PoolingBroker):
      FROM maps m, subnets s
      WHERE
       %(mac)s = :1 AND m.subnet = s.subnet AND m.serial = s.serial
-     LIMIT 1
+      FETCH FIRST 1 ROWS ONLY
     """ % {
      'mac': config.CASE_INSENSITIVE_MACS and 'LOWER(m.mac)' or 'm.mac',
      'extra': _extra and ','.join(
