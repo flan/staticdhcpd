@@ -1,7 +1,6 @@
 CREATE DATABASE dhcp;
 ALTER SESSION SET CURRENT_SCHEMA = dhcp;
 
-Sergey Ko, [21.01.20 16:22]
 CREATE TABLE subnets (
     subnet VARCHAR2(18) NOT NULL, -- A human-readable subnet-identifier, large enough to hold a CIDR mask.
     serial NUMBER (15,0) DEFAULT 0 NOT NULL, -- A means of allowing a subnet to be reused, just in case you have two 192.168.1.0/24s.
