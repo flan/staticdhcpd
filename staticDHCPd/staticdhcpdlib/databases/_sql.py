@@ -171,8 +171,6 @@ class MySQL(_PoolingBroker):
         """
         Constructs the broker.
         """
-        _PoolingBroker.__init__(self, config.MYSQL_MAXIMUM_CONNECTIONS)
-        
         import MySQLdb
         self._module = MySQLdb
         
@@ -187,6 +185,8 @@ class MySQL(_PoolingBroker):
             self._connection_details['host'] = config.MYSQL_HOST
             self._connection_details['port'] = config.MYSQL_PORT
             
+        _PoolingBroker.__init__(self, config.MYSQL_MAXIMUM_CONNECTIONS)
+        
         _logger.debug("MySQL configured; connection-details: " + str(self._connection_details))
         
 class PostgreSQL(_PoolingBroker):
@@ -213,8 +213,6 @@ class PostgreSQL(_PoolingBroker):
         """
         Constructs the broker.
         """
-        _PoolingBroker.__init__(self, config.POSTGRESQL_MAXIMUM_CONNECTIONS)
-        
         import psycopg2
         self._module = psycopg2
         
@@ -228,6 +226,8 @@ class PostgreSQL(_PoolingBroker):
             self._connection_details['port'] = config.POSTGRESQL_PORT
             self._connection_details['sslmode'] = config.POSTGRESQL_SSLMODE
             
+        _PoolingBroker.__init__(self, config.POSTGRESQL_MAXIMUM_CONNECTIONS)
+        
         _logger.debug("PostgreSQL configured; connection-details: " + str(self._connection_details))
         
 class Oracle(_PoolingBroker):
@@ -254,8 +254,6 @@ class Oracle(_PoolingBroker):
         """
         Constructs the broker.
         """
-        _PoolingBroker.__init__(self, config.ORACLE_MAXIMUM_CONNECTIONS)
-        
         import cx_Oracle
         self._module = cx_Oracle
         
@@ -264,6 +262,8 @@ class Oracle(_PoolingBroker):
          'password': config.ORACLE_PASSWORD,
          'dsn': config.ORACLE_DATABASE,
         }
+        
+        _PoolingBroker.__init__(self, config.ORACLE_MAXIMUM_CONNECTIONS)
         
         _logger.debug("Oracle configured; connection-details: " + str(self._connection_details))
 
@@ -291,13 +291,13 @@ class SQLite(_NonPoolingBroker):
         """
         Constructs the broker.
         """
-        _NonPoolingBroker.__init__(self, 1)
-        
         import sqlite3
         self._module = sqlite3
         
         self._connection_details = {
          'database': config.SQLITE_FILE,
         }
+        
+        _NonPoolingBroker.__init__(self, 1)
         
         _logger.debug("SQLite configured; connection-details: " + str(self._connection_details))
