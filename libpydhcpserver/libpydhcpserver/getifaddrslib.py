@@ -111,7 +111,7 @@ def _extract_mac(ifaddr):
     else:
         sockaddr_dl = ctypes.cast(ctypes.pointer(sockaddr), ctypes.POINTER(struct_sockaddr_dl)).contents
         mac = sockaddr_dl.sdl_data[sockaddr_dl.sdl_nlen:sockaddr_dl.sdl_nlen + sockaddr_dl.sdl_alen]
-    return ':'.join('%02x' % b for b in mac)
+    return ':'.join('{:02x}'.format(b) for b in mac)
     
 def _evaluate_ifaddrs(evaluator, extractor):
     ifap = ctypes.POINTER(struct_ifaddrs)()
@@ -136,7 +136,7 @@ def get_network_interface(ipv4):
         _extract_ipv4,
     )
     if interface is None:
-        raise ValueError("Unable to find an interface with IP address %s" % (ipv4))
+        raise ValueError("Unable to find an interface with IP address {}".format(ipv4))
         
     #Handle aliased interfaces, like 'eth0:1'
     return interface.split(':', 1)[0]

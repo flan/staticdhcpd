@@ -570,13 +570,13 @@ class _L2Responder(_Responder):
         ethernet_id = [mac,] #Source MAC
         if qtags:
             for (pcp, dei, vid) in qtags:
-                ethernet_id.append("\x81\x00") #qtag payload-type
+                ethernet_id.append(b'\x81\x00') #qtag payload-type
                 qtag_value = pcp << 13 #Priority-code-point (0-7)
                 qtag_value += int(dei) << 12 #Drop-eligible-indicator
                 qtag_value += vid #vlan-identifier
                 ethernet_id.append(self._pack('!H', qtag_value))
-        ethernet_id.append("\x08\x00") #IP payload-type
-        self._ethernet_id = ''.join(ethernet_id)
+        ethernet_id.append(b'\x08\x00') #IP payload-type
+        self._ethernet_id = b''.join(ethernet_id)
 
     def _checksum(self, data):
         """
@@ -587,7 +587,7 @@ class _L2Responder(_Responder):
         """
         if sum(len(i) for i in data) & 1: #Odd
             checksum = sum(self._array_('H', ''.join(data)[:-1]))
-            checksum += ord(data[-1][-1]) #Add the final byte
+            checksum += data[-1][-1] #Add the final byte
         else: #Even
             checksum = sum(self._array_('H', ''.join(data)))
         checksum = (checksum >> 16) + (checksum & 0xffff)
@@ -604,7 +604,7 @@ class _L2Responder(_Responder):
         """
         return self._checksum([
             ip_prefix,
-            '\0\0', #Empty checksum field
+            b'\0\0', #Empty checksum field
             self._server_address,
             ip_destination,
         ])
@@ -622,11 +622,11 @@ class _L2Responder(_Responder):
         return self._checksum([
             self._server_address,
             ip_destination,
-            '\0\x11', #UDP spec padding and protocol
+            b'\0\x11', #UDP spec padding and protocol
             udp_length,
             udp_addressing,
             udp_length,
-            '\0\0', #Dummy UDP checksum
+            b'\0\0', #Dummy UDP checksum
             packet,
         ])
 
@@ -648,9 +648,9 @@ class _L2Responder(_Responder):
 
         #<> Ethernet header
         if _IP_BROADCAST == ip:
-            binary.append('\xff\xff\xff\xff\xff\xff') #Broadcast MAC
+            binary.append(b'\xff\xff\xff\xff\xff\xff') #Broadcast MAC
         else:
-            binary.append(''.join(chr(i) for i in mac)) #Destination MAC
+            binary.append(b''.join(i for i in mac)) #Destination MAC
         binary.append(self._ethernet_id) #Source MAC and Ethernet payload-type
 
         #<> Prepare packet data for transmission and checksumming
@@ -682,7 +682,7 @@ class _L2Responder(_Responder):
         #<> Payload
         binary.append(binary_packet)
 
-        return ''.join(binary)
+        return b''.join(binary)
 
     def _send(self, packet, ip, port, source_port=0, **kwargs):
         """
@@ -778,7 +778,7 @@ class _L2Responder_pcap(_L2Responder):
             warnings.warn(errbuf.value)
 
         try:
-            mac = ''.join(chr(i) for i in MAC(getifaddrslib.get_mac_address(response_interface)))
+            mac = b''.join(i for i in MAC(getifaddrslib.get_mac_address(response_interface)))
         except Exception:
             pcap.pcap_close(self._fd)
             raise
