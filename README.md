@@ -2,9 +2,9 @@
 
 staticDHCPd is an all-Python, [RFC 2131](http://www.ietf.org/rfc/rfc2131.txt)-compliant DHCP server, with support for most common DHCP extensions and extensive site-specific customisation.
 
-**staticDHCPd 2.0.0 is finally in rc1 status!**
+**Work has begun on porting ststicDHCPd to Python 3, as 3.0.0**
 
-The 2.0.0 branch now needs to be tested; the running checklist follows (if you test a thing, send e-mail to Neil Tallim at the address in any source file or comment on the [announcement post](http://uguu.ca/514/staticdhcpd-2-0-0-rc1/)):
+The 3.0.0 branch will need to be tested; the running checklist follows (if you test a thing, send e-mail to Neil Tallim at the address in any source file):
   * staticDHCPd
     * Long-term soak-test
       * Stable memory usage **settles after logs finish growing**
@@ -28,8 +28,6 @@ The 2.0.0 branch now needs to be tested; the running checklist follows (if you t
     * staticDHCPd
       * Sanity check
       * Proofreading
-
-**Since no major issues were reported (but also not much feedback), the code will migrate to GitHub in late April, 2015 and packages will be built at that time; anything not explicitly tested will be tracked as release errata.**
 
 At this point, no new features will be added until the system is stable (but please submit ideas to the issue-tracker anyway). Any non-bugfix commits will be things to prepare for the Debian/RPM packages or minor formatting tweaks.
 
@@ -61,10 +59,10 @@ On the other hand, it's the wrong choice in the following cases:
   * Your employer won't let you run anything without an SLA
     * You're probably looking for solutions in the wrong place
   * You actually **want** to have a hard time upgrading from one version to the next
-    * staticDHCPd will let you take your config file and custom code from version 1.0 and drop it into 2.0 with no changes required, even though the codebase running it is entirely different
+    * staticDHCPd will let you take your config file and custom code from version 1.0 and drop it into 2.0 or 3.0 with no changes required, even though the codebase running it is entirely different
   * The concept of a feature-rich server running with a 4MB footprint scares you
 
-If you think it might be a good match for your needs, take a look at its [five-minute quick-start guide](https://github.com/flan/staticdhcpd/blob/2.0.x/staticDHCPd/README).
+If you think it might be a good match for your needs, take a look at its [five-minute quick-start guide](https://github.com/flan/staticdhcpd/blob/3.0.x/staticDHCPd/README).
 
 
 ---
