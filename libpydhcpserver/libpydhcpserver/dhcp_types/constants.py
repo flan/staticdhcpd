@@ -143,8 +143,8 @@ DHCP_FIELDS_TYPES = {
     FIELD_FILE: TYPE_STRING,
 } #: Maps human-readable field-names to DHCP fields specs.
 
-_DHCP_OPTION_TYPE_UNASSIGNED = "Unassigned"
-_DHCP_OPTION_TYPE_RESERVED = "Reserved"
+_DHCP_OPTION_TYPE_UNASSIGNED = "unassigned"
+_DHCP_OPTION_TYPE_RESERVED = "reserved"
 DHCP_OPTIONS_TYPES = collections.defaultdict(lambda : _DHCP_OPTION_TYPE_UNASSIGNED, {
     0: TYPE_PAD,
     1: TYPE_IPV4,
@@ -294,14 +294,16 @@ DHCP_OPTIONS_TYPES = collections.defaultdict(lambda : _DHCP_OPTION_TYPE_UNASSIGN
     
     255: TYPE_END,
 }
-for i in range(224, 255): 
-    DHCP_OPTIONS_TYPES[i] = _DHCP_OPTION_TYPE_RESERVED
 """
 Maps DHCP option-numbers to DHCP fields specs.
 
 All values derived from http://www.iana.org/assignments/bootp-dhcp-parameters
 """
-
+for i in range(224, 255): #fill in reserved identifiers
+    if DHCP_OPTIONS_TYPES[i] == _DHCP_OPTION_TYPE_UNASSIGNED:
+        DHCP_OPTIONS_TYPES[i] = _DHCP_OPTION_TYPE_RESERVED
+        
+        
 DHCP_OPTIONS = {
     #'pad': 0,
     #Vendor extensions
