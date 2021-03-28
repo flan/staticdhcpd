@@ -20,7 +20,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-(C) Neil Tallim, 2014 <flan@uguu.ca>
+(C) Neil Tallim, 2021 <flan@uguu.ca>
 (C) Matthew Boedicker, 2011 <matthewm@boedicker.org>
 (C) Mathieu Ignacio, 2008 <mignacio@april.org>
 """
@@ -30,10 +30,10 @@ import select
 import socket
 import threading
 
-from dhcp_types.ipv4 import IPv4
-from dhcp_types.mac import MAC
-from dhcp_types.packet import (DHCPPacket, FLAGBIT_BROADCAST)
-from dhcp_types.constants import (
+from .dhcp_types.ipv4 import IPv4
+from .dhcp_types.mac import MAC
+from .dhcp_types.packet import (DHCPPacket, FLAGBIT_BROADCAST)
+from .dhcp_types.constants import (
     FIELD_CIADDR, FIELD_YIADDR, FIELD_SIADDR, FIELD_GIADDR,
 )
 
@@ -110,7 +110,7 @@ class DHCPServer(object):
         """
         self._server_address = server_address
         if response_interface == '-':
-            import getifaddrslib
+            from . import getifaddrslib
             response_interface = getifaddrslib.get_network_interface(server_address)
         self._network_link = _NetworkLink(str(server_address), server_port, client_port, proxy_port, response_interface, response_interface_qtags=response_interface_qtags)
 
@@ -299,9 +299,11 @@ class _NetworkLink(object):
             except Exception:
                 try:
                     self._responder_broadcast = _L2Responder_pcap(server_address, response_interface, qtags=response_interface_qtags)
-                except Exception, e:
+                except Exception as e:
                     import errno
-                    raise EnvironmentError(errno.ELIBACC, "Raw response-socket requested on %(interface)s, but neither AF_PACKET nor libpcap are available, or the interface does not exist" % {'interface': response_interface,})
+                    raise EnvironmentError(errno.ELIBACC, "Raw response-socket requested on {interface}, but neither AF_PACKET nor libpcap are available, or the interface does not exist".format(
+                        interface=response_interface,
+                    ))
             self._unicast_discover_supported = True
         else:
             self._responder_broadcast = _L3Responder(server_address=server_address)
@@ -322,45 +324,51 @@ class _NetworkLink(object):
             dhcp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             if proxy_port:
                 proxy_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        except socket.error, msg:
-            raise Exception('Unable to create socket: %(err)s' % {'err': str(msg),})
+        except socket.error as e:
+            raise Exception('Unable to create socket: {err}'.format(
+                err=e,
+            ))
 
         try:
             dhcp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             if proxy_socket:
                 proxy_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        except socket.error, msg:
+        except socket.error as e:
             import warnings
-            warnings.warn('Unable to set SO_REUSEADDR; multiple DHCP servers cannot be run in parallel: %(err)s' % {'err': str(msg),})
+            warnings.warn('Unable to set SO_REUSEADDR; multiple DHCP servers cannot be run in parallel: {err}'.format(
+                err=e,
+            ))
 
         if platform.system() != 'Linux':
             try:
                 dhcp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
                 if proxy_port:
                     proxy_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
-            except socket.error, msg:
+            except socket.error as e:
                 import warnings
-                warnings.warn('Unable to set SO_REUSEPORT; multiple DHCP servers cannot be run in parallel: %(err)s' % {'err': str(msg),})
+                warnings.warn('Unable to set SO_REUSEPORT; multiple DHCP servers cannot be run in parallel: {err}'.format(
+                    err=e,
+                ))
 
         try:
             dhcp_socket.bind(('', server_port))
             if proxy_port:
                 proxy_socket.bind(('', proxy_port))
-        except socket.error, e:
-            raise Exception('Unable to bind sockets: %(error)s' % {
-             'error': str(e),
-            })
+        except socket.error as e:
+            raise Exception('Unable to bind sockets: {err}'.format(
+                err=e,
+            ))
 
         if server_address:
-            import getifaddrslib
+            from . import getifaddrslib
             listen_interface = getifaddrslib.get_network_interface(server_address)
             try:
                 dhcp_socket.setsockopt(socket.SOL_SOCKET, _SO_BINDTODEVICE, listen_interface)
-            except socket.error, msg:
-                raise OSError(msg.errno, 'Unable to limit listening to %(listen_interface)s: %(err)s' % {
-                 'listen_interface': listen_interface,
-                 'err': msg.strerror,
-                })
+            except socket.error as e:
+                raise OSError(e.errno, 'Unable to limit listening to {listen_interface}: {err}'.format(
+                    listen_interface=listen_interface,
+                    err=e.strerror,
+                ))
 
         return (dhcp_socket, proxy_socket)
 
@@ -507,13 +515,17 @@ class _L3Responder(_Responder):
 
             try:
                 self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-            except socket.error, e:
-                raise Exception('Unable to set SO_BROADCAST: %(err)s' % {'err': e,})
+            except socket.error as e:
+                raise Exception('Unable to set SO_BROADCAST: {err}'.format(
+                    err=e,
+                ))
 
             try:
                 self._socket.bind((server_address or '', 0))
-            except socket.error, e:
-                raise Exception('Unable to bind socket: %(error)s' % {'error': e,})
+            except socket.error as e:
+                raise Exception('Unable to bind socket: {err}'.format(
+                    err=e,
+            ))
 
     def _send(self, packet, ip, port, **kwargs):
         """
@@ -591,10 +603,10 @@ class _L2Responder(_Responder):
         :return int: The IPv4 checksum.
         """
         return self._checksum([
-         ip_prefix,
-         '\0\0', #Empty checksum field
-         self._server_address,
-         ip_destination,
+            ip_prefix,
+            '\0\0', #Empty checksum field
+            self._server_address,
+            ip_destination,
         ])
 
     def _udpChecksum(self, ip_destination, udp_addressing, udp_length, packet):
@@ -608,14 +620,14 @@ class _L2Responder(_Responder):
         :return int: The UDP checksum.
         """
         return self._checksum([
-         self._server_address,
-         ip_destination,
-         '\0\x11', #UDP spec padding and protocol
-         udp_length,
-         udp_addressing,
-         udp_length,
-         '\0\0', #Dummy UDP checksum
-         packet,
+            self._server_address,
+            ip_destination,
+            '\0\x11', #UDP spec padding and protocol
+            udp_length,
+            udp_addressing,
+            udp_length,
+            '\0\0', #Dummy UDP checksum
+            packet,
         ])
 
     def _assemblePacket(self, packet, mac, ip, port, source_port):
@@ -647,19 +659,19 @@ class _L2Responder(_Responder):
 
         #<> IP header
         binary.append(self._pack_("!BBHHHBB",
-         69, #IPv4 + length=5
-         0, #DSCP/ECN aren't relevant
-         28 + packet_len, #The UDP and packet lengths in bytes
-         0, #ID, which is always 0 because we're the origin
-         packet_len <= 560 and 0b0100000000000000 or 0, #Flags and fragmentation
-         128, #Make the default TTL sane, but not maximum
-         0x11, #Protocol=UDP
+            69, #IPv4 + length=5
+            0, #DSCP/ECN aren't relevant
+            28 + packet_len, #The UDP and packet lengths in bytes
+            0, #ID, which is always 0 because we're the origin
+            packet_len <= 560 and 0b0100000000000000 or 0, #Flags and fragmentation
+            128, #Make the default TTL sane, but not maximum
+            0x11, #Protocol=UDP
         ))
         ip_destination = socket.inet_aton(ip)
         binary.extend((
-         self._pack_("<H", self._ipChecksum(binary[-1], ip_destination)),
-         self._server_address,
-         ip_destination
+            self._pack_("<H", self._ipChecksum(binary[-1], ip_destination)),
+            self._server_address,
+            ip_destination
         ))
 
         #<> UDP header
@@ -749,7 +761,7 @@ class _L2Responder_pcap(_L2Responder):
         self._c_int_ = ctypes.c_int
         import ctypes.util
 
-        import getifaddrslib
+        from . import getifaddrslib
         
         pcap = ctypes.util.find_library('pcap')
         if not pcap:

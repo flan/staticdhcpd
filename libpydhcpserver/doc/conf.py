@@ -16,7 +16,7 @@ templates_path = ['_templates']
 source_suffix = '.rst'
 master_doc = 'index'
 
-project = u'libpydhcpserver'
+project = 'libpydhcpserver'
 copyright = module.COPYRIGHT
 version = re.match('^(\d+\.\d+)', module.VERSION).group(1)
 release = module.VERSION
@@ -35,6 +35,6 @@ html_show_sourcelink = False
 htmlhelp_basename = 'libpydhcpserverdoc'
 
 latex_documents = [
-  ('index', 'libpydhcpserver.tex', u'libpydhcpserver documentation',
+  ('index', 'libpydhcpserver.tex', 'libpydhcpserver documentation',
    re.search(', (.*?) <', module.COPYRIGHT).group(1), 'manual'),
 ]
