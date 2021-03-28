@@ -21,15 +21,10 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-(C) Neil Tallim, 2014 <flan@uguu.ca>
+(C) Neil Tallim, 2021 <flan@uguu.ca>
 """
-try:
-    from types import StringTypes
-except ImportError: #py3k
-    StringTypes = (str,)
-    
-from conversion import (intToList, longToList)
-from ipv4 import IPv4
+from .conversion import (intToList, longToList)
+from .ipv4 import IPv4
 
 def rfc3046_decode(s):
     """
@@ -114,13 +109,13 @@ class RFC(object):
         return self._value
         
     def __repr__(self):
-        return "<%(name)s : %(value)r>" % {
-         'name': self.__class__.__name__,
-         'value': self._value,
-        }
+        return "<{name} : {value!r}>".format(
+            name=self.__class__.__name__,
+            value=self._value,
+        )
         
-    def __nonzero__(self):
-        return 1
+    def __bool__(self):
+        return True
         
     def __cmp__(self, other):
         """
@@ -186,9 +181,9 @@ class rfc3361_120(RFC):
                 dns_mode = True
                 
         if ip_4_mode == dns_mode:
-            raise ValueError("'%(data)s contains both IPv4 and DNS-based entries" % {
-             'data': data,
-            })
+            raise ValueError("'{data} contains both IPv4 and DNS-based entries".format(
+                data=data,
+            ))
             
         self._value.insert(0, int(ip_4_mode))
 
@@ -212,9 +207,9 @@ class rfc3442_121(RFC):
             ip = IPv4(ip)
             router = IPv4(router)
             if not 0 <= mask <= 32:
-                raise ValueError("CIDR mask %(mask)i is not between 0 and 32" % {
-                    'mask': mask,
-                })
+                raise ValueError("CIDR mask {mask} is not between 0 and 32".format(
+                    mask=mask,
+                ))
             width = mask / 8
             if mask % 8:
                 width += 1

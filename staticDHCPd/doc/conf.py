@@ -15,7 +15,7 @@ templates_path = ['_templates']
 source_suffix = '.rst'
 master_doc = 'index'
 
-project = u'staticDHCPd'
+project = 'staticDHCPd'
 copyright = module.COPYRIGHT
 version = re.match('^(\d+\.\d+)', module.VERSION).group(1)
 release = module.VERSION
@@ -34,6 +34,6 @@ html_show_sourcelink = False
 htmlhelp_basename = 'staticDHCPddoc'
 
 latex_documents = [
-  ('index', 'staticDHCPd.tex', u'staticDHCPd documentation',
+  ('index', 'staticDHCPd.tex', 'staticDHCPd documentation',
    re.search(', (.*?) <', module.COPYRIGHT).group(1), 'manual'),
 ]

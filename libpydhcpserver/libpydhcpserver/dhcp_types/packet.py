@@ -20,87 +20,87 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-(C) Neil Tallim, 2014 <flan@uguu.ca>
+(C) Neil Tallim, 2021 <flan@uguu.ca>
 (C) Mathieu Ignacio, 2008 <mignacio@april.org>
 """
 from array import array
 
-import constants
-from constants import (
- FIELD_OP,
- FIELD_HTYPE, FIELD_HLEN, FIELD_HOPS,
- FIELD_XID, FIELD_SECS, FIELD_FLAGS,
- FIELD_CIADDR, FIELD_YIADDR, FIELD_SIADDR, FIELD_GIADDR,
- FIELD_CHADDR,
- FIELD_SNAME, FIELD_FILE,
- MAGIC_COOKIE, MAGIC_COOKIE_ARRAY,
- DHCP_OP_NAMES, DHCP_TYPE_NAMES,
- DHCP_FIELDS, DHCP_FIELDS_TEXT, DHCP_FIELDS_SPECS, DHCP_FIELDS_TYPES,
- DHCP_OPTIONS_TYPES, DHCP_OPTIONS, DHCP_OPTIONS_REVERSE,
+import . import constants
+from .constants import (
+    FIELD_OP,
+    FIELD_HTYPE, FIELD_HLEN, FIELD_HOPS,
+    FIELD_XID, FIELD_SECS, FIELD_FLAGS,
+    FIELD_CIADDR, FIELD_YIADDR, FIELD_SIADDR, FIELD_GIADDR,
+    FIELD_CHADDR,
+    FIELD_SNAME, FIELD_FILE,
+    MAGIC_COOKIE, MAGIC_COOKIE_ARRAY,
+    DHCP_OP_NAMES, DHCP_TYPE_NAMES,
+    DHCP_FIELDS, DHCP_FIELDS_TEXT, DHCP_FIELDS_SPECS, DHCP_FIELDS_TYPES,
+    DHCP_OPTIONS_TYPES, DHCP_OPTIONS, DHCP_OPTIONS_REVERSE,
 )
-from mac import MAC
-from ipv4 import IPv4
-from rfc import (
- RFC,
- rfc3046_decode, rfc3925_decode, rfc3925_125_decode
+from .mac import MAC
+from .ipv4 import IPv4
+from .rfc import (
+    RFC,
+    rfc3046_decode, rfc3925_decode, rfc3925_125_decode
 )
-import conversion
+from . import conversion
 
 _MAGIC_COOKIE_POSITION = 236
 _PACKET_HEADER_SIZE = 240
 
 _MANDATORY_OPTIONS = set((
- 1, #subnet_mask
- 3, #router
- 6, #domain_name_servers
- 15, #domain_name
- 51, #ip_address_lease_time
- 53, #dhcp_message_type
- 54, #server_identifier
- 58, #renewal_time_value
- 59, #rebinding_time_value
+    1, #subnet_mask
+    3, #router
+    6, #domain_name_servers
+    15, #domain_name
+    51, #ip_address_lease_time
+    53, #dhcp_message_type
+    54, #server_identifier
+    58, #renewal_time_value
+    59, #rebinding_time_value
 )) #: All options to force a client to receive, even if not requested.
 
 _OPTION_ORDERING = (
- DHCP_OPTIONS['dhcp_message_type'], #53
- DHCP_OPTIONS['server_identifier'], #54
- DHCP_OPTIONS['ip_address_lease_time'], #51
+    DHCP_OPTIONS['dhcp_message_type'], #53
+    DHCP_OPTIONS['server_identifier'], #54
+    DHCP_OPTIONS['ip_address_lease_time'], #51
 ) #: The order in which clients usually expect to see key options.
 
 _FORMAT_CONVERSION_SERIAL = {
- constants.TYPE_IPV4: conversion.ipToList,
- constants.TYPE_IPV4_PLUS: conversion.ipsToList,
- constants.TYPE_IPV4_MULT: conversion.ipsToList,
- constants.TYPE_BYTE: lambda b: [b],
- constants.TYPE_BYTE_PLUS: list,
- constants.TYPE_STRING: conversion.strToList,
- constants.TYPE_BOOL: int,
- constants.TYPE_INT: conversion.intToList,
- constants.TYPE_INT_PLUS: conversion.intsToList,
- constants.TYPE_LONG: conversion.longToList,
- constants.TYPE_LONG_PLUS: conversion.longsToList,
- constants.TYPE_IDENTIFIER: conversion.intsToList,
- constants.TYPE_NONE: lambda _: [],
+    constants.TYPE_IPV4: conversion.ipToList,
+    constants.TYPE_IPV4_PLUS: conversion.ipsToList,
+    constants.TYPE_IPV4_MULT: conversion.ipsToList,
+    constants.TYPE_BYTE: lambda b: [b],
+    constants.TYPE_BYTE_PLUS: list,
+    constants.TYPE_STRING: conversion.strToList,
+    constants.TYPE_BOOL: int,
+    constants.TYPE_INT: conversion.intToList,
+    constants.TYPE_INT_PLUS: conversion.intsToList,
+    constants.TYPE_LONG: conversion.longToList,
+    constants.TYPE_LONG_PLUS: conversion.longsToList,
+    constants.TYPE_IDENTIFIER: conversion.intsToList,
+    constants.TYPE_NONE: lambda _: [],
 } #: Seralising converters for DHCP types.
 _FORMAT_CONVERSION_DESERIAL = {
- constants.TYPE_IPV4: conversion.listToIP,
- constants.TYPE_IPV4_PLUS: conversion.listToIPs,
- constants.TYPE_IPV4_MULT: conversion.listToIPs,
- constants.TYPE_BYTE: lambda l: l[0],
- constants.TYPE_BYTE_PLUS: lambda l: l,
- constants.TYPE_STRING: conversion.listToStr,
- constants.TYPE_BOOL: bool,
- constants.TYPE_INT: conversion.listToInt,
- constants.TYPE_INT_PLUS: conversion.listToInts,
- constants.TYPE_LONG: conversion.listToLong,
- constants.TYPE_LONG_PLUS: conversion.listToLongs,
- constants.TYPE_IDENTIFIER: conversion.listToInts,
- constants.TYPE_NONE: lambda _: None,
+    constants.TYPE_IPV4: conversion.listToIP,
+    constants.TYPE_IPV4_PLUS: conversion.listToIPs,
+    constants.TYPE_IPV4_MULT: conversion.listToIPs,
+    constants.TYPE_BYTE: lambda l: l[0],
+    constants.TYPE_BYTE_PLUS: lambda l: l,
+    constants.TYPE_STRING: conversion.listToStr,
+    constants.TYPE_BOOL: bool,
+    constants.TYPE_INT: conversion.listToInt,
+    constants.TYPE_INT_PLUS: conversion.listToInts,
+    constants.TYPE_LONG: conversion.listToLong,
+    constants.TYPE_LONG_PLUS: conversion.listToLongs,
+    constants.TYPE_IDENTIFIER: conversion.listToInts,
+    constants.TYPE_NONE: lambda _: None,
 } #: Deserialising converters for DHCP types.
 _OPTION_UNPACK = {
- 82: rfc3046_decode, #relay_agent
- 124: rfc3925_decode, #vendor_class
- 125: rfc3925_125_decode, #vendor_specific
+    82: rfc3046_decode, #relay_agent
+    124: rfc3925_decode, #vendor_class
+    125: rfc3925_125_decode, #vendor_specific
 } #: Mappings for specific options that are decoded by default.
 
 FLAGBIT_BROADCAST = 0b1000000000000000 #: The "broadcast bit", described in RFC 2131.
@@ -191,10 +191,10 @@ class DHCPPacket(object):
         
         :param data: The data used to initialise this packet's data-structures.
         """
-        ((packet, options, selected_options, maximum_size),
-         (word_align, word_size, terminal_pad),
-         (response_mac, response_ip, response_port, response_source_port),
-         meta,
+        (   (packet, options, selected_options, maximum_size),
+            (word_align, word_size, terminal_pad),
+            (response_mac, response_ip, response_port, response_source_port),
+            meta,
         ) = data
         self._header = packet[:]
         self._options = options.copy()
@@ -220,10 +220,10 @@ class DHCPPacket(object):
         :return: A copy of the packet.
         """
         return DHCPPacket(_copy_data=(
-         (self._header, self._options, self._selected_options, self._maximum_size),
-         (self.word_align, self.word_size, self.terminal_pad),
-         (self.response_mac, self.response_ip, self.response_port, self.response_source_port),
-         self._meta,
+            (self._header, self._options, self._selected_options, self._maximum_size),
+            (self.word_align, self.word_size, self.terminal_pad),
+            (self.response_mac, self.response_ip, self.response_port, self.response_source_port),
+            self._meta,
         ))
         
     def _locateOptions(self, data):
@@ -294,7 +294,7 @@ class DHCPPacket(object):
         for (i, option_id) in enumerate(option_ordering):
             value = options[option_id]
             if self.word_align:
-                for i in xrange(len(value) % self._word_size):
+                for i in range(len(value) % self._word_size):
                     value.append(0) #Add a pad
                     
             if size_limit - len(value) >= 0: #Ensure that there's still space
@@ -317,7 +317,7 @@ class DHCPPacket(object):
         #Pull options out of the payload, excluding options not specifically
         #requested, assuming any specific requests were made.
         options = {}
-        for (option_id, option_value) in self._options.iteritems():
+        for (option_id, option_value) in self._options.items():
             if self.isSelectedOption(option_id):
                 options[option_id] = option = []
                 while True:
@@ -341,7 +341,7 @@ class DHCPPacket(object):
         payload.extend((0, 0, 0)) #Space for option 52
         if self.terminal_pad:
             terminal_pad_size = min(len(value) % self._word_size, size_limit)
-            payload.extend(0 for i in xrange(terminal_pad_size)) #Add trailing pads
+            payload.extend(0 for i in range(terminal_pad_size)) #Add trailing pads
         else:
             terminal_pad_size = 0
             
@@ -371,7 +371,7 @@ class DHCPPacket(object):
             packet[-(1 + terminal_pad_size)] = 255 #END
             
         #Encode packet.
-        return packet.tostring()
+        return packet.tobytes()
         
     def _serialiseOptionValue(self, option, value):
         """
@@ -384,9 +384,9 @@ class DHCPPacket(object):
         """
         type = DHCP_FIELDS_TYPES.get(option) or DHCP_OPTIONS_TYPES.get(self._getOptionID(option))
         if not type or not type in _FORMAT_CONVERSION_SERIAL:
-            raise ValueError("Requested option does not have a type-mapping for conversion: %(option)r" % {
-             'option': value,
-            })
+            raise ValueError("Requested option does not have a type-mapping for conversion: {option}".format(
+                option=value,
+            ))
         return _FORMAT_CONVERSION_SERIAL[type](value)
         
     def _deserialiseOptionValue(self, option, value):
@@ -404,9 +404,9 @@ class DHCPPacket(object):
             
         type = DHCP_FIELDS_TYPES.get(option) or DHCP_OPTIONS_TYPES.get(self._getOptionID(option))
         if not type in _FORMAT_CONVERSION_DESERIAL:
-            raise ValueError("Requested option does not have a type-mapping for conversion: %(option)r" % {
-             'option': value,
-            })
+            raise ValueError("Requested option does not have a type-mapping for conversion: {option!r}".format(
+                option=value,
+            ))
         return _FORMAT_CONVERSION_DESERIAL[type](value)
         
     def _validateByteList(self, value):
@@ -444,9 +444,9 @@ class DHCPPacket(object):
             if option:
                 return self._serialiseOptionValue(option, value)
                 
-            raise TypeError("Value supplied cannot be converted into a list of bytes: %(value)r" % {
-             'value': original_value,
-            })
+            raise TypeError("Value supplied cannot be converted into a list of bytes: {value!r}".format(
+                value=original_value,
+            ))
         return value
         
     def getHardwareAddress(self):
@@ -537,11 +537,11 @@ class DHCPPacket(object):
             id = option
             
         if id is None:
-            raise LookupError("Option %(option)r is unknown" % {
-             'option': option,
-            })
+            raise LookupError("Option {option!r} is unknown".format(
+                option=option,
+            ))
         return id
-        s
+        
     def _getOptionName(self, option):
         """
         Resolves the name of an option.
@@ -556,9 +556,9 @@ class DHCPPacket(object):
             name = None
             
         if name is None:
-            raise LookupError("Option %(option)r is unknown" % {
-             'option': option,
-            })
+            raise LookupError("Option {option!r} is unknown".format(
+                option=option,
+            ))
         return name
         
     def isOption(self, option):
@@ -635,13 +635,13 @@ class DHCPPacket(object):
             (start, length) = DHCP_FIELDS[option]
             padding = None
             if len(value) < length and option in DHCP_FIELDS_TEXT:
-                padding = (0 for i in xrange(length - len(value)))
+                padding = (0 for i in range(length - len(value)))
             elif not len(value) == length:
-                raise ValueError("Expected a value of length %(length)i, not %(value-length)i: %(value)r" % {
-                 'length': length,
-                 'value-length': len(value),
-                 'value': value,
-                })
+                raise ValueError("Expected a value of length {length}, not {value_length}: {value!r}".format(
+                    length=length,
+                    value_length=len(value),
+                    value=value,
+                ))
             replacement = array('B', value)
             if padding:
                 replacement.extend(padding)
@@ -656,24 +656,24 @@ class DHCPPacket(object):
                     length = len(value)
                     if fixed_length != length:
                         if length < minimum_length or length % multiple:
-                            raise ValueError("Expected a value a multiple of length %(length)i, not %(value-length)i: %(value)r" % {
-                             'length': minimum_length,
-                             'value-length': length,
-                             'value': value,
-                            })
+                            raise ValueError("Expected a value a multiple of length {length}, not {value_length}: {value!r}".format(
+                                length=minimum_length,
+                                value_length=length,
+                                value=value,
+                            ))
                     elif minimum_length and not fixed_length:
-                        raise ValueError("Expected a value of length %(length)i, not %(value-length)i: %(value)r" % {
-                         'length': fixed_length,
-                         'value-length': length,
-                         'value': value,
-                        })
+                        raise ValueError("Expected a value of length {length}, not {value_length}: {value!r}".format(
+                            length=fixed_length,
+                            value_length=length,
+                            value=value,
+                        ))
             elif dhcp_field_type.startswith('RFC'): #It's an RFC option
                 #Assume the value is right
                 pass
             else:
-                raise LookupError("Unsupported option: %(option)s" % {
-                 'option': option,
-                })
+                raise LookupError("Unsupported option: {option}".format(
+                    option=option,
+                ))
                 
             self._options[id] = value
             if force_selection and self._selected_options is not None:
@@ -982,35 +982,35 @@ class DHCPPacket(object):
         
         (start, length) = DHCP_FIELDS[FIELD_OP]
         op = self._header[start:start + length]
-        output.append("\top: %(type)s" % {
-         'type': DHCP_OP_NAMES[op[0]],
-        })
+        output.append("\top: {type}".format(
+            type=DHCP_OP_NAMES[op[0]],
+        ))
         
-        output.append("\thwmac: %(mac)r" % {
-         'mac': self.getHardwareAddress(),
-        })
+        output.append("\thwmac: {mac!r}".format(
+            mac=self.getHardwareAddress(),
+        ))
         
         flags = []
         if self.getFlag(FLAGBIT_BROADCAST):
             flags.append('broadcast')
-        output.append("\tflags: %(flags)s" % {
-         'flags': ', '.join(flags),
-        })
+        output.append("\tflags: {flags}".format(
+            flags=', '.join(flags),
+        ))
         
         for field in (
-         FIELD_HOPS, FIELD_SECS,
-         FIELD_XID,
-         FIELD_SIADDR, FIELD_GIADDR, FIELD_CIADDR, FIELD_YIADDR,
-         FIELD_SNAME, FIELD_FILE,
+            FIELD_HOPS, FIELD_SECS,
+            FIELD_XID,
+            FIELD_SIADDR, FIELD_GIADDR, FIELD_CIADDR, FIELD_YIADDR,
+            FIELD_SNAME, FIELD_FILE,
         ):
             (start, length) = DHCP_FIELDS[field]
             data = self._header[start:start + length]
             data = _FORMAT_CONVERSION_DESERIAL[DHCP_FIELDS_TYPES[field]](data)
             if field in (FIELD_SNAME, FIELD_FILE):
                 data = data.rstrip('\x00')
-            output.append("\t%(field)s: %(data)r" % {
-             'field': field,
-             'data': data,
+            output.append("\t{field}: {data!r}".format(
+                field=field,
+                data=data,
             })
             
         output.append('')
@@ -1021,18 +1021,17 @@ class DHCPPacket(object):
             if option_id == 53: #dhcp_message_type
                 result = self.getDHCPMessageTypeName()
             elif option_id == 55: #parameter_request_list
-                result = ', '.join("%(id)03i:%(name)s" % {
-                 'id': id,
-                 'name': DHCP_OPTIONS_REVERSE.get(id, "unsupported"),
-                } for id in self.getSelectedOptions())
+                result = ', '.join("{id:03d}:{name}".format(
+                    id=id,
+                    name=DHCP_OPTIONS_REVERSE.get(id, "unsupported"),
+                ) for id in self.getSelectedOptions())
             else:
                 represent = True
                 result = _FORMAT_CONVERSION_DESERIAL[DHCP_OPTIONS_TYPES[option_id]](data)
-            output.append((represent and "\t[%(selected)s][%(id)03i] %(name)s: %(result)r" or "\t[-][%(id)03i] %(name)s: %(result)s") % {
-             'selected': self.isSelectedOption(option_id) and 'X' or ' ',
-             'id': option_id,
-             'name': self._getOptionName(option_id),
-             'result': result,
-            })
+            output.append((represent and "\t[{selected}][{id:03d}] {name}: {result!r}" or "\t[-][{id:03d}] {name}: {result}").format(
+                selected=(self.isSelectedOption(option_id) and 'X' or ' '),
+                id=option_id,
+                name=self._getOptionName(option_id),
+                result=result,
+            ))
         return '\n'.join(output)
-        

@@ -7,27 +7,43 @@ staticDHCPd is an all-Python, [RFC 2131](http://www.ietf.org/rfc/rfc2131.txt)-co
 The 3.0.0 branch will need to be tested; the running checklist follows (if you test a thing, send e-mail to Neil Tallim at the address in any source file):
   * staticDHCPd
     * Long-term soak-test
-      * Stable memory usage **settles after logs finish growing**
-      * No processing errors **stable in a home network for more than 24 hours**
+      * Stable memory usage
+        * _memory may fluctuate a bit during operation, but it cannot grow indefinitely, regardless of network size_
+        * _if possible, give it a week in a moderately busy network and check in a couple of times each day, sharing your numbers_
+      * No processing errors
+        * _no unusual or inexplicable behaviour must be observed_
+        * _all errors must be handled sensibly_
     * E-mail logging facility
+      * _it needs to work_
     * Databases
-      * Postgres _external validation required_
-      * MySQL _external validation required_
-      * Oracle _external validation required_
+      * Postgres
+        * _it needs to work_
+      * MySQL
+        * _it needs to work_
+      * Oracle
+        * _it needs to work... or it might be removed if nobody uses Oracle anymore -- testing this one's a pain_
       * SQLite
+        * _it needs to work_
   * Extensions
-    * httpdb **done**
+    * _contrib-extensions need to be tested to make sure the import semantics work intuitively_
+    * httpdb
+      * _it needs to work_
     * statistics (with various config options)
+      * _it needs to work_
     * statistics (with pycha)
+      * _it needs to work_
     * dynamism
-    * feedservice **done**
+      * _must handle dynamic allocation_
+      * _must honour renewals and rebinds with the same address_
+    * feedservice
+      * _it needs to work_
   * Documentation
     * libpydhcpserver
-      * Sanity check
-      * Proofreading
+      * _correctness check_
+      * _proofreading_
     * staticDHCPd
-      * Sanity check
-      * Proofreading
+      * _correctness check_
+      * _proofreading_
 
 At this point, no new features will be added until the system is stable (but please submit ideas to the issue-tracker anyway). Any non-bugfix commits will be things to prepare for the Debian/RPM packages or minor formatting tweaks.
 

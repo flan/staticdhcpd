@@ -21,14 +21,9 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-(C) Neil Tallim, 2014 <flan@uguu.ca>
+(C) Neil Tallim, 2021 <flan@uguu.ca>
 """
-try:
-    from types import StringTypes
-except ImportError: #py3k
-    StringTypes = (str,)
-
-_IPv4 = None #: Placeholder for a deferred import ot avoid a circular reference.
+_IPv4 = None #: Placeholder for a deferred import to avoid a circular reference.
 
 def listToNumber(l):
     """
@@ -61,7 +56,7 @@ def listToInts(l):
     :return list: A list of ints corresponding to the byte-pairs.
     """
     ints = []
-    for i in xrange(len(l) >> 1):
+    for i in range(len(l) >> 1):
         p = i * 2
         ints.append(listToInt(l[p:p + 2]))
     return ints
@@ -85,7 +80,7 @@ def listToLongs(l):
     :return list: A list of ints corresponding to the byte-quartets.
     """
     longs = []
-    for i in xrange(len(l) >> 2):
+    for i in range(len(l) >> 2):
         p = i * 4
         longs.append(listToLong(l[p:p + 4]))
     return longs
@@ -126,10 +121,10 @@ def longToList(l):
     :return list(4): The converted value.
     """
     return [
-     l >> 24 & 0xFF,
-     l >> 16 & 0xFF,
-     l >> 8 & 0xFF,
-     l & 0xFF,
+        l >> 24 & 0xFF,
+        l >> 16 & 0xFF,
+        l >> 8 & 0xFF,
+        l & 0xFF,
     ]
     
 def longsToList(l):
@@ -192,7 +187,7 @@ def listToIP(l):
     """
     global _IPv4
     if not _IPv4:
-        from ipv4 import IPv4
+        from .ipv4 import IPv4
         _IPv4 = IPv4
         
     return _IPv4(l)
@@ -207,7 +202,7 @@ def listToIPs(l):
     :except ValueError: The list could not be processed.
     """
     ips = []
-    for i in xrange(len(l) / 4):
+    for i in range(len(l) / 4):
         p = i * 4
         ips.append(listToIP(l[p:p + 4]))
     return ips
@@ -223,7 +218,7 @@ def ipToList(ip):
     """
     global _IPv4
     if not _IPv4:
-        from ipv4 import IPv4
+        from .ipv4 import IPv4
         _IPv4 = IPv4
         
     if not isinstance(ip, _IPv4):
@@ -240,7 +235,7 @@ def ipsToList(ips):
     :return list: The converted addresses.
     :except ValueError: The IPs could not be processed.
     """
-    if isinstance(ips, StringTypes):
+    if isinstance(ips, str):
         tokens = ips.split(',')
     else:
         tokens = ips

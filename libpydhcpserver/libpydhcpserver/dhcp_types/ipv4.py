@@ -20,21 +20,10 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-(C) Neil Tallim, 2014 <flan@uguu.ca>
+(C) Neil Tallim, 2021 <flan@uguu.ca>
 (C) Mathieu Ignacio, 2008 <mignacio@april.org>
 """
-try:
-    from types import StringTypes
-except ImportError: #py3k
-    StringTypes = (str,)
-    
-IntegerTypes = (int,)
-try:
-    IntegerTypes = (int, long)
-except ImportError: #py3k
-    pass
-    
-from conversion import (longToList, listToLong)
+from .conversion import (longToList, listToLong)
 
 _MAX_IP_INT = 4294967295
 
@@ -55,15 +44,15 @@ class IPv4(object):
                         bytes, or a 32-bit, unsigned integer.
         :except ValueError: The address could not be processed.
         """
-        if isinstance(address, IntegerTypes):
+        if isinstance(address, int):
             if not 0 <= address <= _MAX_IP_INT:
-                raise ValueError("'%(ip)i' is not a valid IP: not a 32-bit unsigned integer" % {
-                 'ip': address,
-                })
+                raise ValueError("'{ip}' is not a valid IP: not a 32-bit unsigned integer".format(
+                    ip=address,
+                ))
             self._ip = int(address)
             self._ip_tuple = tuple(longToList(self._ip))
         else:
-            if isinstance(address, StringTypes):
+            if isinstance(address, str):
                 octets = (i.strip() for i in address.split('.'))
             else:
                 octets = address
@@ -71,28 +60,28 @@ class IPv4(object):
             try:
                 octets = [int(i) for i in octets][:4]
             except Exception:
-                raise ValueError("%(ip)r is not a valid IPv4: non-integer data supplied" % {
-                 'ip': address,
-                })
+                raise ValueError("{ip!r} is not a valid IPv4: non-integer data supplied".format(
+                    ip=address,
+                ))
             else:
                 if len(octets) < 4:
-                    raise ValueError("%(ip)r is not a valid IPv4: length < 4" % {
-                     'ip': address,
-                    })
+                    raise ValueError("{ip} is not a valid IPv4: length < 4".format(
+                        ip=address,
+                    ))
                     
                 if any(True for i in octets if i < 0 or i > 255):
-                    raise ValueError("%(ip)r is not a valid IPv4: non-byte values present" % {
-                     'ip': address,
-                    })
+                    raise ValueError("{ip} is not a valid IPv4: non-byte values present".format(
+                        ip=address,
+                    ))
                     
                 self._ip_tuple = tuple(octets)
                 
     def __cmp__(self, other):
         if not other and not isinstance(other, IPv4):
             return 1
-        if isinstance(other, StringTypes):
+        if isinstance(other, str):
             other = IPv4(other)
-        if isinstance(other, IntegerTypes):
+        if isinstance(other, int):
             return cmp(int(self), other)
         return cmp(self._ip_tuple, tuple(other))
         
@@ -102,7 +91,7 @@ class IPv4(object):
     def __getitem__(self, index):
         return self._ip_tuple[index]
         
-    def __nonzero__(self):
+    def __bool__(self):
         return any(self._ip_tuple)
         
     def __int__(self):
@@ -110,15 +99,12 @@ class IPv4(object):
             self._ip = listToLong(self._ip_tuple)
         return self._ip
         
-    def __long__(self):
-        return long(int(self))
-        
     def __repr__(self):
-        return "IPv4(%r)" % (str(self))
+        return "IPv4({:s})".format(self)
         
     def __str__(self):
         if not self._ip_string:
-            self._ip_string = "%i.%i.%i.%i" % self._ip_tuple
+            self._ip_string = "{}.{}.{}.{}".format(*self._ip_tuple)
         return self._ip_string
         
     def isSubnetMember(self, address, prefix):
@@ -132,13 +118,13 @@ class IPv4(object):
         :return bool: `True` if this IPv4 is a member of the subnet.
         :except ValueError: The address or prefix could not be processed.
         """
-        if isinstance(prefix, IntegerTypes):
+        if isinstance(prefix, int):
             if 0 <= prefix <= 32:
                 mask = (_MAX_IP_INT << (32 - prefix))
             else:
-                raise ValueError("Invalid CIDR prefix: %(prefix)i" % {
-                 'prefix': prefix,
-                })
+                raise ValueError("Invalid CIDR prefix: {prefix}".format(
+                    prefix=prefix,
+                ))
         else:
             mask = int(IPv4(prefix))
         return mask & int(IPv4(address)) == mask & int(self)
