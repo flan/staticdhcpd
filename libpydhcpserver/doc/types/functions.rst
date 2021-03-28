@@ -11,6 +11,11 @@ within the :meth:`getOption <dhcp_types.packet.DHCPPacket.getOption>` and
 :class:`DHCPPacket <dhcp_types.packet.DHCPPacket>`, so it is rare that you will
 need to invoke them directly.
 
+Note also that the terminology used here is derived from BOOTP's 16-bit origins:
+"int" means "16-bit integer" and "long" is "32-bit integer". Rather than
+conflict with existing literature and domain references, this has been
+preserved as part of the nomenclature.
+
 
 .. _conversion-type:
 
