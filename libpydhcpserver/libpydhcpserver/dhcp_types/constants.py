@@ -293,7 +293,7 @@ DHCP_OPTIONS_TYPES = collections.defaultdict(lambda : _DHCP_OPTION_TYPE_UNASSIGN
     #221 Virtual Subnet Selection Option
     
     255: TYPE_END,
-}
+})
 """
 Maps DHCP option-numbers to DHCP fields specs.
 

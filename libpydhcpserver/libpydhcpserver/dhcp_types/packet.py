@@ -25,7 +25,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 """
 from array import array
 
-import . import constants
+from . import constants
 from .constants import (
     FIELD_OP,
     FIELD_HTYPE, FIELD_HLEN, FIELD_HOPS,
@@ -1011,7 +1011,7 @@ class DHCPPacket(object):
             output.append("\t{field}: {data!r}".format(
                 field=field,
                 data=data,
-            })
+            ))
             
         output.append('')
         output.append("::Body::")
