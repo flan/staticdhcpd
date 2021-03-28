@@ -150,5 +150,5 @@ def get_mac_address(iface):
 if __name__ == '__main__':
     import sys
     iface_name = get_network_interface(sys.argv[1])
-    print iface_name
+    print(iface_name)
     print(get_mac_address(iface_name))
