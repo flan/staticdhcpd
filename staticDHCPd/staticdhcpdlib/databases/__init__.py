@@ -20,7 +20,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-(C) Neil Tallim, 2014 <flan@uguu.ca>
+(C) Neil Tallim, 2021 <flan@uguu.ca>
 """
 import logging
 
@@ -40,30 +40,25 @@ def get_database():
         _logger.debug("Custom database engine supplied; initialising...")
         return config.DATABASE_ENGINE()
         
-    _logger.debug("Loading database of type %(type)r..." % {
-     'type': config.DATABASE_ENGINE,
-    })
+    _logger.debug("Loading database of type {!r}...".format(config.DATABASE_ENGINE))
     
     if not config.DATABASE_ENGINE:
-        from generic import Null
+        from .generic import Null
         return Null()
     elif config.DATABASE_ENGINE == 'SQLite':
-        from _sql import SQLite
+        from ._sql import SQLite
         return SQLite()
     elif config.DATABASE_ENGINE == 'PostgreSQL':
-        from _sql import PostgreSQL
+        from ._sql import PostgreSQL
         return PostgreSQL()
     elif config.DATABASE_ENGINE == 'MySQL':
-        from _sql import MySQL
+        from ._sql import MySQL
         return MySQL()
     elif config.DATABASE_ENGINE == 'Oracle':
-        from _sql import Oracle
+        from ._sql import Oracle
         return Oracle()
     elif config.DATABASE_ENGINE == 'INI':
-        from _ini import INI
+        from ._ini import INI
         return INI()
         
-    raise ValueError("Unknown database engine: %(engine)s" % {
-     'engine': config.DATABASE_ENGINE
-    })
-    
+    raise ValueError("Unknown database engine: {}".format(config.DATABASE_ENGINE))

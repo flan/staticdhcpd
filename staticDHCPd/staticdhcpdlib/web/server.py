@@ -245,6 +245,7 @@ def _webMethod(method):
                 (mimetype, data) = http_method(self)
                 #Then execute the real request
                 (mimetype, data) = handler(path, queryargs, mimetype, data, self.headers)
+                data = data.encode('utf-8')
                 self.send_response(200)
                 self.send_header('Last-Modified', time.strftime('%a, %d %b %Y %H:%M:%S %Z'))
                 self.send_header('Content-Type', mimetype)

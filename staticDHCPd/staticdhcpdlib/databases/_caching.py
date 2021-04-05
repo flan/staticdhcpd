@@ -20,14 +20,14 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-(C) Neil Tallim, 2014 <flan@uguu.ca>
+(C) Neil Tallim, 2021 <flan@uguu.ca>
 """
-import cPickle as pickle
+import pickle
 import json
 import logging
 import threading
 
-from generic import (Database, Definition)
+from .generic import (Database, Definition)
 
 _logger = logging.getLogger('databases._caching')
 
@@ -48,68 +48,48 @@ class _DatabaseCache(Database):
             node in the chain; None if this is the end.
         """
         self._name = name
-        _logger.debug("Initialising database-cache '%(id)s'..." % {
-         'id': self,
-        })
+        _logger.debug("Initialising database-cache '{}'...".format(self))
         self._cache_lock = threading.Lock()
         if chained_cache:
             self._chained_cache = chained_cache
-            _logger.debug("Chained database-cache: %(chained)s" % {
-             'chained': chained_cache,
-            })
+            _logger.debug("Chained database-cache: {}".format(chained_cache))
 
     def __str__(self):
-        return "%(name)s <%(type)s : 0x%(id)x>" % {
-         'name': self._name,
-         'type': self.__class__.__name__,
-         'id': id(self),
-        }
+        return "{} <{} : 0x{:x}>".format(
+            self._name,
+            self.__class__.__name__,
+            id(self),
+        )
 
     def reinitialise(self):
-        _logger.debug("Reinitialising database-cache '%(id)s'..." % {
-         'id': self,
-        })
+        _logger.debug("Reinitialising database-cache '{}'...".format(self))
         with self._cache_lock:
             self._reinitialise()
             if self._chained_cache:
                 self._chained_cache.reinitialise()
-        _logger.debug("Reinitialised database-cache '%(id)s'" % {
-         'id': self,
-        })
+        _logger.debug("Reinitialised database-cache '{}'".format(self))
     def _reinitialise(self): pass
 
     def lookupMAC(self, mac):
         _mac = str(mac)
-        _logger.debug("Searching for '%(mac)s' in database-cache '%(id)s'..." % {
-         'mac': _mac,
-         'id': self,
-        })
+        _logger.debug("Searching for '{}' in database-cache '{}'...".format(_mac, self))
         with self._cache_lock:
             definition = self._lookupMAC(mac)
 
         if not definition:
-            _logger.debug("No match for '%(mac)s' in database-cache '%(id)s'" % {
-             'mac': _mac,
-             'id': self,
-            })
+            _logger.debug("No match for '{}' in database-cache '{}'".format(_mac, self))
             if self._chained_cache:
                 definition = self._chained_cache.lookupMAC(mac)
                 if definition:
                     self.cacheMAC(mac, definition, chained=True)
         else:
-            _logger.debug("Found a match for '%(mac)s' in database-cache '%(id)s'" % {
-             'mac': _mac,
-             'id': self,
-            })
+            _logger.debug("Found a match for '{}' in database-cache '{}'".format(_mac, self))
 
         return definition
     def _lookupMAC(self, mac): return None
 
     def cacheMAC(self, mac, definition, chained=False):
-        _logger.debug("Setting definition for '%(mac)s' in database-cache '%(id)s'..." % {
-         'mac': mac,
-         'id': self,
-        })
+        _logger.debug("Setting definition for '{}' in database-cache '{}'...".format(mac, self))
         with self._cache_lock:
             self._cacheMAC(mac, definition, chained=chained)
 
@@ -148,24 +128,24 @@ class MemoryCache(_DatabaseCache):
             (ip, hostname, extra, subnet_id) = data
             details = self._subnet_cache[subnet_id]
             return Definition(
-             ip=ip, lease_time=details[6], subnet=subnet_id[0], serial=subnet_id[1],
-             hostname=hostname,
-             gateways=details[0], subnet_mask=details[1], broadcast_address=details[2],
-             domain_name=details[3], domain_name_servers=details[4], ntp_servers=details[5],
-             extra=extra
+                ip=ip, lease_time=details[6], subnet=subnet_id[0], serial=subnet_id[1],
+                hostname=hostname,
+                gateways=details[0], subnet_mask=details[1], broadcast_address=details[2],
+                domain_name=details[3], domain_name_servers=details[4], ntp_servers=details[5],
+                extra=extra,
             )
         return None
 
     def _cacheMAC(self, mac, definition, chained):
         if not isinstance(definition, Definition):
-            raise ValueError('MemoryCache currently only supports caching a single Definition.')
+            raise ValueError("MemoryCache currently only supports caching a single Definition.")
 
         subnet_id = (definition.subnet, definition.serial)
         self._mac_cache[int(mac)] = (definition.ip, definition.hostname, definition.extra, subnet_id)
         self._subnet_cache[subnet_id] = (
-         definition.gateways, definition.subnet_mask, definition.broadcast_address,
-         definition.domain_name, definition.domain_name_servers, definition.ntp_servers,
-         definition.lease_time
+            definition.gateways, definition.subnet_mask, definition.broadcast_address,
+            definition.domain_name, definition.domain_name_servers, definition.ntp_servers,
+            definition.lease_time,
         )
 
 class MemcachedCache(_DatabaseCache):
@@ -187,10 +167,7 @@ class MemcachedCache(_DatabaseCache):
         """
         _DatabaseCache.__init__(self, name, chained_cache=chained_cache)
         import memcache
-        memcached_address = '%(server)s:%(port)d' % {
-         'server': memcached_server_data[0],
-         'port': memcached_server_data[1],
-        }
+        memcached_address = '{}:{}'.format(memcached_server_data[0], memcached_server_data[1])
         self.mc_client = memcache.Client([memcached_address])
         self.memcached_age_time = memcached_age_time
         _logger.debug("Memcached database-cache initialised")
@@ -205,11 +182,11 @@ class MemcachedCache(_DatabaseCache):
                 details = self.mc_client.get(subnet_str)
                 if details:
                     results.append(Definition(
-                     ip=ip, lease_time=details[6], subnet=subnet_id[0], serial=subnet_id[1],
-                     hostname=hostname,
-                     gateways=details[0], subnet_mask=details[1], broadcast_address=details[2],
-                     domain_name=details[3], domain_name_servers=details[4], ntp_servers=details[5],
-                     extra=extra
+                        ip=ip, lease_time=details[6], subnet=subnet_id[0], serial=subnet_id[1],
+                        hostname=hostname,
+                        gateways=details[0], subnet_mask=details[1], broadcast_address=details[2],
+                        domain_name=details[3], domain_name_servers=details[4], ntp_servers=details[5],
+                        extra=extra,
                     ))
             if results:
                 return results
@@ -227,20 +204,18 @@ class MemcachedCache(_DatabaseCache):
             subnet_str = self._create_subnet_key(subnet_id)
             mac_list.append((definition.ip, definition.hostname, definition.extra, subnet_id))
             self.mc_client.set(
-             subnet_str,
-             (definition.gateways, definition.subnet_mask, definition.broadcast_address,
-              definition.domain_name, definition.domain_name_servers, definition.ntp_servers,
-              definition.lease_time
-             ),
-             self.memcached_age_time
+                subnet_str,
+                (
+                    definition.gateways, definition.subnet_mask, definition.broadcast_address,
+                    definition.domain_name, definition.domain_name_servers, definition.ntp_servers,
+                    definition.lease_time
+                ),
+                self.memcached_age_time,
             )
-
-        self.mc_client.set(
-         str(mac), pickle.dumps(mac_list), self.memcached_age_time
-        )
+        self.mc_client.set(str(mac), pickle.dumps(mac_list), self.memcached_age_time)
 
     def _create_subnet_key(self, subnet_id):
-        return "%s-%i" % (subnet_id[0].replace(" ", "_"), subnet_id[1])
+        return "{}-{}".format(subnet_id[0].replace(" ", "_"), subnet_id[1])
 
 class DiskCache(_DatabaseCache):
     _filepath = None #: The path to which the persistent file will be written
@@ -271,7 +246,7 @@ class DiskCache(_DatabaseCache):
             self._filepath = self.__tempfile.name
 
         self._setupDatabase()
-        _logger.debug("On-disk database-cache initialised at " + self._filepath)
+        _logger.debug("On-disk database-cache initialised at {}".format(self._filepath))
 
     def _connect(self):
         database = self._sqlite3.connect(self._filepath)
@@ -280,37 +255,37 @@ class DiskCache(_DatabaseCache):
     def _disconnect(self, database, cursor):
         try:
             cursor.close()
-        except Exception, e:
-            _logger.warn("Unable to close cache cursor: " + str(e))
+        except Exception as e:
+            _logger.warning("Unable to close cache cursor: {}".format(e))
         try:
             database.close()
-        except Exception, e:
-            _logger.warn("Unable to close cache database: " + str(e))
+        except Exception as e:
+            _logger.warning("Unable to close cache database: {}".format(e))
 
     def _setupDatabase(self):
         (database, cursor) = self._connect()
 
         #These definitions omit a lot of integrity logic, since the underlying database is to enforce that
         cursor.execute("""CREATE TABLE IF NOT EXISTS subnets (
-    subnet TEXT,
-    serial INTEGER,
-    lease_time INTEGER,
-    gateway TEXT,
-    subnet_mask TEXT,
-    broadcast_address TEXT,
-    ntp_servers TEXT,
-    domain_name_servers TEXT,
-    domain_name TEXT,
-    PRIMARY KEY(subnet, serial)
-)""")
+            subnet TEXT,
+            serial INTEGER,
+            lease_time INTEGER,
+            gateway TEXT,
+            subnet_mask TEXT,
+            broadcast_address TEXT,
+            ntp_servers TEXT,
+            domain_name_servers TEXT,
+            domain_name TEXT,
+            PRIMARY KEY(subnet, serial)
+        )""")
         cursor.execute("""CREATE TABLE IF NOT EXISTS maps (
-    mac INTEGER PRIMARY KEY,
-    ip TEXT,
-    hostname TEXT,
-    subnet TEXT,
-    serial INTEGER,
-    extra TEXT
-)""")
+            mac INTEGER PRIMARY KEY,
+            ip TEXT,
+            hostname TEXT,
+            subnet TEXT,
+            serial INTEGER,
+            extra TEXT
+        )""")
         database.commit()
         self._disconnect(database, cursor)
 
@@ -324,49 +299,61 @@ class DiskCache(_DatabaseCache):
     def _lookupMAC(self, mac):
         (database, cursor) = self._connect()
         cursor.execute("""SELECT
- m.ip, m.hostname,
- s.gateway, s.subnet_mask, s.broadcast_address, s.domain_name, s.domain_name_servers,
- s.ntp_servers, s.lease_time, s.subnet, s.serial,
- m.extra
-FROM maps m, subnets s
-WHERE
- m.mac = ? AND m.subnet = s.subnet AND m.serial = s.serial
-LIMIT 1""", (int(mac),))
+            m.ip, m.hostname,
+            s.gateway, s.subnet_mask, s.broadcast_address, s.domain_name, s.domain_name_servers,
+            s.ntp_servers, s.lease_time, s.subnet, s.serial,
+            m.extra
+        FROM maps m, subnets s
+        WHERE
+            m.mac = ? AND
+            m.subnet = s.subnet AND
+            m.serial = s.serial
+        LIMIT 1""", (int(mac),))
         result = cursor.fetchone()
         self._disconnect(database, cursor)
         if result:
             return Definition(
-             ip=result[0], hostname=result[1],
-             gateways=result[2], subnet_mask=result[3], broadcast_address=result[4],
-             domain_name=result[5], domain_name_servers=result[6], ntp_servers=result[7],
-             lease_time=result[8], subnet=result[9], serial=result[10],
-             extra=json.loads(result[11])
+                ip=result[0], hostname=result[1],
+                gateways=result[2], subnet_mask=result[3], broadcast_address=result[4],
+                domain_name=result[5], domain_name_servers=result[6], ntp_servers=result[7],
+                lease_time=result[8], subnet=result[9], serial=result[10],
+                extra=json.loads(result[11]),
             )
         return None
 
     def _cacheMAC(self, mac, definition, chained):
         if not isinstance(definition, Definition):
-            raise ValueError('DiskCache currently only supports caching a single Definition.')
+            raise ValueError("DiskCache currently only supports caching a single Definition.")
         (database, cursor) = self._connect()
-        cursor.execute("INSERT OR IGNORE INTO subnets (subnet, serial, lease_time, gateway, subnet_mask, broadcast_address, ntp_servers, domain_name_servers, domain_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-         (
-          definition.subnet, definition.serial,
-          definition.lease_time,
-          definition.gateways and ','.join(str(i) for i in definition.gateways),
-          definition.subnet_mask and str(definition.subnet_mask),
-          definition.broadcast_address and str(definition.broadcast_address),
-          definition.ntp_servers and ','.join(str(i) for i in definition.ntp_servers),
-          definition.domain_name_servers and ','.join(str(i) for i in definition.domain_name_servers),
-          definition.domain_name
-         )
-        )
-        cursor.execute("INSERT INTO maps (mac, ip, hostname, subnet, serial, extra) VALUES (?, ?, ?, ?, ?, ?)",
-         (
-          int(mac),
-          definition.ip and str(definition.ip), definition.hostname,
-          definition.subnet, definition.serial,
-          json.dumps(definition.extra)
-         )
-        )
+        cursor.execute("""INSERT OR IGNORE INTO subnets (
+            subnet, serial,
+            lease_time,
+            gateway,
+            subnet_mask,
+            broadcast_address,
+            ntp_servers,
+            domain_name_servers,
+            domain_name
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""", (
+            definition.subnet, definition.serial,
+            definition.lease_time,
+            definition.gateways and ','.join(str(i) for i in definition.gateways),
+            definition.subnet_mask and str(definition.subnet_mask),
+            definition.broadcast_address and str(definition.broadcast_address),
+            definition.ntp_servers and ','.join(str(i) for i in definition.ntp_servers),
+            definition.domain_name_servers and ','.join(str(i) for i in definition.domain_name_servers),
+            definition.domain_name,
+        ))
+        cursor.execute("""INSERT INTO maps (
+            mac,
+            ip, hostname,
+            subnet, serial,
+            extra
+        ) VALUES (?, ?, ?, ?, ?, ?)""", (
+            int(mac),
+            definition.ip and str(definition.ip), definition.hostname,
+            definition.subnet, definition.serial,
+            json.dumps(definition.extra),
+        ))
         database.commit()
         self._disconnect(database, cursor)

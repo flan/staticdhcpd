@@ -20,10 +20,10 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-(C) Neil Tallim, 2014 <flan@uguu.ca>
+(C) Neil Tallim, 2021 <flan@uguu.ca>
 Inspiration derived from a discussion with John Stowers
 """
-import ConfigParser
+import configparser
 import logging
 import re
 import threading
@@ -32,11 +32,11 @@ from libpydhcpserver.dhcp_types.mac import MAC
 
 from .. import config
 
-from generic import (Definition, Database)
+from .generic import (Definition, Database)
 
 _logger = logging.getLogger("databases._ini")
 
-class _Config(ConfigParser.RawConfigParser):
+class _Config(configparser.RawConfigParser):
     """
     A simple wrapper around RawConfigParser to extend it with support for default values.
     """
@@ -51,8 +51,8 @@ class _Config(ConfigParser.RawConfigParser):
         :return basestring : Either the requested value or the given default.
         """
         try:
-            return ConfigParser.RawConfigParser.get(self, section, option)
-        except ConfigParser.Error:
+            return configparser.RawConfigParser.get(self, section, option)
+        except configparser.Error:
             return default
             
     def getint(self, section, option, default):
@@ -94,10 +94,10 @@ class _Config(ConfigParser.RawConfigParser):
         :return bool: Either the requested value or the given default.
         """
         return bool(str(self.get(section, option, default)).lower().strip() in (
-         'y', 'yes',
-         't', 'true',
-         'ok', 'okay',
-         '1',
+            'y', 'yes',
+            't', 'true',
+            'ok', 'okay',
+            '1',
         ))
 
 class INI(Database):
@@ -148,19 +148,17 @@ class INI(Database):
         for option in reader.options(section):
             if not option in omitted:
                 (option, value) = self._parse_extra_option(section, option)
-                extra['%s.%s' % (section_type, option)] = value
+                extra['{}.{}'.format(section_type, option)] = value
         return extra or None
         
     def _parse_ini(self):
         """
         Creates an optimal in-memory representation of the data in the INI file.
         """
-        _logger.info("Preparing to read '%(ini)s'..." % {'ini': config.INI_FILE,})
+        _logger.info("Preparing to read '{}'...".format(config.INI_FILE))
         reader = _Config()
         if not reader.read(config.INI_FILE):
-            raise ValueError("Unable to read '%(file)s'" % {
-             'file': config.INI_FILE,
-            })
+            raise ValueError("Unable to read '{}'".format(config.INI_FILE))
             
         subnet_re = re.compile(r"^(?P<subnet>.+?)\|(?P<serial>\d+)$")
         
@@ -172,20 +170,18 @@ class INI(Database):
                 try:
                     mac = MAC(section)
                 except Exception:
-                    _logger.warn("Unrecognised section encountered: " + section)
+                    _logger.warn("Unrecognised section encountered: {}".format(section))
                 else:
                     self._process_map(reader, section, mac)
                     
         self._validate_references()
         
     def _process_subnet(self, reader, section, subnet, serial):
-        _logger.debug("Processing subnet: " + section)
+        _logger.debug("Processing subnet: {}".format(section))
         
         lease_time = reader.getint(section, 'lease-time', None)
         if not lease_time:
-            raise ValueError("Field 'lease-time' unspecified for '%(section)s'" % {
-             'section': section,
-            })
+            raise ValueError("Field 'lease-time' unspecified for '{}'".format(section))
         gateway = reader.get(section, 'gateway', None)
         subnet_mask = reader.get(section, 'subnet-mask', None)
         broadcast_address = reader.get(section, 'broadcast-address', None)
@@ -194,40 +190,34 @@ class INI(Database):
         domain_name = reader.get(section, 'domain-name', None)
         
         extra = self._parse_extra(reader, section, (
-         'lease-time', 'gateway', 'subnet-mask', 'broadcast-address',
-         'ntp-servers', 'domain-name-servers', 'domain-name',
+            'lease-time', 'gateway', 'subnet-mask', 'broadcast-address',
+            'ntp-servers', 'domain-name-servers', 'domain-name',
         ), 'subnets')
         
         self._subnets[(subnet, serial)] = (
-         lease_time,
-         gateway, subnet_mask, broadcast_address,
-         ntp_servers, domain_name_servers, domain_name,
-         extra
+            lease_time,
+            gateway, subnet_mask, broadcast_address,
+            ntp_servers, domain_name_servers, domain_name,
+            extra,
         )
         
     def _process_map(self, reader, section, mac):
-        _logger.debug("Processing map: " + section)
+        _logger.debug("Processing map: {}".format(section))
         
         ip = reader.get(section, 'ip', None)
         if not ip:
-            raise ValueError("Field 'ip' unspecified for '%(section)s'" % {
-             'section': section,
-            })
+            raise ValueError("Field 'ip' unspecified for '{}'".format(section))
         hostname = reader.get(section, 'hostname', None)
         subnet = reader.get(section, 'subnet', None)
         if not subnet:
-            raise ValueError("Field 'subnet' unspecified for '%(section)s'" % {
-             'section': section,
-            })
+            raise ValueError("Field 'subnet' unspecified for '{}'".format(section))
         serial = reader.getint(section, 'serial', None)
         if serial is None:
-            raise ValueError("Field 'serial' unspecified for '%(section)s'" % {
-             'section': section,
-            })
+            raise ValueError("Field 'serial' unspecified for '{}'".format(section))
             
         extra = self._parse_extra(reader, section, (
-         'ip', 'hostname',
-         'subnet', 'serial',
+            'ip', 'hostname',
+            'subnet', 'serial',
         ), 'maps')
         
         self._maps[int(mac)] = (ip, hostname, (subnet, serial), extra)
@@ -238,11 +228,7 @@ class INI(Database):
         """
         for (mac, (_, _, subnet, _)) in self._maps.items():
             if subnet not in self._subnets:
-                raise ValueError("MAC '%(mac)s' references unknown subnet '%(subnet)s|%(serial)i'" % {
-                 'mac': MAC(mac),
-                 'subnet': subnet[0],
-                 'serial': subnet[1],
-                })
+                raise ValueError("MAC '{}' references unknown subnet '{}|{}'".format(MAC(mac), subnet[0], subnet[1]))
                 
     def lookupMAC(self, mac):
         mac = int(mac)
@@ -261,11 +247,11 @@ class INI(Database):
             extra = (extra_map and extra_map.copy()) or (extra_subnet and extra_subnet.copy())
             
         return Definition(
-         ip=map[0], lease_time=subnet[0], subnet=map[2][0], serial=map[2][1],
-         hostname=map[1],
-         gateways=subnet[1], subnet_mask=subnet[2], broadcast_address=subnet[3],
-         domain_name=subnet[6], domain_name_servers=subnet[5], ntp_servers=subnet[4],
-         extra=extra
+            ip=map[0], lease_time=subnet[0], subnet=map[2][0], serial=map[2][1],
+            hostname=map[1],
+            gateways=subnet[1], subnet_mask=subnet[2], broadcast_address=subnet[3],
+            domain_name=subnet[6], domain_name_servers=subnet[5], ntp_servers=subnet[4],
+            extra=extra,
         )
         
     def reinitialise(self):

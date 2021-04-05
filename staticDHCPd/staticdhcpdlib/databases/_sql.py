@@ -20,24 +20,25 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-(C) Neil Tallim, 2014 <flan@uguu.ca>
+(C) Neil Tallim, 2021 <flan@uguu.ca>
 (C) Matthew Boedicker, 2011 <matthewm@boedicker.org>
 """
+import itertools
 import logging
 
 from .. import config
 
-from generic import (Definition, CachingDatabase)
+from .generic import (Definition, CachingDatabase)
 
 _logger = logging.getLogger("databases._sql")
 _extra = []
 if config.EXTRA_MAPS:
     for i in config.EXTRA_MAPS:
-        _extra.append('maps.' + i)
+        _extra.append('maps.{}'.format(i))
     del i
 if config.EXTRA_SUBNETS:
     for i in config.EXTRA_SUBNETS:
-        _extra.append('subnets.' + i)
+        _extra.append('subnets.{}'.format(i))
     del i
 if not _extra:
     _extra = None
@@ -70,35 +71,29 @@ class _DB20Broker(_SQLDatabase):
             db = self._getConnection()
             cur = db.cursor()
             
-            _logger.debug("Looking up MAC %(mac)s..." % {
-             'mac': mac,
-            })
+            _logger.debug("Looking up MAC {}...".format(mac))
             cur.execute(self._query_mac, (mac,))
             result = cur.fetchone()
             if result:
-                _logger.debug("Record found for MAC %(mac)s" % {
-                 'mac': mac,
-                })
+                _logger.debug("Record found for MAC {}".format(mac))
                 return Definition(
-                 ip=result[0], hostname=result[1],
-                 gateways=result[2], subnet_mask=result[3], broadcast_address=result[4],
-                 domain_name=result[5], domain_name_servers=result[6], ntp_servers=result[7],
-                 lease_time=result[8], subnet=result[9], serial=result[10],
-                 extra=(_extra and dict(zip(_extra, result[11:])) or None)
+                    ip=result[0], hostname=result[1],
+                    gateways=result[2], subnet_mask=result[3], broadcast_address=result[4],
+                    domain_name=result[5], domain_name_servers=result[6], ntp_servers=result[7],
+                    lease_time=result[8], subnet=result[9], serial=result[10],
+                    extra=(_extra and dict(zip(_extra, result[11:])) or None),
                 )
-            _logger.debug("No record found for MAC %(mac)s" % {
-             'mac': mac,
-            })
+            _logger.debug("No record found for MAC {}".format(mac))
             return None
         finally:
             try:
                 cur.close()
             except Exception:
-                _logger.warn("Unable to close cursor")
+                _logger.warning("Unable to close cursor")
             try:
                 db.close()
             except Exception:
-                _logger.warn("Unable to close connection")
+                _logger.warning("Unable to close connection")
                 
 class _PoolingBroker(_DB20Broker):
     """
@@ -124,13 +119,13 @@ class _PoolingBroker(_DB20Broker):
                 import eventlet.db_pool
                 self._eventlet__db_pool = eventlet.db_pool
             except ImportError:
-                _logger.warn("eventlet is not available; falling back to unpooled mode")
+                _logger.warning("eventlet is not available; falling back to unpooled mode")
                 return
             else:
                 self._pool = self._eventlet__db_pool.ConnectionPool(
-                 self._module,
-                 max_size=concurrency_limit, max_idle=30, max_age=600, connect_timeout=5,
-                 **self._connection_details
+                    self._module,
+                    max_size=concurrency_limit, max_idle=30, max_age=600, connect_timeout=5,
+                    **self._connection_details
                 )
                 
     def _getConnection(self):
@@ -151,21 +146,23 @@ class MySQL(_PoolingBroker):
     """
     Implements a MySQL broker.
     """
-    _query_mac = """
-     SELECT
-      m.ip, m.hostname,
-      s.gateway, s.subnet_mask, s.broadcast_address, s.domain_name, s.domain_name_servers,
-      s.ntp_servers, s.lease_time, s.subnet, s.serial%(extra)s
-     FROM maps m, subnets s
-     WHERE
-      %(mac)s = %%s AND m.subnet = s.subnet AND m.serial = s.serial
-     LIMIT 1
-    """ % {
-     'mac': config.CASE_INSENSITIVE_MACS and 'LOWER(m.mac)' or 'm.mac',
-     'extra': _extra and ','.join(
-      [''] + ['m.' + i for i in config.EXTRA_MAPS] + ['s.' + i for i in config.EXTRA_SUBNETS]
-     ) or '',
-    }
+    _query_mac = """SELECT
+        m.ip, m.hostname,
+        s.gateway, s.subnet_mask, s.broadcast_address, s.domain_name, s.domain_name_servers,
+        s.ntp_servers, s.lease_time, s.subnet, s.serial{extra}
+        FROM maps m, subnets s
+    WHERE
+        {mac} = %s AND
+        m.subnet = s.subnet AND
+        m.serial = s.serial
+    LIMIT 1""".format(
+        extra=(_extra and ','.join(itertools.chain(
+            ('',),
+            ('m.{}'.format(i) for i in config.EXTRA_MAPS),
+            ('s.{}'.format(i) for i in config.EXTRA_SUBNETS),
+        )) or ''),
+        mac=(config.CASE_INSENSITIVE_MACS and 'LOWER(m.mac)' or 'm.mac'),
+    )
     
     def __init__(self):
         """
@@ -175,9 +172,9 @@ class MySQL(_PoolingBroker):
         self._module = MySQLdb
         
         self._connection_details = {
-         'db': config.MYSQL_DATABASE,
-         'user': config.MYSQL_USERNAME,
-         'passwd': config.MYSQL_PASSWORD,
+            'db': config.MYSQL_DATABASE,
+            'user': config.MYSQL_USERNAME,
+            'passwd': config.MYSQL_PASSWORD,
         }
         if config.MYSQL_HOST is None:
             self._connection_details['host'] = 'localhost'
@@ -187,27 +184,29 @@ class MySQL(_PoolingBroker):
             
         _PoolingBroker.__init__(self, config.MYSQL_MAXIMUM_CONNECTIONS)
         
-        _logger.debug("MySQL configured; connection-details: " + str(self._connection_details))
+        _logger.debug("MySQL configured; connection-details: {}".format(self._connection_details))
         
 class PostgreSQL(_PoolingBroker):
     """
     Implements a PostgreSQL broker.
     """
-    _query_mac = """
-     SELECT
-      m.ip, m.hostname,
-      s.gateway, s.subnet_mask, s.broadcast_address, s.domain_name, s.domain_name_servers,
-      s.ntp_servers, s.lease_time, s.subnet, s.serial%(extra)s
-     FROM maps m, subnets s
-     WHERE
-      %(mac)s = %%s AND m.subnet = s.subnet AND m.serial = s.serial
-     LIMIT 1
-    """ % {
-     'mac': config.CASE_INSENSITIVE_MACS and 'lower(m.mac)' or 'm.mac',
-     'extra': _extra and ','.join(
-      [''] + ['m.' + i for i in config.EXTRA_MAPS] + ['s.' + i for i in config.EXTRA_SUBNETS]
-     ) or '',
-    }
+    _query_mac = """SELECT
+        m.ip, m.hostname,
+        s.gateway, s.subnet_mask, s.broadcast_address, s.domain_name, s.domain_name_servers,
+        s.ntp_servers, s.lease_time, s.subnet, s.serial{extra}
+    FROM maps m, subnets s
+    WHERE
+        {mac} = %s AND
+        m.subnet = s.subnet AND
+        m.serial = s.serial
+    LIMIT 1""".format(
+        extra=(_extra and ','.join(itertools.chain(
+            ('',),
+            ('m.{}'.format(i) for i in config.EXTRA_MAPS),
+            ('s.{}'.format(i) for i in config.EXTRA_SUBNETS),
+        )) or ''),
+        mac=(config.CASE_INSENSITIVE_MACS and 'LOWER(m.mac)' or 'm.mac'),
+    )
     
     def __init__(self):
         """
@@ -217,9 +216,9 @@ class PostgreSQL(_PoolingBroker):
         self._module = psycopg2
         
         self._connection_details = {
-         'database': config.POSTGRESQL_DATABASE,
-         'user': config.POSTGRESQL_USERNAME,
-         'password': config.POSTGRESQL_PASSWORD,
+            'database': config.POSTGRESQL_DATABASE,
+            'user': config.POSTGRESQL_USERNAME,
+            'password': config.POSTGRESQL_PASSWORD,
         }
         if not config.POSTGRESQL_HOST is None:
             self._connection_details['host'] = config.POSTGRESQL_HOST
@@ -228,27 +227,29 @@ class PostgreSQL(_PoolingBroker):
             
         _PoolingBroker.__init__(self, config.POSTGRESQL_MAXIMUM_CONNECTIONS)
         
-        _logger.debug("PostgreSQL configured; connection-details: " + str(self._connection_details))
+        _logger.debug("PostgreSQL configured; connection-details: {}".format(self._connection_details))
         
 class Oracle(_PoolingBroker):
     """
     Implements an Oracle broker.
     """
-    _query_mac = """
-     SELECT
-      m.ip, m.hostname,
-      s.gateway, s.subnet_mask, s.broadcast_address, s.domain_name, s.domain_name_servers,
-      s.ntp_servers, s.lease_time, s.subnet, s.serial%(extra)s
-     FROM maps m, subnets s
-     WHERE
-      %(mac)s = :1 AND m.subnet = s.subnet AND m.serial = s.serial
-      FETCH FIRST 1 ROWS ONLY
-    """ % {
-     'mac': config.CASE_INSENSITIVE_MACS and 'LOWER(m.mac)' or 'm.mac',
-     'extra': _extra and ','.join(
-      [''] + ['m.' + i for i in config.EXTRA_MAPS] + ['s.' + i for i in config.EXTRA_SUBNETS]
-     ) or '',
-    }
+    _query_mac = """SELECT
+        m.ip, m.hostname,
+        s.gateway, s.subnet_mask, s.broadcast_address, s.domain_name, s.domain_name_servers,
+        s.ntp_servers, s.lease_time, s.subnet, s.serial{extra}
+    FROM maps m, subnets s
+    WHERE
+        {mac} = :1 AND
+        m.subnet = s.subnet AND
+        m.serial = s.serial
+    FETCH FIRST 1 ROWS ONLY""".format(
+        extra=(_extra and ','.join(itertools.chain(
+            ('',),
+            ('m.{}'.format(i) for i in config.EXTRA_MAPS),
+            ('s.{}'.format(i) for i in config.EXTRA_SUBNETS),
+        )) or ''),
+        mac=(config.CASE_INSENSITIVE_MACS and 'LOWER(m.mac)' or 'm.mac'),
+    )
 
     def __init__(self):
         """
@@ -258,34 +259,36 @@ class Oracle(_PoolingBroker):
         self._module = cx_Oracle
         
         self._connection_details = {
-         'user': config.ORACLE_USERNAME,
-         'password': config.ORACLE_PASSWORD,
-         'dsn': config.ORACLE_DATABASE,
+            'user': config.ORACLE_USERNAME,
+            'password': config.ORACLE_PASSWORD,
+            'dsn': config.ORACLE_DATABASE,
         }
         
         _PoolingBroker.__init__(self, config.ORACLE_MAXIMUM_CONNECTIONS)
         
-        _logger.debug("Oracle configured; connection-details: " + str(self._connection_details))
+        _logger.debug("Oracle configured; connection-details: {}".format(self._connection_details))
 
 class SQLite(_NonPoolingBroker):
     """
     Implements a SQLite broker.
     """
-    _query_mac = """
-     SELECT
-      m.ip, m.hostname,
-      s.gateway, s.subnet_mask, s.broadcast_address, s.domain_name, s.domain_name_servers,
-      s.ntp_servers, s.lease_time, s.subnet, s.serial%(extra)s
-     FROM maps m, subnets s
-     WHERE
-      %(mac)s = ? AND m.subnet = s.subnet AND m.serial = s.serial
-     LIMIT 1
-    """ % {
-     'mac': config.CASE_INSENSITIVE_MACS and 'lower(m.mac)' or 'm.mac',
-     'extra': _extra and ','.join(
-      [''] + ['m.' + i for i in config.EXTRA_MAPS] + ['s.' + i for i in config.EXTRA_SUBNETS]
-     ) or '',
-    }
+    _query_mac = """SELECT
+        m.ip, m.hostname,
+        s.gateway, s.subnet_mask, s.broadcast_address, s.domain_name, s.domain_name_servers,
+        s.ntp_servers, s.lease_time, s.subnet, s.serial{extra}
+    FROM maps m, subnets s
+    WHERE
+        {mac} = ? AND
+        m.subnet = s.subnet AND
+        m.serial = s.serial
+    LIMIT 1""".format(
+        extra=(_extra and ','.join(itertools.chain(
+            ('',),
+            ('m.{}'.format(i) for i in config.EXTRA_MAPS),
+            ('s.{}'.format(i) for i in config.EXTRA_SUBNETS),
+        )) or ''),
+        mac=(config.CASE_INSENSITIVE_MACS and 'LOWER(m.mac)' or 'm.mac'),
+    )
     
     def __init__(self):
         """
@@ -295,9 +298,9 @@ class SQLite(_NonPoolingBroker):
         self._module = sqlite3
         
         self._connection_details = {
-         'database': config.SQLITE_FILE,
+            'database': config.SQLITE_FILE,
         }
         
         _NonPoolingBroker.__init__(self, 1)
         
-        _logger.debug("SQLite configured; connection-details: " + str(self._connection_details))
+        _logger.debug("SQLite configured; connection-details: {}".format(self._connection_details))

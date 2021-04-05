@@ -21,18 +21,9 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-(C) Neil Tallim, 2014 <flan@uguu.ca>
+(C) Neil Tallim, 2021 <flan@uguu.ca>
 (C) Anthony Woods, 2013 <awoods@internap.com>
 """
-try:
-    from types import StringTypes
-except ImportError: #py3k
-    StringTypes = (str,)
-try:
-    IntTypes = (int, long,)
-except NameError: #py3k
-    IntTypes = (int,)
-
 import collections
 import logging
 import threading
@@ -94,7 +85,7 @@ class Definition(object):
         #Required values
         self.ip = self._parse_address(ip)
         if not self.ip:
-            raise ValueError("An IP address is required for assignment; received: %(ip)r" % {'ip': ip,})
+            raise ValueError("An IP address is required for assignment; received: {!r}".format(ip))
         self.lease_time = int(lease_time)
         self.subnet = str(subnet)
         self.serial = int(serial)
@@ -136,10 +127,10 @@ class Definition(object):
         if isinstance(addresses, IPv4):
             return [addresses]
         if addresses:
-            if isinstance(addresses, StringTypes):
+            if isinstance(addresses, str):
                 addresses = addresses.split(',')
             elif isinstance(addresses, collections.Sequence):
-                if all(type(i) in IntTypes for i in addresses):
+                if all(isinstance(i, int) for i in addresses):
                     return conversion.listToIPs(addresses)[:limit]
             else: #Might be a set or something non-sliceable
                 addresses = tuple(addresses)
@@ -185,12 +176,12 @@ class CachingDatabase(Database):
                                       number.
         :raise Exception: Cache-initialisation failed.
         """
-        _logger.debug("Initialising database with a maximum of %(count)i concurrent connections" % {'count': concurrency_limit,})
+        _logger.debug("Initialising database with a maximum of {} concurrent connections".format(concurrency_limit))
         self._resource_lock = threading.BoundedSemaphore(concurrency_limit)
         try:
             self._setupCache()
-        except Exception, e:
-            _logger.error("Cache initialisation failed:\n" + traceback.format_exc())
+        except Exception:
+            _logger.error("Cache initialisation failed:\n{}".format(traceback.format_exc()))
 
     def _setupCache(self):
         """
@@ -200,7 +191,7 @@ class CachingDatabase(Database):
         """
         from .. import config
         if config.USE_CACHE:
-            import _caching
+            from . import _caching
             if config.CACHING_MODEL == 'in-process':
                 if config.PERSISTENT_CACHE or config.CACHE_ON_DISK:
                     try:
@@ -211,49 +202,46 @@ class CachingDatabase(Database):
                         else:
                             _logger.debug("Setting up memory-cache on top of persistent caching database")
                             self._cache = _caching.MemoryCache('memory', chained_cache=disk_cache)
-                    except Exception, e:
-                        _logger.error("Unable to initialise disk-based caching:\n" + traceback.format_exc())
+                    except Exception:
+                        _logger.error("Unable to initialise disk-based caching:\n{}".format(traceback.format_exc()))
                         if config.PERSISTENT_CACHE and not config.CACHE_ON_DISK:
-                            _logger.warn("Persistent caching is not available")
+                            _logger.warning("Persistent caching is not available")
                             self._cache = _caching.MemoryCache('memory-nonpersist')
                         elif config.CACHE_ON_DISK:
-                            _logger.warn("Caching is disabled: memory-caching was not requested, so no fallback exists")
+                            _logger.warning("Caching is disabled: memory-caching was not requested, so no fallback exists")
                 else:
                     _logger.debug("Setting up memory-cache")
                     self._cache = _caching.MemoryCache('memory')
             elif config.CACHING_MODEL == 'memcached':
                 _logger.debug("Setting up memcached-cache")
                 self._cache = _caching.MemcachedCache('memcached',
-                                                      (config.MEMCACHED_SERVER, config.MEMCACHED_PORT),
-                                                      config.MEMCACHED_AGE_TIME)
+                    (config.MEMCACHED_SERVER, config.MEMCACHED_PORT),
+                    config.MEMCACHED_AGE_TIME,
+                )
 
             if self._cache:
-                _logger.info("Database caching enabled; top-level cache: %(cache)s" % {
-                    'cache': self._cache,
-                })
+                _logger.info("Database caching enabled; top-level cache: {}".format(self._cache))
             else:
-                _logger.warn("'%(model)s' database caching could not be enabled" % {
-                    'model': config.CACHING_MODEL,
-                })
+                _logger.warning("'{}' database caching could not be enabled".format(config.CACHING_MODEL))
         else:
             if config.PERSISTENT_CACHE:
-                _logger.warn("PERSISTENT_CACHE was set, but USE_CACHE was not")
+                _logger.warning("PERSISTENT_CACHE was set, but USE_CACHE was not")
             if config.CACHE_ON_DISK:
-                _logger.warn("CACHE_ON_DISK was set, but USE_CACHE was not")
+                _logger.warning("CACHE_ON_DISK was set, but USE_CACHE was not")
 
     def reinitialise(self):
         if self._cache:
             try:
                 self._cache.reinitialise()
-            except Exception, e:
-                _logger.error("Cache reinitialisation failed:\n" + traceback.format_exc())
+            except Exception:
+                _logger.error("Cache reinitialisation failed:\n{}".format(traceback.format_exc()))
 
     def lookupMAC(self, mac):
         if self._cache:
             try:
                 definition = self._cache.lookupMAC(mac)
-            except Exception, e:
-                _logger.error("Cache lookup failed:\n" + traceback.format_exc())
+            except Exception:
+                _logger.error("Cache lookup failed:\n{}".format(traceback.format_exc()))
             else:
                 if definition:
                     return definition
@@ -263,8 +251,8 @@ class CachingDatabase(Database):
         if definition and self._cache:
             try:
                 self._cache.cacheMAC(mac, definition)
-            except Exception, e:
-                _logger.error("Cache update failed:\n" + traceback.format_exc())
+            except Exception:
+                _logger.error("Cache update failed:\n{}".format(traceback.format_exc()))
         return definition
 
 class Null(Database):

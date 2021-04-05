@@ -11,19 +11,32 @@ The 3.0.0 branch will need to be tested; the running checklist follows (if you t
         * _memory may fluctuate a bit during operation, but it cannot grow indefinitely, regardless of network size_
         * _if possible, give it a week in a moderately busy network and check in a couple of times each day, sharing your numbers_
       * No processing errors
-        * _no unusual or inexplicable behaviour must be observed_
+        * _no unusual or inexplicable behaviour_
         * _all errors must be handled sensibly_
     * E-mail logging facility
       * _it needs to work_
     * Databases
-      * Postgres
+      * INI
+        * _it needs to work_
+      * custom
+        * _it needs to work_
+      * caching
+        * memory
+          * _it needs to work_
+        * disk
+          * _it needs to work_
+        * memcached
+          * _it needs to work_
+      * PostgreSQL
         * _it needs to work_
       * MySQL
         * _it needs to work_
       * Oracle
-        * _it needs to work... or it might be removed if nobody uses Oracle anymore -- testing this one's a pain_
+        * _it needs to work... or it might be removed if nobody uses Oracle anymore -- finding people to test this one is a pain_
       * SQLite
         * _it needs to work_
+      * connection-pooling
+        * _should work with at least Postgres and MySQL; ideally also Oracle_
   * Extensions
     * _contrib-extensions need to be tested to make sure the import semantics work intuitively_
     * httpdb
