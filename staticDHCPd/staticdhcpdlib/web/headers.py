@@ -20,12 +20,12 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-(C) Neil Tallim, 2014 <flan@uguu.ca>
+(C) Neil Tallim, 2021 <flan@uguu.ca>
 """
 import logging
 
 from .. import config
-import functions
+from . import functions
 
 _logger = logging.getLogger('web.headers')
 

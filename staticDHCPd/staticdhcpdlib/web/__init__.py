@@ -20,13 +20,13 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-(C) Neil Tallim, 2014 <flan@uguu.ca>
+(C) Neil Tallim, 2021 <flan@uguu.ca>
 """
 import collections
 import logging
 import threading
 
-import functions
+from . import functions
 
 _logger = logging.getLogger('web')
 
@@ -118,10 +118,10 @@ def registerHeaderCallback(callback):
     """
     with _web_lock:
         if callback in _web_headers:
-            _logger.error("%(callback)r is already registered" % {'callback': callback,})
+            _logger.error("{!r} is already registered".format(callback))
         else:
             _web_headers.append(callback)
-            _logger.debug("Registered header %(callback)r" % {'callback': callback,})
+            _logger.debug("Registered header {!r}".format(callback))
             
 def unregisterHeaderCallback(callback):
     """
@@ -134,10 +134,10 @@ def unregisterHeaderCallback(callback):
         try:
             _web_headers.remove(callback)
         except ValueError:
-            _logger.error("header %(callback)r is not registered" % {'callback': callback,})
+            _logger.error("header {!r} is not registered".format(callback))
             return False
         else:
-            _logger.error("header %(callback)r unregistered" % {'callback': callback,})
+            _logger.error("header {!r} unregistered".format(callback))
             return True
             
 def retrieveHeaderCallbacks():
@@ -175,7 +175,7 @@ def registerDashboardCallback(module, name, callback, ordering=None):
     with _web_lock:
         for (i, element) in enumerate(_web_dashboard):
             if element.callback is callback:
-                _logger.error("%(element)r is already registered" % {'element': element,})
+                _logger.error("{!r} is already registered".format(element))
                 break
         else:
             if ordering is None:
@@ -186,7 +186,7 @@ def registerDashboardCallback(module, name, callback, ordering=None):
             element = _WebDashboardElement(ordering, functions.sanitise(module), functions.sanitise(name), callback)
             _web_dashboard.append(element)
             _web_dashboard.sort()
-            _logger.debug("Registered dashboard element %(element)r" % {'element': element,})
+            _logger.debug("Registered dashboard element {!r}".format(element))
             
 def unregisterDashboardCallback(callback):
     """
@@ -199,10 +199,10 @@ def unregisterDashboardCallback(callback):
         for (i, element) in enumerate(_web_dashboard):
             if element.callback is callback:
                 del _web_dashboard[i]
-                _logger.debug("Unregistered dashboard element %(element)r" % {'element': element,})
+                _logger.debug("Unregistered dashboard element {!r}".format(element))
                 return True
         else:
-            _logger.error("Dashboard callback %(callback)r is not registered" % {'callback': callback,})
+            _logger.error("Dashboard callback {!r} is not registered".format(callback))
             return False
             
 def retrieveDashboardCallbacks():
@@ -246,13 +246,13 @@ def registerMethodCallback(path, callback, cacheable=False, hidden=True, secure=
     """
     with _web_lock:
         if path in _web_methods:
-            _logger.error("'%(path)s' is already registered" % {'path': path,})
+            _logger.error("'{}' is already registered".format(path))
         else:
             _web_methods[path] = method = _WebMethod(
-             functions.sanitise(module), functions.sanitise(name),
-             hidden, secure, confirm, display_mode, cacheable, callback
+                functions.sanitise(module), functions.sanitise(name),
+                hidden, secure, confirm, display_mode, cacheable, callback,
             )
-            _logger.debug("Registered method %(method)r at %(path)s" % {'method': method, 'path': path,})
+            _logger.debug("Registered method {!r} at {}".format(method, path))
             
 def unregisterMethodCallback(path):
     """
@@ -265,10 +265,10 @@ def unregisterMethodCallback(path):
         try:
             del _web_methods[path]
         except KeyError:
-            _logger.error("'%(path)s' is not registered" % {'path': path,})
+            _logger.error("'{}' is not registered".format(path))
             return False
         else:
-            _logger.debug("Unregistered method %(path)s" % {'path': path,})
+            _logger.debug("Unregistered method {}".format(path))
             return True
             
 def retrieveMethodCallback(path):
@@ -288,5 +288,5 @@ def retrieveVisibleMethodCallbacks():
                   lexically sorted order.
     """
     with _web_lock:
-        return tuple(sorted((element, path) for (path, element) in _web_methods.iteritems() if not element.hidden))
+        return tuple(sorted((element, path) for (path, element) in _web_methods.items() if not element.hidden))
         

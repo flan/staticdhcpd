@@ -21,14 +21,14 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-(C) Neil Tallim, 2014 <flan@uguu.ca>
+(C) Neil Tallim, 2021 <flan@uguu.ca>
 """
 import logging
 import datetime
 import traceback
 
 from .. import config
-import functions
+from . import functions
 
 import staticdhcpdlib
 import libpydhcpserver
@@ -36,20 +36,18 @@ import libpydhcpserver
 _logger = logging.getLogger('web.server')
 
 from staticdhcpdlib.web import (
- retrieveHeaderCallbacks,
- retrieveDashboardCallbacks,
- retrieveVisibleMethodCallbacks
+    retrieveHeaderCallbacks,
+    retrieveDashboardCallbacks,
+    retrieveVisibleMethodCallbacks
 )
 
 _SYSTEM_NAME = functions.sanitise(config.SYSTEM_NAME) #: The name of the system
-_FOOTER = """<div style="float: right;">If you benefit from this system, please <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&amp;hosted_button_id=11056045">support it</a></div>
-<a href="%(staticdhcpd-url)s">staticDHCPd</a> v%(staticdhcpd-version)s |
-<a href="%(libpydhcpserver-url)s">libpydhcpserver</a> v%(libpydhcpserver-version)s""" % {
- 'staticdhcpd-url': functions.sanitise(staticdhcpdlib.URL),
- 'staticdhcpd-version': functions.sanitise(staticdhcpdlib.VERSION),
- 'libpydhcpserver-url': functions.sanitise(libpydhcpserver.URL),
- 'libpydhcpserver-version': functions.sanitise(libpydhcpserver.VERSION),
-} #: The footer's HTML fragment
+_FOOTER = '<a href="{}">staticDHCPd</a> v{} | <a href="{}">libpydhcpserver</a> v{}'.format(
+    functions.sanitise(staticdhcpdlib.URL),
+    functions.sanitise(staticdhcpdlib.VERSION),
+    functions.sanitise(libpydhcpserver.URL),
+    functions.sanitise(libpydhcpserver.VERSION),
+) #: The footer's HTML fragment
 _BOOT_TIME = datetime.datetime.now().replace(microsecond=0) #: The time at which the system was started
 
 def _renderHeaders(path, queryargs, mimetype, data, headers):
@@ -69,10 +67,7 @@ def _renderHeaders(path, queryargs, mimetype, data, headers):
         try:
             content = callback(path, queryargs, mimetype, data, headers)
         except Exception:
-            _logger.error("Unable to execute header-element %(callback)r:\n%(error)s" % {
-             'callback': callback,
-             'error': traceback.format_exc(),
-            })
+            _logger.error("Unable to execute header-element {!r}:\n{}".format(callback, traceback.format_exc()))
         else:
             if content:
                 output.append(content)
@@ -85,13 +80,13 @@ def _renderHeader():
     :return str: An HTML fragment.
     """
     current_time = datetime.datetime.now().replace(microsecond=0)
-    return """<div style="float: right;">Page generated %(current-time)s</div>
-<a href="/" style="color: inherit; font-weight: bold;">%(name)s</a> online for %(uptime)s, since %(boot-time)s""" % {
-     'current-time': current_time.ctime(),
-     'name': _SYSTEM_NAME,
-     'uptime': str(current_time - _BOOT_TIME),
-     'boot-time': _BOOT_TIME.ctime(),
-    }
+    return """<div style="float: right;">Page generated {}</div>
+<a href="/" style="color: inherit; font-weight: bold;">{}</a> online for {}, since {}""".format(
+        current_time.ctime(),
+        _SYSTEM_NAME,
+        (current_time - _BOOT_TIME),
+        _BOOT_TIME.ctime(),
+    )
     
 def _renderFooter():
     """
@@ -123,17 +118,17 @@ def _renderMain(elements, path, queryargs, mimetype, data, headers):
         try:
             result = element.callback(path=path, queryargs=queryargs, mimetype=mimetype, data=data, headers=headers)
         except Exception:
-            _logger.error("Unable to render dashboard element '%(module)s' '%(name)s':\n%(error)s" % {
-             'module': element.module,
-             'name': element.name,
-             'error': traceback.format_exc(),
-            })
+            _logger.error("Unable to render dashboard element '{}' '{}':\n{}".format(
+                element.module,
+                element.name,
+                traceback.format_exc(),
+            ))
         else:
             if result is not None:
-                output.append('<h1 class="element">%(module)s | %(name)s</h1>' % {
-                'module': element.module,
-                'name': element.name,
-                })
+                output.append('<h1 class="element">{} | {}</h1>'.format(
+                    element.module,
+                    element.name,
+                ))
                 output.append('<div class="element">')
                 output.append(result)
                 output.append('</div>')
@@ -152,18 +147,16 @@ def _renderMethods():
             if module is not None:
                 output.append('</div>')
             module = element.module
-            output.append('<h1 class="method">%(module)s</h1>' % {
-             'module': element.module,
-            })
+            output.append('<h1 class="method">{}</h1>'.format(element.module))
             output.append('<div class="method">')
-        output.append('<a href="%(path)s" style="color: inherit;"%(confirm)s>%(name)s</a><br/>' % {
-         'path': path,
-         'name': element.name,
-         'confirm': element.confirm and ' onclick="return confirm(\'&quot;%(module)s | %(name)s&quot; requested that you confirm your intent to proceed\');"' % {
-          'module': element.module,
-          'name': element.name,
-         } or '',
-        })
+        output.append('<a href="{}" style="color: inherit;"{}>{}</a><br/>'.format(
+            path,
+            element.name,
+            element.confirm and ' onclick="return confirm(\'&quot;{} | {}&quot; requested that you confirm your intent to proceed\');"'.format(
+                element.module,
+                element.name,
+            ) or '',
+        ))
     else:
         if module is not None:
             output.append('</div>')
@@ -188,34 +181,24 @@ def _renderTemplate(elements, path, queryargs, mimetype, data, headers, rewrite_
 """<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
 "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
-    <head>
-%(headers)s
-    </head>
-    <body%(rewrite-location)s>
+    <head>{}</head>
+    <body{}>
         <div id="content">
-            <div id="header">
-%(header)s
-            </div>
-            <div id="methods">
-%(methods)s
-            </div>
-            <div id="main">
-%(main)s
-            </div>
-            <div id="footer">
-%(footer)s
-            </div>
+            <div id="header">{}</div>
+            <div id="methods">{}</div>
+            <div id="main">{}</div>
+            <div id="footer">{}</div>
         </div>
     </body>
 </html>
-""" % {
-     'headers': _renderHeaders(path, queryargs, mimetype, data, headers),
-     'header': _renderHeader(),
-     'methods': _renderMethods(),
-     'main': _renderMain(elements, path, queryargs, mimetype, data, headers),
-     'footer': _renderFooter(),
-     'rewrite-location': rewrite_location and ' onload="rewriteLocation(\'/\');"' or '',
-    })
+""".format(
+        _renderHeaders(path, queryargs, mimetype, data, headers),
+        rewrite_location and ' onload="rewriteLocation(\'/\');"' or '',
+        _renderHeader(),
+        _renderMethods(),
+        _renderMain(elements, path, queryargs, mimetype, data, headers),
+        _renderFooter(),
+    ))
     
 def renderTemplate(path, queryargs, mimetype, data, headers, element):
     """

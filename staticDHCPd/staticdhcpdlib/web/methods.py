@@ -20,24 +20,24 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-(C) Neil Tallim, 2014 <flan@uguu.ca>
+(C) Neil Tallim, 2021 <flan@uguu.ca>
 """
 import logging
 
 from .. import config
 from .. import logging_handlers
 from ..import system
-import functions
-import _resources
+from . import functions
+from . import _resources
 
 _logger = logging.getLogger('web.methods')
 
 _SEVERITY_MAP = {
- logging.DEBUG: 'debug',
- logging.INFO: 'info',
- logging.WARN: 'warn',
- logging.ERROR: 'error',
- logging.CRITICAL: 'critical',
+    logging.DEBUG: 'debug',
+    logging.INFO: 'info',
+    logging.WARN: 'warn',
+    logging.ERROR: 'error',
+    logging.CRITICAL: 'critical',
 } #: Mappings to show logging data in the web interface
 
 class Logger(object):
@@ -59,7 +59,7 @@ class Logger(object):
         else:
             self._handler.setFormatter(logging.Formatter("%(asctime)s : %(message)s"))
         _logger.root.addHandler(self._handler)
-        _logger.info("Web-accessible logging online; buffer-size=" + str(config.WEB_LOG_HISTORY))
+        _logger.info("Web-accessible logging online; buffer-size={}".format(config.WEB_LOG_HISTORY))
         
     def render(self, *args, **kwargs):
         """
@@ -67,23 +67,13 @@ class Logger(object):
         
         :return str: An HTML fragment, containing the log.
         """
+        max_height = config.WEB_LOG_MAX_HEIGHT and 'max-height:{}px;'.format(config.WEB_LOG_MAX_HEIGHT)
+        
         global _SEVERITY_MAP
         output = []
         for (severity, line) in self._handler.readContents():
-            output.append('<span class="%(severity)s">%(message)s</span>' % {
-             'severity': _SEVERITY_MAP[severity],
-             'message': functions.sanitise(line).replace('\n', '<br/>'),
-            })
-            
-        return """
-        <div style='overflow-y: auto;%(max-height)s'>
-        %(lines)s
-        </div>""" % {
-         'max-height': config.WEB_LOG_MAX_HEIGHT and ' max-height: %(max-height)ipx;' % {
-          'max-height': config.WEB_LOG_MAX_HEIGHT,
-         },
-         'lines': '<br/>\n'.join(output),
-        }
+            output.append('<span class="{}">{}</span>'.format(_SEVERITY_MAP[severity], functions.sanitise(line).replace('\n', '<br/>')))
+        return "<div style='overflow-y:auto;{}'>{}</div>".format(max_height, '<br/>\n'.join(output))
         
 def reinitialise(*args, **kwargs):
     """
@@ -93,14 +83,10 @@ def reinitialise(*args, **kwargs):
     """
     try:
         time_elapsed = system.reinitialise()
-    except Exception, e:
-        return '<span class="critical">Reinitilisation failed: %(error)s</span>' % {
-         'error': str(e),
-        }
+    except Exception as e:
+        return '<span class="critical">Reinitilisation failed: {}</span>'.format(e)
     else:
-        return 'System reinitilisation completed in %(time).4f seconds' % {
-         'time': time_elapsed,
-        }
+        return 'System reinitilisation completed in {:.4s} seconds'.format(time_elapsed)
         
 def css(*args, **kwargs):
     """
