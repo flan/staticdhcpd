@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- encoding: utf-8 -*-
 """
 staticDHCPd
@@ -21,7 +21,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-(C) Neil Tallim, 2014 <flan@uguu.ca>
+(C) Neil Tallim, 2021 <flan@uguu.ca>
 """
 import logging
 import logging.handlers
@@ -34,28 +34,27 @@ import traceback
 import staticdhcpdlib
 import libpydhcpserver
 
-parser_options = None
+args = None
 #Options-processing needs to be done before config is loaded
 if __name__ == '__main__' and len(sys.argv) > 1:
-    import optparse
-    parser = optparse.OptionParser()
-    parser.add_option("--config", help="specify the location of conf.py", dest="config")
-    parser.add_option("--debug", help="output logging information at the DEBUG level", dest="debug", action="store_true", default=False)
-    parser.add_option("--verbose", help="disable daemon mode, if set, and enable console output", dest="verbose", action="store_true", default=False)
-    parser.add_option("--version", help="display version information", dest="version", action="store_true", default=False)
-    (parser_options, args) = parser.parse_args()
-    if parser_options.version:
-        print(
-            "staticDHCPd v" + staticdhcpdlib.VERSION + " - " + staticdhcpdlib.URL +
-            " | libpydhcpserver v" + libpydhcpserver.VERSION + " - " + libpydhcpserver.URL
-        )
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config", help="specify the location of conf.py")
+    parser.add_argument("--debug", help="output logging information at the DEBUG level", action="store_true", default=False)
+    parser.add_argument("--verbose", help="disable daemon mode, if set, and enable console output", action="store_true", default=False)
+    parser.add_argument("--version", help="display version information", action="store_true", default=False)
+    args = parser.parse_args()
+    if args.version:
+        print("staticDHCPd v{} - {} | libpydhcpserver v{} - {}".format(
+            staticdhcpdlib.VERSION, staticdhcpdlib.URL,
+            libpydhcpserver.VERSION, libpydhcpserver.URL,
+        ))
         sys.exit(0)
-    if parser_options.config:
-        os.environ['STATICDHCPD_CONF_PATH'] = parser_options.config
+    if args.config:
+        os.environ['STATICDHCPD_CONF_PATH'] = args.config
     del parser
-    del args
-    del optparse
-#Options-processing complete
+    del argparse
+#Pre-config options-processing complete
 
 import staticdhcpdlib.config
 
@@ -67,29 +66,29 @@ def _gracefulShutdown():
     process if a second is made.
     """
     if staticdhcpdlib.system.ALIVE:
-        _logger.warn("System shutdown beginning...")
+        _logger.warning("System shutdown beginning...")
         staticdhcpdlib.system.ALIVE = False
     else:
-        _logger.warn("System shutting down immediately")
+        _logger.warning("System shutting down immediately")
         sys.exit(1)
         
 def _termHandler(*args):
     """
     Cleanly shuts down this daemon upon receipt of a SIGTERM.
     """
-    _logger.warn("Received SIGTERM")
+    _logger.warning("Received SIGTERM")
     _gracefulShutdown()
     
 def _hupHandler(*args):
     """
     Reinitialises the system upon receipt of a SIGHUP.
     """
-    _logger.warn("Received SIGHUP")
+    _logger.warning("Received SIGHUP")
     staticdhcpdlib.system.reinitialise()
     
 def _daemonise():
     """
-    The process of daemonising, the standard Unix way.
+    The process of daemonising, the standard UNIX way.
     """
     if os.fork(): #The first fork, to decouple stuff
         sys.exit(0)
@@ -132,14 +131,14 @@ def _setupLogging():
         
     if staticdhcpdlib.config.LOG_FILE: #Determine whether disk-based logging is desired
         if logging.root.handlers:
-            _logger.info("Configuring file-based logging for " + staticdhcpdlib.config.LOG_FILE + "...")
+            _logger.info("Configuring file-based logging for {}...".format(staticdhcpdlib.config.LOG_FILE))
         if staticdhcpdlib.config.LOG_FILE_HISTORY:
             #Rollover once per day, keeping the configured number of days' logs as history
             file_logger = logging.handlers.TimedRotatingFileHandler(
-             staticdhcpdlib.config.LOG_FILE, 'D', 1, staticdhcpdlib.config.LOG_FILE_HISTORY
+                staticdhcpdlib.config.LOG_FILE, 'D', 1, staticdhcpdlib.config.LOG_FILE_HISTORY
             )
             if logging.root.handlers:
-                _logger.info("Configured rotation-based logging for file, with history=" + str(staticdhcpdlib.config.LOG_FILE_HISTORY) + " days")
+                _logger.info("Configured rotation-based logging for file, with history={} days".format(staticdhcpdlib.config.LOG_FILE_HISTORY))
         else:
             #Keep writing to the specified file forever
             file_logger = logging.FileHandler(staticdhcpdlib.config.LOG_FILE)
@@ -159,7 +158,11 @@ def _setupLogging():
             credentials=(staticdhcpdlib.config.EMAIL_USER and (staticdhcpdlib.config.EMAIL_USER, staticdhcpdlib.config.EMAIL_PASSWORD) or None)
         )
         if logging.root.handlers:
-            _logger.info("Configured SMTP-based logging for " + staticdhcpdlib.config.EMAIL_DESTINATION + " via " + staticdhcpdlib.config.EMAIL_SERVER + ":" + str(staticdhcpdlib.config.EMAIL_PORT))
+            _logger.info("Configured SMTP-based logging for {} via {}:{}".format(
+                staticdhcpdlib.config.EMAIL_DESTINATION,
+                staticdhcpdlib.config.EMAIL_SERVER,
+                staticdhcpdlib.config.EMAIL_PORT,
+            ))
         smtp_handler.setLevel(logging.CRITICAL)
         smtp_handler.setFormatter(formatter)
         logging.root.addHandler(smtp_handler)
@@ -210,7 +213,7 @@ def _initialise():
             
 def _initialiseDHCP():
     """
-    Loads and configured DHCP system components.
+    Loads and configures DHCP system components.
     """
     import staticdhcpdlib.system
     
@@ -226,36 +229,36 @@ def _initialiseDHCP():
     staticdhcpdlib.system.registerTickCallback(dhcp.tick)
     
 if __name__ == '__main__':
-    if parser_options and parser_options.debug:
+    if args and args.debug:
         staticdhcpdlib.config.DEBUG = True
         staticdhcpdlib.config.LOG_FILE_SEVERITY = 'DEBUG'
         staticdhcpdlib.config.LOG_CONSOLE_SEVERITY = 'DEBUG'
         print("staticDHCPd: Debugging overrides enabled: debugging operation requested")
         
     if staticdhcpdlib.config.DAEMON:
-        if parser_options and parser_options.verbose:
+        if args and args.verbose:
             staticdhcpdlib.config.DAEMON = False
             print("staticDHCPd: Daemonised execution disabled: verbose operation requested")
         else:
             _daemonise()
     del _daemonise
     
-del parser_options #No longer needed; allow reclamation
+del args #No longer needed; allow reclamation
 
 if __name__ == '__main__':
     _setupLogging()
     del _setupLogging
     for i in (
-     "----------------------------------------",
-     "----------------------------------------",
-     "----------------------------------------",
-     "System startup in progress; PID=" + str(os.getpid()),
-     "staticDHCPd version " + staticdhcpdlib.VERSION + " : " + staticdhcpdlib.URL,
-     "libpydhcpserver version " + libpydhcpserver.VERSION + " : " + libpydhcpserver.URL,
-     "Continuing with subsystem initialisation",
-     "----------------------------------------",
+        "----------------------------------------",
+        "----------------------------------------",
+        "----------------------------------------",
+        f"System startup in progress; PID={os.getpid()}",
+        f"staticDHCPd version {staticdhcpdlib.VERSION} : {staticdhcpdlib.URL}",
+        f"libpydhcpserver version {libpydhcpserver.VERSION} : {libpydhcpserver.URL}",
+        "Continuing with subsystem initialisation",
+        "----------------------------------------",
     ):
-        _logger.warn(i)
+        _logger.warning(i)
     del i
     
     pidfile_recorded = False
@@ -264,7 +267,7 @@ if __name__ == '__main__':
         try:
             if os.path.isfile(staticdhcpdlib.config.PID_FILE):
                 pidfile = open(staticdhcpdlib.config.PID_FILE, 'r')
-                _logger.warn("Pidfile already exists, with PID " + pidfile.read().strip())
+                _logger.warning("Pidfile already exists, with PID {}".format(pidfile.read().strip()))
                 pidfile.close()
                 
             pidfile = open(staticdhcpdlib.config.PID_FILE, 'w')
@@ -272,7 +275,7 @@ if __name__ == '__main__':
             pidfile.close()
             os.chown(staticdhcpdlib.config.PID_FILE, staticdhcpdlib.config.UID, staticdhcpdlib.config.GID)
         except:
-            _logger.error("Unable to write pidfile: %(file)s" % {'file': staticdhcpdlib.config.PID_FILE,})
+            _logger.error("Unable to write pidfile: {}".format(staticdhcpdlib.config.PID_FILE))
         else:
             pidfile_recorded = True
             
@@ -294,10 +297,10 @@ if __name__ == '__main__':
         _initialiseDHCP()
         del _initialiseDHCP
         
-        _logger.info("Changing runtime permissions to UID=%(uid)i, GID=%(gid)i..." % {
-         'uid': staticdhcpdlib.config.UID,
-         'gid': staticdhcpdlib.config.GID,
-        })
+        _logger.info("Changing runtime permissions to UID={uid}, GID={gid}...".format(
+            uid=staticdhcpdlib.config.UID,
+            gid=staticdhcpdlib.config.GID,
+        ))
         os.setregid(staticdhcpdlib.config.GID, staticdhcpdlib.config.GID)
         os.setreuid(staticdhcpdlib.config.UID, staticdhcpdlib.config.UID)
         
@@ -305,9 +308,9 @@ if __name__ == '__main__':
         #and configure themselves, so try to reclaim memory
         del staticdhcpdlib.config.conf.extensions
         
-        _logger.warn("----------------------------------------")
-        _logger.warn("All subsystems initialised; now serving")
-        _logger.warn("----------------------------------------")
+        _logger.warning("----------------------------------------")
+        _logger.warning("All subsystems initialised; now serving")
+        _logger.warning("----------------------------------------")
         sleep_offset = 0
         while staticdhcpdlib.system.ALIVE:
             time.sleep(max(0.0, 1.0 - sleep_offset))
@@ -316,9 +319,9 @@ if __name__ == '__main__':
             staticdhcpdlib.system.tick()
             sleep_offset = time.time() - start_time
     except KeyboardInterrupt:
-        _logger.warn("System shutdown requested via keyboard interrupt")
+        _logger.warning("System shutdown requested via keyboard interrupt")
     except Exception:
-        _logger.critical("System shutdown triggered by unhandled exception:\n" + traceback.format_exc())
+        _logger.critical("System shutdown triggered by unhandled exception:\n{}".format(traceback.format_exc()))
     finally:
         _gracefulShutdown()
         if pidfile_recorded:
@@ -326,5 +329,5 @@ if __name__ == '__main__':
             try:
                 os.unlink(staticdhcpdlib.config.PID_FILE)
             except:
-                _logger.error("Unable to unlink pidfile: %(file)s" % {'file': staticdhcpdlib.config.PID_FILE,})
+                _logger.error("Unable to unlink pidfile: {}".format(staticdhcpdlib.config.PID_FILE))
                 
