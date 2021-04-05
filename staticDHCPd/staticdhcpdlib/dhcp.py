@@ -20,7 +20,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-(C) Neil Tallim, 2014 <flan@uguu.ca>
+(C) Neil Tallim, 2021 <flan@uguu.ca>
 """
 import collections
 import logging
@@ -29,14 +29,14 @@ import threading
 import time
 import traceback
 
-import config
-import statistics
+from . import config
+from . import statistics
 
 import libpydhcpserver.dhcp
 from libpydhcpserver.dhcp_types.ipv4 import IPv4
 from libpydhcpserver.dhcp_types.mac import MAC
 
-from databases.generic import Definition
+from .databases.generic import Definition
 
 #Packet-type string-constants
 _PACKET_TYPE_DECLINE = 'DECLINE'
@@ -111,16 +111,10 @@ class _PacketWrapper(object):
         try:
             self._evaluateSource()
             self._server.evaluateAbuse(self.mac)
-        except _PacketSourceUnacceptable, e:
-            _logger.warning("Request from %(ip)s ignored: %(reason)s" % {
-             'ip': self.giaddr,
-             'reason': str(e),
-            })
-        except _PacketSourceIgnored, e:
-            _logger.debug("Request from %(mac)s ignored: %(reason)s" % {
-             'mac': self.mac,
-             'reason': str(e),
-            })
+        except _PacketSourceUnacceptable as e:
+            _logger.warning("Request from {} ignored: {}".format(self.giaddr, e))
+        except _PacketSourceIgnored as e:
+            _logger.debug("Request from {} ignored: {}".format(self.mac, e))
         else:
             self.valid = True
             self._original_packet = self.packet.copy()
@@ -139,25 +133,18 @@ class _PacketWrapper(object):
                 self._server.addToTempBanlist(self.mac, self._packet_type, str(value))
                 return True
             elif isinstance(value, Exception):
-                _logger.critical("Unable to handle %(type)s from  %(mac)s:\n%(error)s" % {
-                 'type': self._packet_type,
-                 'mac': self.mac,
-                 'error': "\n".join(traceback.format_exception(type, value, tb)),
-                })
+                _logger.critical("Unable to handle {} from  {}:\n{}".format(
+                    self._packet_type,
+                    self.mac,
+                    '\n'.join(traceback.format_exception(type, value, tb)),
+                ))
                 return True
         finally:
             if self._discarded:
-                _logger.debug("Discarded packet of type %(type)s from %(mac)s" % {
-                'type': self._packet_type,
-                'mac': self.mac,
-                })
-
+                _logger.debug("Discarded packet of type {} from {}".format(self._packet_type, self.mac))
+                
             time_taken = time.time() - self._start_time
-            _logger.debug("%(type)s request from %(mac)s processed in %(seconds).4f seconds" % {
-             'type': self._packet_type,
-             'mac': self.mac,
-             'seconds': time_taken,
-            })
+            _logger.debug("{} request from {} processed in {:.4f} seconds".format(self._packet_type, self.mac, time_taken))
 
             if self._definition:
                 ip = self._definition.ip
@@ -167,7 +154,12 @@ class _PacketWrapper(object):
                 subnet = serial = None
                 ip = self._associated_ip
             statistics.emit(statistics.Statistics(
-                self.source_address, self.mac, ip, subnet, serial, self._packet_type, time_taken, not self._discarded, self.port,
+                self.source_address,
+                self.mac, ip,
+                subnet, serial,
+                self._packet_type,
+                time_taken, not self._discarded,
+                self.port,
             ))
 
     def _extractInterestingFields(self):
@@ -204,17 +196,17 @@ class _PacketWrapper(object):
         :param basestring ip: The IP for which the request was sent, if known.
         :param int verbosity: A logging severity constant.
         """
-        _logger.log(verbosity, '%(type)s from %(mac)s%(ip)s%(sip)s via port %(port)i' % {
-         'type': self._packet_type,
-         'mac': self.mac,
-         'ip': ip and (" for %(ip)s" % {'ip': ip,}) or '',
-         'sip': (
-          self.source_address.ip not in libpydhcpserver.dhcp.IP_UNSPECIFIED_FILTER and
-          " via %(address)s:%(port)i" % {'address': self.source_address.ip, 'port': self.source_address.port,} or
-          ''
-         ),
-         'port': self.port,
-        })
+        _logger.log(verbosity, '{type} from {mac}{ip}{sip} via port {port}'.format(
+            type=self._packet_type,
+            mac=self.mac,
+            ip=(ip and (" for {}".format(ip)) or ''),
+            sip=(
+                self.source_address.ip not in libpydhcpserver.dhcp.IP_UNSPECIFIED_FILTER and
+                " via {}:{}".format(self.source_address.ip, self.source_address.port) or
+                ''
+            ),
+            port=self.port,
+        ))
 
     def getType(self):
         """
@@ -316,10 +308,7 @@ class _PacketWrapper(object):
             self._original_packet
         ))
         if not process:
-            _logger.info('Ignoring %(type)s from %(mac)s per loadDHCPPacket()' % {
-                'type': self._packet_type,
-                'mac': self.mac,
-            })
+            _logger.info('Ignoring {} from {} per loadDHCPPacket()'.format(self._packet_type, self.mac))
         return process
 
     def retrieveDefinition(self, override_ip=False, override_ip_value=None):
@@ -348,7 +337,7 @@ class _PacketWrapper(object):
         #Allow for DBs to return multiple definitions that can then
         #be filtered based on the the additional information
         if definition and not isinstance(definition, Definition):
-            _logger.debug('Multiple (count=%i) definitions found', len(definition))
+            _logger.debug('Multiple (count={}) definitions found'.format(len(definition)))
             self._definition = config.filterRetrievedDefinitions(
                 definition, self.packet, self._packet_type, self.mac, ip,
                 self.giaddr, self.port,
@@ -372,6 +361,8 @@ def _dhcpHandler(packet_type):
                 f(self, wrapper)
         return wrappedHandler
     return decorator
+
+
 
 class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
     """
@@ -430,27 +421,27 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
 
             definition = wrapper.retrieveDefinition()
             if definition and definition.ip == wrapper.ip: #Known client.
-                _logger.error('%(type)s from %(mac)s for %(ip)s on (%(subnet)s, %(serial)i)' % {
-                'type': wrapper.getType(),
-                'ip': wrapper.ip,
-                'mac': wrapper.mac,
-                'subnet': definition.subnet,
-                'serial': definition.serial,
-                })
+                _logger.error("{type} from {mac} for {ip} on ({subnet}, {serial})".format(
+                    type=wrapper.getType(),
+                    ip=wrapper.ip,
+                    mac=wrapper.mac,
+                    subnet=definition.subnet,
+                    serial=definition.serial,
+                ))
                 wrapper.markAddressed()
             elif definition:
-                _logger.warning('%(type)s from %(mac)s for %(ip)s, but its assigned IP is %(aip)s' % {
-                 'type': wrapper.getType(),
-                 'ip': wrapper.ip,
-                 'aip': definition.ip,
-                 'mac': wrapper.mac,
-                })
+                _logger.warning("{type} from {mac} for {ip}, but its assigned IP is {aip}".format(
+                    type=wrapper.getType(),
+                    mac=wrapper.mac,
+                    ip=wrapper.ip,
+                    aip=definition.ip,
+                ))
             else:
-                _logger.warning('%(type)s from %(mac)s for %(ip)s, but the MAC is unknown' % {
-                 'type': wrapper.getType(),
-                 'ip': wrapper.ip,
-                 'mac': wrapper.mac,
-                })
+                _logger.warning("{type} from {mac} for {ip}, but the MAC is unknown".format(
+                    type=wrapper.getType(),
+                    mac=wrapper.mac,
+                    ip=wrapper.ip,
+                ))
 
     @_dhcpHandler(_PACKET_TYPE_DISCOVER)
     def _handleDHCPDiscover(self, wrapper):
@@ -468,10 +459,7 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
         definition = wrapper.retrieveDefinition(override_ip=True, override_ip_value=None)
         if definition:
             if config.ENABLE_RAPIDCOMMIT and wrapper.packet.isOption(80):
-                _logger.info('%(type)s from %(mac)s requested rapid-commit' % {
-                 'type': wrapper.getType(),
-                 'mac': wrapper.mac,
-                })
+                _logger.info("{} from {} requested rapid-commit".format(wrapper.getType(), wrapper.mac))
                 wrapper.packet.transformToDHCPAckPacket()
                 wrapper.packet.setOption(80, [])
             else:
@@ -480,15 +468,15 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
             if wrapper.loadDHCPPacket(definition):
                 self._emitDHCPPacket(
                     wrapper.packet, wrapper.source_address, wrapper.port,
-                    wrapper.mac, definition.ip
+                    wrapper.mac, definition.ip,
                 )
                 wrapper.markAddressed()
         else: #No support available for the MAC
             if config.AUTHORITATIVE:
                 wrapper.packet.transformToDHCPNakPacket()
                 self._emitDHCPPacket(
-                 wrapper.packet, wrapper.source_address, wrapper.port,
-                 wrapper.mac, _IP_REJECTED
+                    wrapper.packet, wrapper.source_address, wrapper.port,
+                    wrapper.mac, _IP_REJECTED,
                 )
                 wrapper.markAddressed()
             else:
@@ -515,8 +503,8 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
             wrapper.packet.transformToDHCPAckPacket()
             if wrapper.loadDHCPPacket(definition, inform=True):
                 self._emitDHCPPacket(
-                 wrapper.packet, wrapper.source_address, wrapper.port,
-                 wrapper.mac, wrapper.ciaddr or _IP_REJECTED
+                    wrapper.packet, wrapper.source_address, wrapper.port,
+                    wrapper.mac, wrapper.ciaddr or _IP_REJECTED,
                 )
                 wrapper.markAddressed()
         else:
@@ -525,7 +513,7 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
     @_dhcpHandler(_PACKET_TYPE_LEASEQUERY)
     def _handleDHCPLeaseQuery(self, wrapper):
         """
-        Simply discards the packet; LEASEQUERY support was dropped in 1.7.0,
+        Simply discards the packet; LEASEQUERY support was dropped in 1.7.0
         because the implementation was wrong.
 
         :param :class:`_PacketWrapper` wrapper: The wrapped packet to process.
@@ -554,13 +542,13 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
         elif not wrapper.sid and wrapper.ciaddr and not wrapper.ip: #RENEWING or REBINDING
             self._handleDHCPRequest_RENEW_REBIND(wrapper)
         else:
-            _logger.warning('%(type)s (%(sid)s|%(ciaddr)s|%(ip)s) from %(mac)s unhandled: packet not compliant with DHCP spec' % {
-             'type': wrapper.getType(),
-             'sid': wrapper.sid,
-             'ciaddr': wrapper.ciaddr,
-             'ip': wrapper.ip,
-             'mac': wrapper.mac,
-            })
+            _logger.warning("{type} ({sid}|{ciaddr}|{ip}) from {mac} unhandled: packet not compliant with DHCP spec".format(
+                type=wrapper.getType(),
+                sid=wrapper.sid,
+                ciaddr=wrapper.ciaddr,
+                ip=wrapper.ip,
+                mac=wrapper.mac,
+            ))
 
     def _handleDHCPRequest_SELECTING(self, wrapper):
         """
@@ -579,15 +567,15 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
                 wrapper.packet.transformToDHCPAckPacket()
                 if wrapper.loadDHCPPacket(definition):
                     self._emitDHCPPacket(
-                     wrapper.packet, wrapper.source_address, wrapper.port,
-                     wrapper.mac, wrapper.ip
+                        wrapper.packet, wrapper.source_address, wrapper.port,
+                        wrapper.mac, wrapper.ip,
                     )
                     wrapper.markAddressed()
             else:
                 wrapper.packet.transformToDHCPNakPacket()
                 self._emitDHCPPacket(
-                 wrapper.packet, wrapper.source_address, wrapper.port,
-                 wrapper.mac, _IP_REJECTED
+                    wrapper.packet, wrapper.source_address, wrapper.port,
+                    wrapper.mac, _IP_REJECTED,
                 )
                 wrapper.markAddressed()
 
@@ -607,15 +595,15 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
             wrapper.packet.transformToDHCPAckPacket()
             if wrapper.loadDHCPPacket(definition):
                 self._emitDHCPPacket(
-                 wrapper.packet, wrapper.source_address, wrapper.port,
-                 wrapper.mac, wrapper.ip
+                    wrapper.packet, wrapper.source_address, wrapper.port,
+                    wrapper.mac, wrapper.ip,
                 )
                 wrapper.markAddressed()
         else:
             wrapper.packet.transformToDHCPNakPacket()
             self._emitDHCPPacket(
-             wrapper.packet, wrapper.source_address, wrapper.port,
-             wrapper.mac, wrapper.ip
+                wrapper.packet, wrapper.source_address, wrapper.port,
+                wrapper.mac, wrapper.ip,
             )
             wrapper.markAddressed()
 
@@ -637,8 +625,8 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
         if config.NAK_RENEWALS and (renew or config.AUTHORITATIVE):
             wrapper.packet.transformToDHCPNakPacket()
             self._emitDHCPPacket(
-             wrapper.packet, wrapper.source_address, wrapper.port,
-             wrapper.mac, _IP_REJECTED
+                wrapper.packet, wrapper.source_address, wrapper.port,
+                wrapper.mac, _IP_REJECTED,
             )
             wrapper.markAddressed()
         else:
@@ -648,18 +636,18 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
                 wrapper.packet.setOption('yiaddr', wrapper.ciaddr)
                 if wrapper.loadDHCPPacket(definition):
                     self._emitDHCPPacket(
-                     wrapper.packet,
-                     libpydhcpserver.dhcp.Address(wrapper.ciaddr, 0), wrapper.port,
-                     wrapper.mac, wrapper.ciaddr
+                        wrapper.packet,
+                        libpydhcpserver.dhcp.Address(wrapper.ciaddr, 0), wrapper.port,
+                        wrapper.mac, wrapper.ciaddr,
                     )
                     wrapper.markAddressed()
             elif definition or config.AUTHORITATIVE:
                 if renew:
                     wrapper.packet.transformToDHCPNakPacket()
                     self._emitDHCPPacket(
-                     wrapper.packet,
-                     libpydhcpserver.dhcp.Address(wrapper.ciaddr, 0), wrapper.port,
-                     wrapper.mac, wrapper.ciaddr
+                        wrapper.packet,
+                        libpydhcpserver.dhcp.Address(wrapper.ciaddr, 0), wrapper.port,
+                        wrapper.mac, wrapper.ciaddr,
                     )
                     wrapper.markAddressed()
 
@@ -682,11 +670,7 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
                 wrapper.announcePacket(ip=wrapper.ciaddr)
                 wrapper.markAddressed()
             else:
-                _logger.warning('%(type)s from %(mac)s for %(ip)s, but no assignment is known' % {
-                 'type': wrapper.getType(),
-                 'ip': wrapper.ciaddr,
-                 'mac': wrapper.mac,
-                })
+                _logger.warning("{} from {} for {}, but no assignment is known".format(wrapper.getType(), wrapper.mac, wrapper.ciaddr))
 
     def _logDHCPAccess(self, mac):
         """
@@ -708,10 +692,7 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
                 else:
                     self._dhcp_actions[minimal_mac] += 1
                     if actions + 1 > config.SUSPEND_THRESHOLD:
-                        _logger.warning('%(mac)s is issuing too many requests; ignoring for %(time)i seconds' % {
-                         'mac': mac,
-                         'time': config.MISBEHAVING_CLIENT_TIMEOUT,
-                        })
+                        _logger.warning("{} is issuing too many requests; ignoring for {} seconds".format(mac, config.MISBEHAVING_CLIENT_TIMEOUT))
                         self._ignored_addresses.append([minimal_mac, config.MISBEHAVING_CLIENT_TIMEOUT])
                         return False
         return True
@@ -737,14 +718,14 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
 
         (bytes, address) = self._sendDHCPPacket(packet, address, port)
         response_type = packet.getDHCPMessageTypeName()
-        _logger.info('%(type)s sent at %(mac)s for %(client)s via %(ip)s:%(port)i[%(bytes)i bytes]' % {
-            'type': response_type[response_type.find('_') + 1:],
-            'mac': mac,
-            'client': client_ip,
-            'bytes': bytes,
-            'ip': address.ip,
-            'port': address.port,
-        })
+        _logger.info("{type} sent at {mac} for {client} via {ip}:{port}[{bytes} bytes]".format(
+            type=response_type[response_type.find('_') + 1:],
+            mac=mac,
+            client=client_ip,
+            bytes=bytes,
+            ip=address.ip,
+            port=address.port,
+        ))
         return bytes
 
     def addToTempBanlist(self, mac, packet_type, reason):
@@ -756,12 +737,12 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
         """
         with self._lock:
             self._ignored_addresses.append([tuple(mac), config.UNAUTHORIZED_CLIENT_TIMEOUT])
-        _logger.warning('%(mac)s was temporarily banlisted, for %(time)i seconds, following %(packet_type)s: %(reason)s' % {
-         'mac': mac,
-         'time': config.UNAUTHORIZED_CLIENT_TIMEOUT,
-         'packet_type': packet_type,
-         'reason': reason,
-        })
+        _logger.warning("{mac} was temporarily banlisted, for {time} seconds, following {packet_type}: {reason}".format(
+            mac=mac,
+            time=config.UNAUTHORIZED_CLIENT_TIMEOUT,
+            packet_type=packet_type,
+            reason=reason,
+        ))
 
     def evaluateAbuse(self, mac):
         """
@@ -774,7 +755,7 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
         with self._lock:
             ignored = [timeout for (ignored_mac, timeout) in self._ignored_addresses if mac == ignored_mac]
         if ignored:
-            raise _PacketSourceIgnored("MAC is on cooldown for another %(count)i seconds" % {'count': max(ignored)})
+            raise _PacketSourceIgnored("MAC is on cooldown for another {} seconds".format(max(ignored)))
 
         if not self._logDHCPAccess(mac):
             raise _PacketSourceIgnored("MAC has been ignored for excessive activity")
@@ -795,7 +776,12 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
         (dhcp_received, source_address) = self._getNextDHCPPacket()
         if not dhcp_received and source_address:
             statistics.emit(statistics.Statistics(
-             source_address, None, None, None, None, None, 0.0, False, False
+                source_address,
+                None, None,
+                None, None,
+                None,
+                0.0, False,
+                False,
             ))
 
     def tick(self):
@@ -803,7 +789,7 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
         Cleans up the MAC banlist and the abuse-monitoring list.
         """
         with self._lock:
-            for i in reversed(xrange(len(self._ignored_addresses))):
+            for i in reversed(range(len(self._ignored_addresses))):
                 ignored_address = self._ignored_addresses[i]
                 if ignored_address[1] <= 1:
                     del self._ignored_addresses[i]
@@ -812,7 +798,7 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
 
             if config.ENABLE_SUSPEND:
                 dead_keys = []
-                for (k, v) in self._dhcp_actions.iteritems():
+                for (k, v) in self._dhcp_actions.items():
                     if v <= 1:
                         dead_keys.append(k)
                     else:
@@ -843,18 +829,18 @@ class DHCPService(threading.Thread):
         self.daemon = True
 
         server_address = IPv4(config.DHCP_SERVER_IP)
-        _logger.info("Prepared to bind to %(address)s; ports: server: %(server)s, client: %(client)s, proxy: %(proxy)s%(response-interface)s" % {
-            'address': server_address,
-            'server': config.DHCP_SERVER_PORT,
-            'client': config.DHCP_CLIENT_PORT,
-            'proxy': config.PROXY_PORT,
-            'response-interface': config.DHCP_RESPONSE_INTERFACE and '; raw-response-interface: %(response-interface)s%(qtags)s' % {
-                'response-interface': config.DHCP_RESPONSE_INTERFACE,
-                'qtags': config.DHCP_RESPONSE_INTERFACE_QTAGS and '; raw-response-interface-qtags: %(qtags)r' % {
-                    'qtags': config.DHCP_RESPONSE_INTERFACE_QTAGS,
-                } or '',
-            } or '',
-        })
+        _logger.info("Prepared to bind to {address}; ports: server: {server}, client: {client}, proxy: {proxy}{response_interface}".format(
+            address=server_address,
+            server=config.DHCP_SERVER_PORT,
+            client=config.DHCP_CLIENT_PORT,
+            proxy=config.PROXY_PORT,
+            response_interface=config.DHCP_RESPONSE_INTERFACE and "; raw-response-interface: {response_interface}{qtags}".format(
+                response_interface=config.DHCP_RESPONSE_INTERFACE,
+                qtags=config.DHCP_RESPONSE_INTERFACE_QTAGS and "; raw-response-interface-qtags: {qtags!r}".format(
+                    qtags=config.DHCP_RESPONSE_INTERFACE_QTAGS,
+                ) or '',
+            ) or '',
+        ))
         self._dhcp_server = _DHCPServer(
             server_address,
             config.DHCP_SERVER_PORT,
@@ -873,14 +859,14 @@ class DHCPService(threading.Thread):
         In the event of an unexpected error, e-mail will be sent and processing
         will continue with the next request.
         """
-        _logger.info('DHCP engine beginning normal operation')
+        _logger.info("DHCP engine beginning normal operation")
         while True:
             try:
                 self._dhcp_server.getNextDHCPPacket()
             except select.error:
-                _logger.debug('Suppressed non-fatal select() error')
+                _logger.debug("Suppressed non-fatal select() error")
             except Exception:
-                _logger.critical("Unhandled exception:\n" + traceback.format_exc())
+                _logger.critical("Unhandled exception:\n{}".format(traceback.format_exc()))
 
     def tick(self):
         """
