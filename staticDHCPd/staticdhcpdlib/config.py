@@ -32,7 +32,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-(C) Neil Tallim, 2014 <flan@uguu.ca>
+(C) Neil Tallim, 2021 <flan@uguu.ca>
 """
 #Get the "conf" module from somewhere
 conf = None
@@ -57,9 +57,7 @@ for conf_path in conf_search_paths:
     else:
         break
 else:
-    raise ImportError("Unable to find a suitable copy of conf.py; searched: %(paths)r" % {
-     'paths': conf_search_paths,
-    })
+    raise ImportError("Unable to find a suitable copy of conf.py; searched: {!r}".format(conf_search_paths))
 
 del conf_search_paths
 del conf_path
@@ -75,110 +73,110 @@ _defaults = {}
 #General settings
 #######################################
 _defaults.update({
- 'DEBUG': False,
- 'DAEMON': True,
- 'SYSTEM_NAME': 'staticDHCPd',
- 'PID_FILE': None,
+    'DEBUG': False,
+    'DAEMON': True,
+    'SYSTEM_NAME': 'staticDHCPd',
+    'PID_FILE': None,
 })
 
 #Server settings
 #######################################
 _defaults.update({
- 'DHCP_RESPONSE_INTERFACE': '-',
- 'DHCP_RESPONSE_INTERFACE_QTAGS': None,
- 'DHCP_SERVER_PORT': 67,
- 'DHCP_CLIENT_PORT': 68,
- 'PROXY_PORT': None,
+    'DHCP_RESPONSE_INTERFACE': '-',
+    'DHCP_RESPONSE_INTERFACE_QTAGS': None,
+    'DHCP_SERVER_PORT': 67,
+    'DHCP_CLIENT_PORT': 68,
+    'PROXY_PORT': None,
 })
 
 #Database settings
 #######################################
 _defaults.update({
- 'USE_CACHE': False,
- 'CACHING_MODEL': 'in-process',
+    'USE_CACHE': False,
+    'CACHING_MODEL': 'in-process',
 
- 'PERSISTENT_CACHE': None,
- 'CACHE_ON_DISK': False,
+    'PERSISTENT_CACHE': None,
+    'CACHE_ON_DISK': False,
 
- 'MEMCACHED_HOST': None,
- 'MEMCACHED_PORT': 11211,
- 'MEMCACHED_AGE_TIME': 300, #5 minutes
+    'MEMCACHED_HOST': None,
+    'MEMCACHED_PORT': 11211,
+    'MEMCACHED_AGE_TIME': 300, #5 minutes
 
- 'CASE_INSENSITIVE_MACS': False,
+    'CASE_INSENSITIVE_MACS': False,
 
- 'EXTRA_MAPS': None,
- 'EXTRA_SUBNETS': None,
+    'EXTRA_MAPS': None,
+    'EXTRA_SUBNETS': None,
 
- 'USE_POOL': True,
+    'USE_POOL': True,
 
- 'POSTGRESQL_HOST': None,
- 'POSTGRESQL_PORT': 5432,
- 'POSTGRESQL_SSLMODE': 'disable',
- 'POSTGRESQL_MAXIMUM_CONNECTIONS': 4,
+    'POSTGRESQL_HOST': None,
+    'POSTGRESQL_PORT': 5432,
+    'POSTGRESQL_SSLMODE': 'disable',
+    'POSTGRESQL_MAXIMUM_CONNECTIONS': 4,
 
- 'ORACLE_MAXIMUM_CONNECTIONS': 4,
+    'ORACLE_MAXIMUM_CONNECTIONS': 4,
 
- 'MYSQL_HOST': None,
- 'MYSQL_PORT': 3306,
- 'MYSQL_MAXIMUM_CONNECTIONS': 4,
+    'MYSQL_HOST': None,
+    'MYSQL_PORT': 3306,
+    'MYSQL_MAXIMUM_CONNECTIONS': 4,
 })
 
 #Server behaviour settings
 #######################################
 _defaults.update({
- 'ALLOW_LOCAL_DHCP': True,
- 'ALLOW_DHCP_RELAYS': False,
- 'ALLOWED_DHCP_RELAYS': [],
- 'ENABLE_RAPIDCOMMIT': True,
+    'ALLOW_LOCAL_DHCP': True,
+    'ALLOW_DHCP_RELAYS': False,
+    'ALLOWED_DHCP_RELAYS': [],
+    'ENABLE_RAPIDCOMMIT': True,
 
- 'AUTHORITATIVE': False,
- 'NAK_RENEWALS': False,
+    'AUTHORITATIVE': False,
+    'NAK_RENEWALS': False,
 
- 'UNAUTHORIZED_CLIENT_TIMEOUT': 60,
- 'MISBEHAVING_CLIENT_TIMEOUT': 150,
- 'ENABLE_SUSPEND': True,
- 'SUSPEND_THRESHOLD': 10,
+    'UNAUTHORIZED_CLIENT_TIMEOUT': 60,
+    'MISBEHAVING_CLIENT_TIMEOUT': 150,
+    'ENABLE_SUSPEND': True,
+    'SUSPEND_THRESHOLD': 10,
 })
 
 #Logging settings
 #######################################
 _defaults.update({
- 'LOG_FILE': None,
- 'LOG_FILE_HISTORY': 7,
- 'LOG_FILE_SEVERITY': 'WARN',
- 'LOG_CONSOLE_SEVERITY': 'INFO',
+    'LOG_FILE': None,
+    'LOG_FILE_HISTORY': 7,
+    'LOG_FILE_SEVERITY': 'WARN',
+    'LOG_CONSOLE_SEVERITY': 'INFO',
 })
 
 #Webservice settings
 #######################################
 _defaults.update({
- 'WEB_ENABLED': True,
- 'WEB_IP': '0.0.0.0',
- 'WEB_PORT': 30880,
- 'WEB_LOG_HISTORY': 200,
- 'WEB_LOG_SEVERITY': 'INFO',
- 'WEB_LOG_MAX_HEIGHT': 400,
- 'WEB_DIGEST_USERNAME': None,
- 'WEB_DIGEST_PASSWORD': None,
- 'WEB_DASHBOARD_SECURE': False,
- 'WEB_REINITIALISE_CONFIRM': True,
- 'WEB_REINITIALISE_SECURE': False,
- 'WEB_REINITIALISE_HIDDEN': False,
- 'WEB_REINITIALISE_ENABLED': True,
- 'WEB_DASHBOARD_ORDER_LOG': 1000,
- 'WEB_HEADER_TITLE': True,
- 'WEB_HEADER_CSS': True,
- 'WEB_HEADER_FAVICON': True,
+    'WEB_ENABLED': True,
+    'WEB_IP': '0.0.0.0',
+    'WEB_PORT': 30880,
+    'WEB_LOG_HISTORY': 200,
+    'WEB_LOG_SEVERITY': 'INFO',
+    'WEB_LOG_MAX_HEIGHT': 400,
+    'WEB_DIGEST_USERNAME': None,
+    'WEB_DIGEST_PASSWORD': None,
+    'WEB_DASHBOARD_SECURE': False,
+    'WEB_REINITIALISE_CONFIRM': True,
+    'WEB_REINITIALISE_SECURE': False,
+    'WEB_REINITIALISE_HIDDEN': False,
+    'WEB_REINITIALISE_ENABLED': True,
+    'WEB_DASHBOARD_ORDER_LOG': 1000,
+    'WEB_HEADER_TITLE': True,
+    'WEB_HEADER_CSS': True,
+    'WEB_HEADER_FAVICON': True,
 })
 
 #E-mail settings
 #######################################
 _defaults.update({
- 'EMAIL_ENABLED': False,
- 'EMAIL_PORT': 25,
- 'EMAIL_TIMEOUT': 4.0,
- 'EMAIL_SUBJECT': "staticDHCPd encountered a problem",
- 'EMAIL_USER': None,
+    'EMAIL_ENABLED': False,
+    'EMAIL_PORT': 25,
+    'EMAIL_TIMEOUT': 4.0,
+    'EMAIL_SUBJECT': "staticDHCPd encountered a problem",
+    'EMAIL_USER': None,
 })
 
 
@@ -187,7 +185,7 @@ _defaults.update({
 for key in [k for k in dir(conf) if k.isupper()]: #Copy everything that looks like a constant.
     globals()[key] = getattr(conf, key)
 
-for (key, value) in _defaults.iteritems():
+for (key, value) in _defaults.items():
     if not key in globals():
         globals()[key] = value
 del _defaults
@@ -211,7 +209,7 @@ else:
 if hasattr(conf, 'handleUnknownMAC'):
     if inspect.getargspec(conf.handleUnknownMAC).args == ['mac']:
         #It's pre-2.0.0, so wrap it for backwards-compatibility
-        import databases.generic.Definition
+        from . import databases.generic.Definition
         def handleUnknownMAC(packet, method, mac, client_ip, relay_ip, port):
             result = conf.handleUnknownMAC(mac)
             if result is not None:
@@ -242,7 +240,9 @@ if hasattr(conf, 'loadDHCPPacket'):
         #It's pre-2.0.0, so wrap it for backwards-compatibility
         import collections
         __PXEOptions = collections.namedtuple("PXEOptions", (
-            'client_system', 'client_ndi', 'uuid_guid'
+            'client_system',
+            'client_ndi',
+            'uuid_guid',
         ))
         del collections
         
@@ -262,7 +262,7 @@ if hasattr(conf, 'loadDHCPPacket'):
                 pxe_options = __PXEOptions(
                     option_93,
                     option_94 and tuple(option_94),
-                    option_97 and (option_97[0], option_97[1:])
+                    option_97 and (option_97[0], option_97[1:]),
                 )
                 
             return conf.loadDHCPPacket(
@@ -327,9 +327,9 @@ conf.logger = logger
 del logger
 del logging
 
-import system
-import statistics
-import web
+from . import system
+from . import statistics
+from . import web
 class callbacks(object):
     """
     A data-namespace, used to isolate callback-management functions.
@@ -380,9 +380,7 @@ class _Namespace(object):
             return object.__getattr__(self, name)
 
         if self.__final:
-            raise AttributeError("Namespace does not contain '%(name)s'" % {
-                'name': name,
-            })
+            raise AttributeError("Namespace does not contain '{}'".format(name))
         namespace = self.__class__(final=True)
         object.__setattr__(self, name, namespace)
         return namespace
@@ -439,8 +437,6 @@ class _Namespace(object):
         namespace.update(self.extension_config_iter())
         for key in required:
             if not key in namespace:
-                raise AttributeError("Merged result does not contain '%(key)s'" % {
-                    'key': key,
-                })
+                raise AttributeError("Merged result does not contain '{}'".format(key))
         return namespace
 conf.extensions = _Namespace()
