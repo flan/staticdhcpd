@@ -112,7 +112,7 @@ class _PacketWrapper(object):
             self._evaluateSource()
             self._server.evaluateAbuse(self.mac)
         except _PacketSourceUnacceptable, e:
-            _logger.warn("Request from %(ip)s ignored: %(reason)s" % {
+            _logger.warning("Request from %(ip)s ignored: %(reason)s" % {
              'ip': self.giaddr,
              'reason': str(e),
             })
@@ -439,14 +439,14 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
                 })
                 wrapper.markAddressed()
             elif definition:
-                _logger.warn('%(type)s from %(mac)s for %(ip)s, but its assigned IP is %(aip)s' % {
+                _logger.warning('%(type)s from %(mac)s for %(ip)s, but its assigned IP is %(aip)s' % {
                  'type': wrapper.getType(),
                  'ip': wrapper.ip,
                  'aip': definition.ip,
                  'mac': wrapper.mac,
                 })
             else:
-                _logger.warn('%(type)s from %(mac)s for %(ip)s, but the MAC is unknown' % {
+                _logger.warning('%(type)s from %(mac)s for %(ip)s, but the MAC is unknown' % {
                  'type': wrapper.getType(),
                  'ip': wrapper.ip,
                  'mac': wrapper.mac,
@@ -554,7 +554,7 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
         elif not wrapper.sid and wrapper.ciaddr and not wrapper.ip: #RENEWING or REBINDING
             self._handleDHCPRequest_RENEW_REBIND(wrapper)
         else:
-            _logger.warn('%(type)s (%(sid)s|%(ciaddr)s|%(ip)s) from %(mac)s unhandled: packet not compliant with DHCP spec' % {
+            _logger.warning('%(type)s (%(sid)s|%(ciaddr)s|%(ip)s) from %(mac)s unhandled: packet not compliant with DHCP spec' % {
              'type': wrapper.getType(),
              'sid': wrapper.sid,
              'ciaddr': wrapper.ciaddr,
@@ -682,7 +682,7 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
                 wrapper.announcePacket(ip=wrapper.ciaddr)
                 wrapper.markAddressed()
             else:
-                _logger.warn('%(type)s from %(mac)s for %(ip)s, but no assignment is known' % {
+                _logger.warning('%(type)s from %(mac)s for %(ip)s, but no assignment is known' % {
                  'type': wrapper.getType(),
                  'ip': wrapper.ciaddr,
                  'mac': wrapper.mac,
@@ -708,7 +708,7 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
                 else:
                     self._dhcp_actions[minimal_mac] += 1
                     if actions + 1 > config.SUSPEND_THRESHOLD:
-                        _logger.warn('%(mac)s is issuing too many requests; ignoring for %(time)i seconds' % {
+                        _logger.warning('%(mac)s is issuing too many requests; ignoring for %(time)i seconds' % {
                          'mac': mac,
                          'time': config.MISBEHAVING_CLIENT_TIMEOUT,
                         })
@@ -756,7 +756,7 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
         """
         with self._lock:
             self._ignored_addresses.append([tuple(mac), config.UNAUTHORIZED_CLIENT_TIMEOUT])
-        _logger.warn('%(mac)s was temporarily banlisted, for %(time)i seconds, following %(packet_type)s: %(reason)s' % {
+        _logger.warning('%(mac)s was temporarily banlisted, for %(time)i seconds, following %(packet_type)s: %(reason)s' % {
          'mac': mac,
          'time': config.UNAUTHORIZED_CLIENT_TIMEOUT,
          'packet_type': packet_type,

@@ -80,7 +80,7 @@ _logger.info("Attempting to import scapy; scapy-specific logging output may foll
 try:
     import scapy.arch
 except ImportError:
-    _logger.warn("scapy is unavailable; addresses added to pools cannot be automatically ARPed")
+    _logger.warning("scapy is unavailable; addresses added to pools cannot be automatically ARPed")
     arping = None
 else:
     if system == 'FreeBSD':
@@ -88,13 +88,13 @@ else:
     else:
         l2sock = scapy.arch.conf.L2Socket
     if not l2sock:
-        _logger.warn("scapy was unable to construct layer-2 socketing rules; if using a BSD-based system (including OS X), please follow its documentation for installing pcap bindings; addresses added to pools cannot be automatically ARPed")
+        _logger.warning("scapy was unable to construct layer-2 socketing rules; if using a BSD-based system (including OS X), please follow its documentation for installing pcap bindings; addresses added to pools cannot be automatically ARPed")
         arping = None
     else:
         try:
             from scapy.layers.l2 import arping
         except ImportError:
-            _logger.warn("scapy's arping is unavailable; addresses added to pools cannot be automatically ARPed")
+            _logger.warning("scapy's arping is unavailable; addresses added to pools cannot be automatically ARPed")
             arping = None
         else:
             _logger.info("scapy imported successfully; automatic ARPing is available")
@@ -217,7 +217,7 @@ class DynamicPool(object):
             if duplicate_ips:
                 for ip in duplicate_ips:
                     del ips[ip]
-                self._logger.warn("Pruned duplicate IPs: %(ips)r" % {'ips': duplicate_ips,})
+                self._logger.warning("Pruned duplicate IPs: %(ips)r" % {'ips': duplicate_ips,})
                 
             #Try to ARP addresses
             if arp_addresses and arping:
@@ -518,13 +518,13 @@ class DynamicPool(object):
         """
         ip = self._query_lease(mac)
         if not ip:
-            self._logger.warn("No IP assigned to %(mac)s in pool '%(name)s'" % {
+            self._logger.warning("No IP assigned to %(mac)s in pool '%(name)s'" % {
              'mac': mac,
              'name': self._hostname_prefix,
             })
             return None
         elif ip != client_ip:
-            self._logger.warn("IP assigned to %(mac)s, %(aip)s, in pool '%(name)s', does not match %(ip)s" % {
+            self._logger.warning("IP assigned to %(mac)s, %(aip)s, in pool '%(name)s', does not match %(ip)s" % {
              'aip': ip,
              'ip': client_ip,
              'mac': mac,

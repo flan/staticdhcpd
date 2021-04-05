@@ -322,7 +322,7 @@ del rfc
 
 import logging
 logger = logging.getLogger('conf')
-conf.writeLog = logger.warn
+conf.writeLog = logger.warning
 conf.logger = logger
 del logger
 del logging

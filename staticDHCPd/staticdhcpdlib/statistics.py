@@ -20,7 +20,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-(C) Neil Tallim, 2014 <flan@uguu.ca>
+(C) Neil Tallim, 2021 <flan@uguu.ca>
 """
 import collections
 import logging
@@ -33,7 +33,12 @@ _stats_lock = threading.Lock()
 _stats_callbacks = []
 
 Statistics = collections.namedtuple("Statistics", (
- 'source_address', 'mac', 'ip', 'subnet', 'serial', 'method', 'processing_time', 'processed', 'port',
+    'source_address',
+    'mac', 'ip',
+    'subnet', 'serial',
+    'method',
+    'processing_time', 'processed',
+    'port',
 ))
 """
 Statistics associated with a DHCP event.
@@ -99,7 +104,7 @@ def emit(statistics):
             try:
                 callback(statistics)
             except Exception:
-                _logger.critical("Unable to deliver statistics:\n" + traceback.format_exc())
+                _logger.critical("Unable to deliver statistics:\n{}".format(traceback.format_exc()))
                 
 def registerStatsCallback(callback):
     """
@@ -112,10 +117,10 @@ def registerStatsCallback(callback):
     """
     with _stats_lock:
         if callback in _stats_callbacks:
-            _logger.error("Callback %(callback)r is already registered" % {'callback': callback,})
+            _logger.error("Callback {!r} is already registered".format(callback))
         else:
             _stats_callbacks.append(callback)
-            _logger.debug("Registered stats-callback %(callback)r" % {'callback': callback,})
+            _logger.debug("Registered stats-callback {!r}".format(callback))
             
 def unregisterStatsCallback(callback):
     """
@@ -128,9 +133,9 @@ def unregisterStatsCallback(callback):
         try:
             _stats_callbacks.remove(callback)
         except ValueError:
-            _logger.error("Callback %(callback)r is not registered" % {'callback': callback,})
+            _logger.error("Callback {!r} is not registered".format(callback))
             return False
         else:
-            _logger.debug("Unregistered stats-callback %(callback)r" % {'callback': callback,})
+            _logger.debug("Unregistered stats-callback {!r}".format(callback))
             return True
             

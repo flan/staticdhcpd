@@ -463,7 +463,7 @@ if _CONFIG['GRAPH_ENABLED']:
         import pycha.line
         import cairo
     except ImportError, e:
-        _logger.warn("pycha is not available; graphs cannot be rendered: " + str(e))
+        _logger.warning("pycha is not available; graphs cannot be rendered: " + str(e))
     else:
         config.callbacks.webAddMethod(
          _CONFIG['GRAPH_RENDER_PATH'], lambda *args, **kwargs: _stats.graph(_CONFIG['GRAPH_RENDER_DIMENSIONS']),

@@ -20,7 +20,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-(C) Neil Tallim, 2014 <flan@uguu.ca>
+(C) Neil Tallim, 2021 <flan@uguu.ca>
 """
 import logging
 import threading
@@ -55,7 +55,7 @@ def reinitialise():
             except Exception:
                 global ALIVE
                 ALIVE = False
-                _logger.critical("System shutdown triggered by unhandled exception:\n" + traceback.format_exc())
+                _logger.critical("System shutdown triggered by unhandled exception:\n{}".format(traceback.format_exc()))
                 raise
     _logger.warn("System reinitilisation complete")
     return time.time() - start
@@ -69,10 +69,10 @@ def registerReinitialisationCallback(callback):
     """
     with _reinitialisation_lock:
         if callback in _reinitialisation_callbacks:
-            _logger.error("Callback %(callback)r is already registered" % {'callback': callback,})
+            _logger.error("Callback {!r} is already registered".format(callback))
         else:
             _reinitialisation_callbacks.append(callback)
-            _logger.debug("Registered reinitialisation %(callback)r" % {'callback': callback,})
+            _logger.debug("Registered reinitialisation {!r}".format(callback))
             
 def unregisterReinitialisationCallback(callback):
     """
@@ -85,10 +85,10 @@ def unregisterReinitialisationCallback(callback):
         try:
             _reinitialisation_callbacks.remove(callback)
         except ValueError:
-            _logger.error("Callback %(callback)r is not registered" % {'callback': callback,})
+            _logger.error("Callback {!r} is not registered".format(callback))
             return False
         else:
-            _logger.debug("Unregistered reinitialisation %(callback)r" % {'callback': callback,})
+            _logger.debug("Unregistered reinitialisation {!r}".format(callback))
             return True
 
 def tick():
@@ -100,7 +100,7 @@ def tick():
             try:
                 callback()
             except Exception:
-                _logger.critical("Unable to process tick-callback:\n" + traceback.format_exc())
+                _logger.critical("Unable to process tick-callback:\n{}".format(traceback.format_exc()))
                 
 def registerTickCallback(callback):
     """
@@ -115,8 +115,8 @@ def registerTickCallback(callback):
     """
     with _tick_lock:
         if callback in _tick_callbacks:
-            _logger.error("Callback %(callback)r is already registered" % {'callback': callback,})
-            _logger.debug("Registered tick %(callback)r" % {'callback': callback,})
+            _logger.error("Callback {!r} is already registered".format(callback))
+            _logger.debug("Registered tick {!r}".format(callback))
         else:
             _tick_callbacks.append(callback)
             
@@ -131,9 +131,9 @@ def unregisterTickCallback(callback):
         try:
             _tick_callbacks.remove(callback)
         except ValueError:
-            _logger.error("Callback %(callback)r is not registered" % {'callback': callback,})
+            _logger.error("Callback {!r} is not registered".format(callback))
             return False
         else:
-            _logger.debug("Unregistered tick %(callback)r" % {'callback': callback,})
+            _logger.debug("Unregistered tick {!r}".format(callback))
             return True
             
