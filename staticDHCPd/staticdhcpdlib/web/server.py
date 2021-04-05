@@ -20,29 +20,24 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-(C) Neil Tallim, 2014 <flan@uguu.ca>
+(C) Neil Tallim, 2021 <flan@uguu.ca>
 """
-import BaseHTTPServer
+import http.server
 import cgi
 import hashlib
 import logging
 import re
 import select
-import SocketServer
+import socketserver
 import threading
 import time
 import traceback
 import uuid
 
-try:
-    from urlparse import parse_qs
-except ImportError:
-    from cgi import parse_qs
-
 from staticdhcpdlib.web import retrieveMethodCallback
 
 from .. import config
-import _templates
+from . import _templates
 from . import (WEB_METHOD_DASHBOARD, WEB_METHOD_TEMPLATE, WEB_METHOD_RAW)
 
 _logger = logging.getLogger('web.server')
@@ -63,9 +58,7 @@ def _flush_expired_nonces():
         for (i, (nonce, timeout)) in enumerate(_NONCES):
             if current_time >= timeout:
                 stale_nonces.append(i)
-                _logger.debug("Nonce %(nonce)s expired" % {
-                 'nonce': nonce,
-                })
+                _logger.debug("Nonce {} expired".format(nonce))
         for i in reversed(stale_nonces):
             del _NONCES[i]
             
@@ -94,9 +87,7 @@ def _locateNonce(nonce, remove=False):
             if nonce == n:
                 if remove:
                     del _NONCES[i]
-                    _logger.debug("Nonce %(nonce)s deleted" % {
-                     'nonce': nonce,
-                    })
+                    _logger.debug("Nonce {} deleted".format(nonce))
                 return True
         return False
         
@@ -126,44 +117,41 @@ def _validateCredentials(parameters, method):
     :except ValueError: Ill-formed data was received.
     """
     try:
-        _logger.debug("DIGEST via %(method)s; details: %(details)r" % {
-         'method': method,
-         'details': parameters,
-        })
+        _logger.debug("DIGEST via {}; details: {!r}".format(method, parameters))
         
         nonce = parameters['nonce'].lower()
         cnonce = parameters['cnonce'].lower()
         
-        ha1 = hashlib.md5("%(username)s:%(realm)s:%(password)s" % {
-         'username': config.WEB_DIGEST_USERNAME,
-         'realm': config.SYSTEM_NAME.replace('"', "'"),
-         'password': config.WEB_DIGEST_PASSWORD,
-        }).hexdigest()
+        ha1 = hashlib.md5("{username}:{realm}:{password}".format(
+            config.WEB_DIGEST_USERNAME,
+            config.SYSTEM_NAME.replace('"', "'"),
+            config.WEB_DIGEST_PASSWORD,
+        ).encode('utf-8')).hexdigest()
         
-        ha2 = hashlib.md5("%(method)s:%(uri)s" % {
-         'method': method,
-         'uri': parameters['uri']
-        }).hexdigest()
+        ha2 = hashlib.md5("{}:{}".format(
+            method,
+            parameters['uri'],
+        ).encode('utf-8')).hexdigest()
         
         if parameters.get('qop', '').lower() == 'auth':
-            target = hashlib.md5("%(ha1)s:%(nonce)s:%(count)s:%(cnonce)s:%(qop)s:%(ha2)s" % {
-             'ha1': ha1,
-             'nonce': nonce,
-             'count': parameters['nc'].lower(),
-             'cnonce': cnonce,
-             'qop': parameters['qop'].lower(),
-             'ha2': ha2,
-            }).hexdigest()
+            target = hashlib.md5("{}:{}:{}:{}:{}:{}".format(
+                ha1,
+                nonce,
+                parameters['nc'].lower(),
+                cnonce,
+                parameters['qop'].lower(),
+                ha2,
+            ).encode('utf-8')).hexdigest()
         else:
-            target = hashlib.md5("%(ha1)s:%(nonce)s:%(ha2)s" % {
-             'ha1': ha1,
-             'nonce': nonce,
-             'ha2': ha2,
-            }).hexdigest()
+            target = hashlib.md5("{}:{}:{}".format(
+                ha1,
+                nonce,
+                ha2,
+            )).hexdigest()
             
         return target == parameters['response'].lower()
-    except Exception, e:
-        raise ValueError("Authorization data from client is not spec-compliant: " + str(e))
+    except Exception as e:
+        raise ValueError("Authorization data from client is not spec-compliant: {}".format(e))
         
 def _isSecure(headers, method):
     """
@@ -224,15 +212,15 @@ def _webMethod(method):
         """
         def wrappedHandler(self):
             start_time = time.time()
-            _logger.debug("Received %(method)s from %(host)s:%(port)i for %(path)s" % {
-             'method': method,
-             'host': self.client_address[0],
-             'port': self.client_address[1],
-             'path': self.path,
-            })
+            _logger.debug("Received {} from {}:{} for {}".format(
+                method,
+                self.client_address[0],
+                self.client_address[1],
+                self.path,
+            ))
             try:
                 (path, queryargs) = (self.path.split('?', 1) + [''])[:2]
-                queryargs = parse_qs(queryargs)
+                queryargs = urllib.parse.parse_qs(queryargs)
                 
                 cacheable = False
                 handler = None
@@ -266,50 +254,45 @@ def _webMethod(method):
                     self.send_header('Cache-Control', 'max-age=0, no-cache, must-revalidate, proxy-revalidate')
                 self.end_headers()
                 self.wfile.write(data)
-            except _NotFound, e:
-                _logger.debug("Request made for unbound path: %(path)s" % {
-                 'path': str(e),
-                })
-            except _RequestAuthorizationRequired, e:
-                _logger.debug("Authentication required to access %(path)s: %(nonce)s" % {
-                 'path': self.path,
-                 'nonce': e.nonce,
-                })
+            except _NotFound as e:
+                _logger.debug("Request made for unbound path: {}".format(e))
+            except _RequestAuthorizationRequired as e:
+                _logger.debug("Authentication required to access {}: {}".format(self.path, e.nonce))
                 self.send_response(401)
                 auth = [
-                 ('realm', config.SYSTEM_NAME.replace('"', "'")),
-                 ('qop', 'auth'),
-                 ('algorithm', 'MD5'),
-                 ('nonce', e.nonce),
-                 ('opaque', _OPAQUE),
+                    ('realm', config.SYSTEM_NAME.replace('"', "'")),
+                    ('qop', 'auth'),
+                    ('algorithm', 'MD5'),
+                    ('nonce', e.nonce),
+                    ('opaque', _OPAQUE),
                 ]
                 if e.stale:
                     auth.append(('stale', 'TRUE'))
                 self.send_header(
-                 'WWW-Authenticate',
-                 'Digest ' + ', '.join('%(key)s="%(value)s"' % {'key': key, 'value': value,} for (key, value) in auth)
+                    'WWW-Authenticate',
+                    'Digest {}'.format(', '.join('{}="{}"'.format(key, value) for (key, value) in auth)),
                 )
                 self.end_headers()
             except Exception:
                 error = traceback.format_exc()
-                _logger.error("Problem while processing request for '%(path)s' via %(method)s:\n%(error)s" % {
-                 'path': self.path,
-                 'method': method,
-                 'error': error,
-                })
+                _logger.error("Problem while processing request for '{}' via {}:\n{}".format(
+                    self.path,
+                    method,
+                    error,
+                ))
                 self.send_response(500)
                 self.send_header('Content-Type', 'text/plain; charset=utf-8')
                 self.send_header('Content-Length', len(error))
                 self.end_headers()
                 self.wfile.write(error)
             finally:
-                _logger.debug("Processed %(method)s from %(host)s:%(port)i for %(path)s in %(time).4f seconds" % {
-                 'method': method,
-                 'host': self.client_address[0],
-                 'port': self.client_address[1],
-                 'path': self.path,
-                 'time': time.time() - start_time,
-                })
+                _logger.debug("Processed {} from {}:{} for {} in {:.4f} seconds".format(
+                    method,
+                    self.client_address[0],
+                    self.client_address[1],
+                    self.path,
+                    time.time() - start_time,
+                ))
         return wrappedHandler
     return decorator
     
@@ -359,10 +342,10 @@ class WebService(threading.Thread):
         self.name = "Webservice"
         self.daemon = True
         
-        _logger.info("Prepared to bind to %(address)s:%(port)i" % {
-         'address': config.WEB_IP,
-         'port': config.WEB_PORT,
-        })
+        _logger.info("Prepared to bind to {}:{}".format(
+            config.WEB_IP,
+            config.WEB_PORT,
+        ))
         class _ThreadedServer(SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer): pass
         self._web_server = _ThreadedServer((config.WEB_IP, config.WEB_PORT), _WebHandler)
         _logger.info("Configured Webservice engine")
@@ -374,14 +357,14 @@ class WebService(threading.Thread):
         In the event of an unexpected error, e-mail will be sent and processing
         will continue with the next request.
         """
-        _logger.info('Webservice engine beginning normal operation')
+        _logger.info("Webservice engine beginning normal operation")
         while True:
             try:
                 self._web_server.handle_request()
             except select.error:
                 _logger.debug("Suppressed non-fatal select() error")
             except Exception:
-                _logger.critical("Unhandled exception:\n" + traceback.format_exc())
+                _logger.critical("Unhandled exception:\n{}".format(traceback.format_exc()))
                 
 class _RequestAuthorizationRequired(Exception):
     """

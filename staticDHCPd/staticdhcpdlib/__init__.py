@@ -20,8 +20,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-(C) Neil Tallim, 2014 <flan@uguu.ca>
+(C) Neil Tallim, 2021 <flan@uguu.ca>
 """
-VERSION = '2.0.0-rc1'
+VERSION = '3.0.0-beta1'
 URL = 'http://uguu.ca/'
-COPYRIGHT = '2014, Neil Tallim <flan@uguu.ca>'
+COPYRIGHT = '2021, Neil Tallim <flan@uguu.ca>'

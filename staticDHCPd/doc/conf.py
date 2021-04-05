@@ -33,7 +33,10 @@ html_show_sourcelink = False
 
 htmlhelp_basename = 'staticDHCPddoc'
 
-latex_documents = [
-  ('index', 'staticDHCPd.tex', 'staticDHCPd documentation',
-   re.search(', (.*?) <', module.COPYRIGHT).group(1), 'manual'),
-]
+latex_documents = [(
+    'index',
+    'staticDHCPd.tex',
+    'staticDHCPd documentation',
+    re.search(', (.*?) <', module.COPYRIGHT).group(1),
+    'manual',
+)]

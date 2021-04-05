@@ -252,9 +252,9 @@ if __name__ == '__main__':
         "----------------------------------------",
         "----------------------------------------",
         "----------------------------------------",
-        f"System startup in progress; PID={os.getpid()}",
-        f"staticDHCPd version {staticdhcpdlib.VERSION} : {staticdhcpdlib.URL}",
-        f"libpydhcpserver version {libpydhcpserver.VERSION} : {libpydhcpserver.URL}",
+        "System startup in progress; PID={}".format(os.getpid()),
+        "staticDHCPd version {} : {}".format(staticdhcpdlib.VERSION, staticdhcpdlib.URL),
+        "libpydhcpserver version {} : {}".format(libpydhcpserver.VERSION, libpydhcpserver.URL),
         "Continuing with subsystem initialisation",
         "----------------------------------------",
     ):
