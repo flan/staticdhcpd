@@ -16,13 +16,13 @@ To use this module, add the following to conf.py's init() function:
     global _dynamic_pool
     _dynamic_pool = dynamism.DynamicPool(<see its __init__ for parameters>)
     #Add 192.168.250.100-200
-    _dynamic_pool.add_ips(['192.168.250.' + str(i) for i in range(100, 201)])
+    _dynamic_pool.add_ips('192.168.250.{}'.format(i) for i in range(100, 201))
     
     #Expose its allocation table to the web interface
     callbacks.webAddMethod(
-     '/yoursite/dynamic-pool/guest/0/leases', _dynamic_pool.show_leases_xhtml,
-     hidden=False, module='guest-0', name='show leases',
-     display_mode=callbacks.WEB_METHOD_TEMPLATE
+        '/yoursite/dynamic-pool/guest/0/leases', _dynamic_pool.show_leases_xhtml,
+        hidden=False, module='guest-0', name='show leases',
+        display_mode=callbacks.WEB_METHOD_TEMPLATE,
     )
     #You could also make it a permanent dashboard fixture:
     #callbacks.webAddDashboard('guest-0', 'leases', _dynamic_pool.show_leases_xhtml)
@@ -30,9 +30,9 @@ To use this module, add the following to conf.py's init() function:
     
     #And a CSV form, too, in case any automated processors need the data
     callbacks.webAddMethod(
-     '/yoursite/dynamic-pool/guest/0/leases.csv', _dynamic_pool.show_leases_csv,
-     hidden=False, module='guest-0', name='get leases (csv)',
-     display_mode=callbacks.WEB_METHOD_RAW
+        '/yoursite/dynamic-pool/guest/0/leases.csv', _dynamic_pool.show_leases_csv,
+        hidden=False, module='guest-0', name='get leases (csv)',
+        display_mode=callbacks.WEB_METHOD_RAW,
     )
     
 And then add the following to conf.py's handleUnknownMAC():
@@ -60,7 +60,7 @@ migrated to a static context. It's usable well beyond that, but it is a
 scope-limited design.
 
 Like staticDHCPd, this module under the GNU General Public License v3
-(C) Neil Tallim, 2014 <flan@uguu.ca>
+(C) Neil Tallim, 2021 <flan@uguu.ca>
 """
 import collections
 import logging
@@ -121,21 +121,21 @@ def _dynamic_method(method):
             ip = method(self, *args, **kwargs)
             if ip:
                 return Definition(
-                 ip=ip, lease_time=self._lease_time, subnet=self._subnet, serial=self._serial,
-                 hostname=(self._hostname_pattern % {'ip': str(ip).replace('.', '-'),}),
-                 gateways=self._gateway, subnet_mask=self._subnet_mask, broadcast_address=self._broadcast_address,
-                 domain_name=self._domain_name, domain_name_servers=self._domain_name_servers, ntp_servers=self._ntp_servers,
-                 extra=None
+                    ip=ip, lease_time=self._lease_time, subnet=self._subnet, serial=self._serial,
+                    hostname=(self._hostname_pattern.format(ip=str(ip).replace('.', '-'))),
+                    gateways=self._gateway, subnet_mask=self._subnet_mask, broadcast_address=self._broadcast_address,
+                    domain_name=self._domain_name, domain_name_servers=self._domain_name_servers, ntp_servers=self._ntp_servers,
+                    extra=None,
                 )
             return None
     return wrapped_method
     
 class DynamicPool(object):
     def __init__(self,
-     subnet, serial, lease_time, hostname_prefix,
-     subnet_mask=None, gateway=None, broadcast_address=None,
-     domain_name=None, domain_name_servers=None, ntp_servers=None,
-     discourage_renewals=True
+        subnet, serial, lease_time, hostname_prefix,
+        subnet_mask=None, gateway=None, broadcast_address=None,
+        domain_name=None, domain_name_servers=None, ntp_servers=None,
+        discourage_renewals=True,
     ):
         """
         Initialises a new pool, containing no IPs. Call `add_ips()` to add some.
@@ -170,7 +170,7 @@ class DynamicPool(object):
         self._serial = serial
         self._lease_time = lease_time
         self._hostname_prefix = hostname_prefix
-        self._hostname_pattern = self._hostname_prefix + "-%(ip)s"
+        self._hostname_pattern = self._hostname_prefix + "-{ip}"
         self._subnet_mask = subnet_mask and IPv4(subnet_mask) or None
         self._gateway = gateway and IPv4(gateway) or None
         self._broadcast_address = broadcast_address and IPv4(broadcast_address) or None
@@ -184,14 +184,14 @@ class DynamicPool(object):
         self._map = {}
         self._lock = threading.Lock()
         
-        self._logger.info("Created dynamic provisioning pool '%(name)s'" % {'name': self._hostname_prefix})
+        self._logger.info("Created dynamic provisioning pool '{}'".format(self._hostname_prefix))
         
     def add_ips(self, ips, arp_addresses=True, arp_timeout=1.0):
         """
         Adds IPs to the allocation pool. Duplicates are filtered out, but order
         is preserved.
         
-        `ips` is a sequence of IP addresses, like
+        `ips` is an iterable, possibly a generator, of IP addresses, like
         ['192.168.0.100', '192.168.0.101'], or integers or quadruples.
         
         To generate it, try calling this method in the following way:
@@ -209,60 +209,57 @@ class DynamicPool(object):
         ips = dict((ip, IPv4(ip)) for ip in ips)
         with self._lock:
             #Filter out duplicates
-            allocated_ips = set(ip for (_, ip) in self._map.itervalues())
+            allocated_ips = set(ip for (_, ip) in self._map.values())
             duplicate_ips = []
-            for (ip, ip_obj) in ips.iteritems():
+            for (ip, ip_obj) in ips.items():
                 if ip_obj in self._pool or ip_obj in allocated_ips:
                     duplicate_ips.append(ip)
             if duplicate_ips:
                 for ip in duplicate_ips:
                     del ips[ip]
-                self._logger.warning("Pruned duplicate IPs: %(ips)r" % {'ips': duplicate_ips,})
+                self._logger.warning("Pruned duplicate IPs: {!r}".format(duplicate_ips))
                 
             #Try to ARP addresses
             if arp_addresses and arping:
                 expiration = time.time() + self._lease_time
-                mapped_ips = 0
-                self._logger.info("Beginning ARP-lookup for %(count)i IPs in pool '%(name)s', with timeout=%(timeout).3fs" % {
-                 'count': len(ips),
-                 'timeout': arp_timeout,
-                 'name': self._hostname_prefix,
-                })
+                mapped_ips_count = 0
+                self._logger.info("Beginning ARP-lookup for {} IPs in pool '{}', with timeout={:.3f}s".format(
+                    len(ips),
+                    self._hostname_prefix,
+                    arp_timeout,
+                ))
                 (answered, unanswered) = arping(ips.keys(), verbose=0, timeout=arp_timeout)
                 for answer in answered:
                     try:
                         ip = answer[0].payload.fields['pdst']
                         mac = answer[1].fields['src'].lower()
                         ip_obj = ips.pop(ip)
-                    except Exception, e:
-                        self._logger.debug("Unable to use ARP-discovered binding %(binding)r: %(error)s" % {
-                         'binding': answer,
-                         'error': str(e),
-                        })
+                    except Exception as e:
+                        self._logger.debug("Unable to use ARP-discovered binding {!r}: {}".format(answer, e))
                     else:
-                        mapped_ips += 1
+                        mapped_ips_count += 1
                         self._map[mac] = [expiration, ip_obj]
-                        self._logger.info("ARP-discovered %(ip)s bound to %(mac)s in pool '%(name)s'; providing lease until %(time)s" % {
-                         'ip': ip_obj,
-                         'mac': mac,
-                         'time': time.ctime(expiration),
-                         'name': self._hostname_prefix,
-                        })
-                self._logger.info("%(count)i IPs automatically bound in pool '%(name)s'" % {
-                 'count': mapped_ips,
-                 'name': self._hostname_prefix,
-                })
-            self._pool.extend(ips.itervalues())
+                        self._logger.info("ARP-discovered {} bound to {} in pool '{}'; providing lease until {}".format(
+                            ip_obj,
+                            mac,
+                            self._hostname_prefix,
+                            time.ctime(expiration),
+                        ))
+                self._logger.info("{} IPs automatically bound in pool '{}'".format(
+                    mapped_ips_count,
+                    self._hostname_prefix,
+                ))
+            self._pool.extend(ips.values())
             total = len(self._pool) + len(self._map)
-        self._logger.debug("Added IPs to dynamic pool '%(name)s': %(ips)s" % {
-         'ips': str(list(sorted(ips.values()))),
-         'name': self._hostname_prefix,
-        })
-        self._logger.info("Added %(count)i available IPs to dynamic pool '%(name)s'; new total: %(total)i" % {
-         'count': len(ips),
-         'total': total,
-         'name': self._hostname_prefix,
-        })
+        self._logger.debug("Added IPs to dynamic pool '{}': {}".format(
+            self._hostname_prefix,
+            sorted(ips.values()),
+        ))
+        self._logger.info("Added {} available IPs to dynamic pool '{}'; new total: {}".format(
+            len(ips),
+            self._hostname_prefix,
+            total,
+        ))
         
     def handle(self, method, packet, mac, client_ip):
         """
@@ -275,21 +272,21 @@ class DynamicPool(object):
         """
         mac = str(mac)
         
-        self._logger.info("Dynamic %(method)s from %(mac)s%(ip)s in pool '%(name)s'" % {
-         'method': method,
-         'mac': mac,
-         'ip': client_ip and (' for %(ip)s' % {'ip': client_ip,}) or '',
-         'name': self._hostname_prefix,
-        })
+        self._logger.info("Dynamic {} from {}{} in pool '{}'".format(
+            method,
+            mac,
+            client_ip and (' for {}'.format(client_ip)) or '',
+            self._hostname_prefix,
+        ))
         
         if method == 'DISCOVER' or method.startswith('REQUEST:'):
             definition = self._allocate(mac, client_ip)
             if definition and self._discourage_renewals:
                 target_time = int(definition.lease_time * 0.975)
-                self._logger.debug("Setting T1 and T2 to 97.5%% of lease-time=%(lease)i: %(target)i seconds" % {
-                 'lease': definition.lease_time,
-                 'target': target_time,
-                })
+                self._logger.debug("Setting T1 and T2 to 97.5% of lease-time={}: {} seconds".format(
+                    definition.lease_time,
+                    target_time,
+                ))
                 packet.setOption('renewal_time_value', target_time)
                 packet.setOption('rebinding_time_value', target_time)
             return definition
@@ -298,9 +295,7 @@ class DynamicPool(object):
         if method == 'INFORM':
             return self._inform(client_ip)
             
-        self._logger.info("%(method)s is unknown to the dynamic provisioning engine" % {
-         'method': method,
-        })
+        self._logger.info("{} is unknown to the dynamic provisioning engine".format(method))
         return None
         
     def get_leases(self, *args, **kwargs):
@@ -310,7 +305,7 @@ class DynamicPool(object):
         """
         elements = []
         with self._lock:
-            for (mac, (expiration, ip)) in self._map.iteritems():
+            for (mac, (expiration, ip)) in self._map.items():
                 elements.append(_LeaseDefinition(ip, mac, expiration, expiration - self._lease_time))
             for ip in self._pool:
                 elements.append(_LeaseDefinition(ip, None, None, None))
@@ -318,21 +313,21 @@ class DynamicPool(object):
         
     def show_leases_csv(self, *args, **kwargs):
         """
-        Provides every lease in the system, as a CSV document.
+        Provides every lease in the system as a CSV document.
         """
         import csv
-        import StringIO
+        import io
         
-        output = StringIO.StringIO()
+        output = io.StringIO()
         writer = csv.writer(output)
         writer.writerow(('ip', 'mac', 'expiration', 'last seen'))
         render_format = '%Y-%m-%d %H:%M:%S'
         for lease in self.get_leases():
             writer.writerow((
-             str(lease.ip),
-             lease.mac or '',
-             lease.expiration and time.strftime(render_format, time.localtime(lease.expiration)) or '',
-             lease.last_seen and time.strftime(render_format, time.localtime(lease.last_seen)) or '',
+                str(lease.ip),
+                lease.mac or '',
+                lease.expiration and time.strftime(render_format, time.localtime(lease.expiration)) or '',
+                lease.last_seen and time.strftime(render_format, time.localtime(lease.last_seen)) or '',
             ))
         output.seek(0)
         return ('text/csv', output.read())
@@ -345,20 +340,20 @@ class DynamicPool(object):
         """
         with self._lock:
             if not self._map:
-                return "No leases yet assigned; %(count)i IPs available" % {'count': len(self._pool)}
+                return "No leases yet assigned; {} IPs available".format(len(self._pool))
                 
             elements = []
-            for (mac, (expiration, ip)) in sorted(self._map.iteritems(), key=(lambda element: element[1])):
+            for (mac, (expiration, ip)) in sorted(self._map.items(), key=(lambda element: element[1])):
                 elements.append("""
                 <tr>
-                    <td>%(ip)s</td>
-                    <td>%(mac)s</td>
-                    <td>%(expiration)s</td>
-                </tr>""" % {
-                 'ip': ip,
-                 'mac': mac,
-                 'expiration': time.ctime(expiration),
-                })
+                    <td>{ip}</td>
+                    <td>{mac}</td>
+                    <td>{expiration}</td>
+                </tr>""".format(
+                    ip=ip,
+                    mac=mac,
+                    expiration=time.ctime(expiration),
+                ))
             return """
             <table class="element">
                 <thead>
@@ -370,16 +365,16 @@ class DynamicPool(object):
                 </thead>
                 <tfoot>
                     <tr>
-                        <td colspan="3">%(count)i IPs available</td>
+                        <td colspan="3">{count} IPs available</td>
                     </tr>
                 </tfoot>
                 <tbody>
-                    %(content)s
+                    {content}
                 </tbody>
-            </table>""" % {
-             'content': '\n'.join(elements),
-             'count': len(self._pool),
-            }
+            </table>""".format(
+                content='\n'.join(elements),
+                count=len(self._pool),
+            )
             
     def _cleanup_leases(self):
         """
@@ -389,18 +384,18 @@ class DynamicPool(object):
         """
         current_time = time.time()
         dead_records = []
-        for (mac, (expiration, ip)) in self._map.iteritems():
+        for (mac, (expiration, ip)) in self._map.items():
             if current_time - expiration > self._lease_time: #Kill it
                 dead_records.append((mac, ip))
                 
         for (mac, ip) in dead_records:
             del self._map[mac]
             self._pool.append(ip)
-            self._logger.debug("Reclaimed expired IP %(ip)s from %(mac)s in pool '%(name)s'" % {
-             'ip': ip,
-             'mac': mac,
-             'name': self._hostname_prefix,
-            })
+            self._logger.debug("Reclaimed expired IP {} from {} in pool '{}'".format(
+                ip,
+                mac,
+                self._hostname_prefix,
+            ))
             
     def _drop_lease(self, mac):
         """
@@ -413,11 +408,11 @@ class DynamicPool(object):
             ip = match[1]
             del self._map[mac]
             self._pool.append(ip)
-            self._logger.info("Reclaimed released IP %(ip)s from %(mac)s in pool '%(name)s'" % {
-             'ip': ip,
-             'mac': mac,
-             'name': self._hostname_prefix,
-            })
+            self._logger.info("Reclaimed released IP {} from {} in pool '{}'".format(
+                ip,
+                mac,
+                self._hostname_prefix,
+            ))
             return ip
         return None
         
@@ -434,21 +429,21 @@ class DynamicPool(object):
         if match: 
             ip = match[1]
             if client_ip and ip != client_ip:
-                self._logger.info("Rejected request for %(ip)s from %(mac)s in pool '%(name)s': does not match allocation of %(aip)s" % {
-                 'ip': client_ip,
-                 'aip': ip,
-                 'mac': mac,
-                 'name': self._hostname_prefix,
-                })
+                self._logger.info("Rejected request for {} from {} in pool '{}': does not match allocation of {}".format(
+                    client_ip,
+                    mac,
+                    self._hostname_prefix,
+                    ip,
+                ))
                 return None
                 
             match[0] = time.time() + self._lease_time
-            self._logger.info("Extended lease of %(ip)s to %(mac)s in pool '%(name)s' until %(time)s" % {
-             'ip': ip,
-             'mac': mac,
-             'time': time.ctime(match[0]),
-             'name': self._hostname_prefix,
-            })
+            self._logger.info("Extended lease of {} to {} in pool '{}' until {}".format(
+                ip,
+                mac,
+                self._hostname_prefix,
+                time.ctime(match[0]),
+            ))
             return ip
         else:
             if self._pool:
@@ -464,12 +459,12 @@ class DynamicPool(object):
                     
                 expiration = time.time() + self._lease_time
                 self._map[mac] = [expiration, ip]
-                self._logger.info("Bound %(ip)s to %(mac)s in pool '%(name)s' until %(time)s" % {
-                 'ip': ip,
-                 'mac': mac,
-                 'time': time.ctime(expiration),
-                 'name': self._hostname_prefix,
-                })
+                self._logger.info("Bound {} to {} in pool '{}' until {}".format(
+                    ip,
+                    mac,
+                    self._hostname_prefix,
+                    time.ctime(expiration),
+                ))
                 return ip
             return None
             
@@ -493,10 +488,10 @@ class DynamicPool(object):
         """
         ip = self._get_lease(mac, client_ip)
         if not ip:
-            self._logger.error("No IP available for assignment to %(mac)s in pool '%(name)s'" % {
-             'mac': mac,
-             'name': self._hostname_prefix,
-            })
+            self._logger.error("No IP available for assignment to {} in pool '{}'".format(
+                mac,
+                self._hostname_prefix,
+            ))
         return ip
         
     @_dynamic_method
@@ -518,18 +513,17 @@ class DynamicPool(object):
         """
         ip = self._query_lease(mac)
         if not ip:
-            self._logger.warning("No IP assigned to %(mac)s in pool '%(name)s'" % {
-             'mac': mac,
-             'name': self._hostname_prefix,
-            })
+            self._logger.warning("No IP assigned to {} in pool '{}'".format(
+                mac,
+                self._hostname_prefix,
+            ))
             return None
         elif ip != client_ip:
-            self._logger.warning("IP assigned to %(mac)s, %(aip)s, in pool '%(name)s', does not match %(ip)s" % {
-             'aip': ip,
-             'ip': client_ip,
-             'mac': mac,
-             'name': self._hostname_prefix,
-            })
+            self._logger.warning("IP assigned to {}, {}, in pool '{}', does not match {}".format(
+                ip,
+                mac,
+                self._hostname_prefix,
+                client_ip,
+            ))
             return None
         return self._drop_lease(mac)
-        
