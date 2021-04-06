@@ -79,7 +79,7 @@ class MAC(object):
             other = MAC(other)
         elif isinstance(other, int):
             return int(self) == other
-        return self._ip_tuple == tuple(other)
+        return self._mac == tuple(other)
         
     def __hash__(self):
         return hash(self._mac)
