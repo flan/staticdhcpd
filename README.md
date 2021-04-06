@@ -19,8 +19,8 @@ The 3.0.0 branch will need to be tested; the running checklist follows (if you t
     * E-mail logging facility
       * _it needs to work_
     * Databases
-      * INI
-        * _it needs to work_
+      * ~~INI~~
+        * ~~_it needs to work_~~
       * custom
         * _it needs to work_
       * caching
@@ -53,7 +53,7 @@ The 3.0.0 branch will need to be tested; the running checklist follows (if you t
       * _must honour renewals and rebinds with the same address_
       * _must support releases_
     * feedservice
-      * _it needs to work_
+      * _it needs to work (or be removed)_
   * Documentation
     * libpydhcpserver
       * _correctness check_
@@ -62,8 +62,10 @@ The 3.0.0 branch will need to be tested; the running checklist follows (if you t
       * _correctness check_
       * _proofreading_
   * Build-processes
+    * ~~Debian~~
+      * ~~_must produce usable debs_~~
     * RPMs
-      * the script either needs to produce usable artifacts or be removed
+      * _the script either needs to produce usable artifacts or be removed_
 
 At this point, no new features will be added until the system is stable (but please submit ideas to the issue-tracker anyway). Any non-bugfix commits will be things to prepare for the Debian/RPM packages or minor formatting tweaks.
 
