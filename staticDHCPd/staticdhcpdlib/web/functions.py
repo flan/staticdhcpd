@@ -22,7 +22,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 (C) Neil Tallim, 2021 <flan@uguu.ca>
 """
-import cgi
+import html
 
 def sanitise(string):
     """
@@ -31,5 +31,5 @@ def sanitise(string):
     :param basestring string: The string to sanitise.
     :return basestring: The sanitised string, or None if nothing was provided.
     """
-    return string and cgi.escape(string).replace('"', '&quot;')
+    return string and html.escape(string).replace('"', '&quot;')
     

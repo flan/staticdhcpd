@@ -151,11 +151,11 @@ def _renderMethods():
             output.append('<div class="method">')
         output.append('<a href="{}" style="color: inherit;"{}>{}</a><br/>'.format(
             path,
-            element.name,
             element.confirm and ' onclick="return confirm(\'&quot;{} | {}&quot; requested that you confirm your intent to proceed\');"'.format(
                 element.module,
                 element.name,
             ) or '',
+            element.name,
         ))
     else:
         if module is not None:

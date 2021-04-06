@@ -86,7 +86,7 @@ def reinitialise(*args, **kwargs):
     except Exception as e:
         return '<span class="critical">Reinitilisation failed: {}</span>'.format(e)
     else:
-        return 'System reinitilisation completed in {:.4s} seconds'.format(time_elapsed)
+        return 'System reinitilisation completed in {:.4f} seconds'.format(time_elapsed)
         
 def css(*args, **kwargs):
     """

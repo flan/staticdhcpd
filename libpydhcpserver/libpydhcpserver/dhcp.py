@@ -363,7 +363,7 @@ class _NetworkLink(object):
             from . import getifaddrslib
             listen_interface = getifaddrslib.get_network_interface(server_address)
             try:
-                dhcp_socket.setsockopt(socket.SOL_SOCKET, _SO_BINDTODEVICE, listen_interface)
+                dhcp_socket.setsockopt(socket.SOL_SOCKET, _SO_BINDTODEVICE, listen_interface.encode('utf-8'))
             except socket.error as e:
                 raise OSError(e.errno, 'Unable to limit listening to {listen_interface}: {err}'.format(
                     listen_interface=listen_interface,

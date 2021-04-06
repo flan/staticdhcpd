@@ -10,4 +10,5 @@ cd ..
 rm *.dsc
 rm *.changes
 rm *.build
-rm *.tar.gz
+rm *.buildinfo
+rm *.tar.xz

@@ -1,11 +1,7 @@
 #!/usr/bin/make -f
 
-%:
-	dh $@ --with python3
+export PYBUILD_DISABLE=test
+export PYBUILD_NAME=staticdhcpd
 
-override_dh_auto_install:
-	DEBUILD_MODE=yes python setup.py install --root=debian/staticdhcpd --install-layout=deb --install-lib=/usr/share/staticDHCPd --install-scripts=/usr/share/staticDHCPd
-	dh_installexamples 
-	
-override_dh_auto_build:
-	
+%:
+	dh $@ --with=python3 --buildsystem=pybuild

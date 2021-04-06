@@ -32,6 +32,7 @@ import socketserver
 import threading
 import time
 import traceback
+import urllib.parse
 import uuid
 
 from staticdhcpdlib.web import retrieveMethodCallback
@@ -245,7 +246,8 @@ def _webMethod(method):
                 (mimetype, data) = http_method(self)
                 #Then execute the real request
                 (mimetype, data) = handler(path, queryargs, mimetype, data, self.headers)
-                data = data.encode('utf-8')
+                if isinstance(data, str): #convert to byte-string if necessary
+                    data = data.encode('utf-8')
                 self.send_response(200)
                 self.send_header('Last-Modified', time.strftime('%a, %d %b %Y %H:%M:%S %Z'))
                 self.send_header('Content-Type', mimetype)
@@ -281,6 +283,7 @@ def _webMethod(method):
                     method,
                     error,
                 ))
+                error = error.encode('utf-8')
                 self.send_response(500)
                 self.send_header('Content-Type', 'text/plain; charset=utf-8')
                 self.send_header('Content-Length', len(error))
@@ -297,7 +300,7 @@ def _webMethod(method):
         return wrappedHandler
     return decorator
     
-class _WebHandler(BaseHTTPServer.BaseHTTPRequestHandler):
+class _WebHandler(http.server.BaseHTTPRequestHandler):
     """
     A handler for HTTP requests.
     """
@@ -347,7 +350,7 @@ class WebService(threading.Thread):
             config.WEB_IP,
             config.WEB_PORT,
         ))
-        class _ThreadedServer(SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer): pass
+        class _ThreadedServer(socketserver.ThreadingMixIn, http.server.HTTPServer): pass
         self._web_server = _ThreadedServer((config.WEB_IP, config.WEB_PORT), _WebHandler)
         _logger.info("Configured Webservice engine")
         

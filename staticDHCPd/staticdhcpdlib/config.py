@@ -209,11 +209,11 @@ else:
 if hasattr(conf, 'handleUnknownMAC'):
     if inspect.getargspec(conf.handleUnknownMAC).args == ['mac']:
         #It's pre-2.0.0, so wrap it for backwards-compatibility
-        from . import databases.generic.Definition
+        from .databases.generic import Definition
         def handleUnknownMAC(packet, method, mac, client_ip, relay_ip, port):
             result = conf.handleUnknownMAC(mac)
             if result is not None:
-                return databases.generic.Definition(
+                return Definition(
                     ip=result[0], lease_time=result[7],
                     subnet=result[8], serial=result[9],
                     hostname=result[1],

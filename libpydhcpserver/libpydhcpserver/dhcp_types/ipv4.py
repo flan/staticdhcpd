@@ -100,7 +100,7 @@ class IPv4(object):
         return self._ip
         
     def __repr__(self):
-        return "IPv4({:s})".format(self)
+        return "IPv4({})".format(self)
         
     def __str__(self):
         if not self._ip_string:

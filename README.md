@@ -48,6 +48,7 @@ The 3.0.0 branch will need to be tested; the running checklist follows (if you t
     * dynamism
       * _must handle dynamic allocation_
       * _must honour renewals and rebinds with the same address_
+      * _must support releases_
     * feedservice
       * _it needs to work_
   * Documentation

@@ -85,10 +85,11 @@ class struct_sockaddr_ll(ctypes.Structure):
     )
     
 def _evaluate_ipv4(ifaddr, ipv4):
-    sockaddr = ifaddr.ifa_addr.contents
-    if sockaddr.sa_family == socket.AF_INET: #IPv4 address
-        sockaddr_in = ctypes.cast(ctypes.pointer(sockaddr), ctypes.POINTER(struct_sockaddr_in)).contents
-        return socket.inet_ntop(socket.AF_INET, sockaddr_in.sin_addr) == ipv4
+    if ifaddr.ifa_addr:
+        sockaddr = ifaddr.ifa_addr.contents
+        if sockaddr.sa_family == socket.AF_INET: #IPv4 address
+            sockaddr_in = ctypes.cast(ctypes.pointer(sockaddr), ctypes.POINTER(struct_sockaddr_in)).contents
+            return socket.inet_ntop(socket.AF_INET, sockaddr_in.sin_addr) == ipv4
     return False
 
 def _extract_ipv4(ifaddr):
@@ -131,6 +132,7 @@ def _evaluate_ifaddrs(evaluator, extractor):
     return None
 
 def get_network_interface(ipv4):
+    ipv4 = str(ipv4)
     interface =  _evaluate_ifaddrs(
         lambda ifaddr : _evaluate_ipv4(ifaddr, ipv4),
         _extract_ipv4,

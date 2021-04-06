@@ -61,9 +61,9 @@ if os.getenv('DEBUILD_MODE') != 'yes' and not 'build' in sys.argv and not any('r
         "",
         "Perform the following tasks to configure staticDHCPd to launch on system startup",
     ]
-    if platform.linux_distribution()[0] in ('Debian', 'Ubuntu', 'Mint',):
+    if os.path.isfile('/etc/debian_version'):
         instructions.extend((
-            "Debian-like ("{}:{})".format(platform.linux_distribution()[0], platform.linux_distribution()[1]),
+            "Debian-like",
             "\tCopy control-scripts/staticDHCPd to /etc/init.d/staticDHCPd",
             "\tRun '/usr/sbin/update-rc.d staticDHCPd defaults'",
         ))
