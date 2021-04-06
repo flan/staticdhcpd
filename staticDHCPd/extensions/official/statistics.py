@@ -6,21 +6,21 @@ To use this module, configure whatever is required in conf.py, inside of init(),
 like this:
     with extensions.statistics as x:
         x.LIFETIME_STATS_ENABLED = True
-        
+
 For a list of all parameters you may define, see below.
 
 Then add the following to conf.py's init() function:
     import statistics
-    
+
 Like staticDHCPd, this module under the GNU General Public License v3
-(C) Neil Tallim, 2014 <flan@uguu.ca>
+(C) Neil Tallim, 2021 <flan@uguu.ca>
 """
 from staticdhcpdlib import config
 _config = config.conf.extensions.statistics
 _CONFIG = _config.extension_config_merge(defaults={
     #The name of the module to which dashboard elements belong
     'MODULE': 'statistics',
-    
+
     #Whether lifetime stats should be made available
     'LIFETIME_STATS_ENABLED': True,
     #Whether lifetime stats should be included in the web dashboard
@@ -33,7 +33,7 @@ _CONFIG = _config.extension_config_merge(defaults={
     #The name of the component; if None and not displayed in the dashboard, the
     #method link will be hidden
     'LIFETIME_STATS_NAME': 'lifetime',
-    
+
     #Whether averaging values should be made available
     'AVERAGES_ENABLED': True,
     #The periods, as quantised windows, over which statistics should be
@@ -49,7 +49,7 @@ _CONFIG = _config.extension_config_merge(defaults={
     #The name of the component; if None and not displayed in the dashboard, the
     #method link will be hidden
     'AVERAGES_NAME': 'averages',
-    
+
     #Whether graph generation should be made available; this component depends
     #on pycha
     'GRAPH_ENABLED': True,
@@ -72,11 +72,11 @@ _CONFIG = _config.extension_config_merge(defaults={
     'GRAPH_CSV_PATH': '/ca/uguu/puukusoft/staticDHCPd/extension/stats/graph.csv',
     #The name of the component; if None, the method link will be hidden
     'GRAPH_CSV_NAME': 'graph (csv)',
-    
+
     #The number of seconds over which to quantise data; lower values will
     #increase resolution, but consume more memory
     'QUANTISATION_INTERVAL': 60 * 5,
-    
+
     #The number of quantised elements to retain for statistical evaluation
     #Higher values will increase the amount of data that can be interpreted,
     #at the cost of more memory and processing time
@@ -99,32 +99,35 @@ _METHODS = tuple(sorted(getattr(dhcp, key) for key in dir(dhcp) if key.startswit
 _logger = logging.getLogger('extension.statistics')
 
 _Gram = collections.namedtuple('Gram', (
- 'dhcp_packets', 'dhcp_packets_discarded', 'other_packets', 'processing_time',
+    'dhcp_packets',
+    'dhcp_packets_discarded',
+    'other_packets',
+    'processing_time',
 ))
 
 def _generate_dhcp_packets_dict():
     return dict((method, 0) for method in _METHODS)
-    
+
 class Statistics(object):
     """
     Tracks statistics and provides methods for visualising data.
     """
     def __init__(self, graph_size, gram_size):
         self._activity = False
-        
+
         self._dhcp_packets = _generate_dhcp_packets_dict()
         self._dhcp_packets_discarded = _generate_dhcp_packets_dict()
         self._other_packets = 0
-        
+
         self._processing_time = 0.0
-        
-        self._graph = collections.deque((None for i in xrange(graph_size)), maxlen=graph_size)
+
+        self._graph = collections.deque((None for i in range(graph_size)), maxlen=graph_size)
         self._gram_size = gram_size
-        
+
         self._lock = threading.Lock()
-        
+
         self._initialise_gram()
-        
+
     def _initialise_gram(self):
         """
         Must be called from a context in which the lock is held.
@@ -132,12 +135,12 @@ class Statistics(object):
         self._gram_start_time = time.time()
         self._gram_start_time -= self._gram_start_time % self._gram_size #Round down
         self._current_gram = {
-         'other-packets': 0,
-         'dhcp-packets': _generate_dhcp_packets_dict(),
-         'dhcp-packets-discarded': _generate_dhcp_packets_dict(),
-         'processing-time': 0.0,
+             'other-packets': 0,
+             'dhcp-packets': _generate_dhcp_packets_dict(),
+             'dhcp-packets-discarded': _generate_dhcp_packets_dict(),
+             'processing-time': 0.0,
         }
-        
+
     def _update_graph(self):
         """
         Call this every time data is collected or requested.
@@ -149,19 +152,19 @@ class Statistics(object):
                 steps = int((current_time - self._gram_start_time) / max(1, self._gram_size))
                 for i in range(1, steps):
                     self._graph.append(None)
-                    
+
                 if self._activity:
                     self._graph.append(_Gram(
-                     self._current_gram['dhcp-packets'],
-                     self._current_gram['dhcp-packets-discarded'],
-                     self._current_gram['other-packets'],
-                     self._current_gram['processing-time']
+                        self._current_gram['dhcp-packets'],
+                        self._current_gram['dhcp-packets-discarded'],
+                        self._current_gram['other-packets'],
+                        self._current_gram['processing-time'],
                     ))
                     self._initialise_gram()
                     self._activity = False
                 else:
                     self._graph.append(None)
-                    
+
     def process(self, statistics):
         """
         Updates the statstics engine's data.
@@ -169,7 +172,7 @@ class Statistics(object):
         self._update_graph()
         with self._lock:
             self._activity = True
-            
+
             if statistics.method:
                 self._dhcp_packets[statistics.method] += 1
                 self._current_gram['dhcp-packets'][statistics.method] += 1
@@ -181,28 +184,28 @@ class Statistics(object):
                 self._current_gram['other-packets'] += 1
             self._processing_time += statistics.processing_time
             self._current_gram['processing-time'] += statistics.processing_time
-            
+
     def graph_csv(self):
         """
         Returns a CSV file containing the time at which the stats were recorded
         and the events that occurred during the corresponding period.
         """
         self._update_graph()
-        
+
         import csv
-        import StringIO
-        
-        output = StringIO.StringIO()
+        import io
+
+        output = io.StringIO()
         writer = csv.writer(output)
         header = ['time']
         header.extend(_METHODS)
-        header.extend((i + ' discarded' for i in _METHODS))
+        header.extend('{} discarded'.format(method) for method in _METHODS)
         header.extend(('other packets', 'processing time'))
         writer.writerow(header)
         del header
-        
-        null_record = ['0' for i in xrange(len(_METHODS) * 2)] + ['0', '0']
-        
+
+        null_record = ['0' for i in range(len(_METHODS) * 2)] + ['0', '0']
+
         render_format = '%Y-%m-%d %H:%M:%S'
         with self._lock:
             base_time = self._gram_start_time
@@ -217,15 +220,15 @@ class Statistics(object):
                     writer.writerow(record + null_record)
         output.seek(0)
         return ('text/csv', output.read())
-        
+
     def graph(self, dimensions):
         """
         Uses pycha to render a graph of average DHCP activity, returned as a
         PNG.
         """
         self._update_graph()
-        
-        import StringIO
+
+        import io
         data = []
         max_value = 0.01
         with self._lock:
@@ -239,16 +242,16 @@ class Statistics(object):
                         max_value = value
                 else:
                     data.append((i, 0))
-                    
-        output = StringIO.StringIO()
+
+        output = io.StringIO()
         surface = cairo.ImageSurface(cairo.FORMAT_RGB24, dimensions[0], dimensions[1])
-        
+
         options = {
             'axis': {
                 'x': {
                     'tickCount': int((len(self._graph) * self._gram_size) / 3600),
                     'interval': int(3600 / self._gram_size),
-                    'label': 'Time in intervals of %(time)s seconds; ticks mark hours' % {'time': self._gram_size,},
+                    'label': 'Time in intervals of {} seconds; ticks mark hours'.format(self._gram_size),
                 },
                 'y': {
                     'tickCount': int(dimensions[1] / 20),
@@ -282,26 +285,26 @@ class Statistics(object):
                 'top': 0,
                 'bottom': 0,
             },
-            'title': 'Activity over the past ' + str(datetime.timedelta(seconds=self._gram_size * len(self._graph))),
+            'title': 'Activity over the past {}'.format(datetime.timedelta(seconds=self._gram_size * len(self._graph))),
             'titleFont': 'sans-serif',
             'titleFontSize': 10,
         }
-        
+
         chart = pycha.line.LineChart(surface, options)
         chart.addDataset((('packets', data),))
         chart.render()
         surface.write_to_png(output)
-        
+
         output.seek(0)
         return ('image/png', output.read())
-        
+
     def lifetime_stats(self):
         """
         Provides launch-to-now statistics for what the server has handled,
         rendered as an XHTML fragment.
         """
         self._update_graph()
-        
+
         received_total = 0
         received = ['<tr><td style="text-align: right; font-weight: bold;">Received</td>']
         processed = ['<tr><td style="text-align: right; font-weight: bold;">Processed</td>']
@@ -313,44 +316,44 @@ class Statistics(object):
                 _processed = _received - _discarded
                 received_total += _received
                 for (l, v) in ((received, _received), (processed, _processed), (discarded, _discarded)):
-                    l.append('<td>%(count)i</td>' % {'count': v,})
-                    
+                    l.append('<td>{}</td>'.format(v))
+
             return """
             <table class="element">
                 <thead>
                     <tr>
                         <th/>
-                        %(methods)s
+                        {methods}
                     </tr>
                 </thead>
                 <tfoot>
                     <tr>
-                        <td colspan="%(span)i">%(dhcp)i DHCP; %(non-dhcp)i non-DHCP; average turnaround: %(average).4fs</td>
+                        <td colspan="{span}">{dhcp} DHCP; {non_dhcp} non-DHCP; average turnaround: {average:.4f}s</td>
                     </tr>
                 </tfoot>
                 <tbody>
-                    %(received)s</tr>
-                    %(processed)s</tr>
-                    %(discarded)s</tr>
+                    {received}</tr>
+                    {processed}</tr>
+                    {discarded}</tr>
                 </tbody>
-            </table>""" % {
-             'methods': '\n'.join('<th>%(method)s</th>' % {'method': method.replace('REQUEST:', 'R:')} for method in _METHODS),
-             'received': ''.join(received),
-             'processed': ''.join(processed),
-             'discarded': ''.join(discarded),
-             'span': len(_METHODS) + 1,
-             'average': received_total and (self._processing_time / received_total) or 0.0,
-             'dhcp': received_total,
-             'non-dhcp': self._other_packets,
-            }
-            
+            </table>""".format(
+                methods='\n'.join('<th>{}</th>'.format(method.replace('REQUEST:', 'R:')) for method in _METHODS),
+                received=''.join(received),
+                processed=''.join(processed),
+                discarded=''.join(discarded),
+                span=len(_METHODS) + 1,
+                average=received_total and (self._processing_time / received_total) or 0.0,
+                dhcp=received_total,
+                non_dhcp=self._other_packets,
+            )
+
     def averages(self, windows):
         """
         Provides the average load that the server has handled in every averaging
         period specified in `windows`, rendered as an XHTML fragment.
         """
         self._update_graph()
-        
+
         current_time = time.time()
         elements = []
         with self._lock:
@@ -360,54 +363,54 @@ class Statistics(object):
                 other = self._current_gram['other-packets']
                 processing_time = self._current_gram['processing-time']
                 timestamp = self._gram_start_time
-                
-                for i in xrange(1, min(window, len(self._graph)) + 1):
+
+                for i in range(1, min(window, len(self._graph)) + 1):
                     timestamp -= self._gram_size
                     gram = self._graph[-1 * i]
                     if not gram:
                         continue
-                        
-                    for (k, v) in gram.dhcp_packets.iteritems():
+
+                    for (k, v) in gram.dhcp_packets.items():
                         packets[k] += v
                     packets_discarded += sum(gram.dhcp_packets_discarded.values())
                     other += gram.other_packets
                     processing_time += gram.processing_time
-                    
+
                 total_time = float(max(int(current_time - timestamp), 1))
                 total_packets = sum(packets.values())
                 elements.append("""
                 <tr>
-                    <td>%(time)s</td>
-                    %(methods)s
-                    <td>%(discarded).4f/s</td>
-                    <td>%(other).4f/s</td>
-                    <td>%(average).4fs</td>
-                </tr>""" % {
-                 'time': str(datetime.timedelta(seconds=(total_time))),
-                 'methods': '\n'.join('<td>%(method).4f/s</td>' % {'method': packets[method] / total_time} for method in _METHODS),
-                 'discarded': packets_discarded / total_time,
-                 'other': other / total_time,
-                 'average': total_packets and (processing_time / total_packets) or 0.0,
-                })
+                    <td>{time}</td>
+                    {methods}
+                    <td>{discarded:.4f}/s</td>
+                    <td>{other:.4f}/s</td>
+                    <td>{average:.4f}s</td>
+                </tr>""".format(
+                    time=datetime.timedelta(seconds=total_time),
+                    methods='\n'.join('<td>{:.4f}/s</td>'.format(packets[method] / total_time) for method in _METHODS),
+                    discarded=(packets_discarded / total_time),
+                    other=(other / total_time),
+                    average=(total_packets and (processing_time / total_packets) or 0.0),
+                ))
             return """
             <table class="element">
                 <thead>
                     <tr>
                         <th>Time period</th>
-                        %(methods)s
+                        {methods}
                         <th>Discarded</th>
                         <th>Other</th>
                         <th>Turnaround</th>
                     </tr>
                 </thead>
                 <tbody>
-                    %(content)s
+                    {content}
                 </tbody>
-            </table>""" % {
-             'content': '\n'.join(elements),
-             'methods': '\n'.join(('<th>%(method)s</th>') % {'method': method.replace('REQUEST:', 'R:'),} for method in _METHODS),
-            }
-            
+            </table>""".format(
+                content='\n'.join(elements),
+                methods='\n'.join('<th>{}</th>'.format(method.replace('REQUEST:', 'R:')) for method in _METHODS),
+            )
+
 #Setup happens here
 ################################################################################
 _stats = Statistics(_CONFIG['RETENTION_COUNT'], _CONFIG['QUANTISATION_INTERVAL'])
@@ -417,89 +420,74 @@ _logger.info("Statistics engine online")
 if _CONFIG['LIFETIME_STATS_ENABLED']:
     renderer = lambda *args, **kwargs: _stats.lifetime_stats()
     if _CONFIG['LIFETIME_STATS_DISPLAY']:
-        _logger.info("Registering lifetime stats as a dashboard element, with ordering=%(ordering)s" % {
-         'ordering': _CONFIG['LIFETIME_STATS_ORDERING'],
-        })
+        _logger.info("Registering lifetime stats as a dashboard element, with ordering={}".format(_CONFIG['LIFETIME_STATS_ORDERING']))
         config.callbacks.webAddDashboard(
-         _CONFIG['MODULE'], _CONFIG['LIFETIME_STATS_NAME'], renderer,
-         ordering=_CONFIG['LIFETIME_STATS_ORDERING']
+            _CONFIG['MODULE'], _CONFIG['LIFETIME_STATS_NAME'], renderer,
+            ordering=_CONFIG['LIFETIME_STATS_ORDERING'],
         )
     else:
-        _logger.info("Registering lifetime stats at '%(path)s'" % {
-         'path': _CONFIG['LIFETIME_STATS_PATH'],
-        })
+        _logger.info("Registering lifetime stats at '{}'".format(_CONFIG['LIFETIME_STATS_PATH']))
         config.callbacks.webAddMethod(
-         _CONFIG['LIFETIME_STATS_PATH'], renderer,
-         hidden=(_CONFIG['LIFETIME_STATS_NAME'] is None),
-         module=_CONFIG['MODULE'],
-         name=_CONFIG['LIFETIME_STATS_NAME'],
-         display_mode=config.callbacks.WEB_METHOD_TEMPLATE
+            _CONFIG['LIFETIME_STATS_PATH'], renderer,
+            hidden=(_CONFIG['LIFETIME_STATS_NAME'] is None),
+            module=_CONFIG['MODULE'],
+            name=_CONFIG['LIFETIME_STATS_NAME'],
+            display_mode=config.callbacks.WEB_METHOD_TEMPLATE,
         )
-        
+
 if _CONFIG['AVERAGES_ENABLED']:
     renderer = lambda *args, **kwargs: _stats.averages(_CONFIG['AVERAGES_WINDOWS'])
     if _CONFIG['AVERAGES_DISPLAY']:
-        _logger.info("Registering averages as a dashboard element, with ordering=%(ordering)s" % {
-         'ordering': _CONFIG['AVERAGES_ORDERING'],
-        })
+        _logger.info("Registering averages as a dashboard element, with ordering={}".format(_CONFIG['AVERAGES_ORDERING']))
         config.callbacks.webAddDashboard(
-         _CONFIG['MODULE'], _CONFIG['AVERAGES_NAME'], renderer,
-         ordering=_CONFIG['AVERAGES_ORDERING']
+            _CONFIG['MODULE'], _CONFIG['AVERAGES_NAME'], renderer,
+            ordering=_CONFIG['AVERAGES_ORDERING'],
         )
     else:
-        _logger.info("Registering averages at '%(path)s'" % {
-         'path': _CONFIG['AVERAGES_PATH'],
-        })
+        _logger.info("Registering averages at '{}'".format(_CONFIG['AVERAGES_PATH']))
         config.callbacks.webAddMethod(
-         _CONFIG['AVERAGES_PATH'], renderer,
-         hidden=(_CONFIG['AVERAGES_NAME'] is None),
-         module=_CONFIG['MODULE'],
-         name=_CONFIG['AVERAGES_NAME'],
-         display_mode=config.callbacks.WEB_METHOD_TEMPLATE
+            _CONFIG['AVERAGES_PATH'], renderer,
+            hidden=(_CONFIG['AVERAGES_NAME'] is None),
+            module=_CONFIG['MODULE'],
+            name=_CONFIG['AVERAGES_NAME'],
+            display_mode=config.callbacks.WEB_METHOD_TEMPLATE,
         )
-        
+
 if _CONFIG['GRAPH_ENABLED']:
     try:
         import pycha.line
         import cairo
-    except ImportError, e:
-        _logger.warning("pycha is not available; graphs cannot be rendered: " + str(e))
+    except ImportError as e:
+        _logger.warning("pycha is not available; graphs cannot be rendered: {}".format(e))
     else:
         config.callbacks.webAddMethod(
-         _CONFIG['GRAPH_RENDER_PATH'], lambda *args, **kwargs: _stats.graph(_CONFIG['GRAPH_RENDER_DIMENSIONS']),
-         hidden=True, display_mode=config.callbacks.WEB_METHOD_RAW
+            _CONFIG['GRAPH_RENDER_PATH'], lambda *args, **kwargs: _stats.graph(_CONFIG['GRAPH_RENDER_DIMENSIONS']),
+            hidden=True, display_mode=config.callbacks.WEB_METHOD_RAW,
         )
-        image_tag = '<div style="text-align: center; padding: 2px;"><img src="%(path)s"/></div>' % {'path': _CONFIG['GRAPH_RENDER_PATH'],}
+        image_tag = '<div style="text-align: center; padding: 2px;"><img src="{}"/></div>'.format(_CONFIG['GRAPH_RENDER_PATH'])
         hook = lambda *args, **kwargs: image_tag
         if _CONFIG['GRAPH_DISPLAY']:
-            _logger.info("Registering graph as a dashboard element, with ordering=%(ordering)s" % {
-             'ordering': _CONFIG['GRAPH_ORDERING'],
-            })
+            _logger.info("Registering graph as a dashboard element, with ordering={}".format(_CONFIG['GRAPH_ORDERING']))
             config.callbacks.webAddDashboard(
-             _CONFIG['MODULE'], _CONFIG['GRAPH_NAME'], hook,
-             ordering=_CONFIG['GRAPH_ORDERING']
+                _CONFIG['MODULE'], _CONFIG['GRAPH_NAME'], hook,
+                ordering=_CONFIG['GRAPH_ORDERING'],
             )
         else:
-            _logger.info("Registering graph at '%(path)s'" % {
-             'path': _CONFIG['GRAPH_PATH'],
-            })
+            _logger.info("Registering graph at '{}'".format(_CONFIG['GRAPH_PATH']))
             config.callbacks.webAddMethod(
-             _CONFIG['GRAPH_PATH'], hook,
-             hidden=(_CONFIG['GRAPH_NAME'] is None),
-             module=_CONFIG['MODULE'],
-             name=_CONFIG['GRAPH_NAME'],
-             display_mode=config.callbacks.WEB_METHOD_TEMPLATE
+                _CONFIG['GRAPH_PATH'], hook,
+                hidden=(_CONFIG['GRAPH_NAME'] is None),
+                module=_CONFIG['MODULE'],
+                name=_CONFIG['GRAPH_NAME'],
+                display_mode=config.callbacks.WEB_METHOD_TEMPLATE,
             )
-            
+
 if _CONFIG['GRAPH_CSV_PATH']:
-    _logger.info("Registering graph CSV-provider at '%(path)s'" % {
-     'path': _CONFIG['GRAPH_CSV_PATH'],
-    })
+    _logger.info("Registering graph CSV-provider at '{}'".format(_CONFIG['GRAPH_CSV_PATH']))
     config.callbacks.webAddMethod(
-     _CONFIG['GRAPH_CSV_PATH'], lambda *args, **kwargs: _stats.graph_csv(),
-     hidden=(_CONFIG['GRAPH_CSV_NAME'] is None),
-     module=_CONFIG['MODULE'],
-     name=_CONFIG['GRAPH_CSV_NAME'],
-     display_mode=config.callbacks.WEB_METHOD_RAW
+        _CONFIG['GRAPH_CSV_PATH'], lambda *args, **kwargs: _stats.graph_csv(),
+        hidden=(_CONFIG['GRAPH_CSV_NAME'] is None),
+        module=_CONFIG['MODULE'],
+        name=_CONFIG['GRAPH_CSV_NAME'],
+        display_mode=config.callbacks.WEB_METHOD_RAW,
     )
-    
