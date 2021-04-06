@@ -67,7 +67,7 @@ def rfc3925_decode(s, identifier_size=4):
         data[enterprise_number] = payload
     return data
     
-def rfc3925_125_decode(l):
+def rfc3925_125_decode(value):
     """
     Extracts sub-options from an RFC3925 option (125).
     
