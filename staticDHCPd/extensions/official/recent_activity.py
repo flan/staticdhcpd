@@ -7,14 +7,14 @@ To use this module, configure whatever is required in conf.py, inside of init(),
 like this:
     with extensions.recent_activity as x:
         x.LIFETIME_STATS_ENABLED = True
-        
+
 For a list of all parameters you may define, see below.
 
 Then add the following to conf.py's init() function:
     import recent_activity
-    
+
 Like staticDHCPd, this module under the GNU General Public License v3
-(C) Neil Tallim, 2014 <flan@uguu.ca>
+(C) Neil Tallim, 2021 <flan@uguu.ca>
 
 Inspiration derived from a discussion with John Stowers
 """
@@ -25,10 +25,10 @@ _CONFIG = _config.extension_config_merge(defaults={
     'MAX_EVENTS': 10,
     #The maximum age of an event to track; if None, no limit will be applied
     'MAX_AGE': 60 * 5,
-    
+
     #Whether feed items should be removed when the system is reinitialised
     'CLEAR_ON_REINIT': True,
-    
+
     #Whether the list should be part of the dashboard; if False, it will appear
     #in the methods list
     'DISPLAY_IN_DASHBOARD': True,
@@ -37,10 +37,10 @@ _CONFIG = _config.extension_config_merge(defaults={
     'DASHBOARD_ORDERING': None,
     #If registering as a method, this is where its callback will be registered
     'METHOD_PATH': '/ca/uguu/puukusoft/staticDHCPd/extension/recent-activity/render',
-    
+
     #If either MODULE or NAME are None and the module is not to be rendered in
     #the dashboard, the method-link will be hidden
-    
+
     #The name of the module to which this element belongs
     'MODULE': 'recent activity',
     #The name of this component
@@ -77,14 +77,12 @@ def _drop_old_events():
             else:
                 break
     if dropped:
-        _logger.debug("Dropped %(count)i events from recent activity due to age" % {
-         'count': dropped,
-        })
-        
+        _logger.debug("Dropped {} events from recent activity due to age".format(dropped))
+
 def _flush():
     with _lock:
         _events.clear()
-        
+
 def _render(*args, **kwargs):
     """
     Provides a dashboard-embeddable rendering of all recent activity.
@@ -92,30 +90,28 @@ def _render(*args, **kwargs):
     _drop_old_events()
     with _lock:
         if not _events:
-            return "No activity in the last %(max-age)i seconds" % {
-             'max-age': _CONFIG['MAX_AGE'],
-            }
-            
+            return "No activity in the last {} seconds".format(_CONFIG['MAX_AGE'])
+
         elements = []
         for event in _events:
             elements.append("""
             <tr>
-                <td>%(event)s</td>
-                <td>%(port)i</td>
-                <td>%(mac)s</td>
-                <td>%(ip)s</td>
-                <td>%(subnet)s</td>
-                <td>%(serial)i</td>
-                <td>%(time)s</td>
-            </tr>""" % {
-             'event': event.method,
-             'port': event.port,
-             'mac': event.mac,
-             'ip': event.ip or '-',
-             'subnet': event.subnet,
-             'serial': event.serial,
-             'time': time.ctime(event.time),
-            })
+                <td>{event}</td>
+                <td>{port}</td>
+                <td>{mac}</td>
+                <td>{ip}</td>
+                <td>{subnet}</td>
+                <td>{serial}</td>
+                <td>{time}</td>
+            </tr>""".format(
+                event=event.method,
+                port=event.port,
+                mac=event.mac,
+                ip=event.ip or '-',
+                subnet=event.subnet,
+                serial=event.serial,
+                time=time.ctime(event.time),
+            ))
         return """
         <table class="element">
             <thead>
@@ -130,16 +126,15 @@ def _render(*args, **kwargs):
                 </tr>
             </thead>
             <tbody>
-                %(content)s
+                {content}
             </tbody>
-        </table>""" % {
-         'content': '\n'.join(elements),
-        }
-        
+        </table>""".format(
+            content='\n'.join(elements),
+        )
+
 def _update(statistics):
     """
-    Removes any previous event from `mac`, then adds the event to the
-    collection.
+    Removes any prior event from `mac`, then adds the event to the collection.
     """
     mac = str(statistics.mac)
     with _lock:
@@ -147,38 +142,30 @@ def _update(statistics):
             if event.mac == mac:
                 del _events[i]
                 break
-                
+
         _events.appendleft(_Event(time.time(), mac, statistics.ip, statistics.subnet, statistics.serial, statistics.method, statistics.port))
-        
+
 #Setup happens here
 ################################################################################
 config.callbacks.statsAddHandler(_update)
-_logger.info("Prepared recent-activity-tracker for up to %(count)i events, %(max-age)i seconds old" % {
- 'count': _CONFIG['MAX_EVENTS'],
- 'max-age': _CONFIG['MAX_AGE'],
-})
+_logger.info("Prepared recent-activity-tracker for up to {} events, {} seconds old".format(_CONFIG['MAX_EVENTS'], _CONFIG['MAX_AGE']))
 
 if _CONFIG['CLEAR_ON_REINIT']:
     _logger.info("Registering callback handler to clear activity on reinitialisation...")
     config.callbacks.systemAddReinitHandler(_flush)
-    
+
 if _CONFIG['DISPLAY_IN_DASHBOARD']:
-    _logger.info("Registering activity-tracker as a dashboard element, with ordering=%(ordering)s" % {
-     'ordering': _CONFIG['DASHBOARD_ORDERING'],
-    })
+    _logger.info("Registering activity-tracker as a dashboard element, with ordering={}".format(_CONFIG['DASHBOARD_ORDERING']))
     config.callbacks.webAddDashboard(
-     _CONFIG['MODULE'], _CONFIG['NAME'], _render,
-     ordering=_CONFIG['DASHBOARD_ORDERING']
+        _CONFIG['MODULE'], _CONFIG['NAME'], _render,
+        ordering=_CONFIG['DASHBOARD_ORDERING'],
     )
 else:
-    _logger.info("Registering activity-tracker at '%(path)s'" % {
-     'path': _CONFIG['METHOD_PATH'],
-    })
+    _logger.info("Registering activity-tracker at '{}'".format(_CONFIG['METHOD_PATH']))
     config.callbacks.webAddMethod(
      _CONFIG['METHOD_PATH'], _render,
-     hidden=(_CONFIG['MODULE'] is None or _CONFIG['NAME'] is None),
-     module=_CONFIG['MODULE'],
-     name=_CONFIG['NAME'],
-     display_mode=config.callbacks.WEB_METHOD_TEMPLATE
+        hidden=(_CONFIG['MODULE'] is None or _CONFIG['NAME'] is None),
+        module=_CONFIG['MODULE'],
+        name=_CONFIG['NAME'],
+        display_mode=config.callbacks.WEB_METHOD_TEMPLATE,
     )
-    
