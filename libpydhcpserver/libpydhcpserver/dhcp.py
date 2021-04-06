@@ -49,7 +49,6 @@ Internal-only Ethernet-frame-grabbing for Linux.
 Nothing should be addressable to the special response socket, but better to avoid wasting memory.
 """
 
-_SO_BINDTODEVICE = 25 #Assume the most common Linux value by default
 """
 The value for `SO_BINDTODEVICE` on the current platform; for BSD and other
 UNIXes, `IP_RECVIF` is used instead, but it has the same usage semantics.
@@ -61,6 +60,8 @@ if platform.system() == 'Linux':
         _SO_BINDTODEVICE = 0x0d
     elif platform.machine() == 'parisc':
         _SO_BINDTODEVICE = 0x4019
+    else:
+        _SO_BINDTODEVICE = 25 #Assume the most common Linux value
 else: #Assume BSD/OS X
    _SO_BINDTODEVICE = 20 #IP_RECVIF as defined in FreeBSD
 
@@ -325,9 +326,7 @@ class _NetworkLink(object):
             if proxy_port:
                 proxy_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         except socket.error as e:
-            raise Exception('Unable to create socket: {err}'.format(
-                err=e,
-            ))
+            raise Exception('Unable to create socket: {}'.format(e))
 
         try:
             dhcp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -335,9 +334,7 @@ class _NetworkLink(object):
                 proxy_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         except socket.error as e:
             import warnings
-            warnings.warn('Unable to set SO_REUSEADDR; multiple DHCP servers cannot be run in parallel: {err}'.format(
-                err=e,
-            ))
+            warnings.warn('Unable to set SO_REUSEADDR; multiple DHCP servers cannot be run in parallel: {}'.format(e))
 
         if platform.system() != 'Linux':
             try:
@@ -346,18 +343,14 @@ class _NetworkLink(object):
                     proxy_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
             except socket.error as e:
                 import warnings
-                warnings.warn('Unable to set SO_REUSEPORT; multiple DHCP servers cannot be run in parallel: {err}'.format(
-                    err=e,
-                ))
+                warnings.warn('Unable to set SO_REUSEPORT; multiple DHCP servers cannot be run in parallel: {}'.format(e))
 
         try:
             dhcp_socket.bind(('', server_port))
             if proxy_port:
                 proxy_socket.bind(('', proxy_port))
         except socket.error as e:
-            raise Exception('Unable to bind sockets: {err}'.format(
-                err=e,
-            ))
+            raise Exception('Unable to bind sockets: {}'.format(e))
 
         if server_address:
             from . import getifaddrslib
@@ -365,11 +358,12 @@ class _NetworkLink(object):
             try:
                 dhcp_socket.setsockopt(socket.SOL_SOCKET, _SO_BINDTODEVICE, listen_interface.encode('utf-8'))
             except socket.error as e:
-                raise OSError(e.errno, 'Unable to limit listening to {listen_interface}: {err}'.format(
-                    listen_interface=listen_interface,
-                    err=e.strerror,
-                ))
-
+                raise OSError(e.errno, 'Unable to limit listening to {}: {}'.format(listen_interface, e.strerror))
+            try:
+                dhcp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_DONTROUTE, 1)
+            except socket.error as e:
+                raise OSError(e.errno, 'Unable to disable routing: {}'.format(e.strerror))
+                
         return (dhcp_socket, proxy_socket)
 
     def getData(self, timeout, packet_buffer):
@@ -512,20 +506,14 @@ class _L3Responder(_Responder):
             self._socket = socketobj
         else:
             self._socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-
-            try:
-                self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-            except socket.error as e:
-                raise Exception('Unable to set SO_BROADCAST: {err}'.format(
-                    err=e,
-                ))
-
             try:
                 self._socket.bind((server_address or '', 0))
             except socket.error as e:
-                raise Exception('Unable to bind socket: {err}'.format(
-                    err=e,
-            ))
+                raise Exception('Unable to bind socket: {}'.format(e))
+        try:
+            self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+        except socket.error as e:
+            raise Exception('Unable to set SO_BROADCAST: {}'.format(e))
 
     def _send(self, packet, ip, port, **kwargs):
         """
@@ -585,11 +573,12 @@ class _L2Responder(_Responder):
         :param sequence data: The data to be checksummed.
         :return int: The data's checksum.
         """
-        if sum(len(i) for i in data) & 1: #Odd
-            checksum = sum(self._array_('H', ''.join(data)[:-1]))
-            checksum += data[-1][-1] #Add the final byte
+        full_data = b''.join(data)
+        if len(full_data) & 1: #Odd
+            checksum = sum(self._array_('H', full_data[:-1]))
+            checksum += full_data[-1] #Add the final byte
         else: #Even
-            checksum = sum(self._array_('H', ''.join(data)))
+            checksum = sum(self._array_('H', full_data))
         checksum = (checksum >> 16) + (checksum & 0xffff)
         checksum += (checksum >> 16)
         return ~checksum & 0xffff
@@ -598,8 +587,8 @@ class _L2Responder(_Responder):
         """
         Computes the checksum of the IPv4 header.
 
-        :param str ip_prefix: The portion of the IPv4 header preceding the `checksum` field.
-        :param str ip_destination: The destination address, in network-byte order.
+        :param bytes ip_prefix: The portion of the IPv4 header preceding the `checksum` field.
+        :param bytes ip_destination: The destination address, in network-byte order.
         :return int: The IPv4 checksum.
         """
         return self._checksum([
@@ -613,10 +602,10 @@ class _L2Responder(_Responder):
         """
         Computes the checksum of the UDP header and payload.
 
-        :param str ip_destination: The destination address, in network-byte order.
-        :param str udp_addressing: The UDP header's port section.
-        :param str udp_length: The length of the UDP payload plus header.
-        :param str packet: The serialised packet.
+        :param bytes ip_destination: The destination address, in network-byte order.
+        :param bytes udp_addressing: The UDP header's port section.
+        :param bytes udp_length: The length of the UDP payload plus header.
+        :param bytes packet: The serialised packet.
         :return int: The UDP checksum.
         """
         return self._checksum([
@@ -642,7 +631,7 @@ class _L2Responder(_Responder):
         :param str ip: The IPv4 to which the packet is addressed, as a dotted quad.
         :param int port: The port to which the packet is addressed.
         :param int source_port: The port from which the packet is addressed.
-        :return str: The complete binary packet.
+        :return bytes: The complete binary packet.
         """
         binary = []
 
@@ -650,7 +639,7 @@ class _L2Responder(_Responder):
         if _IP_BROADCAST == ip:
             binary.append(b'\xff\xff\xff\xff\xff\xff') #Broadcast MAC
         else:
-            binary.append(b''.join(i for i in mac)) #Destination MAC
+            binary.append(bytes(mac)) #Destination MAC
         binary.append(self._ethernet_id) #Source MAC and Ethernet payload-type
 
         #<> Prepare packet data for transmission and checksumming
@@ -730,7 +719,7 @@ class _L2Responder_AF_PACKET(_L2Responder):
         """
         Sends the packet.
 
-        :param str packet: The packet to be written.
+        :param bytes packet: The packet to be written.
         :return int: The number of bytes written to the network.
         :except Exception: An error occurred during transmission.
         """
@@ -790,7 +779,7 @@ class _L2Responder_pcap(_L2Responder):
         """
         Sends the packet.
 
-        :param str packet: The packet to be written.
+        :param bytes packet: The packet to be written.
         :return int: The number of bytes written to the network.
         :except Exception: An error occurred during transmission.
         """

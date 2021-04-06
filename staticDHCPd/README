@@ -27,14 +27,13 @@ Five-minute "does this really work?" setup guide for busy administrators
     Uses an INI file or sqlite3 to avoid unnecessary installations
 
 (If you need more information, see the project page at
- http://uguu.ca/puukusoft/staticDHCPd/ or
- http://code.google.com/p/staticdhcpd/)
+ https://github.com/flan/staticdhcpd)
 
 
 Step 1: Gather resources
     You need the code, which came with this lovely text file, and a computer
-    on which to run it. Since this is a Unix-formatted file, you've probably
-    already got that, too. (Also Python 2.5+, but no modern Unix-like system is
+    on which to run it. Since this is a UNIX-formatted file, you've probably
+    already got that, too. (Also Python 3.5+, but no modern UNIX-like system is
     without that)
     
     The last thing you need is enough access to bind to the DHCP ports.

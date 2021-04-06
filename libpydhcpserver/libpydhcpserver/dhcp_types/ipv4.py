@@ -76,14 +76,15 @@ class IPv4(object):
                     
                 self._ip_tuple = tuple(octets)
                 
-    def __cmp__(self, other):
+    def __eq__(self, other):
         if not other and not isinstance(other, IPv4):
-            return 1
+            return False
+        
         if isinstance(other, str):
             other = IPv4(other)
-        if isinstance(other, int):
-            return cmp(int(self), other)
-        return cmp(self._ip_tuple, tuple(other))
+        elif isinstance(other, int):
+            return int(self) == other
+        return self._ip_tuple == tuple(other)
         
     def __hash__(self):
         return hash(self._ip_tuple)
@@ -101,6 +102,9 @@ class IPv4(object):
         
     def __repr__(self):
         return "IPv4({})".format(self)
+        
+    def __bytes__(self):
+        return bytes(self._ip_tuple)
         
     def __str__(self):
         if not self._ip_string:

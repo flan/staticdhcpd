@@ -5,6 +5,9 @@ staticDHCPd is an all-Python, [RFC 2131](http://www.ietf.org/rfc/rfc2131.txt)-co
 **Work has begun on porting ststicDHCPd to Python 3, as 3.0.0**
 
 The 3.0.0 branch will need to be tested; the running checklist follows (if you test a thing, send e-mail to Neil Tallim at the address in any source file):
+  * libpydhcpserver
+    * libpcap responder
+      * _it needs to work_
   * staticDHCPd
     * Long-term soak-test
       * Stable memory usage
@@ -58,6 +61,9 @@ The 3.0.0 branch will need to be tested; the running checklist follows (if you t
     * staticDHCPd
       * _correctness check_
       * _proofreading_
+  * Build-processes
+    * RPMs
+      * the script either needs to produce usable artifacts or be removed
 
 At this point, no new features will be added until the system is stable (but please submit ideas to the issue-tracker anyway). Any non-bugfix commits will be things to prepare for the Debian/RPM packages or minor formatting tweaks.
 
@@ -120,10 +126,15 @@ All features are continuously and thoroughly tested against the ISC's <tt>dhclie
 # Documentation #
 All documentation found outside of the following resources is pre-2.0.0 and should be considered deprecated.
 
+3.0.x is largely identical to 2.0.x, with the exception of any eratta noted below.
+
 libpydhcpserver: http://static.uguu.ca/projects/libpydhcpserver/doc/
 
 staticDHCPd: http://static.uguu.ca/projects/staticDHCPd/doc/
 
+## 3.0 eratta ##
+
+None right now.
 
 ---
 
@@ -131,10 +142,10 @@ staticDHCPd: http://static.uguu.ca/projects/staticDHCPd/doc/
 ## Downloading ##
 Stable releases of staticDHCPd are available from the [releases page](https://github.com/flan/staticdhcpd/releases).
 
-Debian packages coming shortly after 2.0.0 is released.
+Debian packages for 3.0.x will be published as it approaches release.
 
 ## Testing ##
-The README, linked above, contains a quick-start guide. It will walk you through creating a simple configuration database and running staticDHCPd without making any changes to your server.
+The [README](https://github.com/flan/staticdhcpd/blob/3.0.x/staticDHCPd/README) contains a quick-start guide. It will walk you through creating a simple configuration database and running staticDHCPd without making any changes to your server.
 
 ## Installing ##
 Just run `sudo sh install.sh`, or whatever equivalent is appropriate for your platform, and everything will be where it needs to go. You'll also receive some helpful (disclaimer: only as helpful as its users) text that will explain how to make the server run automatically on boot, specific to your platform.

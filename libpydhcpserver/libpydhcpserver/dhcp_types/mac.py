@@ -71,14 +71,15 @@ class MAC(object):
             if len(self._mac) != 6 or any((type(d) is not int or d < 0 or d > 255) for d in self._mac):
                 raise ValueError("Expected a sequence of six bytes as a MAC identifier; received {!r}".format(self._mac))
                 
-    def __cmp__(self, other):
+    def __eq__(self, other):
         if not other and not isinstance(other, MAC):
-            return 1
-        if isinstance(other, int):
-            return cmp(int(self), other)
+            return False
+        
         if isinstance(other, str):
             other = MAC(other)
-        return cmp(self._mac, tuple(other))
+        elif isinstance(other, int):
+            return int(self) == other
+        return self._ip_tuple == tuple(other)
         
     def __hash__(self):
         return hash(self._mac)
@@ -96,6 +97,9 @@ class MAC(object):
         
     def __repr__(self):
         return "MAC(%r)" % (str(self))
+        
+    def __bytes__(self):
+        return bytes(self._mac)
         
     def __str__(self):
         if self._mac_string is None:

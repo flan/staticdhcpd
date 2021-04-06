@@ -23,5 +23,5 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 (C) Neil Tallim, 2021 <flan@uguu.ca>
 """
 VERSION = '3.0.0-beta1'
-URL = 'http://uguu.ca/'
+URL = 'https://github.com/flan/staticdhcpd'
 COPYRIGHT = '2021, Neil Tallim <flan@uguu.ca>'

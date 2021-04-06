@@ -117,15 +117,36 @@ class RFC(object):
     def __bool__(self):
         return True
         
-    def __cmp__(self, other):
+    def __eq__(self, other):
         """
         If ``other`` is an RFC instance, their values are compared. Otherwise,
         the internal list's value is compared directly to ``other``.
         """
         if isinstance(other, RFC):
-            return cmp(self._value, other.getValue())
-        return cmp(self._value, other)
-        
+            return self._value == other.getValue()
+        return self._value == other
+
+    def __lt__(self, other):
+        if isinstance(other, RFC):
+            return self._value < other.getValue()
+        return self._value < other
+
+    def __le__(self, other):
+        if isinstance(other, RFC):
+            return self._value <= other.getValue()
+        return self._value <= other
+
+    def __gt__(self, other):
+        if isinstance(other, RFC):
+            return self._value > other.getValue()
+        return self._value > other
+
+    def __ge__(self, other):
+        if isinstance(other, RFC):
+            return self._value >= other.getValue()
+        return self._value >= other
+
+
 class rfc1035_plus(RFC):
     def __init__(self, data):
         """

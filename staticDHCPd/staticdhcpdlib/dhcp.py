@@ -196,7 +196,7 @@ class _PacketWrapper(object):
         :param basestring ip: The IP for which the request was sent, if known.
         :param int verbosity: A logging severity constant.
         """
-        _logger.log(verbosity, '{type} from {mac}{ip}{sip} via port {port}'.format(
+        _logger.log(verbosity, '{type} from {mac}{ip}{sip} received on port {port}'.format(
             type=self._packet_type,
             mac=self.mac,
             ip=(ip and (" for {}".format(ip)) or ''),
@@ -718,7 +718,7 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
 
         (bytes, address) = self._sendDHCPPacket(packet, address, port)
         response_type = packet.getDHCPMessageTypeName()
-        _logger.info("{type} sent at {mac} for {client} via {ip}:{port}[{bytes} bytes]".format(
+        _logger.info("{type} sent at {mac} for {client} via {ip}:{port} [{bytes} bytes]".format(
             type=response_type[response_type.find('_') + 1:],
             mac=mac,
             client=client_ip,
@@ -737,7 +737,7 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
         """
         with self._lock:
             self._ignored_addresses.append([tuple(mac), config.UNAUTHORIZED_CLIENT_TIMEOUT])
-        _logger.warning("{mac} was temporarily banlisted, for {time} seconds, following {packet_type}: {reason}".format(
+        _logger.warning("{mac} was temporarily banlisted for {time} seconds, following {packet_type}: {reason}".format(
             mac=mac,
             time=config.UNAUTHORIZED_CLIENT_TIMEOUT,
             packet_type=packet_type,
