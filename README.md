@@ -35,7 +35,7 @@ The 3.0.0 branch will need to be tested; the running checklist follows (if you t
       * MySQL
         * _it needs to work_
       * Oracle
-        * _it needs to work... or it might be removed if nobody uses Oracle anymore -- finding people to test this one is a pain_
+        * _it needs to work_
       * SQLite
         * _it needs to work_
       * connection-pooling
