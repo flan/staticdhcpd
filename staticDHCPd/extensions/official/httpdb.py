@@ -41,7 +41,7 @@ If concurrent connections to your HTTP server should be limited, use
 HTTPCachingDatabase instead of HTTPDatabase.
 
 Like staticDHCPd, this module under the GNU General Public License v3
-(C) Neil Tallim, 2016 <flan@uguu.ca>
+(C) Neil Tallim, 2021 <flan@uguu.ca>
 
 Created in response to a request from Aleksandr Chusov.
 Enhanced with feedback from Helios de Creisquer.
@@ -81,12 +81,10 @@ def _parse_server_response(json_data):
         extra=json_data.get('extra'),
     )
 
-#Do not touch anything below this line
-################################################################################
+
 import json
 import logging
-import urllib
-import urllib2
+import urllib.request, urllib.parse
 
 from staticdhcpdlib.databases.generic import (Definition, Database, CachingDatabase)
 
@@ -128,62 +126,41 @@ class _HTTPLogic(object):
 
         #You can usually ignore this if-block, though you could strip out whichever method you don't use
         if self._post:
-            data = json.dumps(parameters)
+            data = json.dumps(parameters).encode('utf-8')
 
             headers.update({
                 'Content-Length': str(len(data)),
                 'Content-Type': 'application/json',
             })
 
-            request = urllib2.Request(
+            request = urllib.request.Request(
                 self._uri, data=data,
                 headers=headers,
             )
         else:
-            request = urllib2.Request(
-             "%(uri)s?%(parameters)s" % {
-                'uri': self._uri,
-                'parameters': urllib.urlencode(parameters, doseq=True),
-             },
-             headers=headers,
+            request = urllib.request.Request(
+                "{}?{}".format(self._uri, urllib.parse.urlencode(parameters, doseq=True)),
+                headers=headers,
             )
 
-        _logger.debug("Sending request to '%(uri)s' for '%(params)s'..." % {
-            'uri': self._uri,
-            'params': parameters,
-        })
+        _logger.debug("Sending request to '{}' for '{}'...".format(self._uri, parameters))
 
         try:
-            response = urllib2.urlopen(request)
-            _logger.debug("MAC response received from '%(uri)s' for '%(mac)s'" % {
-                'uri': self._uri,
-                'mac': str(mac),
-            })
+            response = urllib.request.urlopen(request)
+            _logger.debug("MAC response received from '{}' for '{}'".format(self._uri, mac))
             results = json.loads(response.read())
-        except Exception, e:
-            _logger.error("Failed to lookup '%(mac)s' on '%(uri)s': %(error)s" % {
-                'uri': self._uri,
-                'mac': str(mac),
-                'error': str(e),
-            })
+        except Exception as e:
+            _logger.error("Failed to lookup '{}' on '{}': {}".format(mac, self._uri, e))
             raise
         else:
             if results:
-                _logger.debug("Known MAC response from '%(uri)s' for '%(mac)s': %(results)r" % {
-                    'uri': self._uri,
-                    'mac': str(mac),
-                    'results': results,
-                })
+                _logger.debug("Known MAC response from '{}' for '{}': {!r}".format(self._uri, mac, results))
 
                 if isinstance(results, list): #Multi-definition response
                     return [_parse_server_response(self._set_defaults(result)) for result in results]
                 return _parse_server_response(self._set_defaults(results))
             else: #The server sent back 'null' or an empty object
-                _logger.debug("Unknown MAC response from '%(uri)s' for '%(mac)s': %(results)r" % {
-                    'uri': self._uri,
-                    'mac': str(mac),
-                    'results': results,
-                })
+                _logger.debug("Unknown MAC response from '{}' for '{}': {!r}".format(self._uri, mac, results))
                 return None
 
     def _set_defaults(self, json_data):
