@@ -737,7 +737,7 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
         """
         with self._lock:
             self._ignored_addresses.append([tuple(mac), config.UNAUTHORIZED_CLIENT_TIMEOUT])
-        _logger.warning("{mac} was temporarily banlisted for {time} seconds, following {packet_type}: {reason}".format(
+        _logger.warning("{mac} was temporarily banlisted for {time} seconds following {packet_type}: {reason}".format(
             mac=mac,
             time=config.UNAUTHORIZED_CLIENT_TIMEOUT,
             packet_type=packet_type,
