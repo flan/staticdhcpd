@@ -210,19 +210,26 @@ Just don't contact Mathieu Ignacio with any complaints; he may have provided a c
 # Credits #
 [Neil Tallim](http://uguu.ca/)
   * Architecture and implementation
+  
 Mathieu Ignacio
   * [pydhcplib](http://pydhcplib.tuxfamily.org/pmwiki/)
+  
 Matthew Boedicker
   * Oracle support; sanity checking
+  
 Andrew Xuan
   * Lots of constructive feedback
+  
 John Stowers
   * Inspiration for making the database engine more flexible
   * Ideas for several features that helped to define what 2.0 should be
+  
 Aleksandr Chusov
   * Lots of 2.0.0 dev-branch testing: stepping on glass so nobody else had to
+  
 Ken Mitchell
   * Identification and testing of the broadcast bit, meaning that every client should now be supported
+  
 Anthony Woods
   * Suggestions that led to enabling site-specific metadata to be stored and easily accessed in databases ("definition.extra") and unifying Definition across the codebase
 
