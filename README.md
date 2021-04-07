@@ -129,13 +129,13 @@ All features are continuously and thoroughly tested against the ISC's <tt>dhclie
 # Documentation #
 All documentation found outside of the following resources is pre-2.0.0 and should be considered deprecated.
 
-3.0.x is largely identical to 2.0.x, with the exception of any eratta noted below.
+3.0.x is largely identical to 2.0.x, with the exception of any errata noted below.
 
 libpydhcpserver: http://static.uguu.ca/projects/libpydhcpserver/doc/
 
 staticDHCPd: http://static.uguu.ca/projects/staticDHCPd/doc/
 
-## 3.0 eratta ##
+## 3.0 errata ##
 
 ### Extensions ###
 * Owing to conflicts with Python's standard library and changes to how import-semantics work, extensions now live in `/etc/staticDHCPd/staticDHCPd_extensions`
