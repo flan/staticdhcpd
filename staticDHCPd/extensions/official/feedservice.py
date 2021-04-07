@@ -17,7 +17,7 @@ like this:
 For a list of all parameters you may define, see below.
 
 Then add the following to conf.py's init() function:
-    import feedservice
+    import staticDHCPd_extensions.feedservice
 
 Like staticDHCPd, this module under the GNU General Public License v3
 (C) Neil Tallim, 2021 <flan@uguu.ca>

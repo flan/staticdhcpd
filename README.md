@@ -41,13 +41,14 @@ The 3.0.0 branch will need to be tested; the running checklist follows (if you t
       * connection-pooling
         * _should work with at least Postgres and MySQL; ideally also Oracle_
   * Extensions
-    * _contrib-extensions need to be tested to make sure the import semantics work intuitively_
+    * ~~_contrib-extensions need to be tested to make sure the import semantics work intuitively_~~
     * httpdb
       * _it needs to work_
-    * statistics (with various config options)
-      * _it needs to work_
+    * ~~statistics (with various config options)~~
+      * ~~_it needs to work_~~
     * statistics (with pycha)
       * _it needs to work_
+      * **currently broken: pycha refers to an attribute of a Cairo surface that doesn't seem to expst anymore**
     * dynamism
       * _must handle dynamic allocation_
       * _must honour renewals and rebinds with the same address_
@@ -136,7 +137,11 @@ staticDHCPd: http://static.uguu.ca/projects/staticDHCPd/doc/
 
 ## 3.0 eratta ##
 
-None right now.
+### Extensions ###
+* Owing to conflicts with Python's standard library and changes to how import-semantics work, extensions now live in `/etc/staticDHCPd/staticDHCPd_extensions`
+  * To migrate, move any existing extensions from `/etc/staticDHCPd/extensions/` and change the corresponding `import` lines in `conf.py` to be `import staticDHCPd_extensions.<extension>`
+  * No other changes should be needed in the common case
+
 
 ---
 

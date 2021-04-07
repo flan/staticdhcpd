@@ -42,7 +42,7 @@ setup(
         ('/etc/staticDHCPd', [
             'conf/conf.py.sample',
         ]),
-        ('/etc/staticDHCPd/extensions', [
+        ('/etc/staticDHCPd/staticDHCPd_extensions', [
             'conf/extensions/HOWTO',
         ]),
     ],

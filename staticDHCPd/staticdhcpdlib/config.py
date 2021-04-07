@@ -38,7 +38,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 conf = None
 import os
 import sys
-import imp
+from importlib.machinery import SourceFileLoader
 
 if 'STATICDHCPD_CONF_PATH' in os.environ:
     conf_search_paths = [os.path.dirname(os.environ['STATICDHCPD_CONF_PATH'])]
@@ -46,24 +46,24 @@ else:
     conf_search_paths = [os.path.join(os.getcwd(), 'conf'), '/etc/staticDHCPd']
 
 for conf_path in conf_search_paths:
-    extensions_path = os.path.join(conf_path, 'extensions')
+    extensions_path = os.path.join(conf_path, 'staticDHCPd_extensions')
     sys.path.append(conf_path)
-    sys.path.append(extensions_path)
     try: #Attempt to import conf.py from the path
-        conf = imp.load_source('conf', os.path.join(conf_path, 'conf.py'))
+        conf = SourceFileLoader('conf', os.path.join(conf_path, 'conf.py')).load_module()
+        print(repr(conf))
+        print(dir(conf))
     except IOError:
         sys.path.remove(conf_path)
-        sys.path.remove(extensions_path)
     else:
         break
 else:
-    raise ImportError("Unable to find a suitable copy of conf.py; searched: {!r}".format(conf_search_paths))
+    raise ImportError("Unable to find a suitable instance of conf.py; searched: {!r}".format(conf_search_paths))
 
 del conf_search_paths
 del conf_path
 del os
 del sys
-del imp
+del SourceFileLoader
 
 #Options passed through from conf.py
 #For explanations, please consult that file.

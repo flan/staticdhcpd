@@ -12,7 +12,7 @@ avoid communicating with the server until their lease is almost up, rather than
 at 50% and 75%, which is spec-default.
 
 To use this module, add the following to conf.py's init() function:
-    import dynamism
+    import staticDHCPd_extensions.dynamism as dynamism
     global _dynamic_pool
     _dynamic_pool = dynamism.DynamicPool(<see its __init__ for parameters>)
     #Add 192.168.250.100-200

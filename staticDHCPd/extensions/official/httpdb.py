@@ -9,7 +9,7 @@ needs to be rewritten, so just look for the comments.
 To use this module without making any code changes, make the following changes
 to conf.py; if anything more sophisticated is required, fork it and hack away:
     Locate the DATABASE_ENGINE line and replace it with the following two lines:
-        import httpdb
+        import staticDHCPd_extensions.httpdb
         DATABASE_ENGINE = httpdb.HTTPDatabase #or httpdb.HTTPCachingDatabase
 
     Anywhere above the 'import httpdb' line, define any of the following
