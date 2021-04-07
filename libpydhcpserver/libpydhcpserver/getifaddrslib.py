@@ -27,7 +27,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 Authors
 =======
-Neil Tallim <flan@uguu.ca>
+Neil Tallim <neil.tallim@linux.com>
 """
 import ctypes
 import ctypes.util

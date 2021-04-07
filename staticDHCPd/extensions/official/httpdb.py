@@ -41,7 +41,7 @@ If concurrent connections to your HTTP server should be limited, use
 HTTPCachingDatabase instead of HTTPDatabase.
 
 Like staticDHCPd, this module under the GNU General Public License v3
-(C) Neil Tallim, 2021 <flan@uguu.ca>
+(C) Neil Tallim, 2021 <neil.tallim@linux.com>
 
 Created in response to a request from Aleksandr Chusov.
 Enhanced with feedback from Helios de Creisquer.

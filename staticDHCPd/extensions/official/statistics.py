@@ -13,7 +13,7 @@ Then add the following to conf.py's init() function:
     import staticDHCPd_extensions.statistics
 
 Like staticDHCPd, this module under the GNU General Public License v3
-(C) Neil Tallim, 2021 <flan@uguu.ca>
+(C) Neil Tallim, 2021 <neil.tallim@linux.com>
 """
 from staticdhcpdlib import config
 _config = config.conf.extensions.statistics

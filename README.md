@@ -48,7 +48,7 @@ The 3.0.0 branch will need to be tested; the running checklist follows (if you t
       * ~~_it needs to work_~~
     * statistics (with pycha)
       * _it needs to work_
-      * **currently broken: pycha refers to an attribute of a Cairo surface that doesn't seem to expst anymore**
+      * **currently broken: pycha refers to an attribute of a Cairo surface that doesn't seem to exist anymore**
     * dynamism
       * _must handle dynamic allocation_
       * _must honour renewals and rebinds with the same address_

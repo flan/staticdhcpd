@@ -1,5 +1,5 @@
 Source: libpydhcpserver
-Maintainer: Neil Tallim <flan@uguu.ca>
+Maintainer: Neil Tallim <neil.tallim@linux.com>
 Section: python
 Priority: optional
 Build-Depends: python3 (>= 3.5), debhelper (>= 12), dh-python

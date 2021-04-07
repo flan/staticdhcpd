@@ -2,7 +2,7 @@ libpydhcpserver (3.0.0) unstable; urgency=low
 
   * Ported to Python 3.
 
- -- Neil Tallim <flan@uguu.ca>  Sun, 28 Mar 2021 17:33:00 +0000
+ -- Neil Tallim <neil.tallim@linux.com>  Sun, 28 Mar 2021 17:33:00 +0000
 
 libpydhcpserver (2.0.0) unstable; urgency=low
 
