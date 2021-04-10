@@ -95,8 +95,8 @@ _defaults.update({
     'USE_CACHE': False,
     'CACHING_MODEL': 'in-process',
 
-    'PERSISTENT_CACHE': None,
-    'CACHE_ON_DISK': False,
+    'DISK_CACHE': False,
+    'DISK_CACHE_PERSISTENT': None,
 
     'MEMCACHED_HOST': None,
     'MEMCACHED_PORT': 11211,
@@ -182,8 +182,18 @@ _defaults.update({
 
 #Construct a unified namespace
 #######################################
+_REMAPPED_KEYS = {
+    #caching keys weren't very consistent and other caching models started to get introduced
+    'CACHE_ON_DISK': 'DISK_CACHE',
+    'PERSISTENT_CACHE': 'DISK_CACHE_PERSISTENT',
+    
+    #PXE_PORT was renamed to PROXY_PORT because its role was misunderstood
+    'PXE_PORT': 'PROXY_PORT',
+} #keys that have had name-changes since prior versions
 for key in [k for k in dir(conf) if k.isupper()]: #Copy everything that looks like a constant.
-    globals()[key] = getattr(conf, key)
+    new_key = _REMAPPED_KEYS.get(key, key)
+    globals()[new_key] = getattr(conf, key)
+del _REMAPPED_KEYS
 
 for (key, value) in _defaults.items():
     if not key in globals():
@@ -192,10 +202,6 @@ del _defaults
 
 #Bind known functions and handle backwards-compatibility
 #######################################
-#PXE_PORT was renamed to PROXY_PORT because its role was misunderstood
-if 'PXE_PORT' in globals() and 'PROXY_PORT' not in globals():
-    PROXY_PORT = PXE_PORT
-
 import inspect
 if hasattr(conf, 'init'):
     init = conf.init

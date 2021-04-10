@@ -193,10 +193,10 @@ class CachingDatabase(Database):
         if config.USE_CACHE:
             from . import _caching
             if config.CACHING_MODEL == 'in-process':
-                if config.PERSISTENT_CACHE or config.CACHE_ON_DISK:
+                if config.DISK_CACHE_PERSISTENT or config.DISK_CACHE:
                     try:
-                        disk_cache = _caching.DiskCache(config.PERSISTENT_CACHE and 'persistent' or 'disk', config.PERSISTENT_CACHE)
-                        if config.CACHE_ON_DISK:
+                        disk_cache = _caching.DiskCache(config.DISK_CACHE_PERSISTENT and 'persistent' or 'disk', config.DISK_CACHE_PERSISTENT)
+                        if config.DISK_CACHE:
                             _logger.debug("Combining local caching database and persistent caching database")
                             self._cache = disk_cache
                         else:
@@ -204,10 +204,10 @@ class CachingDatabase(Database):
                             self._cache = _caching.MemoryCache('memory', chained_cache=disk_cache)
                     except Exception:
                         _logger.error("Unable to initialise disk-based caching:\n{}".format(traceback.format_exc()))
-                        if config.PERSISTENT_CACHE and not config.CACHE_ON_DISK:
+                        if config.DISK_CACHE_PERSISTENT and not config.DISK_CACHE:
                             _logger.warning("Persistent caching is not available")
                             self._cache = _caching.MemoryCache('memory-nonpersist')
-                        elif config.CACHE_ON_DISK:
+                        elif config.DISK_CACHE:
                             _logger.warning("Caching is disabled: memory-caching was not requested, so no fallback exists")
                 else:
                     _logger.debug("Setting up memory-cache")
@@ -224,10 +224,10 @@ class CachingDatabase(Database):
             else:
                 _logger.warning("'{}' database caching could not be enabled".format(config.CACHING_MODEL))
         else:
-            if config.PERSISTENT_CACHE:
-                _logger.warning("PERSISTENT_CACHE was set, but USE_CACHE was not")
-            if config.CACHE_ON_DISK:
-                _logger.warning("CACHE_ON_DISK was set, but USE_CACHE was not")
+            if config.DISK_CACHE_PERSISTENT:
+                _logger.warning("DISK_CACHE_PERSISTENT was set, but USE_CACHE was not")
+            if config.DISK_CACHE:
+                _logger.warning("DISK_CACHE was set, but USE_CACHE was not")
 
     def reinitialise(self):
         if self._cache:

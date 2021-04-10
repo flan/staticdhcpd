@@ -141,6 +141,8 @@ Server
   if required
 * ProxyDHCP normally runs on ``4011``
 
+* This option used to be named **PXE_PORT**, which will still be honoured.
+
 
 Caching
 +++++++
@@ -155,7 +157,7 @@ is set.
     memory or an on-disk file accessed exclusively by *staticDHCPd*
   * ``'memcached'``: use a *memcached* server as an external store
 
-**CACHE_ON_DISK** : boolean : default=False
+**DISK_CACHE** : boolean : default=False
 |||||||||||||||||||||||||||||||||||||||||||
 * Causes the local cache to be managed as a local file, rather than a purely
   in-memory construct
@@ -163,20 +165,24 @@ is set.
   * For largeish caches that are accessed infrequently, but where local access
     through disk (or hotspot-cached pages in RAM) is still expected to be more
     efficient than a remote database call
-  * This file will be temporary, unless **PERSISTENT_CACHE** is set; in that
+  * This file will be temporary, unless **DISK_CACHE_PERSISTENT** is set; in that
     case, the file will be the same
+    
+* This option used to be named **CACHE_ON_DISK**, which will still be honoured.
 
-**PERSISTENT_CACHE** : text : default=None
+**DISK_CACHE_PERSISTENT** : text : default=None
 ||||||||||||||||||||||||||||||||||||||||||
 * Causes the cache to be written to a local database file, which will be used
   when *staticDHCPd* is restarted, to provide durability against unstable
   databases
 * The value of this option is the path to the file;
   ``'/var/tmp/staticDHCPd.db'`` is usually a good choice
-* If **CACHE_ON_DISK** is set, this file will be used directly as a buffer; if
+* If **DISK_CACHE** is set, this file will be used directly as a buffer; if
   not, the contents of this file will be read into memory and this file will be
   write-only at runtime
 
+* This option used to be named **PERSISTENT_CACHE**, which will still be honoured.
+  
 **MEMCACHED_HOST** : text : default=None
 ||||||||||||||||||||||||||||||||||||||||
 * The address of the *memcached* server to use with the corresponding model
