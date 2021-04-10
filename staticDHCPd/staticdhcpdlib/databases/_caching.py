@@ -165,21 +165,27 @@ class MemcachedCache(_DatabaseCache):
             node in the chain; None if this is the end.
         """
         _DatabaseCache.__init__(self, name, chained_cache=chained_cache)
-        import memcache
-        memcached_address = '{}:{}'.format(memcached_server_data[0], memcached_server_data[1])
-        self.mc_client = memcache.Client([memcached_address])
+        import pymemcache.client.base
+        self.mc_client = pymemcache.client.base.Client(
+            (memcached_server_data[0], memcached_server_data[1]),
+            connect_timeout=1.0, timeout=1.0,
+        )
         self.memcached_age_time = memcached_age_time
         _logger.debug("Memcached database-cache initialised")
 
     def _lookupMAC(self, mac):
         data = self.mc_client.get(str(mac))
         if data:
-            results = []
+            pending = {}
             for datum in json.loads(data):
-                (ip, hostname, extra, subnet_id) = datum
-                subnet_str = self._create_subnet_key(subnet_id)
-                details = self.mc_client.get(subnet_str)
+                (_, _, _, subnet_id) = datum
+                pending[self._create_subnet_key(subnet_id)] = datum
+                
+            results = []
+            for (key, details) in self.mc_client.get_many(list(pending)).items():
                 if details:
+                    details = json.loads(details)
+                    (ip, hostname, extra, subnet_id) = pending[key]
                     results.append(Definition(
                         ip=ip, lease_time=details[6], subnet=subnet_id[0], serial=subnet_id[1],
                         hostname=hostname,
@@ -188,31 +194,30 @@ class MemcachedCache(_DatabaseCache):
                         extra=extra,
                     ))
             if results:
+                if len(results) == 1:
+                    return results[0]
                 return results
         return None
 
     def _cacheMAC(self, mac, definition, chained):
         if isinstance(definition, Definition):
-            definitions = [definition]
+            definitions = (definition,)
         else:
             definitions = definition
 
+        cache_records = {}
         mac_list = []
         for definition in definitions:
             subnet_id = (definition.subnet, definition.serial)
-            subnet_str = self._create_subnet_key(subnet_id)
             mac_list.append((definition.ip, definition.hostname, definition.extra, subnet_id))
-            self.mc_client.set(
-                subnet_str,
-                (
-                    definition.gateways, definition.subnet_mask, definition.broadcast_address,
-                    definition.domain_name, definition.domain_name_servers, definition.ntp_servers,
-                    definition.lease_time
-                ),
-                self.memcached_age_time,
-            )
-        self.mc_client.set(str(mac), json.dumps(mac_list), self.memcached_age_time)
-
+            cache_records[self._create_subnet_key(subnet_id)] = json.dumps((
+                definition.gateways, definition.subnet_mask, definition.broadcast_address,
+                definition.domain_name, definition.domain_name_servers, definition.ntp_servers,
+                definition.lease_time,
+            ))
+        cache_records[str(mac)] = json.dumps(mac_list)
+        self.mc_client.set_many(cache_records, expire=self.memcached_age_time)
+        
     def _create_subnet_key(self, subnet_id):
         return "{}-{}".format(subnet_id[0].replace(" ", "_"), subnet_id[1])
 
