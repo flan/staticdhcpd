@@ -1,6 +1,6 @@
+#!/usr/bin/env python3
 # -*- encoding: utf-8 -*-
 import select
-import threading
 import traceback
 
 import libpydhcpserver.dhcp
@@ -9,7 +9,6 @@ from libpydhcpserver.dhcp_types.mac import MAC
 
 _HARDCODED_MACS_TO_IPS = {
     MAC('00:11:22:33:44:55'): IPv4('192.168.0.100'),
-    MAC('08:00:27:2c:45:8b'): IPv4('192.168.0.143'),
 }
 _SUBNET_MASK = IPv4('255.255.255.0')
 _LEASE_TIME = 120 #seconds
@@ -39,17 +38,28 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
     def _handleDHCPRequest(self, packet, source_address, port):
         sid = packet.extractIPOrNone("server_identifier")
         ciaddr = packet.extractIPOrNone("ciaddr")
+        riaddr = packet.extractIPOrNone("requested_ip_address")
+        
+        mac = packet.getHardwareAddress()
+        ip = _HARDCODED_MACS_TO_IPS.get(mac)
         
         if sid and not ciaddr: #SELECTING
-            mac = packet.getHardwareAddress()
-            ip = _HARDCODED_MACS_TO_IPS.get(mac)
-            
-            if ip and sid == self._server_address: #our offer was chosen
+            if ip and sid == self._server_address: #SELECTING; our offer was chosen
                 packet.transformToDHCPAckPacket()
                 packet.setOption('yiaddr', ip)
                 packet.setOption(1, _SUBNET_MASK)
                 packet.setOption(51, _LEASE_TIME)
                 
+                self._emitDHCPPacket(
+                    packet, source_address, port,
+                    mac, ip,
+                )
+        elif not sid and ciaddr and not riaddr: #RENEWING or REBINDING
+            if ip and ip == ciaddr:
+                packet.transformToDHCPAckPacket()
+                packet.setOption('yiaddr', ip)
+                packet.setOption(1, _SUBNET_MASK)
+                packet.setOption(51, _LEASE_TIME)
                 self._emitDHCPPacket(
                     packet, source_address, port,
                     mac, ip,
@@ -68,7 +78,7 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
 
 if __name__ == '__main__':
     dhcp_server = _DHCPServer(
-        IPv4('192.168.0.206'), #the address on which you want to listen for traffic
+        IPv4('192.168.0.1'), #the address on which you want to listen for traffic
         67, #server port
         68, #client port
         None, #proxy port
