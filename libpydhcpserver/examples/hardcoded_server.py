@@ -1,5 +1,17 @@
 #!/usr/bin/env python3
 # -*- encoding: utf-8 -*-
+"""
+This is a minimal example showing how to use libpydhcpserver with well-behaved
+clients.
+
+It's entirely unsuitable for production work, but if you want to create a new
+server or experiment with a network, it should give you enough to get started.
+
+It will handle offers, renew, and rebind requests, so it should be enough to
+bring a few hosts online for learning purposes.
+
+Check the documentation for more information.
+"""
 import select
 import traceback
 
@@ -13,6 +25,11 @@ _HARDCODED_MACS_TO_IPS = {
 _SUBNET_MASK = IPv4('255.255.255.0')
 _LEASE_TIME = 120 #seconds
 
+def _loadDHCPPacket(packet):
+    packet.setOption('yiaddr', ip)
+    packet.setOption(1, _SUBNET_MASK)
+    packet.setOption(51, _LEASE_TIME)
+    
 class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
     def __init__(self, server_address, server_port, client_port, proxy_port, response_interface, response_interface_qtags, database):
         libpydhcpserver.dhcp.DHCPServer.__init__(
@@ -26,10 +43,7 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
         ip = _HARDCODED_MACS_TO_IPS.get(mac)
         if ip:
             packet.transformToDHCPOfferPacket()
-            packet.setOption('yiaddr', ip)
-            packet.setOption(1, _SUBNET_MASK)
-            packet.setOption(51, _LEASE_TIME)
-
+            _loadDHCPPacket(packet)
             self._emitDHCPPacket(
                 packet, source_address, port,
                 mac, ip,
@@ -46,20 +60,15 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
         if sid and not ciaddr: #SELECTING
             if ip and sid == self._server_address: #SELECTING; our offer was chosen
                 packet.transformToDHCPAckPacket()
-                packet.setOption('yiaddr', ip)
-                packet.setOption(1, _SUBNET_MASK)
-                packet.setOption(51, _LEASE_TIME)
-                
+                _loadDHCPPacket(packet)
                 self._emitDHCPPacket(
-                    packet, source_address, port,
+                    #packet, source_address, port,
                     mac, ip,
                 )
         elif not sid and ciaddr and not riaddr: #RENEWING or REBINDING
             if ip and ip == ciaddr:
                 packet.transformToDHCPAckPacket()
-                packet.setOption('yiaddr', ip)
-                packet.setOption(1, _SUBNET_MASK)
-                packet.setOption(51, _LEASE_TIME)
+                _loadDHCPPacket(packet)
                 self._emitDHCPPacket(
                     packet, source_address, port,
                     mac, ip,
