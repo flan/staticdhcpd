@@ -385,6 +385,11 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
                                 to be sent.
         :param int proxy_port: The port on which to listen for proxyDHCP
                              requests, or None if ProxyDHCP support is disabled.
+        :param str|None response_interface: The interface on which to provide raw packet support,
+            like 'eth0', or None if not requested.
+        :param sequence|None response_interface_qtags: Any qtags to insert into raw packets, in
+            order of appearance. Definitions take the following form:
+            (pcp:`0-7`, dei:``bool``, vid:`1-4094`)
         :param :class:`databases.generic.Database` database: The database to use
             for retrieving lease definitions.
         :except Exception: A problem occurred while initializing the sockets
