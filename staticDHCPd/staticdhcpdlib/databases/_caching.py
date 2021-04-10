@@ -96,6 +96,7 @@ class _DatabaseCache(Database):
             self._chained_cache.cacheMAC(mac, definition, chained=False)
     def _cacheMAC(self, mac, definition, chained): pass
 
+
 class MemoryCache(_DatabaseCache):
     """
     An optimised in-memory database cache.
@@ -122,30 +123,42 @@ class MemoryCache(_DatabaseCache):
         self._subnet_cache.clear()
 
     def _lookupMAC(self, mac):
-        data = self._mac_cache.get(int(mac))
-        if data:
-            (ip, hostname, extra, subnet_id) = data
-            details = self._subnet_cache[subnet_id]
-            return Definition(
-                ip=ip, lease_time=details[6], subnet=subnet_id[0], serial=subnet_id[1],
-                hostname=hostname,
-                gateways=details[0], subnet_mask=details[1], broadcast_address=details[2],
-                domain_name=details[3], domain_name_servers=details[4], ntp_servers=details[5],
-                extra=extra,
-            )
+        cache = self._mac_cache.get(int(mac))
+        if cache:
+            definitions = []
+            for data in cache:
+                (ip, hostname, extra, subnet_id) = data
+                details = self._subnet_cache[subnet_id]
+                definitions.append(Definition(
+                    ip=ip, lease_time=details[6], subnet=subnet_id[0], serial=subnet_id[1],
+                    hostname=hostname,
+                    gateways=details[0], subnet_mask=details[1], broadcast_address=details[2],
+                    domain_name=details[3], domain_name_servers=details[4], ntp_servers=details[5],
+                    extra=extra,
+                ))
+            if definitions:
+                if len(definitions) == 1:
+                    return definitions[0]
+                return definitions
         return None
 
     def _cacheMAC(self, mac, definition, chained):
-        if not isinstance(definition, Definition):
-            raise ValueError("MemoryCache currently only supports caching a single Definition.")
+        if isinstance(definition, Definition):
+            definitions = (definition,)
+        else:
+            definitions = definition
+            
+        mac_cache = []
+        for definition in definitions:
+            subnet_id = (definition.subnet, definition.serial)
+            mac_cache.append((definition.ip, definition.hostname, definition.extra, subnet_id))
+            self._subnet_cache[subnet_id] = (
+                definition.gateways, definition.subnet_mask, definition.broadcast_address,
+                definition.domain_name, definition.domain_name_servers, definition.ntp_servers,
+                definition.lease_time,
+            )
+        self._mac_cache[int(mac)] = mac_cache
 
-        subnet_id = (definition.subnet, definition.serial)
-        self._mac_cache[int(mac)] = (definition.ip, definition.hostname, definition.extra, subnet_id)
-        self._subnet_cache[subnet_id] = (
-            definition.gateways, definition.subnet_mask, definition.broadcast_address,
-            definition.domain_name, definition.domain_name_servers, definition.ntp_servers,
-            definition.lease_time,
-        )
 
 class MemcachedCache(_DatabaseCache):
     """
@@ -220,6 +233,7 @@ class MemcachedCache(_DatabaseCache):
         
     def _create_subnet_key(self, subnet_id):
         return "{}-{}".format(subnet_id[0].replace(" ", "_"), subnet_id[1])
+
 
 class DiskCache(_DatabaseCache):
     _filepath = None #: The path to which the persistent file will be written
