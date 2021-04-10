@@ -222,7 +222,7 @@ class MemcachedCache(_DatabaseCache):
         mac_list = []
         for definition in definitions:
             subnet_id = (definition.subnet, definition.serial)
-            mac_list.append((definition.ip, definition.hostname, definition.extra, subnet_id))
+            mac_list.append((definition.ip and str(definition.ip), definition.hostname, definition.extra, subnet_id))
             cache_records[self._create_subnet_key(subnet_id)] = json.dumps((
                 definition.gateways, definition.subnet_mask, definition.broadcast_address,
                 definition.domain_name, definition.domain_name_servers, definition.ntp_servers,
@@ -298,11 +298,7 @@ class DiskCache(_DatabaseCache):
         )""")
         cursor.execute("""CREATE TABLE IF NOT EXISTS maps (
             mac INTEGER PRIMARY KEY,
-            ip TEXT,
-            hostname TEXT,
-            subnet TEXT,
-            serial INTEGER,
-            extra TEXT
+            details TEXT
         )""")
         database.commit()
         self._disconnect(database, cursor)
@@ -315,33 +311,53 @@ class DiskCache(_DatabaseCache):
         self._disconnect(database, cursor)
 
     def _lookupMAC(self, mac):
+        definitions = []
+        
         (database, cursor) = self._connect()
         cursor.execute("""SELECT
-            m.ip, m.hostname,
-            s.gateway, s.subnet_mask, s.broadcast_address, s.domain_name, s.domain_name_servers,
-            s.ntp_servers, s.lease_time, s.subnet, s.serial,
-            m.extra
-        FROM maps m, subnets s
+            details
+        FROM maps
         WHERE
-            m.mac = ? AND
-            m.subnet = s.subnet AND
-            m.serial = s.serial
+            mac = ?
         LIMIT 1""", (int(mac),))
         result = cursor.fetchone()
-        self._disconnect(database, cursor)
         if result:
-            return Definition(
-                ip=result[0], hostname=result[1],
-                gateways=result[2], subnet_mask=result[3], broadcast_address=result[4],
-                domain_name=result[5], domain_name_servers=result[6], ntp_servers=result[7],
-                lease_time=result[8], subnet=result[9], serial=result[10],
-                extra=json.loads(result[11]),
-            )
+            for (ip, hostname, extra, subnet, serial) in json.loads(result):
+                cursor.execute("""SELECT
+                    gateway, subnet_mask, broadcast_address, domain_name, domain_name_servers,
+                    ntp_servers, lease_time
+                FROM subnets
+                WHERE
+                    subnet = ? AND
+                    serial = ?
+                LIMIT 1""", (subnet, serial,))
+                result = cursor.fetchone()
+                if result:
+                    definitions.append(Definition(
+                        ip=ip, hostname=hostname,
+                        gateways=result[0], subnet_mask=result[1], broadcast_address=result[2],
+                        domain_name=result[3], domain_name_servers=result[4], ntp_servers=result[5],
+                        lease_time=result[6], subnet=subnet, serial=serial,
+                        extra=extra,
+                    ))
+        self._disconnect(database, cursor)
+        
+        if definitions:
+            if len(definitions) == 1:
+                return definitions[0]
+            return definitions
         return None
 
     def _cacheMAC(self, mac, definition, chained):
-        if not isinstance(definition, Definition):
-            raise ValueError("DiskCache currently only supports caching a single Definition.")
+        if isinstance(definition, Definition):
+            definitions = (definition,)
+        else:
+            definitions = definition
+            
+        mac_list = []
+        for definition in definitions:
+            mac_list.append((definition.ip and str(definition.ip), definition.hostname, definition.extra, definition.subnet, definition.serial))
+            
         (database, cursor) = self._connect()
         cursor.execute("""INSERT OR IGNORE INTO subnets (
             subnet, serial,
@@ -362,16 +378,10 @@ class DiskCache(_DatabaseCache):
             definition.domain_name_servers and ','.join(str(i) for i in definition.domain_name_servers),
             definition.domain_name,
         ))
-        cursor.execute("""INSERT INTO maps (
-            mac,
-            ip, hostname,
-            subnet, serial,
-            extra
-        ) VALUES (?, ?, ?, ?, ?, ?)""", (
-            int(mac),
-            definition.ip and str(definition.ip), definition.hostname,
-            definition.subnet, definition.serial,
-            json.dumps(definition.extra),
+        cursor.execute("""INSERT OR REPLACE INTO maps (
+            mac, details
+        ) VALUES (?, ?)""", (
+            int(mac), json.dumps(mac_list),
         ))
         database.commit()
         self._disconnect(database, cursor)
