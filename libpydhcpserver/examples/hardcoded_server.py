@@ -26,7 +26,7 @@ _SUBNET_MASK = IPv4('255.255.255.0')
 _LEASE_TIME = 120 #seconds
 
 class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
-    def __init__(self, server_address, server_port, client_port, proxy_port, response_interface, response_interface_qtags, database):
+    def __init__(self, server_address, server_port, client_port, proxy_port, response_interface, response_interface_qtags):
         libpydhcpserver.dhcp.DHCPServer.__init__(
             self, server_address, server_port, client_port, proxy_port,
             response_interface=response_interface,
@@ -91,14 +91,14 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
 
 if __name__ == '__main__':
     dhcp_server = _DHCPServer(
-        IPv4('192.168.0.1'), #the address on which you want to listen for traffic
-        67, #server port
-        68, #client port
-        None, #proxy port
-        None, #specific response-interface name
-        None, #qtags
-        None, #database
+        server_address=IPv4('192.168.0.1'),
+        server_port=67,
+        client_port=68,
+        proxy_port=None,
+        response_interface=None,
+        response_interface_qtags=None,
     )
+    
     while True:
         try:
             dhcp_server.getNextDHCPPacket()
