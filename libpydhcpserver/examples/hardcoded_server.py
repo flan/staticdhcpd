@@ -25,11 +25,6 @@ _HARDCODED_MACS_TO_IPS = {
 _SUBNET_MASK = IPv4('255.255.255.0')
 _LEASE_TIME = 120 #seconds
 
-def _loadDHCPPacket(packet):
-    packet.setOption('yiaddr', ip)
-    packet.setOption(1, _SUBNET_MASK)
-    packet.setOption(51, _LEASE_TIME)
-    
 class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
     def __init__(self, server_address, server_port, client_port, proxy_port, response_interface, response_interface_qtags, database):
         libpydhcpserver.dhcp.DHCPServer.__init__(
@@ -43,7 +38,10 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
         ip = _HARDCODED_MACS_TO_IPS.get(mac)
         if ip:
             packet.transformToDHCPOfferPacket()
-            _loadDHCPPacket(packet)
+            packet.setOption('yiaddr', ip)
+            packet.setOption(1, _SUBNET_MASK)
+            packet.setOption(51, _LEASE_TIME)
+
             self._emitDHCPPacket(
                 packet, source_address, port,
                 mac, ip,
@@ -60,15 +58,21 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
         if sid and not ciaddr: #SELECTING
             if ip and sid == self._server_address: #SELECTING; our offer was chosen
                 packet.transformToDHCPAckPacket()
-                _loadDHCPPacket(packet)
+                packet.setOption('yiaddr', ip)
+                packet.setOption(1, _SUBNET_MASK)
+                packet.setOption(51, _LEASE_TIME)
+                
                 self._emitDHCPPacket(
-                    #packet, source_address, port,
+                    packet, source_address, port,
                     mac, ip,
                 )
         elif not sid and ciaddr and not riaddr: #RENEWING or REBINDING
             if ip and ip == ciaddr:
                 packet.transformToDHCPAckPacket()
-                _loadDHCPPacket(packet)
+                packet.setOption('yiaddr', ip)
+                packet.setOption(1, _SUBNET_MASK)
+                packet.setOption(51, _LEASE_TIME)
+                
                 self._emitDHCPPacket(
                     packet, source_address, port,
                     mac, ip,
