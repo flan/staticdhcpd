@@ -22,7 +22,6 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 (C) Neil Tallim, 2021 <flan@uguu.ca>
 """
-import pickle
 import json
 import logging
 import threading
@@ -176,7 +175,7 @@ class MemcachedCache(_DatabaseCache):
         data = self.mc_client.get(str(mac))
         if data:
             results = []
-            for datum in pickle.loads(data):
+            for datum in json.loads(data):
                 (ip, hostname, extra, subnet_id) = datum
                 subnet_str = self._create_subnet_key(subnet_id)
                 details = self.mc_client.get(subnet_str)
@@ -212,7 +211,7 @@ class MemcachedCache(_DatabaseCache):
                 ),
                 self.memcached_age_time,
             )
-        self.mc_client.set(str(mac), pickle.dumps(mac_list), self.memcached_age_time)
+        self.mc_client.set(str(mac), json.dumps(mac_list), self.memcached_age_time)
 
     def _create_subnet_key(self, subnet_id):
         return "{}-{}".format(subnet_id[0].replace(" ", "_"), subnet_id[1])
