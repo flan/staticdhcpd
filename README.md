@@ -4,7 +4,7 @@ staticDHCPd is an all-Python, [RFC 2131](http://www.ietf.org/rfc/rfc2131.txt)-co
 
 **Work has begun on porting ststicDHCPd to Python 3, as 3.0.0**
 
-The 3.0.0 branch will need to be tested; the running checklist follows (if you test a thing, send e-mail to Neil Tallim at the address in any source file):
+The 3.0.0 branch will need to be tested; the running checklist follows (if you test a thing, respond to issue #89):
   * ~~libpydhcpserver~~
     * ~~libpcap responder~~
       * ~~_it needs to work_~~
