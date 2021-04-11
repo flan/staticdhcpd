@@ -136,17 +136,23 @@ class DHCPServer(object):
                 pass
             else:
                 if packet.isDHCPRequestPacket():
-                    threading.Thread(target=self._handleDHCPRequest, args=(packet, source_address, port)).start()
+                    if self._handleDHCPRequest.__func__ is not DHCPServer._handleDHCPRequest: #only spawn a thread if there's an implementation to handle the packet
+                        threading.Thread(target=self._handleDHCPRequest, args=(packet, source_address, port)).start()
                 elif packet.isDHCPDiscoverPacket():
-                    threading.Thread(target=self._handleDHCPDiscover, args=(packet, source_address, port)).start()
+                    if self._handleDHCPDiscover.__func__ is not DHCPServer._handleDHCPDiscover:
+                        threading.Thread(target=self._handleDHCPDiscover, args=(packet, source_address, port)).start()
                 elif packet.isDHCPInformPacket():
-                    threading.Thread(target=self._handleDHCPInform, args=(packet, source_address, port)).start()
+                    if self._handleDHCPInform.__func__ is not DHCPServer._handleDHCPInform:
+                        threading.Thread(target=self._handleDHCPInform, args=(packet, source_address, port)).start()
                 elif packet.isDHCPReleasePacket():
-                    threading.Thread(target=self._handleDHCPRelease, args=(packet, source_address, port)).start()
+                    if self._handleDHCPRelease.__func__ is not DHCPServer._handleDHCPRelease:
+                        threading.Thread(target=self._handleDHCPRelease, args=(packet, source_address, port)).start()
                 elif packet.isDHCPDeclinePacket():
-                    threading.Thread(target=self._handleDHCPDecline, args=(packet, source_address, port)).start()
+                    if self._handleDHCPDecline.__func__ is not DHCPServer._handleDHCPDecline:
+                        threading.Thread(target=self._handleDHCPDecline, args=(packet, source_address, port)).start()
                 elif packet.isDHCPLeaseQueryPacket():
-                    threading.Thread(target=self._handleDHCPLeaseQuery, args=(packet, source_address, port)).start()
+                    if self._handleDHCPLeaseQuery.__func__ is not DHCPServer._handleDHCPLeaseQuery:
+                        threading.Thread(target=self._handleDHCPLeaseQuery, args=(packet, source_address, port)).start()
                 return (True, source_address)
         return (False, source_address)
 
