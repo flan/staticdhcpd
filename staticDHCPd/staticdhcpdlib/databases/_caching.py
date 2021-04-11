@@ -224,8 +224,12 @@ class MemcachedCache(_DatabaseCache):
             subnet_id = (definition.subnet, definition.serial)
             mac_list.append((definition.ip and str(definition.ip), definition.hostname, definition.extra, subnet_id))
             cache_records[self._create_subnet_key(subnet_id)] = json.dumps((
-                definition.gateways, definition.subnet_mask, definition.broadcast_address,
-                definition.domain_name, definition.domain_name_servers, definition.ntp_servers,
+                definition.gateways and ','.join(str(i) for i in definition.gateways),
+                definition.subnet_mask and str(definition.subnet_mask),
+                definition.broadcast_address and str(definition.broadcast_address),
+                definition.domain_name,
+                definition.domain_name_servers and ','.join(str(i) for i in definition.domain_name_servers),
+                definition.ntp_servers and ','.join(str(i) for i in definition.ntp_servers),
                 definition.lease_time,
             ))
         cache_records[str(mac)] = json.dumps(mac_list)
@@ -322,7 +326,7 @@ class DiskCache(_DatabaseCache):
         LIMIT 1""", (int(mac),))
         result = cursor.fetchone()
         if result:
-            for (ip, hostname, extra, subnet, serial) in json.loads(result):
+            for (ip, hostname, extra, subnet, serial) in json.loads(result[0]):
                 cursor.execute("""SELECT
                     gateway, subnet_mask, broadcast_address, domain_name, domain_name_servers,
                     ntp_servers, lease_time

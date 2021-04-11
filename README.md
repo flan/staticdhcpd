@@ -23,21 +23,21 @@ The 3.0.0 branch will need to be tested; the running checklist follows (if you t
         * ~~_it needs to work_~~
       * custom
         * _it needs to work_
-      * caching
-        * memory
-          * _it needs to work_
-        * disk
-          * _it needs to work_
-        * memcached
-          * _it needs to work_
+      * ~~caching~~
+        * ~~memory~~
+          * ~~_it needs to work_~~
+        * ~~disk~~
+          * ~~_it needs to work_~~
+        * ~~memcached~~
+          * ~~_it needs to work_~~
       * PostgreSQL
         * _it needs to work_
       * MySQL
         * _it needs to work_
       * Oracle
         * _it needs to work_
-      * SQLite
-        * _it needs to work_
+      * ~~SQLite~~
+        * ~~_it needs to work_~~
       * connection-pooling
         * _should work with at least Postgres and MySQL; ideally also Oracle_
   * Extensions
@@ -46,7 +46,7 @@ The 3.0.0 branch will need to be tested; the running checklist follows (if you t
       * _it needs to work_
     * ~~statistics (with various config options)~~
       * ~~_it needs to work_~~
-    * statistics (with pycha)
+    * statistics graph
       * _it needs to work_
       * **currently broken: pycha refers to an attribute of a Cairo surface that doesn't seem to exist anymore**
     * dynamism
