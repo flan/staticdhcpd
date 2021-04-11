@@ -764,7 +764,7 @@ class _L2Responder_pcap(_L2Responder):
         pcap = ctypes.cdll.LoadLibrary(pcap)
 
         errbuf = ctypes.create_string_buffer(256)
-        self._fd = pcap.pcap_open_live(response_interface, ctypes.c_int(0), ctypes.c_int(0), ctypes.c_int(0), errbuf)
+        self._fd = pcap.pcap_open_live(response_interface.encode('utf-8'), ctypes.c_int(0), ctypes.c_int(0), ctypes.c_int(0), errbuf)
         if not self._fd:
             import errno
             raise IOError(errno.EACCES, errbuf.value)
@@ -773,7 +773,7 @@ class _L2Responder_pcap(_L2Responder):
             warnings.warn(errbuf.value)
 
         try:
-            mac = b''.join(i for i in MAC(getifaddrslib.get_mac_address(response_interface)))
+            mac = bytes(MAC(getifaddrslib.get_mac_address(response_interface)))
         except Exception:
             pcap.pcap_close(self._fd)
             raise
