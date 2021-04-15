@@ -119,9 +119,9 @@ Internally, staticDHCPd makes use of a forked version of Mathieu Ignacio's [pydh
 
 A rich, fully customisable and extensible web-management console is included (and reasonably secure, through optional use of DIGEST authentication), intended to make life easy for NOC staff or curious administrators. It, a statistics engine, and a host of other features are all optional and lazily loaded, so your server will never be unnecessarily bloated.
 
-Comprehensive logging and reporting systems are built-in, from standard things like self-rotating files, to in-memory web-dashboard reporting, to Atom feeds for keeping an eye on the server while you stay up to date with the news, to e-mail notification for emergencies.
+Comprehensive logging and reporting systems are built-in, from standard things like self-rotating files to in-memory web-dashboard reporting to Atom feeds for keeping an eye on the server while you stay up to date with the news to e-mail notification for emergencies.
 
-All features are continuously and thoroughly tested against the ISC's <tt>dhclient</tt> and <tt>dhcrelay</tt>, to ensure compatibility with the DHCP protocol in realistic contexts. Furthermore, its developer uses it for practical purposes: a single home server manages multiple networks, containing various consumer electronics (phones, tablets, game consoles, printers), dedicated servers, laptops, desktops, and guest devices.
+All features tested against the ISC's <tt>dhclient</tt> and <tt>dhcrelay</tt> to ensure compatibility with the DHCP protocol in realistic contexts. Furthermore, its developer uses it for practical purposes: a single home server manages multiple networks, containing various consumer electronics (phones, tablets, game consoles, printers), dedicated servers, laptops, desktops, and guest devices.
 
 
 ---
