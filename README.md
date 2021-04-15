@@ -135,7 +135,7 @@ libpydhcpserver: http://static.uguu.ca/projects/libpydhcpserver/doc/
 
 staticDHCPd: http://static.uguu.ca/projects/staticDHCPd/doc/
 
-## 3.0 errata ##
+## 3.0.x errata ##
 
 ### Extensions ###
 * Owing to conflicts with Python's standard library and changes to how import-semantics work, extensions now live in `/etc/staticDHCPd/staticDHCPd_extensions`
