@@ -165,12 +165,12 @@ While SQLite or INI-files are fine for home users and small labs, most environme
 For the server itself, [specific schema-structuring](database.md) is required, for which scripts and examples can be found in the `samples` directory.
 
 Additionally, some database engines require additional packages:
-  * **Postgres** support requires installation of the [psycopg](http://initd.org/psycopg/) library (<tt>python-psycopg2</tt>)
+  * **Postgres** support requires installation of the [psycopg](http://initd.org/psycopg/) library (<tt>python3-psycopg2</tt>)
   * **Oracle** support requires installation (and likely compilation) of the [cx-oracle](http://cx-oracle.sourceforge.net/) library
-  * **MySQL** support requires installation of the [MySQLdb](http://mysql-python.sourceforge.net/) library (<tt>python-mysqlbd</tt>)
-  * Connection-pooling requires [eventlet](http://eventlet.net/) (<tt>python-eventlet</tt>)
+  * **MySQL** support requires installation of the [MySQLdb](http://mysql-python.sourceforge.net/) library (<tt>python3-mysqldb</tt>)
+  * Connection-pooling requires [eventlet](http://eventlet.net/) (<tt>python3-eventlet</tt>)
 
-While you're at it, you should also install <tt>python-scapy</tt> if you intend to use dynamic provisioning. It'll allow your network to serve as a living database for reconstructing leases after a server restart. [scapy](http://www.secdev.org/projects/scapy/) is also a pretty great library in general. And, if you want the snazzy load-graph in the web interface, also install <tt>python-pycha</tt>. These libraries aren't necessary, though: the associated components will function in a limited capacity if they're absent.
+While you're at it, you should also install <tt>python3-scapy</tt> if you intend to use dynamic provisioning. It'll allow your network to serve as a living database for reconstructing leases after a server restart. [scapy](http://www.secdev.org/projects/scapy/) is also a pretty great library in general. And, if you want the snazzy load-graph in the web interface, also install <tt>python3-pycha</tt>. These libraries aren't necessary, though: the associated components will function in a limited capacity if they're absent.
 
 ## Running ##
 Once everything's configured, you can launch the daemon with `sudo staticDHCPd`. You'll need to start it with superuser permissions because it needs to bind to restricted ports, but it'll switch to whatever permissions you specified in the config file once setup is complete.
