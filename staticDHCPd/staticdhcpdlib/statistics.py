@@ -85,7 +85,7 @@ Statistics associated with a DHCP event.
     :noindex:
 
     Whether the packet was fully processed (``False`` if non-DHCP or
-    banlisted).
+    blocklisted).
 
 .. py:attribute:: port
     :noindex:

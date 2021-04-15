@@ -129,8 +129,8 @@ class _PacketWrapper(object):
         Also ensures that statistical information is assembled and dispatched.
         """
         try:
-            if isinstance(value, _PacketSourceBanlist):
-                self._server.addToTempBanlist(self.mac, self._packet_type, str(value))
+            if isinstance(value, _PacketSourceBlocklist):
+                self._server.addToTempBlocklist(self.mac, self._packet_type, str(value))
                 return True
             elif isinstance(value, Exception):
                 _logger.critical("Unable to handle {} from  {}:\n{}".format(
@@ -239,8 +239,8 @@ class _PacketWrapper(object):
         :param :class:`libpydhcpserver.dhcp_types.packet.DHCPPacket` override_ip_value: The
             IP value to use for overriding.
         :return bool: True if the packet should be processed.
-        :except _PacketSourceBanlist: The packet should be temporarily
-                                        banlisted.
+        :except _PacketSourceBlocklist: The packet should be temporarily
+                                        blocklisted.
         """
         ip = self.ip
         if override_ip:
@@ -253,7 +253,7 @@ class _PacketWrapper(object):
             self.port,
         )
         if result is None:
-            raise _PacketSourceBanlist("filterPacket() returned None")
+            raise _PacketSourceBlocklist("filterPacket() returned None")
         return result
 
     def _loadDHCPPacket(self, definition, inform):
@@ -412,14 +412,14 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
         Informs the operator of a potential IP collision on the network.
 
         :param :class:`_PacketWrapper` wrapper: The wrapped packet to process.
-        :except _PacketSourceBanlist: The MAC appears to be generating false
+        :except _PacketSourceBlocklist: The MAC appears to be generating false
                                         information to disrupt the network.
         """
         if not wrapper.ip:
-            raise _PacketSourceBanlist("conflicting IP was not specified")
+            raise _PacketSourceBlocklist("conflicting IP was not specified")
 
         if not wrapper.sid:
-            raise _PacketSourceBanlist("server-identifier was not specified")
+            raise _PacketSourceBlocklist("server-identifier was not specified")
 
         if wrapper.sid == self._server_address: #Rejected!
             if not wrapper.filterPacket(): return
@@ -455,7 +455,7 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
         OFFER should be sent.
 
         :param :class:`_PacketWrapper` wrapper: The wrapped packet to process.
-        :except _PacketSourceBanlist: The MAC can't be handled, but it also
+        :except _PacketSourceBlocklist: The MAC can't be handled, but it also
                                         can't be NAKed, so reduce load.
         """
         if not wrapper.filterPacket(override_ip=True, override_ip_value=None): return
@@ -485,7 +485,7 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
                 )
                 wrapper.markAddressed()
             else:
-                raise _PacketSourceBanlist("unknown MAC and server is not authoritative; ignoring because rejection is impossible")
+                raise _PacketSourceBlocklist("unknown MAC and server is not authoritative; ignoring because rejection is impossible")
 
     @_dhcpHandler(_PACKET_TYPE_INFORM)
     def _handleDHCPInform(self, wrapper):
@@ -494,14 +494,14 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
         should be sent.
 
         :param :class:`_PacketWrapper` wrapper: The wrapped packet to process.
-        :except _PacketSourceBanlist: The MAC can't be handled, so reduce
+        :except _PacketSourceBlocklist: The MAC can't be handled, so reduce
                                         load.
         """
         if not wrapper.filterPacket(override_ip=True, override_ip_value=wrapper.ciaddr): return
         wrapper.announcePacket(ip=wrapper.ciaddr)
 
         if not wrapper.ciaddr:
-            raise _PacketSourceBanlist("ciaddr was not specified")
+            raise _PacketSourceBlocklist("ciaddr was not specified")
 
         definition = wrapper.retrieveDefinition(override_ip=True, override_ip_value=wrapper.ciaddr)
         if definition:
@@ -513,7 +513,7 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
                 )
                 wrapper.markAddressed()
         else:
-            raise _PacketSourceBanlist("unknown MAC")
+            raise _PacketSourceBlocklist("unknown MAC")
 
     @_dhcpHandler(_PACKET_TYPE_LEASEQUERY)
     def _handleDHCPLeaseQuery(self, wrapper):
@@ -662,11 +662,11 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
         Evaluates a RELEASE request, sent when a client terminates its "lease".
 
         :param :class:`_PacketWrapper` wrapper: The wrapped packet to process.
-        :except _PacketSourceBanlist: The MAC appears to be generating false
+        :except _PacketSourceBlocklist: The MAC appears to be generating false
                                         information to disrupt the network.
         """
         if not wrapper.sid:
-            raise _PacketSourceBanlist("server-identifier was not specified")
+            raise _PacketSourceBlocklist("server-identifier was not specified")
 
         if wrapper.sid == self._server_address: #Released!
             if not wrapper.filterPacket(override_ip=True, override_ip_value=wrapper.ciaddr): return
@@ -733,7 +733,7 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
         ))
         return bytes
 
-    def addToTempBanlist(self, mac, packet_type, reason):
+    def addToTempBlocklist(self, mac, packet_type, reason):
         """
         Marks a MAC as ignorable for a brief period of time.
 
@@ -742,7 +742,7 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
         """
         with self._lock:
             self._ignored_addresses.append([tuple(mac), config.UNAUTHORIZED_CLIENT_TIMEOUT])
-        _logger.warning("{mac} was temporarily banlisted for {time} seconds following {packet_type}: {reason}".format(
+        _logger.warning("{mac} was temporarily blocklisted for {time} seconds following {packet_type}: {reason}".format(
             mac=mac,
             time=config.UNAUTHORIZED_CLIENT_TIMEOUT,
             packet_type=packet_type,
@@ -751,7 +751,7 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
 
     def evaluateAbuse(self, mac):
         """
-        Determines whether the MAC is, or should be, banlisted.
+        Determines whether the MAC is, or should be, blocklisted.
 
         :param :class:`libpydhcpserver.dhcp_types.mac.MAC` mac: The MAC to be
                                                                 evaluated.
@@ -791,7 +791,7 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
 
     def tick(self):
         """
-        Cleans up the MAC banlist and the abuse-monitoring list.
+        Cleans up the MAC blocklist and the abuse-monitoring list.
         """
         with self._lock:
             for i in reversed(range(len(self._ignored_addresses))):
@@ -883,13 +883,13 @@ class _PacketRejection(Exception):
     """
     The base-class for indicating that a packet could not be processed.
     """
-class _PacketSourceBanlist(_PacketRejection):
+class _PacketSourceBlocklist(_PacketRejection):
     """
-    Indicates that the packet was added to a banlist, based on this event.
+    Indicates that the packet was added to a blocklist, based on this event.
     """
 class _PacketSourceIgnored(_PacketRejection):
     """
-    Indicates that the packet's sender is currently banlisted.
+    Indicates that the packet's sender is currently blocklisted.
     """
 class _PacketSourceUnacceptable(_PacketRejection):
     """

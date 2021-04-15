@@ -96,14 +96,14 @@ filterPacket()
 ++++++++++++++
 .. function:: filterPacket(packet, method, mac, client_ip, relay_ip, port)
 
-    Provides a means of writing your own banlist logic, excluding packets from
+    Provides a means of writing your own blocklist logic, excluding packets from
     sources you don't trust, that have done weird things, or under any other
     conceivable circumstance.
     
     It is called before the MAC is looked up in the database or by
     :func:`handleUnknownMAC`. Returning ``True`` will cause the MAC to proceed
     through the chain as normal, while returning ``False`` will cause it to be
-    discarded. Returning ``None`` will put it into the temporary banlist, like
+    discarded. Returning ``None`` will put it into the temporary blocklist, like
     other MACs that trip *staticDHCPd*'s configurable thresholds.
 
     :param packet: The packet received from the client, an instance of
@@ -246,7 +246,7 @@ loadDHCPPacket()
     Before any response is sent to a client, an opportunity is presented to
     allow you to modify the packet, adding or removing options and setting
     values as needed for your environment's specific requirements. Or even
-    allowing you to define your own banlist rules and behaviour.
+    allowing you to define your own blocklist rules and behaviour.
 
     :param packet: The packet to be sent to the client, an instance of
                    :class:`libpydhcpserver.dhcp_types.packet.DHCPPacket`.
