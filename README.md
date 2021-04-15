@@ -185,9 +185,9 @@ To kill the server, you can <tt>^C</tt> it in non-daemon mode, or send <tt>SIGTE
 # Getting involved with development #
 staticDHCPd is available under the [GPLv3](http://www.gnu.org/licenses/gpl-3.0.html). Accordingly, its full source code and all assets are available for use by anyone who wants to learn how something was done or to create a derivative work, as long as the terms of this license are upheld, which basically just amounts to not telling others they can't do the same with anything you publish. (Giving credit in anything you produce, while not strictly necessary, would be nice)
 
-Lending a hand is easy: just write a patch against a current SVN checkout and send it in or, if coding's not your thing, tell us what's not working the way it should and provide clear steps that describe how to reproduce the problem. As soon as we've had an opportunity to review your submission and make sure that it doesn't break anything, the code will be updated and you'll be credited.
+Lending a hand is easy: just send a pull-request with explanations of what it addresses; if coding's not your thing, tell us what's not working the way it should and provide clear steps that describe how to reproduce the problem. As soon as we've had an opportunity to review your submission and make sure that it doesn't break anything, the code will be updated and you'll be credited.
 
-All code is meticulously commented, as per Puukusoft standards. If you find an under-documented section of code, please let us know.
+All code is meticulously commented. If you find an under-documented section of code, please let us know.
 
 
 ---
@@ -200,7 +200,7 @@ For details on where the project is headed, check out the development feed at ht
 ---
 
 # Feedback #
-If staticDHCPd has helped you, please let us know. Conversely, if it exploded in your face and, after consulting the [FAQ](FAQ.md), you need help to get things working, also let us know: our works may be free, but we still pride ourselves on making them do what we claim they can do.
+If staticDHCPd has helped you, please let us know. Conversely, if it exploded in your face and, after consulting the [FAQ](FAQ.md), you need help to get things working, also let us know.
 
 Just don't contact Mathieu Ignacio with any complaints; he may have provided a crucial piece of this system, but he is not responsible for any mistakes we may have made.
 
