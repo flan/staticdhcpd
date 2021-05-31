@@ -94,8 +94,8 @@ def intToList(i):
     :return list(2): The converted value.
     """
     return [
-     i >> 8 & 0xFF,
-     i & 0xFF,
+        i >> 8 & 0xFF,
+        i & 0xFF,
     ]
     
 def intsToList(l):
