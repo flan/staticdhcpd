@@ -57,20 +57,24 @@ class MAC(object):
                 self._mac_integer >> 8 & 0xFF,
                 self._mac_integer & 0xFF,
             )
-        elif isinstance(address, str):
-            address = [c for c in address.lower() if c.isdigit() or 'a' <= c <= 'f']
-            if len(address) != 12:
-                raise ValueError("Expected twelve hex digits as a MAC identifier; received {}".format(len(address)))
-                
-            mac = []
-            while address:
-                mac.append(int(address.pop(0), 16) * 16 + int(address.pop(0), 16))
-            self._mac = tuple(mac)
         else:
-            self._mac = tuple(address)
-            if len(self._mac) != 6 or any((type(d) is not int or d < 0 or d > 255) for d in self._mac):
-                raise ValueError("Expected a sequence of six bytes as a MAC identifier; received {!r}".format(self._mac))
+            if isinstance(address, bytes):
+                address = address.decode('utf-8')
                 
+            if isinstance(address, str):
+                address = [c for c in address.lower() if c.isdigit() or 'a' <= c <= 'f']
+                if len(address) != 12:
+                    raise ValueError("Expected twelve hex digits as a MAC identifier; received {}".format(len(address)))
+                    
+                mac = []
+                while address:
+                    mac.append(int(address.pop(0), 16) * 16 + int(address.pop(0), 16))
+                self._mac = tuple(mac)
+            else:
+                self._mac = tuple(address)
+                if len(self._mac) != 6 or any((type(d) is not int or d < 0 or d > 255) for d in self._mac):
+                    raise ValueError("Expected a sequence of six bytes as a MAC identifier; received {!r}".format(self._mac))
+                    
     def __eq__(self, other):
         if not other and not isinstance(other, MAC):
             return False

@@ -231,7 +231,7 @@ class rfc3442_121(RFC):
                 raise ValueError("CIDR mask {mask} is not between 0 and 32".format(
                     mask=mask,
                 ))
-            width = mask / 8
+            width = mask // 8
             if mask % 8:
                 width += 1
                 

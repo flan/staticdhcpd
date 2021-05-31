@@ -52,6 +52,9 @@ class IPv4(object):
             self._ip = int(address)
             self._ip_tuple = tuple(longToList(self._ip))
         else:
+            if isinstance(address, bytes):
+                address = address.decode('utf-8')
+                
             if isinstance(address, str):
                 octets = (i.strip() for i in address.split('.'))
             else:

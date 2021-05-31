@@ -148,18 +148,20 @@ def listToStr(l):
     :param sequence l: The bytes to be converted.
     :return str: The converted byte-string.
     """
-    return ''.join(chr(i) for i in l)
+    return bytes(l)
     
 def strToList(s):
     """
     Converts a string into a sequence of bytes.
     
-    This will also handle unicode strings, so sanitise all input.
+    This will also process unicode strings, so sanitise all input.
     
     :param str s: The string to be converted.
     :return list: A sequence of bytes.
     """
-    return [ord(c) for c in s.encode('utf-8')]
+    if isinstance(s, str):
+        s = s.encode('utf-8')
+    return list(s)
     
 def strToPaddedList(s, l):
     """
@@ -174,8 +176,10 @@ def strToPaddedList(s, l):
     """
     padded_list = strToList(s)
     if len(padded_list) < l:
-        padded_list += [0] * (l - len(padded_list))
-    return padded_list[:l]
+        padded_list.extend(0 for i in range(l - len(padded_list)))
+    else:
+        padded_list = padded_list[:l]
+    return padded_list
     
 def listToIP(l):
     """
@@ -202,7 +206,7 @@ def listToIPs(l):
     :except ValueError: The list could not be processed.
     """
     ips = []
-    for i in range(len(l) / 4):
+    for i in range(len(l) // 4):
         p = i * 4
         ips.append(listToIP(l[p:p + 4]))
     return ips
@@ -237,11 +241,13 @@ def ipsToList(ips):
     """
     if isinstance(ips, str):
         tokens = ips.split(',')
+    elif isinstance(ips, bytes):
+        tokens = ips.split(b',')
     else:
         tokens = ips
         
-    bytes = []
+    output = []
     for ip in tokens:
-        bytes += ipToList(ip)
-    return bytes
+        output += ipToList(ip)
+    return output
     
