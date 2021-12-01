@@ -2,7 +2,7 @@
 
 staticDHCPd is an all-Python, [RFC 2131](http://www.ietf.org/rfc/rfc2131.txt)-compliant DHCP server, with support for most common DHCP extensions and extensive site-specific customisation.
 
-**Work has begun on porting ststicDHCPd to Python 3, as 3.0.0**
+**Work has begun on porting staticDHCPd to Python 3, as 3.0.0**
 
 The 3.0.0 branch will need to be tested; the running checklist follows (if you test a thing, respond to issue #89):
   * ~~libpydhcpserver~~
