@@ -17,13 +17,17 @@ The 3.0.0 branch will need to be tested; the remaining checklist follows (if you
       * _it needs to work_
     * Databases
       * custom
-        * _it needs to work_
+        * I will be verifying its functionality
       * PostgreSQL
-        * _it needs to work_
+        * This has been rewritten to use psycopg(3); documentation changes may be required
+        * I will be verifying its functionality
       * MySQL
-        * _it needs to work_
+        * I will be verifying its functionality
       * Oracle
-        * _it needs to work_
+        * This has been rewritten to use the newer oracledb package; documentation changes may be required
+        * However, since I do not have an Oracle environment or interest in maintaining one, I will be opening an issue to ask for someone to handle validation
+          * This means Oracle will **NOT** be officially supported with the 3.0.0 release, even though it should work
+          * If this is a problem for you, please help by verifying functionality so I can close this hole
       * connection-pooling
         * _should work with at least Postgres and MySQL; ideally also Oracle_
   * Extensions

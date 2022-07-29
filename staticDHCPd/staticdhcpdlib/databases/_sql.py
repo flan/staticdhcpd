@@ -212,11 +212,11 @@ class PostgreSQL(_PoolingBroker):
         """
         Constructs the broker.
         """
-        import psycopg2
-        self._module = psycopg2
+        import psycopg
+        self._module = psycopg
         
         self._connection_details = {
-            'database': config.POSTGRESQL_DATABASE,
+            'dbname': config.POSTGRESQL_DATABASE,
             'user': config.POSTGRESQL_USERNAME,
             'password': config.POSTGRESQL_PASSWORD,
         }
@@ -255,8 +255,8 @@ class Oracle(_PoolingBroker):
         """
         Constructs the broker.
         """
-        import cx_Oracle
-        self._module = cx_Oracle
+        import oracledb
+        self._module = oracledb
         
         self._connection_details = {
             'user': config.ORACLE_USERNAME,
