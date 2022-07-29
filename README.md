@@ -19,12 +19,12 @@ The 3.0.0 branch will need to be tested; the remaining checklist follows (if you
       * custom
         * I will be verifying its functionality
       * PostgreSQL
-        * This has been rewritten to use psycopg(3); documentation changes may be required
+        * This has been rewritten to use psycopg(3)
         * I will be verifying its functionality
-      * MySQL
+      * MySQL/MariaDB
         * I will be verifying its functionality
       * Oracle
-        * This has been rewritten to use the newer oracledb package; documentation changes may be required
+        * This has been rewritten to use the newer oracledb package
         * However, since I do not have an Oracle environment or interest in maintaining one, I will be opening an issue to ask for someone to handle validation
           * This means Oracle will **NOT** be officially supported with the 3.0.0 release, even though it should work
           * If this is a problem for you, please help by verifying functionality so I can close this hole
@@ -150,12 +150,12 @@ While SQLite or INI-files are fine for home users and small labs, most environme
 For the server itself, [specific schema-structuring](database.md) is required, for which scripts and examples can be found in the `samples` directory.
 
 Additionally, some database engines require additional packages:
-  * **Postgres** support requires installation of the [psycopg](http://initd.org/psycopg/) library (<tt>python3-psycopg2</tt>)
-  * **Oracle** support requires installation (and likely compilation) of the [cx-oracle](http://cx-oracle.sourceforge.net/) library
-  * **MySQL** support requires installation of the [MySQLdb](http://mysql-python.sourceforge.net/) library (<tt>python3-mysqldb</tt>)
+  * **Postgres** support requires installation of the [psycopg3](http://initd.org/psycopg/) library (<tt>python3-psycopg3</tt>)
+  * **Oracle** support requires installation (and possibly compilation) of the [python-oracledb](https://oracle.github.io/python-oracledb/) library
+  * **MySQL/MariaDB** support requires installation of the [MySQLdb](http://mysql-python.sourceforge.net/) library (<tt>python3-mysqldb</tt>)
   * Connection-pooling requires [eventlet](http://eventlet.net/) (<tt>python3-eventlet</tt>)
 
-While you're at it, you should also install <tt>python3-scapy</tt> if you intend to use dynamic provisioning. It'll allow your network to serve as a living database for reconstructing leases after a server restart. [scapy](http://www.secdev.org/projects/scapy/) is also a pretty great library in general. And, if you want the snazzy load-graph in the web interface, also install <tt>python3-pycha</tt>. These libraries aren't necessary, though: the associated components will function in a limited capacity if they're absent.
+While you're at it, you should also install <tt>[python3-scapy](http://www.secdev.org/projects/scapy/)</tt> if you intend to use dynamic provisioning. It'll allow your network to serve as a living database for reconstructing leases after a server restart. These libraries aren't necessary, though: the associated components will function in a limited capacity if they're absent.
 
 ## Running ##
 Once everything's configured, you can launch the daemon with `sudo staticDHCPd`. You'll need to start it with superuser permissions because it needs to bind to restricted ports, but it'll switch to whatever permissions you specified in the config file once setup is complete.
@@ -179,7 +179,7 @@ All code is meticulously commented. If you find an under-documented section of c
 
 # Project information #
 ## Development plans ##
-For details on where the project is headed, check out the development feed at http://uguu.ca/tag/staticdhcpd/
+This project is considered mature. Once its migration to Python 3 has been finalised, it is unlikely to see any major updates, but it will receive security and bugfix support indefinitely.
 
 
 ---
