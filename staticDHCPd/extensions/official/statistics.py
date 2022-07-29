@@ -72,6 +72,11 @@ _CONFIG = _config.extension_config_merge(defaults={
     'GRAPH_CSV_PATH': '/ca/uguu/puukusoft/staticDHCPd/extension/stats/graph.csv',
     #The name of the component; if None, the method link will be hidden
     'GRAPH_CSV_NAME': 'graph (csv)',
+    #The path at which a JSON version of the graph may be obtained; None to
+    #disable (this is independent of GRAPH_ENABLED)
+    'GRAPH_JSON_PATH': '/ca/uguu/puukusoft/staticDHCPd/extension/stats/graph.json',
+    #The name of the component; if None, the method link will be hidden
+    'GRAPH_JSON_NAME': 'graph (json)',
 
     #The number of seconds over which to quantise data; lower values will
     #increase resolution, but consume more memory
@@ -220,6 +225,42 @@ class Statistics(object):
                     writer.writerow(record + null_record)
         output.seek(0)
         return ('text/csv', output.read())
+    
+    def graph_json(self):
+        """
+        Returns a JSON file containing the time at which the stats were recorded
+        and the events that occurred during the corresponding period.
+        """
+        self._update_graph()
+
+        import json
+        
+        output = []
+        
+        null_record = {
+            "methods": _generate_dhcp_packets_dict(),
+            "methods_discarded": _generate_dhcp_packets_dict(),
+            "other_packets": 0,
+            "processing_time": 0.0,
+        }
+        
+        with self._lock:
+            base_time = self._gram_start_time
+            for (i, gram) in enumerate(reversed(self._graph)):
+                gram_time = base_time - (i * self._gram_size)
+                if gram:
+                    record = {
+                        'time': gram_time,
+                        'other_packets': gram.other_packets,
+                        'processing_time': gram.processing_time,
+                        'methods': gram.dhcp_packets,
+                        'methods_discarded': gram.dhcp_packets_discarded,
+                    }
+                else:
+                    record = null_record.copy()
+                    record["time"] = gram_time
+                output.append(record)
+        return ('application/json', json.dumps(output))
 
     def graph(self, dimensions):
         """
@@ -489,5 +530,15 @@ if _CONFIG['GRAPH_CSV_PATH']:
         hidden=(_CONFIG['GRAPH_CSV_NAME'] is None),
         module=_CONFIG['MODULE'],
         name=_CONFIG['GRAPH_CSV_NAME'],
+        display_mode=config.callbacks.WEB_METHOD_RAW,
+    )
+    
+if _CONFIG['GRAPH_JSON_PATH']:
+    _logger.info("Registering graph JSON-provider at '{}'".format(_CONFIG['GRAPH_JSON_PATH']))
+    config.callbacks.webAddMethod(
+        _CONFIG['GRAPH_JSON_PATH'], lambda *args, **kwargs: _stats.graph_json(),
+        hidden=(_CONFIG['GRAPH_JSON_NAME'] is None),
+        module=_CONFIG['MODULE'],
+        name=_CONFIG['GRAPH_JSON_NAME'],
         display_mode=config.callbacks.WEB_METHOD_RAW,
     )
