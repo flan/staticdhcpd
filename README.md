@@ -29,8 +29,6 @@ The 3.0.0 branch will need to be tested; the remaining checklist follows (if you
   * Extensions
     * httpdb
       * _it needs to work_
-    * statistics (with various config options)
-      * _new JSON output format needs to be verified_
     * statistics graph
       * _reimplemented browser-side using Chart.js_
         * _needs to be tested in a non-lab context_

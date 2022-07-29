@@ -258,6 +258,7 @@ class Statistics(object):
                     record = null_record.copy()
                     record["time"] = gram_time
                 output.append(record)
+        output.reverse()
         return ('application/json', json.dumps(output))
 
     def graph(self, dimensions):
