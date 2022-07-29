@@ -4,10 +4,7 @@ staticDHCPd is an all-Python, [RFC 2131](http://www.ietf.org/rfc/rfc2131.txt)-co
 
 **Work has begun on porting staticDHCPd to Python 3, as 3.0.0**
 
-The 3.0.0 branch will need to be tested; the running checklist follows (if you test a thing, respond to issue #89):
-  * ~~libpydhcpserver~~
-    * ~~libpcap responder~~
-      * ~~_it needs to work_~~
+The 3.0.0 branch will need to be tested; the remaining checklist follows (if you test a thing, respond to issue #89):
   * staticDHCPd
     * Long-term soak-test
       * Stable memory usage
@@ -19,36 +16,24 @@ The 3.0.0 branch will need to be tested; the running checklist follows (if you t
     * E-mail logging facility
       * _it needs to work_
     * Databases
-      * ~~INI~~
-        * ~~_it needs to work_~~
       * custom
         * _it needs to work_
-      * ~~caching~~
-        * ~~memory~~
-          * ~~_it needs to work_~~
-        * ~~disk~~
-          * ~~_it needs to work_~~
-        * ~~memcached~~
-          * ~~_it needs to work_~~
       * PostgreSQL
         * _it needs to work_
       * MySQL
         * _it needs to work_
       * Oracle
         * _it needs to work_
-      * ~~SQLite~~
-        * ~~_it needs to work_~~
       * connection-pooling
         * _should work with at least Postgres and MySQL; ideally also Oracle_
   * Extensions
-    * ~~_contrib-extensions need to be tested to make sure the import semantics work intuitively_~~
     * httpdb
       * _it needs to work_
-    * ~~statistics (with various config options)~~
-      * ~~_it needs to work_~~
+    * statistics (with various config options)
+      * _new JSON output format needs to be verified_
     * statistics graph
-      * _it needs to work_
-      * **currently broken: pycha refers to an attribute of a Cairo surface that doesn't seem to exist anymore**
+      * _reimplemented browser-side using Chart.js_
+        * _needs to be tested in a non-lab context_
     * dynamism
       * _must handle dynamic allocation_
       * _must honour renewals and rebinds with the same address_
@@ -63,8 +48,6 @@ The 3.0.0 branch will need to be tested; the running checklist follows (if you t
       * _correctness check_
       * _proofreading_
   * Build-processes
-    * ~~Debian~~
-      * ~~_must produce usable debs_~~
     * RPMs
       * _the script either needs to produce usable artifacts or be removed_
 
