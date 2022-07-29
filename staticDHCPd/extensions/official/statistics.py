@@ -51,22 +51,20 @@ _CONFIG = _config.extension_config_merge(defaults={
     'AVERAGES_NAME': 'averages',
 
     #Whether graph generation should be made available; this component depends
-    #on pycha
+    #on the browser having Internet access to retrieve Chart.js (though this
+    #module may be modified to use an offline copy)
     'GRAPH_ENABLED': True,
-    #Whether the graph should be rendered in the web dashboard
-    'GRAPH_DISPLAY': True,
     #The ordering-bias value to apply, as an integer; if None, appended to the
     #end
     'GRAPH_ORDERING': None,
-    #If not available via the dashboard, the graph can be accessed at this path
-    'GRAPH_PATH': '/ca/uguu/puukusoft/staticDHCPd/extension/stats/graph',
     #The path at which the graph can be accessed as an image
-    'GRAPH_RENDER_PATH': '/ca/uguu/puukusoft/staticDHCPd/extension/stats/graph.png',
-    #The dimensions with which to render the graph (x, y)
-    'GRAPH_RENDER_DIMENSIONS': (1536, 168),
+    'GRAPH_RENDER_DIMENSIONS': (1536, 320),
     #The name of the component; if None and not displayed in the dashboard, the
     #method link will be hidden
     'GRAPH_NAME': 'packets per second',
+    #Whether additional lines should be plotted for per-method data
+    'GRAPH_INCLUDE_METHOD_LINES': True,
+    'GRAPH_INCLUDE_METHOD_DISCARDED_LINES': True,
     #The path at which a CSV version of the graph may be obtained; None to
     #disable (this is independent of GRAPH_ENABLED)
     'GRAPH_CSV_PATH': '/ca/uguu/puukusoft/staticDHCPd/extension/stats/graph.csv',
@@ -264,81 +262,121 @@ class Statistics(object):
 
     def graph(self, dimensions):
         """
-        Uses pycha to render a graph of average DHCP activity, returned as a
-        PNG.
+        Uses Chart.js to render a client-side graph of average DHCP activity.
         """
         self._update_graph()
+        
+        import json
 
-        import io
-        data = []
-        max_value = 0.01
+        datasets = []
+        
+        packets_per_second = []
+        datasets.append({
+            "label": 'Packets per second',
+            "data": packets_per_second,
+            "fill": False,
+        })
+        
+        method_values = {}
+        method_discarded_values = {}
+        for method in _METHODS:
+            if _CONFIG['GRAPH_INCLUDE_METHOD_LINES']:
+                method_values[method] = []
+                datasets.append({
+                    "label": method,
+                    "data": method_values[method],
+                    "fill": False,
+                    "hidden": True,
+                })
+            if _CONFIG['GRAPH_INCLUDE_METHOD_DISCARDED_LINES']:
+                method_discarded_values[method] = []
+                datasets.append({
+                    "label": method + ' discarded',
+                    "data": method_discarded_values[method],
+                    "fill": False,
+                    "hidden": True,
+                })
+                
         with self._lock:
+            base_time = self._gram_start_time
+            
             #This would add the current frame, but it doesn't average well and would skew Y
             #data = [sum(self._current_gram['dhcp-packets'].values()) / (time.time() - self._gram_start_time)]
             for (i, gram) in enumerate(self._graph):
+                gram_time = int((base_time - ((len(self._graph) - i - 1) * self._gram_size)) * 1000)
+                
                 if gram:
-                    value = sum(gram.dhcp_packets.values()) / float(self._gram_size)
-                    data.append((i, value))
-                    if value > max_value:
-                        max_value = value
+                    packets_per_second.append({'x': gram_time, 'y': sum(gram.dhcp_packets.values()) / self._gram_size})
+                    for method in _METHODS:
+                        if method_values:
+                            method_values[method].append({'x': gram_time, 'y': gram.dhcp_packets[method]})
+                        if method_discarded_values:
+                            method_discarded_values[method].append({'x': gram_time, 'y': gram.dhcp_packets_discarded[method]})
                 else:
-                    data.append((i, 0))
+                    packets_per_second.append({'x': gram_time, 'y': 0})
+                    for method in _METHODS:
+                        if method_values:
+                            method_values[method].append({'x': gram_time, 'y': 0})
+                        if method_discarded_values:
+                            method_discarded_values[method].append({'x': gram_time, 'y': 0})
 
-        output = io.StringIO()
-        surface = cairo.ImageSurface(cairo.FORMAT_RGB24, dimensions[0], dimensions[1])
-
-        options = {
-            'axis': {
-                'x': {
-                    'tickCount': int((len(self._graph) * self._gram_size) / 3600),
-                    'interval': int(3600 / self._gram_size),
-                    'label': 'Time in intervals of {} seconds; ticks mark hours'.format(self._gram_size),
-                },
-                'y': {
-                    'tickCount': int(dimensions[1] / 20),
-                    'label': 'Packets per second',
-                    'range': (0, max_value),
-                },
-                'labelFont': 'sans-serif',
-                'labelFontSize': 10,
-                'tickFont': 'sans-serif',
-                'tickFontSize': 8,
-            },
-            'background': {
-                'chartColor': '#f6f6dc',
-                'lineColor': '#a3a3a3',
-            },
-            'colorScheme': {
-                'name': 'gradient',
-                'args': {
-                    'initialColor': 'blue',
-                },
-            },
-            'stroke': {
-                'hide': True,
-            },
-            'legend': {
-                'hide': True,
-            },
-            'padding': {
-                'left': 0,
-                'right': 0,
-                'top': 0,
-                'bottom': 0,
-            },
-            'title': 'Activity over the past {}'.format(datetime.timedelta(seconds=self._gram_size * len(self._graph))),
-            'titleFont': 'sans-serif',
-            'titleFontSize': 10,
+        return """
+        <canvas id="%(chart_id)s" width="%(width)i" height="%(height)i"></canvas>
+        <script>
+            const ctx = document.getElementById('%(chart_id)s').getContext('2d');
+            if (typeof Chart !== 'undefined') {
+                const __statistics_chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        xValueType: "dateTime",
+                        datasets: %(datasets)s,
+                    },
+                    options: {
+                        scales: {
+                            x: {
+                                type: 'time',
+                                time: {
+                                    displayFormats: {
+                                        hour: 'HH:mm',
+                                        minute: 'HH:mm',
+                                    },
+                                    tooltipFormat: 'MMM D HH:mm',
+                                },
+                            },
+                            y: {
+                                type: 'linear',
+                                display: true,
+                                ticks: {
+                                    beginAtZero: true,
+                                    min: 0
+                                },
+                                scaleLabel: {
+                                    display: true,
+                                },
+                            },
+                        },
+                        title: {
+                            display: false,
+                        },
+                        legend: {
+                            display: %(show_legend)s,
+                        },
+                        responsive: false,
+                    }
+                });
+            } else {
+                ctx.font = "20px Sans";
+                ctx.fillText("Chart.js is unavailable", 5, 25);
+            }
+        </script>
+        """ % {
+            "chart_id": '__statistics_chart',
+            "width": dimensions[0],
+            "height": dimensions[1],
+            "datasets": json.dumps(datasets),
+            "show_legend": (method_values or method_discarded_values) and 'true' or 'false',
         }
-
-        chart = pycha.line.LineChart(surface, options)
-        chart.addDataset((('packets', data),))
-        chart.render()
-        surface.write_to_png(output)
-
-        output.seek(0)
-        return ('image/png', output.read())
-
+        
     def lifetime_stats(self):
         """
         Provides launch-to-now statistics for what the server has handled,
@@ -458,71 +496,25 @@ _stats = Statistics(_CONFIG['RETENTION_COUNT'], _CONFIG['QUANTISATION_INTERVAL']
 config.callbacks.statsAddHandler(_stats.process)
 _logger.info("Statistics engine online")
 
-if _CONFIG['LIFETIME_STATS_ENABLED']:
-    renderer = lambda *args, **kwargs: _stats.lifetime_stats()
-    if _CONFIG['LIFETIME_STATS_DISPLAY']:
-        _logger.info("Registering lifetime stats as a dashboard element, with ordering={}".format(_CONFIG['LIFETIME_STATS_ORDERING']))
-        config.callbacks.webAddDashboard(
-            _CONFIG['MODULE'], _CONFIG['LIFETIME_STATS_NAME'], renderer,
-            ordering=_CONFIG['LIFETIME_STATS_ORDERING'],
-        )
-    else:
-        _logger.info("Registering lifetime stats at '{}'".format(_CONFIG['LIFETIME_STATS_PATH']))
-        config.callbacks.webAddMethod(
-            _CONFIG['LIFETIME_STATS_PATH'], renderer,
-            hidden=(_CONFIG['LIFETIME_STATS_NAME'] is None),
-            module=_CONFIG['MODULE'],
-            name=_CONFIG['LIFETIME_STATS_NAME'],
-            display_mode=config.callbacks.WEB_METHOD_TEMPLATE,
-        )
-
-if _CONFIG['AVERAGES_ENABLED']:
-    renderer = lambda *args, **kwargs: _stats.averages(_CONFIG['AVERAGES_WINDOWS'])
-    if _CONFIG['AVERAGES_DISPLAY']:
-        _logger.info("Registering averages as a dashboard element, with ordering={}".format(_CONFIG['AVERAGES_ORDERING']))
-        config.callbacks.webAddDashboard(
-            _CONFIG['MODULE'], _CONFIG['AVERAGES_NAME'], renderer,
-            ordering=_CONFIG['AVERAGES_ORDERING'],
-        )
-    else:
-        _logger.info("Registering averages at '{}'".format(_CONFIG['AVERAGES_PATH']))
-        config.callbacks.webAddMethod(
-            _CONFIG['AVERAGES_PATH'], renderer,
-            hidden=(_CONFIG['AVERAGES_NAME'] is None),
-            module=_CONFIG['MODULE'],
-            name=_CONFIG['AVERAGES_NAME'],
-            display_mode=config.callbacks.WEB_METHOD_TEMPLATE,
-        )
-
 if _CONFIG['GRAPH_ENABLED']:
-    try:
-        import pycha.line
-        import cairo
-    except ImportError as e:
-        _logger.warning("pycha is not available; graphs cannot be rendered: {}".format(e))
-    else:
-        config.callbacks.webAddMethod(
-            _CONFIG['GRAPH_RENDER_PATH'], lambda *args, **kwargs: _stats.graph(_CONFIG['GRAPH_RENDER_DIMENSIONS']),
-            hidden=True, display_mode=config.callbacks.WEB_METHOD_RAW,
-        )
-        image_tag = '<div style="text-align: center; padding: 2px;"><img src="{}"/></div>'.format(_CONFIG['GRAPH_RENDER_PATH'])
-        hook = lambda *args, **kwargs: image_tag
-        if _CONFIG['GRAPH_DISPLAY']:
-            _logger.info("Registering graph as a dashboard element, with ordering={}".format(_CONFIG['GRAPH_ORDERING']))
-            config.callbacks.webAddDashboard(
-                _CONFIG['MODULE'], _CONFIG['GRAPH_NAME'], hook,
-                ordering=_CONFIG['GRAPH_ORDERING'],
-            )
-        else:
-            _logger.info("Registering graph at '{}'".format(_CONFIG['GRAPH_PATH']))
-            config.callbacks.webAddMethod(
-                _CONFIG['GRAPH_PATH'], hook,
-                hidden=(_CONFIG['GRAPH_NAME'] is None),
-                module=_CONFIG['MODULE'],
-                name=_CONFIG['GRAPH_NAME'],
-                display_mode=config.callbacks.WEB_METHOD_TEMPLATE,
-            )
-
+    _logger.debug("Registering Chart.js import")
+    def _chartjs_header(path, queryargs, mimetype, data, headers):
+        if path == '/':
+            return """
+            <script src="https://cdn.jsdelivr.net/npm/chart.js@^3"></script>
+            <script src="https://cdn.jsdelivr.net/npm/moment@^2"></script>
+            <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@^1"></script>
+            """
+        return None
+    config.callbacks.webAddHeader(_chartjs_header)
+    del _chartjs_header
+    
+    _logger.info("Registering graph as a dashboard element, with ordering={}".format(_CONFIG['GRAPH_ORDERING']))
+    config.callbacks.webAddDashboard(
+        _CONFIG['MODULE'], _CONFIG['GRAPH_NAME'], lambda path, queryargs, mimetype, data, headers: _stats.graph(_CONFIG['GRAPH_RENDER_DIMENSIONS']),
+        ordering=_CONFIG['GRAPH_ORDERING'],
+    )
+    
 if _CONFIG['GRAPH_CSV_PATH']:
     _logger.info("Registering graph CSV-provider at '{}'".format(_CONFIG['GRAPH_CSV_PATH']))
     config.callbacks.webAddMethod(
@@ -542,3 +534,39 @@ if _CONFIG['GRAPH_JSON_PATH']:
         name=_CONFIG['GRAPH_JSON_NAME'],
         display_mode=config.callbacks.WEB_METHOD_RAW,
     )
+
+if _CONFIG['AVERAGES_ENABLED']:
+    renderer = lambda *args, **kwargs: _stats.averages(_CONFIG['AVERAGES_WINDOWS'])
+    if _CONFIG['AVERAGES_DISPLAY']:
+        _logger.info("Registering averages as a dashboard element, with ordering={}".format(_CONFIG['AVERAGES_ORDERING']))
+        config.callbacks.webAddDashboard(
+            _CONFIG['MODULE'], _CONFIG['AVERAGES_NAME'], renderer,
+            ordering=_CONFIG['AVERAGES_ORDERING'],
+        )
+    else:
+        _logger.info("Registering averages at '{}'".format(_CONFIG['AVERAGES_PATH']))
+        config.callbacks.webAddMethod(
+            _CONFIG['AVERAGES_PATH'], renderer,
+            hidden=(_CONFIG['AVERAGES_NAME'] is None),
+            module=_CONFIG['MODULE'],
+            name=_CONFIG['AVERAGES_NAME'],
+            display_mode=config.callbacks.WEB_METHOD_TEMPLATE,
+        )
+
+if _CONFIG['LIFETIME_STATS_ENABLED']:
+    renderer = lambda *args, **kwargs: _stats.lifetime_stats()
+    if _CONFIG['LIFETIME_STATS_DISPLAY']:
+        _logger.info("Registering lifetime stats as a dashboard element, with ordering={}".format(_CONFIG['LIFETIME_STATS_ORDERING']))
+        config.callbacks.webAddDashboard(
+            _CONFIG['MODULE'], _CONFIG['LIFETIME_STATS_NAME'], renderer,
+            ordering=_CONFIG['LIFETIME_STATS_ORDERING'],
+        )
+    else:
+        _logger.info("Registering lifetime stats at '{}'".format(_CONFIG['LIFETIME_STATS_PATH']))
+        config.callbacks.webAddMethod(
+            _CONFIG['LIFETIME_STATS_PATH'], renderer,
+            hidden=(_CONFIG['LIFETIME_STATS_NAME'] is None),
+            module=_CONFIG['MODULE'],
+            name=_CONFIG['LIFETIME_STATS_NAME'],
+            display_mode=config.callbacks.WEB_METHOD_TEMPLATE,
+        )
