@@ -216,7 +216,7 @@ class rfc3442_121(RFC):
         Accepts a sequence of CIDR entries and routers to produce classless
         static route byte-blocks.
         
-        You'll probably want to put (("0.0.0.0", 0), packet.getOption("router"))
+        You'll probably want to put (("0.0.0.0", 0), packet.getOption("router")[0-3])
         at the start to ensure the default gateway is set as expected.
         
         :param classless_addresses: ((network IPv4, CIDR-mask), router IPv4)
