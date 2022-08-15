@@ -41,7 +41,7 @@ fun!
 
 How stable are dynamic leases?
 ++++++++++++++++++++++++++++++
-They're should be pretty consistent: when IPs are added to the pool, if
+They should be pretty consistent: when IPs are added to the pool, if
 `scapy <http://www.secdev.org/projects/scapy/>`_ is available, and if the
 scan option is enabled, the server will ARP for each address (in parallel, so
 it's not slow), setting up leases as hits are found, making your network a
