@@ -170,7 +170,7 @@ Additionally, some database engines require additional packages:
 While you're at it, you should also install <tt>[python3-scapy](http://www.secdev.org/projects/scapy/)</tt> if you intend to use dynamic provisioning. It'll allow your network to serve as a living database for reconstructing leases after a server restart. These libraries aren't necessary, though: the associated components will function in a limited capacity if they're absent.
 
 ## Running ##
-Once everything's configured, you can launch the daemon with `sudo staticDHCPd`. You'll need to start it with superuser permissions because it needs to bind to restricted ports, but it'll switch to whatever permissions you specified in the config file once setup is complete.
+Once everything's configured, you can launch the daemon with `sudo staticDHCPd`. You'll need to start it with superuser permissions (or, better, `CAP_NET_BIND_SERVICE`) because it needs to bind to restricted ports, but it'll switch to whatever permissions you specified in the config file once setup is complete.
 
 If you're using caching (or INI) with your database, you can send <tt>SIGHUP</tt> to the process to cause it to reinitialise, clearing the cache (or re-reading the file), and invoking the reinitialisation behaviour of any custom modules that subscribe to the event. You can also, if enabled, access this functionality from the web interface.
 

@@ -64,8 +64,8 @@ if os.getenv('DEBUILD_MODE') != 'yes' and not 'build' in sys.argv and not any('r
     if os.path.isfile('/etc/debian_version'):
         instructions.extend((
             "Debian-like",
-            "\tCopy control-scripts/staticDHCPd to /etc/init.d/staticDHCPd",
-            "\tRun '/usr/sbin/update-rc.d staticDHCPd defaults'",
+            "\tCopy control-scripts/staticDHCPd.service to /etc/systemd/system/",
+            "\tRun 'systemctl enable staticDHCPd.service'",
         ))
     elif platform.mac_ver()[0]:
         instructions.extend((

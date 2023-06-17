@@ -125,10 +125,6 @@ Step 3: Set up conf.py
     Copy 'conf/conf.py.sample' to 'conf/conf.py'.
     
     Edit the file and make the following changes:
-        Set DAEMON to False. If you don't, it'll do daemonsy things, like kill
-        console output and detach from the controlling terminal, which aren't
-        good for helping to identify configuration problems quickly.
-        
         Set DHCP_SERVER_IP to whichever IP you want to listen on.
         
         If you are working with clients that do not understand the DHCP

@@ -6,8 +6,9 @@
 #standard documentation
 
 
-# Whether to daemonise on startup (you don't want this during initial setup)
-DAEMON = True
+# Whether to daemonise on startup (you don't want this during initial setup
+# or when using systemd)
+DAEMON = False
 
 #WARNING: The default UID and GID are those of root. THIS IS NOT GOOD!
 #If testing, set them to your id, which you can find using `id` in a terminal.

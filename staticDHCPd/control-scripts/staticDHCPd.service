@@ -1,0 +1,16 @@
+[Service]
+Type=simple
+
+ExecStart=/usr/bin/staticDHCPd --config /etc/staticDHCPd/conf.py
+ExecReload=/bin/kill -HUP $MAINPID
+ExecStop=/bin/kill -TERM $MAINPID
+
+Restart=always
+RestartSec=1s
+
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+#User=something-safe
+#Group=something-safe
+
+[Install]
+WantedBy=default.target
