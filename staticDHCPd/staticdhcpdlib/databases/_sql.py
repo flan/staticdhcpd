@@ -172,9 +172,9 @@ class MySQL(_PoolingBroker):
         self._module = MySQLdb
         
         self._connection_details = {
-            'db': config.MYSQL_DATABASE,
+            'database': config.MYSQL_DATABASE,
             'user': config.MYSQL_USERNAME,
-            'passwd': config.MYSQL_PASSWORD,
+            'password': config.MYSQL_PASSWORD,
         }
         if config.MYSQL_HOST is None:
             self._connection_details['host'] = 'localhost'
