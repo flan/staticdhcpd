@@ -33,8 +33,8 @@ to conf.py; if anything more sophisticated is required, fork it and hack away:
         "serial": 0,
         "lease_time": 3600, //may be omitted
         "hostname": "any-valid-hostname", //may be omitted
-        "gateway": "192.168.0.1", //may be omitted
         "subnet_mask": "255.255.255.0", //may be omitted
+        "gateway": "192.168.0.1", //may be omitted
         "broadcast_address": "192.168.0.255", //may be omitted
         "domain_name": "example.org", //may be omitted
         "domain_name_servers": "192.168.0.1,192.168.0.2, 192.168.0.3", //may be omitted; limit: 3 entries
@@ -46,8 +46,8 @@ to conf.py; if anything more sophisticated is required, fork it and hack away:
     identified as '<subnet>|<serial>' like '10.0.0.0/24|0', within which default values
     will be keyed:
     {
-        "subnet_mask": "255.255.255.0",
         "lease_time": 3600, //value in seconds
+        "subnet_mask": "255.255.255.0", //may be omitted
         "gateway": "192.168.0.1", //may be omitted
         "broadcast_address": "192.168.0.255", //may be omitted
         "domain_name": "example.org", //may be omitted
@@ -120,7 +120,7 @@ class _RedisLogic(object):
             subnet=details['subnet'], serial=details['serial'],
             hostname=details.get('hostname'),
             gateways=details.get('gateway', details_ss.get('gateway')),
-            subnet_mask=details.get('subnet_mask', details_ss['subnet_mask']),
+            subnet_mask=details.get('subnet_mask', details_ss.get('subnet_mask')),
             broadcast_address=details.get('broadcast_address', details_ss.get('broadcast_address')),
             domain_name=details.get('domain_name', details_ss.get('domain_name')),
             domain_name_servers=domain_name_servers,
