@@ -520,8 +520,8 @@ class DynamicPool(object):
             return None
         elif ip != client_ip:
             self._logger.warning("IP assigned to {}, {}, in pool '{}', does not match {}".format(
-                ip,
                 mac,
+                ip,
                 self._hostname_prefix,
                 client_ip,
             ))
