@@ -298,7 +298,7 @@ class DynamicPool(object):
         self._logger.info("{} is unknown to the dynamic provisioning engine".format(method))
         return None
         
-    def get_leases(self, *args, **kwargs):
+    def _get_leases(self):
         """
         Provides every lease known to the system, as a tuple of LeaseDefinition
         objects.
@@ -322,7 +322,7 @@ class DynamicPool(object):
         writer = csv.writer(output)
         writer.writerow(('ip', 'mac', 'expiration', 'last seen'))
         render_format = '%Y-%m-%d %H:%M:%S'
-        for lease in self.get_leases():
+        for lease in self._get_leases():
             writer.writerow((
                 str(lease.ip),
                 lease.mac or '',
