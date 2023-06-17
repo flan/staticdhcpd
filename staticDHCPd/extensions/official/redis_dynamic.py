@@ -150,7 +150,7 @@ class DynamicPool(object):
         
         #a connection-pool behind the scenes
         self._redis_client = redis.Redis(
-            **{k[len('redis_'):]:v for (k, v) in kwargs.items() if k.startswith('redis_')}
+            **{k[len('redis_'):]:v for (k, v) in kwargs.items() if k.startswith('redis_')},
         )
         self._lease_key = lease_key
         self._lock = redis.lock.Lock(self._redis_client, self._lease_key, timeout=5, blocking_timeout=0.5, blocking=False)
