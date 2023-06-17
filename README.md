@@ -13,8 +13,6 @@ The 3.0.0 branch will need to be tested; the remaining checklist follows (if you
       * No processing errors
         * _no unusual or inexplicable behaviour_
         * _all errors must be handled sensibly_
-    * E-mail logging facility
-      * _it needs to work_
     * Databases
       * custom
         * I will be verifying its functionality
