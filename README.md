@@ -131,6 +131,33 @@ Just run `sudo sh install.sh`, or whatever equivalent is appropriate for your pl
 
 You'll find a sample configuration file in `/etc/staticDHCPd/`; copy it to the same directory, without the `.sample` suffix, and you're ready for the next step. (If you're upgrading, just leave your old file alone; it'll work just fine)
 
+### Distro packages ###
+The `makedebs.sh` script will produce Debian packages, a path that is regularly tested and used in the development process.
+
+With each stable release, these will be provided as official artifacts.
+
+#### Building unofficial packages ####
+
+If you are on another OS, [`fpm`](https://fpm.readthedocs.io/en/latest/) is available to generate packages.
+
+With suitable assembly packages installed (such as `rpm` to get access to `rpmbuild` on Debian), these can be converted well-enough:
+
+```bash
+fpm -s deb -t rpm staticdhcpd_3.0.0_all.deb
+fpm -s deb -t rpm python3-libpydhcpserver_3.0.0_all.deb
+```
+
+Additionally, packages can be built directly from source:
+
+```bash
+fpm -s python -t rpm staticDHCPd/
+fpm -s python -t rpm libpydhcpserver/
+```
+
+These packages are functional and target deployment within `/usr/local`, as they should, but are specific to the verion of Python running on the source system, potentially limiting portability.
+
+No development bandwidth exists to support packages built in this manner, but they should generally work.
+
 ## Configuring ##
 While SQLite or INI-files are fine for home users and small labs, most environments will want to use a multi-client database service, to allow for runtime updates. Full details on how to configure staticDHCPd to speak with a server, and many more options, are described in the configuration guide in the `doc` directory.
 
