@@ -18,21 +18,7 @@ The 3.0.0 branch will need to be tested; the remaining checklist follows (if you
     * Databases
       * custom
         * I will be verifying its functionality
-      * PostgreSQL
-        * This has been rewritten to use psycopg(3)
-        * I will be verifying its functionality
-      * MySQL/MariaDB
-        * I will be verifying its functionality
-      * Oracle
-        * This has been rewritten to use the newer oracledb package
-        * However, since I do not have an Oracle environment or interest in maintaining one, I will be opening an issue to ask for someone to handle validation
-          * This means Oracle will **NOT** be officially supported with the 3.0.0 release, even though it should work
-          * If this is a problem for you, please help by verifying functionality so I can close this hole
-      * connection-pooling
-        * _should work with at least Postgres and MySQL; ideally also Oracle_
   * Extensions
-    * httpdb
-      * _it needs to work_
     * statistics graph
       * _reimplemented browser-side using Chart.js_
         * _needs to be tested in a non-lab context_
@@ -40,6 +26,10 @@ The 3.0.0 branch will need to be tested; the remaining checklist follows (if you
       * _must handle dynamic allocation_
       * _must honour renewals and rebinds with the same address_
       * _must support releases_
+    * redis (static)
+      * _it needs to work work_
+    * redis (dynamic)
+      * _it needs to work work_
     * feedservice
       * _it needs to work (or be removed)_
   * Documentation
@@ -49,9 +39,6 @@ The 3.0.0 branch will need to be tested; the remaining checklist follows (if you
     * staticDHCPd
       * _correctness check_
       * _proofreading_
-  * Build-processes
-    * RPMs
-      * _the script either needs to produce usable artifacts or be removed_
 
 At this point, no new features will be added until the system is stable (but please submit ideas to the issue-tracker anyway). Any non-bugfix commits will be things to prepare for the Debian/RPM packages or minor formatting tweaks.
 
