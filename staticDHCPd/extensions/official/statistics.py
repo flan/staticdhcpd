@@ -57,7 +57,7 @@ _CONFIG = _config.extension_config_merge(defaults={
     #The ordering-bias value to apply, as an integer; if None, appended to the
     #end
     'GRAPH_ORDERING': None,
-    #The path at which the graph can be accessed as an image
+    #The dimensions of the canvas upon which to render the graph
     'GRAPH_RENDER_DIMENSIONS': (1536, 320),
     #The name of the component; if None and not displayed in the dashboard, the
     #method link will be hidden
