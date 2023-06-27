@@ -6,9 +6,9 @@ header sections.
 However, because including common information in each one would be redundant,
 the general flow of installing one is the following:
 
-#. Ensure that there exists an ``extensions/`` subdirectory in the same
+#. Ensure that there exists an ``staticDHCPd_extensions/`` subdirectory in the same
    directory as ``conf.py``
-#. Copy or link the extension-file into ``extensions/``
+#. Copy or link the extension-file into ``staticDHCPd_extensions/``
 #. Follow its instructions to install hooks in ``conf.py``
 #. (re)Start *staticDHCPd*
 
@@ -28,8 +28,8 @@ values in ``conf.py``.
 To make use of this facility, all you need to do is instruct your users to add
 lines like the following in :ref:`scripting-init`::
 
-    extensions.your_module.REFRESH_INTERVAL = 5
-    extensions.your_module.SOME_DICT = {
+    staticDHCPd_extensions.your_module.REFRESH_INTERVAL = 5
+    staticDHCPd_extensions.your_module.SOME_DICT = {
         1: 2,
         'a': 'c',
     }
@@ -37,7 +37,7 @@ lines like the following in :ref:`scripting-init`::
 Or like this, so that it's clear, at a glance, where your module's parameters
 are set, by encouraging uniform indentation::
 
-    with extensions.your_module as x:
+    with staticDHCPd_extensions.your_module as x:
         x.TIMEOUT = 0.25
 
 If, however, you are working with a module for which loading in
@@ -49,10 +49,10 @@ future *staticDHCPd* built-in variables is to use ``X_YOURMODULE_VARIABLE``::
 Accessing configuration data
 ++++++++++++++++++++++++++++
 Within your module, you then have a few ways of accessing this data. They'll
-basically all start with importing the ``extensions`` namespace::
+basically all start with importing the ``staticDHCPd_extensions`` namespace::
 
     import staticdhcpdlib.config
-    _config = staticdhcpdlib.config.conf.extensions.your_module
+    _config = staticdhcpdlib.config.conf.staticDHCPd_extensions.your_module
 
 You can then extract data from ``_config`` as needed; you'll probably want to
 use one of the parsing methods it exposes to create a dictionary to avoid
