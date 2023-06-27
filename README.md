@@ -28,8 +28,6 @@ The 3.0.0 branch will need to be tested; the remaining checklist follows (if you
       * _it needs to work work_
     * redis (dynamic)
       * _it needs to work work_
-    * feedservice
-      * _it needs to work (or be removed)_
   * Documentation
     * libpydhcpserver
       * _correctness check_
