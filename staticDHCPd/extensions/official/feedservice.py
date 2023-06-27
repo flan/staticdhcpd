@@ -7,7 +7,7 @@ pulling a cable they shouldn't have touched.
 
 To use this module, configure whatever is required in conf.py, inside of init(),
 like this:
-    with staticDHCPd_extensions.feedservice as x:
+    with extensions.feedservice as x:
         #FEED_ID is something you should set uniquely on each server you run
         x.FEED_ID = 'bcd2dbbc-105b-4533-bb6d-01c2333cc55e'
         #This is usually intelligently inferred, but you might need to set it

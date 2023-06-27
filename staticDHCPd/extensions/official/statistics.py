@@ -4,7 +4,7 @@ Processes and exposes runtime statistics information about the DHCP server.
 
 To use this module, configure whatever is required in conf.py, inside of init(),
 like this:
-    with staticDHCPd_extensions.statistics as x:
+    with extensions.statistics as x:
         x.LIFETIME_STATS_ENABLED = True
 
 For a list of all parameters you may define, see below.
