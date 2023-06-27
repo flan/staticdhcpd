@@ -43,7 +43,7 @@ setup(
             'conf/conf.py.sample',
         ]),
         ('/etc/staticDHCPd/staticDHCPd_extensions', [
-            'conf/extensions/HOWTO',
+            'conf/staticDHCPd_extensions/HOWTO',
         ]),
     ],
     scripts=[

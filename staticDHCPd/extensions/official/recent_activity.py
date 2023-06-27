@@ -5,7 +5,7 @@ device is self-configuring properly without needing to read through the logs.
 
 To use this module, configure whatever is required in conf.py, inside of init(),
 like this:
-    with extensions.recent_activity as x:
+    with staticDHCPd_extensions.recent_activity as x:
         x.LIFETIME_STATS_ENABLED = True
 
 For a list of all parameters you may define, see below.

@@ -17,19 +17,19 @@ be named with a leading underscore. Likewise, any modules you define should also
 be named with a leading underscore.
 
 If you wish to encapsulate code inside of a module, place it in the
-``extensions/`` subdirectory next to ``conf.py`` or in a subpackage thereof. The
-``extensions/`` subdirectory is added to ``sys.path``, so imports from a
+``staticDHCPd_extensions/`` subdirectory next to ``conf.py`` or in a subpackage thereof. The
+``staticDHCPd_extensions/`` subdirectory is added to ``sys.path``, so imports from a
 relative root should work just like they usually do.
 
 In particular, if you expect to have a lot of custom code, you should create a
-file in the ``extensions/`` subdirectory named ``_handlers.py`` and import
+file in the ``staticDHCPd_extensions/`` subdirectory named ``_handlers.py`` and import
 the main callback functions from there to keep ``conf.py`` clean. At the same
 level as the config directives, do something like the following::
 
     from _handlers import (handleUnknownMAC, loadDHCPPacket)
     #Where the things imported are the handlers you've defined
 
-Note that, although ``_handlers`` is in ``extensions/``, it is imported as a
+Note that, although ``_handlers`` is in ``staticDHCPd_extensions/``, it is imported as a
 root-level module.
 
 Note also that your handlers module will not have access to functions and
