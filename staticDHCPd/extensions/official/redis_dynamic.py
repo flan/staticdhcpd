@@ -322,7 +322,7 @@ class DynamicPool(object):
         writer = csv.writer(output)
         writer.writerow(('ip', 'mac', 'expiration', 'last seen'))
         render_format = '%Y-%m-%d %H:%M:%S'
-        with self._lock():
+        with self._lock:
             leases = self._refresh_leases(produce_definitions=True)
         for lease in leases:
             writer.writerow((
