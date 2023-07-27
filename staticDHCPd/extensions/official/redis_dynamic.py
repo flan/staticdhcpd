@@ -98,7 +98,7 @@ def _dynamic_method(method):
     return wrapped_method
     
 class DynamicPool(object):
-    _REDIS_KEY_IPS_AVAILABLE = 'ips_available'
+    _REDIS_KEY_IPS_AVAILABLE = b'ips_available'
 
     def __init__(self,
         lease_key, lock_key,
@@ -277,6 +277,9 @@ class DynamicPool(object):
         active_leases = []
         dead_leases = []
         for (mac, lease) in self._redis_client.hgetall(self._lease_key).items():
+            if mac == self._REDIS_KEY_IPS_AVAILABLE: #skip special keys
+                continue
+
             lease_details = json.loads(lease)
             if lease_details['expiration'] <= current_time:
                 dead_leases.append((mac, lease_details))
@@ -285,8 +288,9 @@ class DynamicPool(object):
                 ip_leases[lease_details['ip']] = mac
                 
         #remove leases from Redis
-        self._redis_client.hdel(self._lease_key, *[mac for (mac, lease_details) in dead_leases])
-        
+        if dead_leases:
+            self._redis_client.hdel(self._lease_key, *[mac for (mac, lease_details) in dead_leases])
+
         #deal with cases where a lease was made by another instance
         #note that a lease manually deleted from Redis will result in an IP disappearing until
         #staticDHCPd is restarted, which is intentional to prevent accidental duplicate assignment
@@ -378,10 +382,10 @@ class DynamicPool(object):
                 </tbody>
             </table>""".format(
                     content='\n'.join(elements),
-                    count=len(self._pool),
+                    count=len(leases) - sum(1 for lease in leases if lease.mac),
                 )
             else:
-                return "No leases yet assigned; {} IPs available".format(len(self._ips_available))
+                return "No leases yet assigned; {} IPs available".format(len(leases))
         except Exception as e:
             self._logger.error("Unable to query lease database: {}".format(e))
             return "Unable to query lease database"
