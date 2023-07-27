@@ -213,7 +213,7 @@ else:
     filterPacket = lambda *args, **kwargs : True
 
 if hasattr(conf, 'handleUnknownMAC'):
-    if inspect.getargspec(conf.handleUnknownMAC).args == ['mac']:
+    if inspect.getfullargspec(conf.handleUnknownMAC).args == ['mac']:
         #It's pre-2.0.0, so wrap it for backwards-compatibility
         from .databases.generic import Definition
         def handleUnknownMAC(packet, method, mac, client_ip, relay_ip, port):
@@ -242,7 +242,7 @@ else:
         raise ValueError('No handler exists for multi-definition matches; implement filterRetrievedDefinitions()')
 
 if hasattr(conf, 'loadDHCPPacket'):
-    if inspect.getargspec(conf.loadDHCPPacket).args == ['packet', 'mac', 'client_ip', 'relay_ip', 'subnet', 'serial', 'pxe', 'vendor']:
+    if inspect.getfullargspec(conf.loadDHCPPacket).args == ['packet', 'mac', 'client_ip', 'relay_ip', 'subnet', 'serial', 'pxe', 'vendor']:
         #It's pre-2.0.0, so wrap it for backwards-compatibility
         import collections
         __PXEOptions = collections.namedtuple("PXEOptions", (
