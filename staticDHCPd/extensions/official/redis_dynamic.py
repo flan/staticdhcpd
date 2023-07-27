@@ -98,8 +98,10 @@ def _dynamic_method(method):
     return wrapped_method
     
 class DynamicPool(object):
+    _REDIS_KEY_IPS_AVAILABLE = 'ips_available'
+
     def __init__(self,
-        lease_key,
+        lease_key, lock_key,
         subnet, serial, lease_time, hostname_prefix,
         subnet_mask=None, gateway=None, broadcast_address=None,
         domain_name=None, domain_name_servers=None, ntp_servers=None,
@@ -113,6 +115,9 @@ class DynamicPool(object):
         
         `lease_key` is the key under which a hash containing all lease data will be
         held. This is done for performance and consistency purposes.
+
+        `lock_key` is the key under which the lock will be held; `lease_key` with a
+        ':lock' suffix is usually fine.
         
         `subnet` is any string you would like to use, like 'guest', and `serial`
         is its complement, an integer that lets you re-use the same subnet-name;
@@ -153,10 +158,14 @@ class DynamicPool(object):
             **{k[len('redis_'):]:v for (k, v) in kwargs.items() if k.startswith('redis_')},
         )
         self._lease_key = lease_key
-        self._lock = redis.lock.Lock(self._redis_client, self._lease_key, timeout=5, blocking_timeout=0.5, blocking=False)
+        self._lock = redis.lock.Lock(self._redis_client, lock_key, timeout=5, blocking_timeout=0.5, blocking=True)
         
         self._logger = _logger.getChild(self._hostname_prefix)
-        
+
+        if not self._redis_client.exists(self._lease_key):
+            self._logger.debug("Lease-key '{}' does not exist in Redis; creating...".format(self._lease_key))
+            self._redis_client.hset(self._lease_key, key=self._REDIS_KEY_IPS_AVAILABLE, value=json.dumps([]))
+
         self._logger.info("Created dynamic provisioning pool '{}'".format(self._hostname_prefix))
         
     def _get_ips_available(self):
@@ -165,7 +174,7 @@ class DynamicPool(object):
         
         This method must be called while `self._lock` is held.
         """
-        ips_available = self._redis_client.hget(self._lease_key, 'ips_available')
+        ips_available = self._redis_client.hget(self._lease_key, self._REDIS_KEY_IPS_AVAILABLE)
         if ips_available:
             return json.loads(ips_available)
         else:
@@ -177,7 +186,7 @@ class DynamicPool(object):
         
         This method must be called while `self._lock` is held.
         """
-        self._redis_client.hset(self._lease_key, key='ips_available', value=json.dumps(ips_available, separators=(',', ':')))
+        self._redis_client.hset(self._lease_key, key=self._REDIS_KEY_IPS_AVAILABLE, value=json.dumps(ips_available, separators=(',', ':')))
         
     def add_ips(self, ips):
         """
@@ -203,9 +212,9 @@ class DynamicPool(object):
                 ip = IPv4(ip)
                 if ip not in pool:
                     pool.add(ip)
-                    new_ips.append(ip)
+                    new_ips.append(str(ip))
                 else:
-                    duplicate_ips.append(ip)
+                    duplicate_ips.append(str(ip))
                     
             ips_available.extend(new_ips)
             self._set_ips_available(ips_available)
