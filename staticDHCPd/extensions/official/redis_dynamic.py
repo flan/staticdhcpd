@@ -208,23 +208,23 @@ class DynamicPool(object):
             new_ips = []
             duplicate_ips = []
             for ip in ips:
-                ip = IPv4(ip)
+                ip = str(IPv4(ip)) #normalise the orthography
                 if ip not in pool:
                     pool.add(ip)
-                    new_ips.append(str(ip))
+                    new_ips.append(ip)
                 else:
-                    duplicate_ips.append(str(ip))
+                    duplicate_ips.append(ip)
                     
             ips_available.extend(new_ips)
             self._set_ips_available(ips_available)
             
         if duplicate_ips:
-            self._logger.warning("Pruned duplicate IPs: {!r}".format(duplicate_ips))
+            self._logger.debug("Pruned duplicate IPs: {!r}".format(duplicate_ips))
         self._logger.debug("Added IPs to dynamic pool '{}': {}".format(
             self._hostname_prefix,
             new_ips,
         ))
-        self._logger.info("Added {} available IPs to dynamic pool '{}'; new total: {}".format(
+        self._logger.info("Added {} new available IPs to dynamic pool '{}'; new total: {}".format(
             len(new_ips),
             self._hostname_prefix,
             len(pool),
