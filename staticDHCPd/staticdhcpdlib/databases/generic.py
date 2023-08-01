@@ -24,7 +24,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 (C) Neil Tallim, 2021 <flan@uguu.ca>
 (C) Anthony Woods, 2013 <awoods@internap.com>
 """
-import collections
+import collections.abc
 import logging
 import threading
 import traceback
@@ -129,7 +129,7 @@ class Definition(object):
         if addresses:
             if isinstance(addresses, str):
                 addresses = addresses.split(',')
-            elif isinstance(addresses, collections.Sequence):
+            elif isinstance(addresses, collections.abc.Sequence):
                 if all(isinstance(i, int) for i in addresses):
                     return conversion.listToIPs(addresses)[:limit]
             else: #Might be a set or something non-sliceable

@@ -86,14 +86,14 @@ class _RedisLogic(object):
         
     def _lookupMAC(self, mac):
         details = self._redis_client.hgetall(str(mac))
-        if not assignment_details:
+        if not details:
             _logger.debug("Unknown MAC response for '{}'".format(mac))
             return None
         _logger.debug("Known MAC response for '{}': {!r}".format(mac, details))
         
         subnet_serial = '{}|{}'.format(details['subnet'], details['serial'])
         details_ss = self._redis_client.hgetall(subnet_serial)
-        if not assignment_details:
+        if not details_ss:
             _logger.warning("Unknown subnet|serial: '{}'".format(subnet_serial))
             return None
         _logger.debug("Known subnet|serial response for '{}': {!r}".format(subnet_serial, details_ss))

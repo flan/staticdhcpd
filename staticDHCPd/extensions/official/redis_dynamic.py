@@ -84,17 +84,16 @@ def _dynamic_method(method):
     This is just a decorator.
     """
     def wrapped_method(self, *args, **kwargs):
-        with self._lock:
-            ip = method(self, *args, **kwargs)
-            if ip:
-                return Definition(
-                    ip=ip, lease_time=self._lease_time, subnet=self._subnet, serial=self._serial,
-                    hostname=(self._hostname_pattern.format(ip=str(ip).replace('.', '-'))),
-                    gateways=self._gateway, subnet_mask=self._subnet_mask, broadcast_address=self._broadcast_address,
-                    domain_name=self._domain_name, domain_name_servers=self._domain_name_servers, ntp_servers=self._ntp_servers,
-                    extra=None,
-                )
-            return None
+        ip = method(self, *args, **kwargs)
+        if ip:
+            return Definition(
+                ip=ip, lease_time=self._lease_time, subnet=self._subnet, serial=self._serial,
+                hostname=(self._hostname_pattern.format(ip=str(ip).replace('.', '-'))),
+                gateways=self._gateway, subnet_mask=self._subnet_mask, broadcast_address=self._broadcast_address,
+                domain_name=self._domain_name, domain_name_servers=self._domain_name_servers, ntp_servers=self._ntp_servers,
+                extra=None,
+            )
+        return None
     return wrapped_method
     
 class DynamicPool(object):
@@ -158,7 +157,7 @@ class DynamicPool(object):
             **{k[len('redis_'):]:v for (k, v) in kwargs.items() if k.startswith('redis_')},
         )
         self._lease_key = lease_key
-        self._lock = redis.lock.Lock(self._redis_client, lock_key, timeout=5, blocking_timeout=0.5, blocking=True)
+        self._lock = self._redis_client.lock(lock_key, timeout=5, blocking_timeout=1, blocking=True)
         
         self._logger = _logger.getChild(self._hostname_prefix)
 
@@ -241,7 +240,9 @@ class DynamicPool(object):
         The value returned is either a Definition or None, depending on success.
         """
         mac = str(mac)
-        
+        if client_ip:
+            client_ip = str(client_ip)
+            
         self._logger.info("Dynamic {} from {}{} in pool '{}'".format(
             method,
             mac,
@@ -279,14 +280,23 @@ class DynamicPool(object):
         for (mac, lease) in self._redis_client.hgetall(self._lease_key).items():
             if mac == self._REDIS_KEY_IPS_AVAILABLE: #skip special keys
                 continue
+            mac = mac.decode('utf-8')
 
             lease_details = json.loads(lease)
-            if lease_details['expiration'] <= current_time:
+            expiration = lease_details['expiration']
+            if expiration <= current_time:
                 dead_leases.append((mac, lease_details))
             else:
                 active_leases.append((mac, lease_details))
                 ip_leases[lease_details['ip']] = mac
-                
+                if produce_definitions:
+                    elements.append(_LeaseDefinition(
+                        lease_details['ip'],
+                        mac,
+                        expiration,
+                        expiration - self._lease_time,
+                    ))
+                    
         #remove leases from Redis
         if dead_leases:
             self._redis_client.hdel(self._lease_key, *[mac for (mac, lease_details) in dead_leases])
@@ -403,7 +413,7 @@ class DynamicPool(object):
         if ips_available is not None:
             self._set_ips_available(ips_available)
         self._redis_client.hset(self._lease_key, key=mac, value=json.dumps({
-            'ip': client_ip,
+            'ip': ip,
             'expiration': expiration_time,
         }, separators=(',', ':')))
         
@@ -457,6 +467,13 @@ class DynamicPool(object):
                     self._assign_ip(mac, client_ip, None)
                     return client_ip
             else:
+                #see if the MAC is already bound to an IP
+                for (bound_ip, bound_mac) in ip_leases.items():
+                    if mac == bound_mac:
+                        #renew the lease, without affecting the pool
+                        self._assign_ip(mac, bound_ip, ips_available)
+                        return bound_ip
+                        
                 if ips_available:
                     #allocate the least-dirty IP
                     self._assign_ip(mac, ips_available[0], ips_available[1:])
