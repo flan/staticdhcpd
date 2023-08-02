@@ -1,0 +1,73 @@
+#!/bin/python3
+import argparse
+import ipaddress
+import json
+import re
+import sys
+
+import redis
+
+REDIS_HOST = '1.2.3.4'
+REDIS_DB = 0
+REDIS_PASSWORD = 'very secret'
+
+MAC_RE = re.compile('^(?:[0-9a-f]{2}:){5}[0-9a-f]{2}$')
+
+parser = argparse.ArgumentParser(
+    description='Enumerate static IP reservation via DHCP',
+)
+parser.add_argument('--filter-mac', type=str, action='append', help="the MAC address to look up; may be repeated")
+parser.add_argument('--filter-ip', type=str, action='append', help="the IP address to look up; may be repeated")
+args = parser.parse_args()
+
+macs = set()
+if args.filter_mac is not None:
+    for mac in args.filter_mac:
+        if MAC_RE.match(mac):
+            macs.add(mac)
+        else:
+            raise ValueError("MAC address {} is not in the format 'aa:bb:cc:dd:ee:ff'".format(mac))
+
+ips = set()
+if args.filter_ip is not None:
+    for ip in args.filter_ip:
+        ips.add(str(ipaddress.IPv4Address(ip)))
+
+redis_client = redis.Redis(
+    host=REDIS_HOST, db=REDIS_DB,
+    password=REDIS_PASSWORD,
+    decode_responses=True,
+)
+
+
+subnet_serials = {}
+matches = {}
+
+for key in redis_client.scan_iter():
+    if MAC_RE.match(key):
+        if macs and not ips and key not in macs:
+            continue #no need to look any deeper
+        record = redis_client.hgetall(key)
+
+        if not macs and not ips:
+            matches[key] = record
+        elif key in macs or record['ip'] in ips:
+            matches[key] = record
+
+for (mac, match) in matches.items():
+    subnet_serial = (match['subnet'], match['serial'])
+    if subnet_serial not in subnet_serials:
+        print('retrieving {}|{}...'.format(*subnet_serial), file=sys.stderr)
+        subnet_serials[subnet_serial] = redis_client.hgetall('{}|{}'.format(*subnet_serial))
+    inherited = subnet_serials[subnet_serial]
+
+    if 'extra' in match:
+        match['extra'] = json.loads(match['extra'])
+    for (key, value) in inherited.items():
+        if key not in match:
+            if key == 'extra':
+                value = json.loads(value)
+            match[':{}'.format(key)] = value
+
+print('a leading colon means the value was inherited from its subnet|serial definition', file=sys.stderr)
+print(json.dumps(matches, sort_keys=True, indent=4))

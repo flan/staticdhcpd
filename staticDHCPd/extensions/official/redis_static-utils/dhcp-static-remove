@@ -1,0 +1,27 @@
+#!/bin/python3
+import argparse
+import re
+
+import redis
+
+REDIS_HOST = '1.2.3.4'
+REDIS_DB = 0
+REDIS_PASSWORD = 'very secret'
+
+parser = argparse.ArgumentParser(
+    description='Drop static IP reservation via DHCP',
+)
+parser.add_argument('mac', type=str, help="the MAC address to unbind")
+args = parser.parse_args()
+
+if not re.match('^(?:[0-9a-f]{2}:){5}[0-9a-f]{2}$', args.mac):
+    raise ValueError("MAC address is not in the format 'aa:bb:cc:dd:ee:ff'")
+
+
+redis_client = redis.Redis(
+    host=REDIS_HOST, db=REDIS_DB,
+    password=REDIS_PASSWORD,
+    decode_responses=True,
+)
+
+redis_client.delete(args.mac)

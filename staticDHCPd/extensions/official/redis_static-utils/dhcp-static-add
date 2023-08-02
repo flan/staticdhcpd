@@ -1,0 +1,84 @@
+#!/bin/python3
+import argparse
+import ipaddress
+import json
+import re
+
+import redis
+
+REDIS_HOST = '1.2.3.4'
+REDIS_DB = 0
+REDIS_PASSWORD = 'very secret'
+
+SUBNET_SERIAL_MAP = {
+    ipaddress.IPv4Network('10.0.0.0/24'): ('10.40.0.0/24', 0),
+}
+
+parser = argparse.ArgumentParser(
+    description='Configure static IP reservation via DHCP',
+)
+parser.add_argument('mac', type=str, help="the MAC address to bind")
+parser.add_argument('ip', type=str, help="the IP address to bind")
+parser.add_argument('--lease-time', type=int, help="the number of seconds for which to hold the lease [overrides subnet|serial]")
+parser.add_argument('--hostname', type=str, help="the name to offer the host [optional, rarely used]")
+parser.add_argument('--subnet-mask', type=str, help="the subnet-mask to assign [overrides subnet|serial]")
+parser.add_argument('--gateway', type=str, help="the gateway to assign [overrides subnet|serial]")
+parser.add_argument('--broadcast-address', type=str, help="the broadcast-address to assign [overrides subnet|serial]")
+parser.add_argument('--domain-name', type=str, help="the domain-name to assign [overrides subnet|serial]")
+parser.add_argument('--domain-name-server', type=str, action='append', help="a DNS server IP to assign; may be repeated up to three times [overrides subnet|serial]")
+parser.add_argument('--ntp-server', type=str, action='append', help="an NTP server IP to assign; may be repeated up to three times [overrides subnet|serial]")
+parser.add_argument('--extra', type=str, help="JSON-encoded metadata to assign [overrides subnet|serial]")
+args = parser.parse_args()
+
+if not re.match('^(?:[0-9a-f]{2}:){5}[0-9a-f]{2}$', args.mac):
+    raise ValueError("MAC address is not in the format 'aa:bb:cc:dd:ee:ff'")
+target_ip = ipaddress.IPv4Address(args.ip)
+for (supernet, (subnet, serial)) in SUBNET_SERIAL_MAP.items():
+    if target_ip in supernet:
+        break
+else:
+    raise ValueError("Target IP address is not in a recognised subnet")
+
+assignment = {
+    'ip': str(target_ip),
+    'subnet': subnet,
+    'serial': serial,
+}
+
+if args.lease_time is not None:
+    if args.lease_time < 300 or args.lease_time > 50400:
+        raise ValueError("Lease-times of less than 5 minutes or greater than 2 weeks are unsupported")
+    assignment['lease_time'] = args.lease_time
+
+if args.hostname is not None:
+    assignment['hostname'] = args.hostname
+
+if args.subnet_mask is not None:
+    assignment['subnet_mask'] = str(ipaddress.IPv4Address(args.subnet_mask))
+if args.gateway is not None:
+    assignment['gateway'] = str(ipaddress.IPv4Address(args.gateway))
+if args.broadcast_address is not None:
+    assignment['broadcast_address'] = str(ipaddress.IPv4Address(args.broadcast_address))
+
+if args.domain_name is not None:
+    assignment['domain_name'] = args.domain_name
+if args.domain_name_server is not None:
+    assignment['domain_name_servers'] = ','.join(str(ipaddress.IPv4Address(addr)) for addr in args.domain_name_server)
+
+if args.ntp_server is not None:
+    assignment['ntp_servers'] = ','.join(str(ipaddress.IPv4Address(addr)) for addr in args.ntp_server)
+
+if args.extra is not None:
+    assignment['extra'] = json.dumps(json.loads(args.extra), separators=(',', ':'))
+
+
+redis_client = redis.Redis(
+    host=REDIS_HOST, db=REDIS_DB,
+    password=REDIS_PASSWORD,
+    decode_responses=True,
+)
+
+if redis_client.exists(args.mac):
+    raise ValueError('Target MAC is already bound and will not be overwritten')
+
+redis_client.hset(args.mac, mapping=assignment)
