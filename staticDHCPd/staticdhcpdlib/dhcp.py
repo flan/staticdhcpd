@@ -404,6 +404,7 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
             self, server_address, server_port, client_port, proxy_port,
             response_interface=response_interface,
             response_interface_qtags=response_interface_qtags,
+            link_local_only=(not config.ALLOW_DHCP_RELAYS),
         )
 
     @_dhcpHandler(_PACKET_TYPE_DECLINE)

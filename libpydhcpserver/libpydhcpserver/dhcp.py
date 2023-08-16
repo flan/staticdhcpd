@@ -91,13 +91,13 @@ class DHCPServer(object):
     _server_address = None #: The IP associated with this server.
     _network_link = None #: The I/O-handler; you don't want to touch this.
 
-    def __init__(self, server_address, server_port, client_port, proxy_port=None, response_interface=None, response_interface_qtags=None):
+    def __init__(self, server_address, server_port, client_port, proxy_port=None, response_interface=None, response_interface_qtags=None, link_local_only=False):
         """
         Sets up the DHCP network infrastructure.
 
         :param server_address: The IP address on which to run the DHCP service.
         :type server_address: :class:`IPv4 <dhcp_types.ipv4.IPv4>`
-        :param int port: The port on which DHCP servers and relays listen in this network.
+        :param int server_port: The port on which DHCP servers and relays listen in this network.
         :param int client_port: The port on which DHCP clients listen in this network.
         :param int proxy_port: The port on which ProxyDHCP servers listen for in
             this network; ``None`` to disable.
@@ -107,13 +107,14 @@ class DHCPServer(object):
         :param sequence response_interface_qtags: Any qtags to insert into raw packets, in
             order of appearance. Definitions take the following form:
             (pcp:`0-7`, dei:``bool``, vid:`1-4094`)
+        :param bool link_local_only: Whether system-level routing should be disabled (never desired when relays are enabled).
         :except Exception: A problem occurred during setup.
         """
         self._server_address = server_address
         if response_interface == '-':
             from . import getifaddrslib
             response_interface = getifaddrslib.get_network_interface(server_address)
-        self._network_link = _NetworkLink(str(server_address), server_port, client_port, proxy_port, response_interface, response_interface_qtags=response_interface_qtags)
+        self._network_link = _NetworkLink(str(server_address), server_port, client_port, proxy_port, response_interface, response_interface_qtags=response_interface_qtags, link_local_only=local_service_only)
 
     def _getNextDHCPPacket(self, timeout=60, packet_buffer=2048):
         """
@@ -268,7 +269,7 @@ class _NetworkLink(object):
     _listening_sockets = None #: All sockets on which to listen for activity.
     _unicast_discover_supported = False #: Whether unicast responses to DISCOVERs are supported.
 
-    def __init__(self, server_address, server_port, client_port, proxy_port, response_interface=None, response_interface_qtags=None):
+    def __init__(self, server_address, server_port, client_port, proxy_port, response_interface=None, response_interface_qtags=None, link_local_only=False):
         """
         Sets up the DHCP network infrastructure.
 
@@ -282,6 +283,7 @@ class _NetworkLink(object):
         :param sequence|None response_interface_qtags: Any qtags to insert into raw packets, in
             order of appearance. Definitions take the following form:
             (pcp:`0-7`, dei:``bool``, vid:`1-4094`)
+        :param bool link_local_only: Whether system-level routing should be disabled (never desired when relays are enabled).
         :except Exception: A problem occurred during setup.
         """
         self._client_port = client_port
@@ -289,7 +291,7 @@ class _NetworkLink(object):
         self._proxy_port = proxy_port
 
         #Create and bind unicast sockets
-        (dhcp_socket, proxy_socket) = self._setupListeningSockets(server_port, proxy_port, server_address)
+        (dhcp_socket, proxy_socket) = self._setupListeningSockets(server_port, proxy_port, server_address, local_service_only)
         if proxy_socket:
             self._listening_sockets = (dhcp_socket, proxy_socket)
             self._proxy_socket = proxy_socket
@@ -315,13 +317,14 @@ class _NetworkLink(object):
         else:
             self._responder_broadcast = _L3Responder(server_address=server_address)
 
-    def _setupListeningSockets(self, server_port, proxy_port, server_address=None):
+    def _setupListeningSockets(self, server_port, proxy_port server_address=None, link_local_only=False):
         """
         Creates and binds the listening sockets.
 
         :param int server_port: The port on which to listen for DHCP traffic.
         :param int proxy_port: The port on which to listen for ProxyDHCP traffic.
         :param string server_address: The IP address to listen for DHCP traffic on
+        :param bool link_local_only: Whether system-level routing should be disabled (never desired when relays are enabled).
         :return tuple(2): The DHCP and ProxyDHCP sockets, the latter of which may be ``None`` if
             not requested.
         :except socket.error: Sockets could not be created or bound.
@@ -365,11 +368,13 @@ class _NetworkLink(object):
                 dhcp_socket.setsockopt(socket.SOL_SOCKET, _SO_BINDTODEVICE, listen_interface.encode('utf-8'))
             except socket.error as e:
                 raise OSError(e.errno, 'Unable to limit listening to {}: {}'.format(listen_interface, e.strerror))
-            try:
-                dhcp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_DONTROUTE, 1)
-            except socket.error as e:
-                raise OSError(e.errno, 'Unable to disable routing: {}'.format(e.strerror))
-                
+
+            if link_local_only:
+                try:
+                    dhcp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_DONTROUTE, 1)
+                except socket.error as e:
+                    raise OSError(e.errno, 'Unable to disable routing: {}'.format(e.strerror))
+                    
         return (dhcp_socket, proxy_socket)
 
     def getData(self, timeout, packet_buffer):
