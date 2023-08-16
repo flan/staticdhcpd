@@ -1007,7 +1007,7 @@ class DHCPPacket(object):
             data = self._header[start:start + length]
             data = _FORMAT_CONVERSION_DESERIAL[DHCP_FIELDS_TYPES[field]](data)
             if field in (FIELD_SNAME, FIELD_FILE):
-                data = data.rstrip('\x00')
+                data = data.rstrip(b'\x00')
             output.append("\t{field}: {data!r}".format(
                 field=field,
                 data=data,
