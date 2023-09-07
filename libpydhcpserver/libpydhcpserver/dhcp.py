@@ -114,7 +114,7 @@ class DHCPServer(object):
         if response_interface == '-':
             from . import getifaddrslib
             response_interface = getifaddrslib.get_network_interface(server_address)
-        self._network_link = _NetworkLink(str(server_address), server_port, client_port, proxy_port, response_interface, response_interface_qtags=response_interface_qtags, link_local_only=local_service_only)
+        self._network_link = _NetworkLink(str(server_address), server_port, client_port, proxy_port, response_interface, response_interface_qtags=response_interface_qtags, link_local_only=link_local_only)
 
     def _getNextDHCPPacket(self, timeout=60, packet_buffer=2048):
         """
@@ -291,7 +291,7 @@ class _NetworkLink(object):
         self._proxy_port = proxy_port
 
         #Create and bind unicast sockets
-        (dhcp_socket, proxy_socket) = self._setupListeningSockets(server_port, proxy_port, server_address, local_service_only)
+        (dhcp_socket, proxy_socket) = self._setupListeningSockets(server_port, proxy_port, server_address, link_local_only)
         if proxy_socket:
             self._listening_sockets = (dhcp_socket, proxy_socket)
             self._proxy_socket = proxy_socket
@@ -317,7 +317,7 @@ class _NetworkLink(object):
         else:
             self._responder_broadcast = _L3Responder(server_address=server_address)
 
-    def _setupListeningSockets(self, server_port, proxy_port server_address=None, link_local_only=False):
+    def _setupListeningSockets(self, server_port, proxy_port, server_address=None, link_local_only=False):
         """
         Creates and binds the listening sockets.
 
