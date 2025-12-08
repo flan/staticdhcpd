@@ -433,7 +433,7 @@ class _NetworkLink(object):
             ip = address.ip
             relayed = bool(packet.extractIPOrNone(FIELD_GIADDR))
             if relayed: #Relayed request.
-                port = self._server_port
+                port = self._client_port
             else: #Request directly from client, routed or otherwise.
                 if port == self._proxy_port:
                     ip = packet.extractIPOrNone(FIELD_CIADDR) or ip
