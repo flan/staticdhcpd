@@ -755,7 +755,7 @@ class DHCPPacket(object):
             return None
         return IPv4(addr)
         
-    def _getDHCPMessageType(self):
+    def getDHCPMessageType(self):
         """
         Provides the DHCP message-type of this packet.
         
@@ -773,7 +773,7 @@ class DHCPPacket(object):
         
         :return str: The DHCP message-type of this packet.
         """
-        return DHCP_TYPE_NAMES.get(self._getDHCPMessageType(), 'UNKNOWN_UNKNOWN')
+        return DHCP_TYPE_NAMES.get(self.getDHCPMessageType(), 'UNKNOWN_UNKNOWN')
         
     def isDHCPAckPacket(self):
         """
@@ -781,7 +781,7 @@ class DHCPPacket(object):
         
         :return bool: True if this is an ACK packet.
         """
-        return self._getDHCPMessageType() == 5
+        return self.getDHCPMessageType() == 5
 
     def isDHCPDeclinePacket(self):
         """
@@ -789,7 +789,7 @@ class DHCPPacket(object):
         
         :return bool: True if this is a DECLINE packet.
         """
-        return self._getDHCPMessageType() == 4
+        return self.getDHCPMessageType() == 4
         
     def isDHCPDiscoverPacket(self):
         """
@@ -797,7 +797,7 @@ class DHCPPacket(object):
         
         :return bool: True if this is a DISCOVER packet.
         """
-        return self._getDHCPMessageType() == 1
+        return self.getDHCPMessageType() == 1
         
     def isDHCPInformPacket(self):
         """
@@ -805,7 +805,7 @@ class DHCPPacket(object):
         
         :return bool: True if this is an INFORM packet.
         """
-        return self._getDHCPMessageType() == 8
+        return self.getDHCPMessageType() == 8
         
     def isDHCPLeaseActivePacket(self):
         """
@@ -813,7 +813,7 @@ class DHCPPacket(object):
         
         :return bool: True if this is a LEASEACTIVE packet.
         """
-        return self._getDHCPMessageType() == 13
+        return self.getDHCPMessageType() == 13
         
     def isDHCPLeaseQueryPacket(self):
         """
@@ -821,7 +821,7 @@ class DHCPPacket(object):
         
         :return bool: True if this is a LEASEQUERY packet.
         """
-        return self._getDHCPMessageType() == 10
+        return self.getDHCPMessageType() == 10
         
     def isDHCPLeaseUnassignedPacket(self):
         """
@@ -829,7 +829,7 @@ class DHCPPacket(object):
         
         :return bool: True if this is a LEASEUNASSIGNED packet.
         """
-        return self._getDHCPMessageType() == 11
+        return self.getDHCPMessageType() == 11
         
     def isDHCPLeaseUnknownPacket(self):
         """
@@ -837,7 +837,7 @@ class DHCPPacket(object):
         
         :return bool: True if this is a LEASEUNKNOWN packet.
         """
-        return self._getDHCPMessageType() == 12
+        return self.getDHCPMessageType() == 12
         
     def isDHCPOfferPacket(self):
         """
@@ -845,7 +845,7 @@ class DHCPPacket(object):
         
         :return bool: True if this is an OFFER packet.
         """
-        return self._getDHCPMessageType() == 2
+        return self.getDHCPMessageType() == 2
         
     def isDHCPNakPacket(self):
         """
@@ -853,7 +853,7 @@ class DHCPPacket(object):
         
         :return bool: True if this is a NAK packet.
         """
-        return self._getDHCPMessageType() == 6
+        return self.getDHCPMessageType() == 6
         
     def isDHCPReleasePacket(self):
         """
@@ -861,7 +861,7 @@ class DHCPPacket(object):
         
         :return bool: True if this is a RELEASE packet.
         """
-        return self._getDHCPMessageType() == 7
+        return self.getDHCPMessageType() == 7
         
     def isDHCPRequestPacket(self):
         """
@@ -869,7 +869,7 @@ class DHCPPacket(object):
         
         :return bool: True if this is a REQUEST packet.
         """
-        return self._getDHCPMessageType() == 3
+        return self.getDHCPMessageType() == 3
         
     def _transformBase(self):
         """

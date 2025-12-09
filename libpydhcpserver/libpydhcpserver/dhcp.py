@@ -299,7 +299,12 @@ class _NetworkLink(object):
         self._proxy_port = proxy_port
 
         if relay_port_quirks: #leave it as None if there's an empty dictionary for speed
-            self._relay_port_quirks = relay_port_quirks
+            #resolve names to integers for slightly faster performance
+            self._relay_port_quirks = {}
+            for (type_int, type_str) in constants.DHCP_TYPE_NAMES.items():
+                port = relay_port_quirks.get(type_str)
+                if port:
+                    self._relay_port_quirks[type_int] = port
 
         #Create and bind unicast sockets
         (dhcp_socket, proxy_socket) = self._setupListeningSockets(server_port, proxy_port, server_address, link_local_only)
@@ -445,7 +450,7 @@ class _NetworkLink(object):
             relayed = bool(packet.extractIPOrNone(FIELD_GIADDR))
             if relayed: #Relayed request
                 if self._relay_port_quirks:
-                    port = self._relay_port_quirks.get(packet.getDHCPMessageTypeName(), self._server_port)
+                    port = self._relay_port_quirks.get(packet.getDHCPMessageType(), self._server_port)
                 else:
                     port = self._server_port
             else: #Request directly from client, routed or otherwise.
