@@ -7,27 +7,8 @@ staticDHCPd is an all-Python, [RFC 2131](http://www.ietf.org/rfc/rfc2131.txt)-co
 The 3.0.0 branch will need to be tested; the remaining checklist follows (if you test a thing, respond to issue #89):
   * staticDHCPd
     * Long-term soak-test
-      * Stable memory usage
-        * _memory may fluctuate a bit during operation, but it cannot grow indefinitely, regardless of network size_
-        * _if possible, give it a week in a moderately busy network and check in a couple of times each day, sharing your numbers_
       * No processing errors
-        * _no unusual or inexplicable behaviour_
-        * _all errors must be handled sensibly_
-    * Databases
-      * custom
-        * I will be verifying its functionality
-  * Extensions
-    * statistics graph
-      * _reimplemented browser-side using Chart.js_
-        * _needs to be tested in a non-lab context_
-    * dynamism
-      * _must handle dynamic allocation_
-      * _must honour renewals and rebinds with the same address_
-      * _must support releases_
-    * redis (static)
-      * _it needs to work work_
-    * redis (dynamic)
-      * _it needs to work work_
+        * A problem has been identified with DHCP relay and Windows clients. It came up before, but now I think I can finally resolve it for good.
   * Documentation
     * libpydhcpserver
       * _correctness check_
