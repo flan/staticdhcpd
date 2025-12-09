@@ -91,7 +91,7 @@ class DHCPServer(object):
     _server_address = None #: The IP associated with this server.
     _network_link = None #: The I/O-handler; you don't want to touch this.
 
-    def __init__(self, server_address, server_port, client_port, proxy_port=None, response_interface=None, response_interface_qtags=None, link_local_only=False):
+    def __init__(self, server_address, server_port, client_port, proxy_port=None, response_interface=None, response_interface_qtags=None, link_local_only=False, relay_port_quirks=None):
         """
         Sets up the DHCP network infrastructure.
 
@@ -108,13 +108,19 @@ class DHCPServer(object):
             order of appearance. Definitions take the following form:
             (pcp:`0-7`, dei:``bool``, vid:`1-4094`)
         :param bool link_local_only: Whether system-level routing should be disabled (never desired when relays are enabled).
+        :param dict|None relay_port_quirks: A dictionary of DHCP message types (str) to response-ports (int).
         :except Exception: A problem occurred during setup.
         """
         self._server_address = server_address
         if response_interface == '-':
             from . import getifaddrslib
             response_interface = getifaddrslib.get_network_interface(server_address)
-        self._network_link = _NetworkLink(str(server_address), server_port, client_port, proxy_port, response_interface, response_interface_qtags=response_interface_qtags, link_local_only=link_local_only)
+        self._network_link = _NetworkLink(
+            str(server_address), server_port, client_port, proxy_port, response_interface,
+            response_interface_qtags=response_interface_qtags,
+            link_local_only=link_local_only,
+            relay_port_quirks=relay_port_quirks,
+        )
 
     def _getNextDHCPPacket(self, timeout=60, packet_buffer=2048):
         """
@@ -268,8 +274,9 @@ class _NetworkLink(object):
     _responder_broadcast = None #: The internal socket to use for responding to broadcast requests.
     _listening_sockets = None #: All sockets on which to listen for activity.
     _unicast_discover_supported = False #: Whether unicast responses to DISCOVERs are supported.
+    _relay_port_quirks = None #: A dictionary of port overrides for relay responses.
 
-    def __init__(self, server_address, server_port, client_port, proxy_port, response_interface=None, response_interface_qtags=None, link_local_only=False):
+    def __init__(self, server_address, server_port, client_port, proxy_port, response_interface=None, response_interface_qtags=None, link_local_only=False, relay_port_quirks=None):
         """
         Sets up the DHCP network infrastructure.
 
@@ -284,11 +291,15 @@ class _NetworkLink(object):
             order of appearance. Definitions take the following form:
             (pcp:`0-7`, dei:``bool``, vid:`1-4094`)
         :param bool link_local_only: Whether system-level routing should be disabled (never desired when relays are enabled).
+        :param dict|None relay_port_quirks: A dictionary of DHCP message types (str) to response-ports (int).
         :except Exception: A problem occurred during setup.
         """
         self._client_port = client_port
         self._server_port = server_port
         self._proxy_port = proxy_port
+
+        if relay_port_quirks: #leave it as None if there's an empty dictionary for speed
+            self._relay_port_quirks = relay_port_quirks
 
         #Create and bind unicast sockets
         (dhcp_socket, proxy_socket) = self._setupListeningSockets(server_port, proxy_port, server_address, link_local_only)
@@ -432,8 +443,11 @@ class _NetworkLink(object):
         else: #Unicast source
             ip = address.ip
             relayed = bool(packet.extractIPOrNone(FIELD_GIADDR))
-            if relayed: #Relayed request.
-                port = self._client_port
+            if relayed: #Relayed request
+                if self._relay_port_quirks:
+                    port = self._relay_port_quirks.get(packet.getDHCPMessageTypeName(), self._server_port)
+                else:
+                    port = self._server_port
             else: #Request directly from client, routed or otherwise.
                 if port == self._proxy_port:
                     ip = packet.extractIPOrNone(FIELD_CIADDR) or ip

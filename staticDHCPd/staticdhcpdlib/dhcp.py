@@ -373,7 +373,7 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
     _dhcp_actions = None #: The MACs and the number of actions each has performed, decremented by one each tick.
     _ignored_addresses = None #: A list of all MACs currently ignored, plus the time remaining until requests will be honoured again.
 
-    def __init__(self, server_address, server_port, client_port, proxy_port, response_interface, response_interface_qtags, database):
+    def __init__(self, server_address, server_port, client_port, proxy_port, response_interface, response_interface_qtags, relay_port_quirks, database):
         """
         Constructs the handler.
 
@@ -390,6 +390,8 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
         :param sequence|None response_interface_qtags: Any qtags to insert into raw packets, in
             order of appearance. Definitions take the following form:
             (pcp:`0-7`, dei:``bool``, vid:`1-4094`)
+        :param dict|None relay_port_quirks: A dictionary of DHCP message types (str) to
+            response-ports (int).
         :param :class:`databases.generic.Database` database: The database to use
             for retrieving lease definitions.
         :except Exception: A problem occurred while initializing the sockets
@@ -405,6 +407,7 @@ class _DHCPServer(libpydhcpserver.dhcp.DHCPServer):
             response_interface=response_interface,
             response_interface_qtags=response_interface_qtags,
             link_local_only=(not config.ALLOW_DHCP_RELAYS),
+            relay_port_quirks=relay_port_quirks,
         )
 
     @_dhcpHandler(_PACKET_TYPE_DECLINE)
@@ -854,7 +857,8 @@ class DHCPService(threading.Thread):
             config.PROXY_PORT,
             config.DHCP_RESPONSE_INTERFACE,
             config.DHCP_RESPONSE_INTERFACE_QTAGS,
-            database
+            config.RELAY_PORT_QUIRKS,
+            database,
         )
         _logger.info("Configured DHCP server")
 

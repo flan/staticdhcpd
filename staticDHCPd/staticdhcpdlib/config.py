@@ -87,6 +87,7 @@ _defaults.update({
     'DHCP_SERVER_PORT': 67,
     'DHCP_CLIENT_PORT': 68,
     'PROXY_PORT': None,
+    'RELAY_PORT_QUIRKS': None,
 })
 
 #Database settings

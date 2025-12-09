@@ -143,6 +143,23 @@ Server
 
 * This option used to be named **PXE_PORT**, which will still be honoured.
 
+**RELAY_PORT_QUIRKS** : dict[str:int], None : default=None
+||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+* A dictionary of DHCP types to port numbers, used to override the destination
+  port when sending a response to a DHCP relay.
+* Ideally, this should never be needed, since all relay destination ports are
+  supposed to be ``DHCP_SERVER_PORT``, with the relay being responsible for
+  flipping that to ``DHCP_CLIENT_PORT`` for ``OFFER`` responses, but some relays
+  that may be BOOTP-literal just pass the response through exactly as received.
+* Example: ``{"DHCP_OFFER": 68}``
+* Relevant strings:
+  * ``DHCP_OFFER``
+  * ``DHCP_ACK``
+  * ``DHCP_NACK``
+  * ``DHCP_FORCERENEW``
+  * ``DHCP_LEASEUNASSIGNED``
+  * ``DHCP_LEASEUNKNOWN``
+  * ``DHCP_LEASEACTIVE``
 
 Caching
 +++++++
