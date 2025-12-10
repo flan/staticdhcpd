@@ -448,12 +448,18 @@ class _NetworkLink(object):
             responder = self._responder_broadcast
         else: #Unicast source
             ip = address.ip
-            relayed = bool(packet.extractIPOrNone(FIELD_GIADDR))
+            giaddr_address = packet.extractIPOrNone(FIELD_GIADDR)
+            relayed = bool(giaddr_address)
             if relayed: #Relayed request
-                if self._relay_port_quirks:
-                    port = self._relay_port_quirks.get(packet.getDHCPMessageType(), self._server_port)
-                else:
-                    port = self._server_port
+                #the request may have been relayed, but if the response is being sent directly to the client,
+                #it must go to the client port
+                if giaddr_address == ip: #response is direct
+                    port = self._client_port
+                else: #response is going through the relay
+                    if self._relay_port_quirks:
+                        port = self._relay_port_quirks.get(packet.getDHCPMessageType(), self._server_port)
+                    else:
+                        port = self._server_port
             else: #Request directly from client, routed or otherwise.
                 if port == self._proxy_port:
                     ip = packet.extractIPOrNone(FIELD_CIADDR) or ip
