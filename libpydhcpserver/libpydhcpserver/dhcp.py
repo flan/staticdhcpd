@@ -34,6 +34,7 @@ from .dhcp_types.ipv4 import IPv4
 from .dhcp_types.mac import MAC
 from .dhcp_types.packet import (DHCPPacket, FLAGBIT_BROADCAST)
 from .dhcp_types.constants import (
+    DHCP_TYPE_NAMES,
     FIELD_CIADDR, FIELD_YIADDR, FIELD_SIADDR, FIELD_GIADDR,
 )
 
@@ -301,7 +302,7 @@ class _NetworkLink(object):
         if relay_port_quirks: #leave it as None if there's an empty dictionary for speed
             #resolve names to integers for slightly faster performance
             self._relay_port_quirks = {}
-            for (type_int, type_str) in constants.DHCP_TYPE_NAMES.items():
+            for (type_int, type_str) in DHCP_TYPE_NAMES.items():
                 port = relay_port_quirks.get(type_str)
                 if port:
                     self._relay_port_quirks[type_int] = port
